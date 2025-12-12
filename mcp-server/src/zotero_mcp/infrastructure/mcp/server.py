@@ -28,6 +28,7 @@ from .config import McpServerConfig, default_config
 from .pubmed_tools import register_pubmed_tools, is_pubmed_available
 from .smart_tools import register_smart_tools
 from .search_tools import register_search_tools, is_search_tools_available
+from .batch_tools import register_batch_tools, is_batch_import_available
 
 
 logger = logging.getLogger(__name__)
@@ -79,6 +80,13 @@ class ZoteroKeeperServer:
             logger.info("PubMed import enabled (import_ris_to_zotero, import_from_pmids)")
         else:
             logger.info("PubMed integration disabled (install with: pip install 'zotero-keeper[pubmed]')")
+        
+        # Register Batch Import tools (requires pubmed-search submodule)
+        if is_batch_import_available():
+            register_batch_tools(self._mcp, self._zotero)
+            logger.info("Batch import enabled (batch_import_from_pubmed)")
+        else:
+            logger.info("Batch import disabled (pubmed-search submodule not available)")
         
         logger.info(f"Zotero Keeper MCP Server initialized")
         logger.info(f"Zotero endpoint: {zotero_config.base_url}")
