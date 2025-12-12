@@ -141,7 +141,7 @@ def map_pubmed_to_zotero(article: dict[str, Any], extra_tags: Optional[list[str]
     if article.get("language"):
         item["language"] = article["language"]
     
-    # Extra field - PMID, PMCID, publication types
+    # Extra field - PMID, PMCID, publication types, affiliations
     extra_parts = []
     
     pmid = article.get("pmid")
@@ -155,6 +155,13 @@ def map_pubmed_to_zotero(article: dict[str, Any], extra_tags: Optional[list[str]
     pub_types = article.get("publication_types", [])
     if pub_types:
         extra_parts.append(f"Publication Type: {', '.join(pub_types)}")
+    
+    # Extract unique affiliations from authors
+    affiliations = _extract_unique_affiliations(article.get("authors_full", []))
+    if affiliations:
+        extra_parts.append(f"Affiliations:\n" + "\n".join(f"  - {aff}" for aff in affiliations[:5]))
+        if len(affiliations) > 5:
+            extra_parts.append(f"  ... and {len(affiliations) - 5} more")
     
     if extra_parts:
         item["extra"] = "\n".join(extra_parts)
@@ -214,6 +221,25 @@ def _month_to_number(month: str) -> Optional[str]:
     }
     
     return month_map.get(month.lower().strip())
+
+
+def _extract_unique_affiliations(authors_full: list[dict]) -> list[str]:
+    """
+    Extract unique affiliations from authors_full list.
+    
+    Returns deduplicated list of affiliations.
+    """
+    seen = set()
+    affiliations = []
+    
+    for author in authors_full:
+        if isinstance(author, dict) and "affiliations" in author:
+            for aff in author["affiliations"]:
+                if aff and aff not in seen:
+                    seen.add(aff)
+                    affiliations.append(aff)
+    
+    return affiliations
 
 
 def map_pubmed_list_to_zotero(
