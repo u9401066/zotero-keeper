@@ -1,9 +1,9 @@
 # Batch Import Design Document
 
-> **Version**: 1.4 Draft  
+> **Version**: 1.5  
 > **Date**: 2025-12-12  
 > **Target Release**: v1.7.0  
-> **Status**: Planning
+> **Status**: ✅ Ready for Implementation
 
 ---
 
@@ -298,9 +298,8 @@ async def batch_import_from_pubmed(
 |-----------|------|----------|---------|-------------|
 | `pmids` | `str` | Yes | - | Comma-separated PMIDs (e.g., "12345,67890") or "last" for last search results |
 | `tags` | `list[str]` | No | `None` | Tags to apply to all imported articles |
-| `skip_exact_duplicates` | `bool` | No | `True` | Skip if exact DOI+PMID match found |
-| `warn_on_similar` | `bool` | No | `True` | Add with warning if DOI matches but title differs |
-| `similarity_threshold` | `float` | No | `0.85` | Title similarity threshold for duplicate detection (0-1) |
+| `skip_duplicates` | `bool` | No | `True` | Skip if exact DOI/PMID match found |
+| `batch_size` | `int` | No | `10` | Number of articles to fetch per batch (NCBI rate limit) |
 | `collection_key` | `str` | No | `None` | Zotero collection key to add items to directly |
 
 #### Return Value
@@ -1338,10 +1337,11 @@ User: "Find and import 2024-2025 anesthesia AI papers to Zotero"
 │                                                                 │
 │ 🔄 Internal Process:                                            │
 │ ┌─────────────────────────────────────────────────────────────┐ │
-│ │ 1. NCBI E-utilities efetch.fcgi (XML format)                │ │
-│ │    → Fetch COMPLETE metadata for all PMIDs                  │ │
+│ │ 1. Direct Python Import from pubmed-search library          │ │
+│ │    from pubmed_search.client import PubMedClient            │ │
+│ │    articles = PubMedClient().fetch_details(pmids)           │ │
 │ │                                                             │ │
-│ │ 2. Parse XML to extract:                                    │ │
+│ │ 2. SearchResult 已包含完整資料:                                    │ │
 │ │    ✓ Title, Authors (with affiliations!)                    │ │
 │ │    ✓ Abstract (FULL - not truncated!)                       │ │
 │ │    ✓ Journal, Volume, Issue, Pages                          │ │
