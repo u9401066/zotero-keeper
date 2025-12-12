@@ -27,9 +27,16 @@ zotero-keeper
 
 ## Environment Variables
 
+Copy `.env.example` to `.env` and configure:
+
 ```bash
-ZOTERO_HOST=YOUR_ZOTERO_HOST  # Zotero machine IP
-ZOTERO_PORT=23119        # Zotero HTTP port
+# Local Zotero (default)
+ZOTERO_HOST=localhost
+ZOTERO_PORT=23119
+
+# Remote Zotero
+ZOTERO_HOST=<your-zotero-ip>
+ZOTERO_PORT=23119
 ```
 
 ## MCP Tools

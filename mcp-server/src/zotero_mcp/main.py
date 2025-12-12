@@ -2,11 +2,11 @@
 Zotero Keeper MCP Server - Main Entry Point
 
 Usage:
-    # Default (stdio transport)
+    # Default (stdio transport, localhost)
     python -m zotero_mcp
     
-    # With custom Zotero host
-    ZOTERO_HOST=YOUR_ZOTERO_HOST python -m zotero_mcp
+    # With remote Zotero host
+    ZOTERO_HOST=<your-zotero-ip> python -m zotero_mcp
     
     # With MCP inspector
     mcp dev src/zotero_mcp/infrastructure/mcp/server.py
@@ -15,6 +15,8 @@ Environment Variables:
     ZOTERO_HOST     Zotero machine IP (default: localhost)
     ZOTERO_PORT     Zotero HTTP port (default: 23119)
     ZOTERO_TIMEOUT  Request timeout in seconds (default: 30)
+    
+See .env.example for configuration reference.
 """
 
 import argparse
@@ -37,11 +39,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Local MCP mode (default)
+  # Local Zotero (default)
   python -m zotero_mcp
   
-  # With remote Zotero
-  ZOTERO_HOST=YOUR_ZOTERO_HOST python -m zotero_mcp
+  # Remote Zotero
+  ZOTERO_HOST=<your-zotero-ip> python -m zotero_mcp
 
 VS Code Copilot Configuration:
   {

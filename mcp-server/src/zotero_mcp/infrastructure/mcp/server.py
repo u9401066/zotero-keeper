@@ -8,11 +8,11 @@ Usage:
     # Development mode with MCP inspector
     mcp dev src/zotero_mcp/infrastructure/mcp/server.py
     
-    # Direct execution (stdio transport)
+    # Direct execution (stdio transport, localhost)
     python -m zotero_mcp
 
-    # With custom Zotero host
-    ZOTERO_HOST=YOUR_ZOTERO_HOST python -m zotero_mcp
+    # With remote Zotero host
+    ZOTERO_HOST=<your-zotero-ip> python -m zotero_mcp
 """
 
 import logging

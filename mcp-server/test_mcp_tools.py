@@ -5,16 +5,20 @@ Test script for Zotero Keeper MCP Tools
 Tests all MCP tools against a live Zotero instance.
 
 Usage:
-    ZOTERO_HOST=YOUR_ZOTERO_HOST python test_mcp_tools.py
+    # Local Zotero (default)
+    python test_mcp_tools.py
+    
+    # Remote Zotero
+    ZOTERO_HOST=<your-zotero-ip> python test_mcp_tools.py
 """
 
 import asyncio
 import os
 import json
 
-# Set Zotero host if not already set
+# Default to localhost if not set (set via .env or environment)
 if "ZOTERO_HOST" not in os.environ:
-    os.environ["ZOTERO_HOST"] = "YOUR_ZOTERO_HOST"
+    os.environ["ZOTERO_HOST"] = "localhost"
 
 from zotero_mcp.infrastructure.mcp.server import ZoteroKeeperServer
 

@@ -612,9 +612,9 @@ Reference Data → MCP Tool → Use Case (validate, check duplicate)
 
 ```
 ┌──────────────┐           ┌──────────────┐           ┌──────────────┐
-│  MCP Server  │──────────▶│  Port Proxy  │──────────▶│   Zotero     │
+│  MCP Server  │────────────▶│  Port Proxy  │────────────▶│   Zotero     │
 │  (Linux VM)  │ HTTP:23119│  (Windows)   │ localhost │  (Windows)   │
-│ YOUR_MCP_HOST  │           │    netsh     │  :23119   │ 127.0.0.1    │
+│  <MCP_HOST>  │           │    netsh     │  :23119   │ 127.0.0.1    │
 └──────────────┘           └──────────────┘           └──────────────┘
                           (0.0.0.0:23119)
 ```

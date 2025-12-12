@@ -2,9 +2,12 @@
 Zotero Keeper MCP Server - Module Entry Point
 
 Usage:
+    # Local Zotero (default)
     python -m zotero_mcp
-    python -m zotero_mcp --host YOUR_ZOTERO_HOST
-    ZOTERO_HOST=YOUR_ZOTERO_HOST python -m zotero_mcp
+    
+    # Remote Zotero
+    python -m zotero_mcp --host <your-zotero-ip>
+    ZOTERO_HOST=<your-zotero-ip> python -m zotero_mcp
 """
 
 from .main import main

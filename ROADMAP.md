@@ -352,15 +352,17 @@ pip install pubmed-search-mcp "zotero-keeper[pubmed]"
 ### Configuration Schema
 
 ```python
-# Environment variables
-ZOTERO_HOST=YOUR_ZOTERO_HOST
-ZOTERO_PORT=23119
-ZOTERO_TIMEOUT=30
+# Environment variables (configure in .env file)
+ZOTERO_HOST=localhost        # Default: localhost (change for remote Zotero)
+ZOTERO_PORT=23119           # Default: 23119 (Zotero built-in port)
+ZOTERO_TIMEOUT=30           # Default: 30 seconds
 
 # Or profile-based
 ZOTERO_PROFILES=~/.zotero-keeper/profiles.yaml
 ZOTERO_ACTIVE_PROFILE=work
 ```
+
+> See `.env.example` for full configuration reference.
 
 ---
 

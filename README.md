@@ -143,13 +143,16 @@ Add to your VS Code settings (`settings.json`):
       "args": ["-m", "zotero_mcp"],
       "cwd": "/path/to/zotero-keeper/mcp-server",
       "env": {
-        "ZOTERO_HOST": "YOUR_ZOTERO_HOST",
+        "ZOTERO_HOST": "localhost",
         "ZOTERO_PORT": "23119"
       }
     }
   }
 }
 ```
+
+> 📝 **Note**: Change `ZOTERO_HOST` to your Zotero machine's IP if running remotely.
+> See `.env.example` for configuration reference.
 
 ### Configure with Claude Desktop | 與 Claude Desktop 整合
 
@@ -295,7 +298,7 @@ For complex searches, use pubmed-search-mcp's strategy tools first:
 ┌──────────────┐           ┌──────────────┐
 │  MCP Server  │  ──────▶  │   Zotero     │
 │  (Linux VM)  │   HTTP    │  (Windows)   │
-│ YOUR_MCP_HOST  │  :23119   │ YOUR_ZOTERO_HOST  │
+│  <MCP_HOST>  │  :23119   │ <ZOTERO_HOST>│
 └──────────────┘           └──────────────┘
 ```
 
@@ -320,10 +323,11 @@ netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=23119 conn
 
 ```bash
 # Test from remote machine (requires Host header due to port proxy)
-curl -s -H "Host: 127.0.0.1:23119" "http://YOUR_ZOTERO_HOST:23119/connector/ping"
+# Replace <ZOTERO_HOST> with your Zotero machine's IP
+curl -s -H "Host: 127.0.0.1:23119" "http://<ZOTERO_HOST>:23119/connector/ping"
 # Expected: <!DOCTYPE html><html><body>Zotero is running</body></html>
 
-curl -s -H "Host: 127.0.0.1:23119" "http://YOUR_ZOTERO_HOST:23119/api/users/0/items?limit=5"
+curl -s -H "Host: 127.0.0.1:23119" "http://<ZOTERO_HOST>:23119/api/users/0/items?limit=5"
 # Expected: JSON array of items
 ```
 
