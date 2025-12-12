@@ -1,6 +1,6 @@
 [project]
 name = "zotero-keeper"
-version = "1.5.0"
+version = "1.6.0"
 description = "MCP Server for managing local Zotero libraries - enables AI assistants to read and write bibliographic references"
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -9,6 +9,25 @@ authors = [
     { name = "Zotero Keeper Contributors" }
 ]
 keywords = ["mcp", "zotero", "model-context-protocol", "ai", "bibliography", "reference-manager"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+Homepage = "https://github.com/u9401066/zotero-keeper"
+Documentation = "https://github.com/u9401066/zotero-keeper#readme"
+Repository = "https://github.com/u9401066/zotero-keeper.git"
+Issues = "https://github.com/u9401066/zotero-keeper/issues"
+Changelog = "https://github.com/u9401066/zotero-keeper/blob/main/CHANGELOG.md"
 
 dependencies = [
     "mcp>=1.0.0",

@@ -1,0 +1,12 @@
+# Code Owners
+# These owners will be requested for review when someone opens a pull request.
+
+# Default owners for everything
+* @u9401066
+
+# MCP Server code
+/mcp-server/ @u9401066
+
+# Documentation
+*.md @u9401066
+/docs/ @u9401066

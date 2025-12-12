@@ -8,6 +8,12 @@ MCP 伺服器：讓 AI Agent (Copilot Agent 等) 管理本地 Zotero 書目資�
 [![MCP SDK](https://img.shields.io/badge/MCP-FastMCP-green.svg)](https://github.com/modelcontextprotocol/python-sdk)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Zotero 7](https://img.shields.io/badge/Zotero-7.0+-red.svg)](https://www.zotero.org/)
+[![CI](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml/badge.svg)](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![GitHub issues](https://img.shields.io/github/issues/u9401066/zotero-keeper)](https://github.com/u9401066/zotero-keeper/issues)
+
+
+> 🎉 **Contributions Welcome!** See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
@@ -423,6 +429,22 @@ See [ROADMAP.md](ROADMAP.md) for detailed roadmap.
 
 ---
 
+## 🤝 Contributing | 貢獻
+
+We welcome contributions! Please see our:
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
+- [SECURITY.md](SECURITY.md) - Security policy
+- [ROADMAP.md](ROADMAP.md) - Project roadmap
+
+**Ways to contribute:**
+- 🐛 Report bugs
+- 💡 Suggest features
+- 📖 Improve documentation
+- 🔧 Submit pull requests
+
+---
+
 ## 📄 License
 
 Apache 2.0 - See [LICENSE](LICENSE)
@@ -434,3 +456,15 @@ Apache 2.0 - See [LICENSE](LICENSE)
 - [Zotero](https://www.zotero.org/) - The amazing open-source reference manager
 - [Model Context Protocol](https://modelcontextprotocol.io/) - Anthropic's open protocol for AI-tool communication
 - [FastMCP](https://github.com/jlowin/fastmcp) - Python SDK for MCP
+
+---
+
+<p align="center">
+  Made with ❤️ for the research community
+  <br>
+  <a href="https://github.com/u9401066/zotero-keeper/issues">Report Bug</a>
+  ·
+  <a href="https://github.com/u9401066/zotero-keeper/issues">Request Feature</a>
+  ·
+  <a href="CONTRIBUTING.md">Contribute</a>
+</p>
