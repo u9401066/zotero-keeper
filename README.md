@@ -37,7 +37,7 @@ MCP 伺服器：讓 AI Agent (Copilot Agent 等) 管理本地 Zotero 書目資�
 - **🔌 MCP Native Integration**: Built with FastMCP SDK for seamless AI Agent integration
 - **📖 Read Operations**: Search, list, and retrieve bibliographic items from local Zotero
 - **✏️ Write Operations**: Add new references to Zotero via Connector API
-- **🔄 Multi-User Support**: Each user connects to their own local Zotero instance
+- **🧠 Smart Features**: Duplicate detection, reference validation, intelligent import
 - **🏗️ DDD Architecture**: Clean Domain-Driven Design with onion architecture
 - **🔒 No Cloud Required**: All operations are local, no Zotero account needed
 
@@ -46,7 +46,7 @@ MCP 伺服器：讓 AI Agent (Copilot Agent 等) 管理本地 Zotero 書目資�
 - **🔌 MCP 原生整合**：使用 FastMCP SDK，與 AI Agent 無縫整合
 - **📖 讀取操作**：搜尋、列出、取得本地 Zotero 書目資料
 - **✏️ 寫入操作**：透過 Connector API 將新參考文獻加入 Zotero
-- **🔄 多用戶支援**：每位用戶連接到自己的本地 Zotero 實例
+- **🧠 智慧功能**：重複偵測、參考文獻驗證、智能匯入
 - **🏗️ DDD 架構**：乾淨的領域驅動設計，洋蔥式架構
 - **🔒 無需雲端**：所有操作都在本地，無需 Zotero 帳號
 
