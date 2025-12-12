@@ -25,6 +25,7 @@ from ..zotero_client.client import ZoteroClient, ZoteroConfig, ZoteroConnectionE
 from ...domain.entities.reference import Reference, Creator, ItemType
 from ...domain.entities.collection import Collection
 from .config import McpServerConfig, default_config
+from .pubmed_tools import register_pubmed_tools, is_pubmed_available
 
 
 logger = logging.getLogger(__name__)
@@ -58,6 +59,13 @@ class ZoteroKeeperServer:
         
         # Register tools
         self._register_tools()
+        
+        # Register PubMed tools if available
+        if is_pubmed_available():
+            register_pubmed_tools(self._mcp, self._zotero)
+            logger.info("PubMed integration enabled")
+        else:
+            logger.info("PubMed integration disabled (install with: pip install 'zotero-keeper[pubmed]')")
         
         logger.info(f"Zotero Keeper MCP Server initialized")
         logger.info(f"Zotero endpoint: {zotero_config.base_url}")

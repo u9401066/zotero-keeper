@@ -10,8 +10,9 @@ Development roadmap for Zotero Keeper - MCP Server for Zotero integration.
 |-------|--------|--------|-------------|
 | Phase 1 | ✅ Complete | v1.1.0 | Foundation & Discovery |
 | Phase 2 | ✅ Complete | v1.2.0 | Core MCP Tools |
-| Phase 3 | 🔄 In Progress | v1.3.0 | Smart Features |
-| Phase 4 | 📋 Planned | v1.4.0 | Multi-User & Config |
+| Phase 2.5 | ✅ Complete | v1.3.0 | PubMed Integration |
+| Phase 3 | 🔄 In Progress | v1.4.0 | Smart Features |
+| Phase 4 | 📋 Planned | v1.5.0 | Multi-User & Config |
 | Phase 5 | 📋 Planned | v2.0.0 | Advanced Features |
 
 ---
@@ -100,9 +101,50 @@ Development roadmap for Zotero Keeper - MCP Server for Zotero integration.
 
 ---
 
-## 🔄 Phase 3: Smart Features (In Progress)
+## ✅ Phase 2.5: PubMed Integration (Complete)
 
 **Target Version**: v1.3.0  
+**Status**: ✅ Complete  
+**Completed**: Dec 2024
+
+### Goals
+- [x] Integrate with pubmed-search-mcp
+- [x] Direct import from PubMed to Zotero
+- [x] Duplicate detection on import
+
+### New MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `search_pubmed_and_import` | 🔬 搜尋 PubMed 並選擇性匯入 Zotero |
+| `import_pubmed_articles` | 📥 透過 PMID 批次匯入（含重複檢查） |
+| `get_pubmed_article_details` | 📄 取得 PubMed 文獻完整資訊 |
+
+### Installation
+
+```bash
+# With PubMed support
+pip install "zotero-keeper[pubmed]"
+
+# All features
+pip install "zotero-keeper[all]"
+```
+
+### Example Workflow
+
+```
+User: 「幫我找 CRISPR 相關論文並加入 Zotero」
+
+Agent:
+1. search_pubmed_and_import(query="CRISPR", limit=10, auto_import=True)
+2. 回傳結果: "Found 10 articles, imported 10 to Zotero"
+```
+
+---
+
+## 🔄 Phase 3: Smart Features (In Progress)
+
+**Target Version**: v1.4.0  
 **Status**: 🔄 In Progress  
 **Target Date**: Jan 2025
 

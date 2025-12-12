@@ -106,7 +106,7 @@ MCP 伺服器：讓 AI Agent (Copilot Agent 等) 管理本地 Zotero 書目資�
 
 ```bash
 # Clone the repository | 複製專案
-git clone https://github.com/your-username/zotero-keeper.git
+git clone https://github.com/u9401066/zotero-keeper.git
 cd zotero-keeper/mcp-server
 
 # Create virtual environment | 建立虛擬環境
@@ -193,6 +193,13 @@ Add to `claude_desktop_config.json`:
 | `add_reference(...)` | Add a new bibliographic reference | 新增書目參考文獻 |
 | `create_item(type, title, ...)` | Create item with full metadata | 建立完整元資料的文獻 |
 
+### 📥 Import Tools | 匯入工具
+
+| Tool | Description | 說明 |
+|------|-------------|------|
+| `import_ris_to_zotero(ris_text)` | Import RIS format citations | 匯入 RIS 格式引用文獻 |
+| `import_from_pmids(pmids)` | Import by PubMed IDs (requires pubmed extra) | 直接用 PMID 匯入 |
+
 ### 📋 Discovery Tools | 探索工具 (Planned)
 
 | Tool | Description | 說明 |
@@ -200,6 +207,51 @@ Add to `claude_desktop_config.json`:
 | `check_duplicate(title, doi)` | Check if reference already exists | 檢查是否已有重複文獻 |
 | `validate_reference(...)` | Validate reference metadata | 驗證參考文獻元資料 |
 | `enrich_metadata(doi)` | Auto-fill metadata from DOI | 從 DOI 自動填充元資料 |
+
+---
+
+## 🔬 PubMed Integration | PubMed 整合
+
+Zotero Keeper works seamlessly with [pubmed-search-mcp](https://github.com/u9401066/pubmed-search-mcp) for literature discovery and import.
+
+### Recommended Workflow | 建議工作流程
+
+```
+┌────────────────────────┐    ┌────────────────────────┐
+│   pubmed-search-mcp    │    │     zotero-keeper      │
+│   (Literature Search)  │    │   (Zotero Management)  │
+│                        │    │                        │
+│  • search_literature   │───▶│  • import_ris_to_zotero│
+│  • prepare_export(ris) │    │  • import_from_pmids   │
+│  • fetch_details       │    │  • search_items        │
+└────────────────────────┘    └────────────────────────┘
+```
+
+**Example Workflow:**
+```
+1. [pubmed-search] search_literature("CRISPR gene editing") → PMIDs
+2. [pubmed-search] prepare_export(pmids, format="ris") → RIS text
+3. [zotero-keeper] import_ris_to_zotero(ris_text, tags=["CRISPR"]) → Zotero
+```
+
+### Configuration | 設定
+
+```json
+// claude_desktop_config.json - Run both MCPs
+{
+  "mcpServers": {
+    "pubmed-search": {
+      "command": "uvx",
+      "args": ["pubmed-search-mcp"]
+    },
+    "zotero-keeper": {
+      "command": "python",
+      "args": ["-m", "zotero_mcp"],
+      "cwd": "/path/to/zotero-keeper/mcp-server"
+    }
+  }
+}
+```
 
 ---
 

@@ -77,6 +77,35 @@ This document describes the system architecture of Zotero Keeper, a MCP server f
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
+### Dual MCP Collaboration Architecture
+
+Zotero Keeper is designed to work alongside `pubmed-search-mcp` for a complete literature workflow:
+
+```
+┌────────────────────────────┐    ┌────────────────────────────┐
+│   pubmed-search-mcp        │    │      zotero-keeper         │
+│   (Literature Discovery)   │    │   (Reference Management)   │
+│                            │    │                            │
+│  • search_literature       │    │  • search_items            │
+│  • prepare_export (RIS)    │───▶│  • import_ris_to_zotero    │
+│  • fetch_article_details   │    │  • import_from_pmids       │
+│  • parse_pico              │    │  • add_reference           │
+│  • merge_search_results    │    │  • list_collections        │
+└────────────────────────────┘    └────────────────────────────┘
+```
+
+**Recommended Workflow:**
+```
+1. [pubmed-search] search_literature("CRISPR") → PMIDs
+2. [pubmed-search] prepare_export(pmids, format="ris") → RIS text
+3. [zotero-keeper] import_ris_to_zotero(ris_text, tags=["CRISPR"]) → Zotero
+```
+
+| MCP Server | Responsibility | Key Tools |
+|------------|----------------|-----------|
+| **pubmed-search-mcp** | Literature Discovery | search_literature, prepare_export, fetch_details, parse_pico |
+| **zotero-keeper** | Reference Management | search_items, import_ris_to_zotero, add_reference, list_collections |
+
 ---
 
 ## Layer Architecture

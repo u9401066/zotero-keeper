@@ -10,10 +10,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- MCP Tools implementation (read/write)
-- Duplicate detection
-- Metadata validation
-- DOI-based enrichment
+- Phase 3: Smart features (duplicate detection, validation)
+- Phase 4: Multi-user support
+
+---
+
+## [1.4.0] - 2024-12-12
+
+### 📥 PubMed Import Integration (Redesigned)
+
+Redesigned PubMed integration to complement `pubmed-search-mcp` instead of duplicating.
+
+### Added
+- **Import Tools** (focused on Zotero import only)
+  - `import_ris_to_zotero`: Import RIS format citations (works with any RIS source)
+  - `import_from_pmids`: Direct PMID import (requires pubmed extra)
+- **RIS Parser**: Full RIS format parsing with field mapping
+  - Supports: JOUR, BOOK, CHAP, CONF, THES, RPRT, ELEC types
+  - Maps: Title, Authors, Year, Journal, DOI, Abstract, Keywords
+
+### Changed
+- **Architecture**: Separated concerns between search (pubmed-search-mcp) and storage (zotero-keeper)
+- **Workflow**: Recommended 2-MCP workflow for best experience
+
+### Removed
+- `search_pubmed_and_import`: Use pubmed-search-mcp's `search_literature` instead
+- `get_pubmed_article_details`: Use pubmed-search-mcp's `fetch_article_details` instead
+
+### Recommended Workflow
+```
+1. pubmed: search_literature("query") → PMIDs
+2. pubmed: prepare_export(pmids, format="ris") → RIS text
+3. keeper: import_ris_to_zotero(ris_text) → Zotero
+```
+
+---
+
+## [1.3.0] - 2024-12-12 (Superseded)
+
+### 🔬 PubMed Integration (Initial)
+
+Initial PubMed integration - superseded by v1.4.0 redesign.
+
+### Added
+- PubMed Integration Module (pubmed_tools.py)
+- Optional dependencies for PubMed features
+
+---
+
+## [1.2.0] - 2024-12-12
+
+### 🛠️ Core MCP Tools (Phase 2 Complete)
+
+Implemented all core MCP tools for read/write operations.
+
+### Added
+- **9 MCP Tools** via FastMCP:
+  - `check_connection` - Test Zotero connectivity
+  - `search_items` - Search by title/author/year
+  - `get_item` - Get item by key
+  - `list_items` - List recent items
+  - `list_collections` - List all collections
+  - `list_tags` - List all tags
+  - `get_item_types` - Get available item types
+  - `add_reference` - Add new reference (simple API)
+  - `create_item` - Create with full metadata (advanced)
+- **Test Script**: `test_mcp_tools.py` for all tools validation
+
+### Changed
+- Refactored from use_cases architecture to direct MCP tools
+- Renamed project to "zotero-keeper"
+
+### Removed
+- Legacy `application/use_cases/` layer
+- Legacy `domain/repositories/` interfaces
+- Duplicate README in mcp-server/
 
 ---
 
@@ -119,9 +190,12 @@ This release pivots from custom plugin development to using Zotero 7's built-in 
 
 ---
 
-[Unreleased]: https://github.com/your-username/zotero-keeper/compare/v1.1.0...HEAD
-[1.1.0]: https://github.com/your-username/zotero-keeper/compare/v1.0.0...v1.1.0
-[1.0.3]: https://github.com/your-username/zotero-keeper/compare/v1.0.2...v1.0.3
-[1.0.2]: https://github.com/your-username/zotero-keeper/compare/v1.0.1...v1.0.2
-[1.0.1]: https://github.com/your-username/zotero-keeper/compare/v1.0.0...v1.0.1
-[1.0.0]: https://github.com/your-username/zotero-keeper/releases/tag/v1.0.0
+[Unreleased]: https://github.com/u9401066/zotero-keeper/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/u9401066/zotero-keeper/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/u9401066/zotero-keeper/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/u9401066/zotero-keeper/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/u9401066/zotero-keeper/compare/v1.0.0...v1.1.0
+[1.0.3]: https://github.com/u9401066/zotero-keeper/compare/v1.0.2...v1.0.3
+[1.0.2]: https://github.com/u9401066/zotero-keeper/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/u9401066/zotero-keeper/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/u9401066/zotero-keeper/releases/tag/v1.0.0
