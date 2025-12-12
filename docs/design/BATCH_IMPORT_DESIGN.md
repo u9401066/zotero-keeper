@@ -1,9 +1,60 @@
 # Batch Import Design Document
 
-> **Version**: 1.2 Draft  
+> **Version**: 1.4 Draft  
 > **Date**: 2025-12-12  
 > **Target Release**: v1.7.0  
 > **Status**: Planning
+
+---
+
+## 🚀 Architecture Decision: Direct Library Import
+
+### Key Insight: MCP 之間可以直接呼叫！
+
+pubmed-search-mcp 已經是 **git submodule**，zotero-keeper 可以直接 import 它作為 Python library：
+
+```python
+# zotero-keeper 直接 import pubmed-search 的 client
+from pubmed_search.client import PubMedClient
+
+# 直接使用，資料不經過 Agent，完整無遺漏！
+articles = PubMedClient().fetch_details(pmid_list)
+```
+
+### 為什麼這樣更好？
+
+| 方式 | 資料完整性 | 效率 | 複雜度 |
+|------|-----------|------|--------|
+| ❌ 透過 Agent 傳遞 | ⚠️ 可能被截斷 | 慢 (序列化) | 簡單 |
+| ❌ 共享檔案 | ✅ 完整 | 中 | 中等 |
+| ✅ **直接 import library** | ✅ **完整** | **最快** | 簡單 |
+
+---
+
+## 🎉 Key Discovery: pubmed-search-mcp Already Has Complete Data!
+
+**經過程式碼審查，發現 pubmed-search-mcp 的 `fetch_details()` 已經返回完整資料！**
+
+使用 **Biopython Entrez** 模組（官方推薦方式），已經包含：
+
+| 欄位 | 狀態 | 說明 |
+|------|------|------|
+| `pmid` | ✅ | |
+| `title` | ✅ | |
+| `authors` | ✅ | 簡短格式 |
+| `authors_full` | ✅ | `{fore_name, last_name, initials}` |
+| `abstract` | ✅ **完整** | Biopython 處理，不截斷！ |
+| `journal` / `journal_abbrev` | ✅ | |
+| `year/month/day` | ✅ | |
+| `volume/issue/pages` | ✅ | |
+| `doi` | ✅ | |
+| `pmc_id` | ✅ | |
+| `issn` | ✅ | |
+| `keywords` | ✅ | 作者關鍵字 |
+| `mesh_terms` | ✅ | MeSH 標準詞彙 |
+| `language` | ✅ | |
+| `publication_types` | ✅ | |
+| `affiliations` | ❌ 缺少 | **需要在 pubmed-search 新增** |
 
 ---
 
@@ -20,38 +71,44 @@ PubMed 提供豐富的 metadata，我們應該**全部保存**到 Zotero：
 | 沒有機構資訊 | **作者機構** → extra field |
 | 缺少 PMC ID | **PMID + PMCID** 完整保存 |
 
-### 2. 直接取最原始資料 (Direct Source)
+### 2. 直接 Import Library (Direct Library Import)
 
 ```
-❌ 以前: pubmed-search.fetch_article_details() → 截斷的摘要
-✅ 現在: NCBI E-utilities XML API → 完整原始資料
+❌ 錯誤想法: 透過 Agent 傳遞資料 (可能被截斷)
+❌ 錯誤想法: zotero-keeper 自己實作 NCBI API client (重複造輪子)
+✅ 正確做法: zotero-keeper 直接 import pubmed-search library
 ```
+
+**pubmed-search 作為 submodule，可以直接被 import！**
 
 ### 3. MCP 分工明確 (Clear Responsibility)
 
 ```
-pubmed-search-mcp: 搜尋、全文檢查、引用分析
-zotero-keeper:     批次匯入、重複檢測、PDF 附加
+pubmed-search-mcp (library): 搜尋、取得完整資料、全文檢查、引用分析
+zotero-keeper (MCP tool):    直接呼叫 pubmed-search → 重複檢測 → 寫入 Zotero
 ```
 
 ---
 
 ## 🎯 MCP Responsibility Split (重要!)
 
-| Functionality | Responsible MCP | Tool | Notes |
-|--------------|-----------------|------|-------|
-| **Literature Search** | pubmed-search | `search_literature` | Keep as-is |
-| **MeSH/Synonym Expansion** | pubmed-search | `generate_search_queries` | Keep as-is |
-| **Fulltext Availability Check** | pubmed-search | `analyze_fulltext_access` | ⚠️ DO NOT duplicate in keeper |
-| **Fulltext URLs** | pubmed-search | `get_article_fulltext_links` | ⚠️ DO NOT duplicate in keeper |
-| **Citation Metrics** | pubmed-search | `get_citation_metrics` | Keep as-is |
+| Functionality | Responsible MCP | Tool/Library | Notes |
+|--------------|-----------------|--------------|-------|
+| **Literature Search** | pubmed-search | `search_literature` | MCP tool (Agent 呼叫) |
+| **Fetch Complete Metadata** | pubmed-search | `PubMedClient.fetch_details()` | **Library (keeper 直接 import)** |
+| **MeSH/Synonym Expansion** | pubmed-search | `generate_search_queries` | MCP tool |
+| **Fulltext Availability Check** | pubmed-search | `analyze_fulltext_access` | MCP tool |
+| **Fulltext URLs** | pubmed-search | `get_article_fulltext_links` | MCP tool |
+| **Citation Metrics** | pubmed-search | `get_citation_metrics` | MCP tool |
 | **Batch Import to Zotero** | zotero-keeper | `batch_import_from_pubmed` | NEW in v1.7.0 |
 | **RIS Import** | zotero-keeper | `import_ris_to_zotero` | NEW in v1.7.0 |
 | **Download & Attach PDFs** | zotero-keeper | `attach_pmc_pdfs` | NEW in v1.7.0 |
 | **Duplicate Detection** | zotero-keeper | `check_duplicate`, `smart_add_reference` | Already exists |
 | **Collection Management** | zotero-keeper | `create_collection`, `list_collections` | NEW/Existing |
 
-**Principle: pubmed-search handles retrieval, zotero-keeper handles storage**
+**Principle: 
+- pubmed-search 作為 **library** 被 keeper 直接 import
+- pubmed-search 同時也是獨立 MCP，Agent 可以直接呼叫搜尋功能**
 
 ---
 
@@ -94,25 +151,35 @@ Implement **two complementary tools**:
          │                  (N times)                    │
 ```
 
-### Proposed Flow (v1.7.0)
+### Proposed Flow (v1.7.0) - Direct Library Import
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │  pubmed-search  │     │  zotero-keeper  │     │     Zotero      │
-│      MCP        │     │      MCP        │     │    Desktop      │
+│   (library)     │     │      MCP        │     │    Desktop      │
 └────────┬────────┘     └────────┬────────┘     └────────┬────────┘
          │                       │                       │
-         │◀── fetch_details ────│                       │
-         │    (internal call)    │                       │
-         │                       │                       │
-         │              batch_import_from_pubmed ──────▶│
-         │                  (single batch call)          │
-         │                       │                       │
-         │                       │◀─── result ──────────│
-         │                       │                       │
-         │              Return: {added: 45,              │
-         │                       skipped: 3,             │
-         │                       failed: 2}              │
+         │   ┌───────────────────┘                       │
+         │   │                                           │
+         │   │  from pubmed_search.client import PubMedClient
+         │   │                                           │
+         │◀──┤  articles = PubMedClient().fetch_details(pmids)
+         │   │  # 直接 Python 呼叫，資料完整不截斷！        │
+         │   │                                           │
+         │   │              batch_import_from_pubmed ──▶│
+         │   │                  (單一 API 呼叫)           │
+         │   │                                           │
+         │   │                       │◀─── result ─────│
+         │   │                       │                   │
+         │   │              Return: {added: 45,          │
+         │   │                       skipped: 3,         │
+         │   │                       failed: 2}          │
+         │   └───────────────────────┘                   │
 ```
+
+**關鍵架構**: 
+- zotero-keeper **直接 import** pubmed-search 作為 Python library
+- 資料不經過 Agent，完整無遺漏！
+- 用戶只需呼叫 keeper 的 `batch_import_from_pubmed(pmids)`，一站式服務
 
 ---
 
@@ -164,17 +231,21 @@ class BatchImportResult(TypedDict):
 ```
 1. Parse PMIDs (comma-separated string → list)
 
-2. Fetch COMPLETE article metadata from PubMed E-utilities
-   - Call NCBI efetch.fcgi with rettype=xml
-   - Parse XML to extract ALL fields:
-     ✓ Title, Authors (with affiliations)
-     ✓ Abstract (FULL, not truncated!)
-     ✓ Journal, Volume, Issue, Pages
-     ✓ DOI, PMID, PMCID
-     ✓ Keywords (author-provided)
-     ✓ MeSH Terms (controlled vocabulary)
-     ✓ Publication Type
-     ✓ Language, Date
+2. 【直接 Python Import】從 pubmed-search library 取得完整 metadata
+   
+   from pubmed_search.client import PubMedClient
+   
+   client = PubMedClient()
+   articles = client.fetch_details(pmids)
+   
+   # SearchResult 包含所有欄位，不截斷：
+   # ✓ title, abstract (FULL!)
+   # ✓ authors, authors_full (with affiliations)
+   # ✓ journal, volume, issue, pages
+   # ✓ doi, pmid, pmcid
+   # ✓ keywords (author-provided)
+   # ✓ mesh_terms (controlled vocabulary)
+   # ✓ publication_types, language, pub_date
 
 3. Pre-check duplicates (batch)
    - Query Zotero for existing DOIs and PMIDs
@@ -182,7 +253,7 @@ class BatchImportResult(TypedDict):
 
 4. Map to Zotero schema (COMPLETE)
    - Apply pubmed_to_zotero_item() mapping
-   - Include all metadata in appropriate fields
+   - SearchResult → Zotero item
    - Keywords + MeSH → tags
    - PMID/PMCID/Affiliations → extra field
 
@@ -282,247 +353,198 @@ import_ris_to_zotero(
 
 ---
 
-## 🔗 Metadata Source: Direct NCBI E-utilities (完整資料!)
+## 🔗 Metadata Source: pubmed-search-mcp (已有完整資料!)
 
-### Why Direct NCBI API? (Not via pubmed-search-mcp)
+### Discovery: Biopython Entrez Already Provides Everything
 
-| Approach | Pros | Cons | Decision |
-|----------|------|------|----------|
-| **pubmed-search's fetch_article_details** | Simple, already exists | ❌ Returns truncated abstract, missing fields | ❌ Not used |
-| **Direct NCBI E-utilities XML** | ✅ Complete metadata, all fields | Need to parse XML | ✅ **Use this** |
+經過程式碼審查，發現 **pubmed-search-mcp 使用 Biopython 的 Entrez 模組**，
+已經返回完整的文章 metadata！
 
-### NCBI E-utilities API Details
-
-```
-Endpoint: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi
-Parameters:
-  - db=pubmed
-  - id={comma-separated PMIDs}
-  - rettype=xml
-  - retmode=text
-```
-
-### Implementation: `pubmed_client.py`
+**位置**: `external/pubmed-search-mcp/src/pubmed_search/entrez/search.py`
 
 ```python
-import httpx
-import xml.etree.ElementTree as ET
-from dataclasses import dataclass
+# pubmed-search 已有的 fetch_details() 方法
+def fetch_details(self, id_list: List[str]) -> List[Dict[str, Any]]:
+    """
+    Fetch complete details for a list of PMIDs.
+    
+    Returns:
+        List of dictionaries containing article details including:
+        - pmid, title, authors, authors_full
+        - journal, journal_abbrev, year, month, day
+        - volume, issue, pages, doi, pmc_id
+        - abstract, keywords, mesh_terms  ← 完整資料!
+        - language, publication_types, issn
+    """
+```
 
+### pubmed-search 返回的資料結構
+
+```python
+# fetch_article_details() 返回的 dict 結構
+{
+    "pmid": "38353755",
+    "title": "Artificial Intelligence in Operating Room Management",
+    "authors": ["Bellini Valentina", "Russo Michele", ...],
+    "authors_full": [
+        {"last_name": "Bellini", "fore_name": "Valentina", "initials": "V"},
+        {"last_name": "Russo", "fore_name": "Michele", "initials": "M"},
+        ...
+    ],
+    "abstract": "This systematic review examines...",  # 完整摘要!
+    "journal": "Journal of medical systems",
+    "journal_abbrev": "J Med Syst",
+    "year": "2024",
+    "month": "Feb",
+    "day": "14",
+    "volume": "48",
+    "issue": "1",
+    "pages": "19",
+    "doi": "10.1007/s10916-024-02038-2",
+    "pmc_id": "PMC10867065",
+    "issn": "1573-689X",
+    "keywords": ["Artificial intelligence", "Machine learning", ...],
+    "mesh_terms": ["Operating Rooms", "Machine Learning", ...],
+    "language": "eng",
+    "publication_types": ["Journal Article", "Systematic Review"]
+}
+```
+
+### ❌ 不需要自己實作 PubMedClient
+
+```
+原本計劃: zotero-keeper 自己實作 NCBI E-utilities XML parser
+現在:     直接用 pubmed-search 的資料，不重複造輪子！
+```
+
+### ⚠️ 唯一需要在 pubmed-search 新增的欄位
+
+| 欄位 | 狀態 | 來源 |
+|------|------|------|
+| `affiliations` | ❌ 缺少 | `Author/AffiliationInfo/Affiliation` |
+
+**需要在 pubmed-search v0.1.10 新增 `affiliations` 欄位提取。**
+
+---
+
+## 📊 Data Flow Diagram - Direct Library Import
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│                        batch_import_from_pubmed                    │
+│                        (zotero-keeper tool)                        │
+└────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  │ Input: pmids="38353755,37864754,..."
+                                  ▼
+        ┌──────────────────────────────────────────────────────────┐
+        │ 1. Parse PMIDs                                           │
+        │    "38353755,37864754" → ["38353755", "37864754"]        │
+        └──────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+        ┌──────────────────────────────────────────────────────────┐
+        │ 2. 【Direct Python Import】取得完整 metadata             │
+        │                                                          │
+        │    from pubmed_search.client import PubMedClient         │
+        │                                                          │
+        │    client = PubMedClient()                               │
+        │    articles: list[SearchResult] = client.fetch_details( │
+        │        pmids=["38353755", "37864754"]                    │
+        │    )                                                     │
+        │                                                          │
+        │    # SearchResult 包含完整資料：                          │
+        │    # - abstract: 完整不截斷！                             │
+        │    # - keywords, mesh_terms: 全部標籤                    │
+        │    # - authors_full: 完整作者資訊                        │
+        └──────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+        ┌──────────────────────────────────────────────────────────┐
+        │ 3. Duplicate Check (batch)                               │
+        │    - Query Zotero for existing DOIs and PMIDs            │
+        │    - Build skip list                                      │
+        └──────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+        ┌──────────────────────────────────────────────────────────┐
+        │ 4. Map to Zotero Schema                                  │
+        │    - SearchResult → Zotero journalArticle               │
+        │    - keywords + mesh_terms → tags                        │
+        │    - pmid + pmc_id → extra                               │
+        └──────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+        ┌──────────────────────────────────────────────────────────┐
+        │ 5. Batch Import via Connector API                        │
+        │    POST /connector/saveItems                             │
+        └──────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+        ┌──────────────────────────────────────────────────────────┐
+        │ 6. Return Summary                                        │
+        │    BatchImportResult                                     │
+        └──────────────────────────────────────────────────────────┘
+```
+
+**架構優勢**:
+- ✅ **無 Agent 中繼**: 直接 Python import，資料不經過 Agent 傳遞
+- ✅ **完整不截斷**: 直接存取 SearchResult 物件，不受 MCP tool 輸出限制
+- ✅ **程式碼重用**: 利用 pubmed-search 已有的 Biopython Entrez 實現
+- ✅ **單一 API 呼叫**: 用戶只需呼叫 `batch_import_from_pubmed(pmids)`
+
+---
+
+## 📦 Metadata Mapping: pubmed-search → Zotero
+
+### pubmed-search 欄位 → Zotero Schema
+
+| pubmed-search 欄位 | Zotero Field | 說明 |
+|-------------------|--------------|------|
+| `pmid` | `extra` (PMID: xxx) | |
+| `title` | `title` | |
+| `abstract` | `abstractNote` | ✅ 完整! |
+| `authors_full[].fore_name` | `creators[].firstName` | |
+| `authors_full[].last_name` | `creators[].lastName` | |
+| `journal` | `publicationTitle` | |
+| `year` + `month` + `day` | `date` | 格式化為 YYYY-MM-DD |
+| `volume` | `volume` | |
+| `issue` | `issue` | |
+| `pages` | `pages` | |
+| `doi` | `DOI` | |
+| `pmc_id` | `extra` (PMCID: xxx) | |
+| `issn` | `ISSN` | |
+| `language` | `language` | |
+| `keywords` | `tags[]` | |
+| `mesh_terms` | `tags[]` (prefix: MeSH:) | |
+| `publication_types` | `extra` | |
+| `affiliations` | `extra` | ⚠️ pubmed-search 目前未提取 |
+
+### SearchResult 欄位定義 (from pubmed_search.client)
+
+```python
 @dataclass
-class PubMedArticle:
-    """Complete PubMed article metadata"""
+class SearchResult:
     pmid: str
     title: str
-    abstract: str  # FULL abstract!
-    authors: list[dict]  # [{firstName, lastName, affiliation}]
+    abstract: str          # ✅ FULL text, not truncated!
+    authors: list[str]     # ["Bellini V", "Bignami E"]
+    authors_full: list[AuthorInfo]  # With fore_name, last_name
     journal: str
-    date: str
+    year: int
+    month: str | None
+    day: str | None
     volume: str | None
     issue: str | None
     pages: str | None
     doi: str | None
     pmc_id: str | None
     issn: str | None
-    language: str
-    keywords: list[str]
-    mesh_terms: list[str]
-    pub_types: list[str]
-    affiliations: list[str]
-
-
-class PubMedClient:
-    """Direct NCBI E-utilities client for complete metadata"""
-    
-    BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
-    
-    async def fetch_articles(self, pmids: list[str]) -> list[PubMedArticle]:
-        """Fetch complete metadata for multiple PMIDs"""
-        
-        url = f"{self.BASE_URL}/efetch.fcgi"
-        params = {
-            "db": "pubmed",
-            "id": ",".join(pmids),
-            "rettype": "xml",
-            "retmode": "text"
-        }
-        
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, params=params, timeout=30.0)
-            response.raise_for_status()
-        
-        return self._parse_pubmed_xml(response.text)
-    
-    def _parse_pubmed_xml(self, xml_text: str) -> list[PubMedArticle]:
-        """Parse PubMed XML to extract complete metadata"""
-        
-        root = ET.fromstring(xml_text)
-        articles = []
-        
-        for article_elem in root.findall(".//PubmedArticle"):
-            articles.append(self._parse_article(article_elem))
-        
-        return articles
-    
-    def _parse_article(self, elem) -> PubMedArticle:
-        """Parse single article element"""
-        
-        # PMID
-        pmid = elem.findtext(".//PMID", "")
-        
-        # Title
-        title = elem.findtext(".//ArticleTitle", "")
-        
-        # Abstract (FULL!)
-        abstract_parts = elem.findall(".//Abstract/AbstractText")
-        if abstract_parts:
-            abstract = " ".join(
-                (part.get("Label", "") + ": " if part.get("Label") else "") + 
-                (part.text or "")
-                for part in abstract_parts
-            )
-        else:
-            abstract = ""
-        
-        # Authors with affiliations
-        authors = []
-        for author_elem in elem.findall(".//Author"):
-            author = {
-                "lastName": author_elem.findtext("LastName", ""),
-                "firstName": author_elem.findtext("ForeName", ""),
-                "affiliation": author_elem.findtext(".//Affiliation", "")
-            }
-            if author["lastName"]:  # Skip empty authors
-                authors.append(author)
-        
-        # Journal info
-        journal = elem.findtext(".//Journal/Title", "")
-        volume = elem.findtext(".//Volume")
-        issue = elem.findtext(".//Issue")
-        pages = elem.findtext(".//MedlinePgn")
-        issn = elem.findtext(".//ISSN")
-        
-        # Date (prefer ArticleDate, fallback to PubDate)
-        article_date = elem.find(".//ArticleDate")
-        pub_date = elem.find(".//PubDate")
-        if article_date is not None:
-            year = article_date.findtext("Year", "")
-            month = article_date.findtext("Month", "")
-            day = article_date.findtext("Day", "")
-            date = f"{year}-{month.zfill(2)}-{day.zfill(2)}" if month and day else year
-        elif pub_date is not None:
-            date = pub_date.findtext("Year", "")
-        else:
-            date = ""
-        
-        # DOI
-        doi = None
-        for eloc in elem.findall(".//ELocationID"):
-            if eloc.get("EIdType") == "doi":
-                doi = eloc.text
-                break
-        
-        # PMC ID
-        pmc_id = None
-        for article_id in elem.findall(".//ArticleId"):
-            if article_id.get("IdType") == "pmc":
-                pmc_id = article_id.text
-                break
-        
-        # Language
-        language = elem.findtext(".//Language", "eng")
-        
-        # Keywords
-        keywords = [kw.text for kw in elem.findall(".//Keyword") if kw.text]
-        
-        # MeSH terms
-        mesh_terms = [
-            mesh.findtext("DescriptorName", "")
-            for mesh in elem.findall(".//MeshHeading")
-        ]
-        mesh_terms = [m for m in mesh_terms if m]
-        
-        # Publication types
-        pub_types = [pt.text for pt in elem.findall(".//PublicationType") if pt.text]
-        
-        # Unique affiliations
-        affiliations = list(set(a["affiliation"] for a in authors if a["affiliation"]))
-        
-        return PubMedArticle(
-            pmid=pmid,
-            title=title,
-            abstract=abstract,
-            authors=authors,
-            journal=journal,
-            date=date,
-            volume=volume,
-            issue=issue,
-            pages=pages,
-            doi=doi,
-            pmc_id=pmc_id,
-            issn=issn,
-            language=language,
-            keywords=keywords,
-            mesh_terms=mesh_terms,
-            pub_types=pub_types,
-            affiliations=affiliations
-        )
-```
-
----
-
-## 📊 Data Flow Diagram
-
-```
-┌────────────────────────────────────────────────────────────────────┐
-│                        batch_import_from_pubmed                    │
-└────────────────────────────────────────────────────────────────────┘
-                                  │
-                    ┌─────────────┴─────────────┐
-                    ▼                           ▼
-        ┌──────────────────┐         ┌──────────────────┐
-        │ 1. Parse PMIDs   │         │ 2. Fetch Metadata│
-        │    (internal)    │         │    from PubMed   │
-        └────────┬─────────┘         └────────┬─────────┘
-                 │                            │
-                 │         ┌──────────────────┘
-                 │         ▼
-                 │  ┌──────────────────┐
-                 │  │ NCBI E-utilities │
-                 │  │ efetch.fcgi      │
-                 │  │ (XML format)     │
-                 │  └────────┬─────────┘
-                 │           │
-                 ▼           ▼
-        ┌──────────────────────────────┐
-        │ 3. Parse COMPLETE Metadata   │
-        │    - Title, Authors          │
-        │    - Abstract (FULL!)        │
-        │    - Keywords, MeSH          │
-        │    - Affiliations            │
-        │    - References              │
-        └────────────────┬─────────────┘
-                         │
-            ┌────────────┴────────────┐
-            ▼                         ▼
-   ┌─────────────────┐       ┌─────────────────┐
-   │ 4. Duplicate    │       │ 5. Map to       │
-   │    Check        │       │    Zotero Schema│
-   └────────┬────────┘       └────────┬────────┘
-            │                         │
-            └────────────┬────────────┘
-                         ▼
-              ┌──────────────────────┐
-              │ 6. Batch Import      │
-              │    Connector API     │
-              │    /saveItems        │
-              └────────────┬─────────┘
-                           │
-                           ▼
-              ┌──────────────────────┐
-              │ 7. Return Summary    │
-              │    BatchImportResult │
-              └──────────────────────┘
+    language: str | None
+    keywords: list[str]    # Author-provided keywords
+    mesh_terms: list[str]  # Controlled vocabulary
+    publication_types: list[str]
+    # affiliations: 目前未提取
 ```
 
 ---
@@ -711,50 +733,60 @@ mcp-server/src/zotero_mcp/
 │   │                              #   - import_ris_to_zotero
 │   │                              #   - attach_pmc_pdfs
 │   │
-│   ├── pubmed/                    # NEW: PubMed integration ⭐
+│   ├── mappers/                   # NEW: Data mapping ⭐
 │   │   ├── __init__.py
-│   │   ├── pubmed_client.py      # NCBI E-utilities XML API client
-│   │   ├── xml_parser.py         # PubMed XML → PubMedArticle
-│   │   └── zotero_mapper.py      # PubMedArticle → Zotero schema
+│   │   └── pubmed_mapper.py      # SearchResult → Zotero schema
 │   │
 │   └── zotero_client/
 │       └── client.py             # Add batch operations
 │
 ├── domain/
 │   └── entities/
-│       ├── pubmed_article.py     # NEW: Complete PubMed metadata ⭐
 │       └── batch_result.py       # NEW: BatchImportResult ⭐
 │
 └── application/
     └── use_cases/
         └── batch_import.py       # NEW: BatchImportUseCase ⭐
+
+# pubmed-search library integration (submodule)
+external/
+└── pubmed-search-mcp/            # Git submodule (already exists!)
+    └── src/
+        └── pubmed_search/
+            ├── client.py         # PubMedClient, SearchResult
+            └── ...
 ```
 
-### New Dependencies
-
-```toml
-# pyproject.toml additions
-dependencies = [
-    # ... existing ...
-    "defusedxml>=0.7.1",  # Safe XML parsing (security)
-]
-```
+**關鍵**: 透過 `sys.path.insert(0, "external/pubmed-search-mcp/src")` 
+直接 import `pubmed_search.client`，不需要複製程式碼！
 
 ---
 
 ## 🚀 Implementation Plan
 
-### Phase 1: Core Infrastructure (Day 1)
-- [ ] Create `pubmed_client.py` with NCBI E-utilities integration
+### Phase 0: Setup Integration (Day 1)
+- [ ] 確認 submodule `external/pubmed-search-mcp` 已 clone
+- [ ] 新增 setup code 在 `batch_tools.py` import pubmed_search
+- [ ] 或者在 `pyproject.toml` 設定 editable install
+
+### Phase 1: Core Infrastructure (Day 1-2)
+- [ ] Create `pubmed_mapper.py` (SearchResult → Zotero schema)
 - [ ] Create `batch_result.py` domain entity
 - [ ] Add batch duplicate checking to `zotero_client.py`
 
-### Phase 2: Primary Tool (Day 2)
-- [ ] Implement `batch_import_from_pubmed` in `batch_tools.py`
+### Phase 2: Primary Tool (Day 2-3)
+- [ ] Implement `batch_import_from_pubmed` in `batch_tools.py`:
+  ```python
+  from pubmed_search.client import PubMedClient
+  
+  client = PubMedClient()
+  articles = client.fetch_details(pmids)
+  # Direct access to SearchResult objects!
+  ```
 - [ ] Unit tests for batch import
 - [ ] Integration test with real Zotero
 
-### Phase 3: Backup Tool (Day 3)
+### Phase 3: Backup Tool (Day 3-4)
 - [ ] Implement RIS parser
 - [ ] Implement `import_ris_to_zotero`
 - [ ] Unit tests for RIS import
@@ -770,8 +802,7 @@ dependencies = [
 
 | Concern | Mitigation |
 |---------|------------|
-| NCBI API rate limiting | Implement exponential backoff, respect 3 req/sec |
-| Large batch size | Limit to 100 PMIDs per call |
+| Large batch size | Limit to 100 articles per call |
 | Malicious RIS content | Sanitize input, validate format |
 | Network timeouts | Set reasonable timeouts (30s), retry logic |
 
@@ -782,7 +813,7 @@ dependencies = [
 | Metric | Target |
 |--------|--------|
 | Batch import speed | 50 articles in < 30 seconds |
-| Success rate | > 95% for valid PMIDs |
+| Success rate | > 95% for valid articles |
 | Duplicate detection accuracy | > 99% |
 | User workflow reduction | 50 calls → 1 call |
 
