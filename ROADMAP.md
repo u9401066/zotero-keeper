@@ -10,9 +10,9 @@ Development roadmap for Zotero Keeper - MCP Server for Zotero integration.
 |-------|--------|--------|-------------|
 | Phase 1 | ✅ Complete | v1.1.0 | Foundation & Discovery |
 | Phase 2 | ✅ Complete | v1.2.0 | Core MCP Tools |
-| Phase 2.5 | ✅ Complete | v1.3.0 | PubMed Integration |
-| Phase 3 | 🔄 In Progress | v1.4.0 | Smart Features |
-| Phase 4 | 📋 Planned | v1.5.0 | Multi-User & Config |
+| Phase 2.5 | ✅ Complete | v1.4.0 | Dual MCP Architecture |
+| Phase 3 | 🔄 In Progress | v1.5.0 | Smart Features |
+| Phase 4 | 📋 Planned | v1.6.0 | Multi-User & Config |
 | Phase 5 | 📋 Planned | v2.0.0 | Advanced Features |
 
 ---
@@ -101,33 +101,56 @@ Development roadmap for Zotero Keeper - MCP Server for Zotero integration.
 
 ---
 
-## ✅ Phase 2.5: PubMed Integration (Complete)
+## ✅ Phase 2.5: Dual MCP Architecture (Complete)
 
-**Target Version**: v1.3.0  
+**Target Version**: v1.4.0  
 **Status**: ✅ Complete  
 **Completed**: Dec 2024
 
-### Goals
-- [x] Integrate with pubmed-search-mcp
-- [x] Direct import from PubMed to Zotero
-- [x] Duplicate detection on import
+### Architecture Decision
+- **pubmed-search-mcp**: Independent MCP for PubMed search, export, PICO
+- **zotero-keeper**: Focused on Zotero integration with import tools
+- Agent combines both MCPs for full workflow
 
-### New MCP Tools
+### Goals
+- [x] Separate concerns: search vs import
+- [x] Add pubmed-search-mcp as git submodule
+- [x] Create import-only tools for Zotero
+- [x] Fix API consistency (fetch_details in pubmed-search-mcp v0.1.9)
+
+### New MCP Tools (zotero-keeper)
 
 | Tool | Description |
 |------|-------------|
-| `search_pubmed_and_import` | 🔬 搜尋 PubMed 並選擇性匯入 Zotero |
-| `import_pubmed_articles` | 📥 透過 PMID 批次匯入（含重複檢查） |
-| `get_pubmed_article_details` | 📄 取得 PubMed 文獻完整資訊 |
+| `import_ris_to_zotero` | 📥 匯入 RIS 格式到 Zotero |
+| `import_from_pmids` | 📥 直接透過 PMID 匯入 |
 
 ### Installation
 
 ```bash
-# With PubMed support
-pip install "zotero-keeper[pubmed]"
+# Option 1: Both MCPs (recommended)
+pip install pubmed-search-mcp zotero-keeper
 
-# All features
-pip install "zotero-keeper[all]"
+# Option 2: zotero-keeper with built-in PubMed
+pip install "zotero-keeper[pubmed]"
+```
+
+### Dual MCP Workflow
+
+```
+┌─────────────────────┐    ┌─────────────────────┐
+│  pubmed-search-mcp  │    │   zotero-keeper     │
+│  (搜尋 + 匯出)       │    │  (匯入 + 管理)       │
+│                     │    │                     │
+│  search_literature  │    │  import_from_pmids  │
+│  prepare_export     │    │  import_ris_to_zotero│
+│  fetch_details      │    │  search_items       │
+│  parse_pico         │    │  add_reference      │
+└─────────────────────┘    └─────────────────────┘
+          │                          │
+          └──────────┬───────────────┘
+                     ▼
+              Agent 自由組合
 ```
 
 ### Example Workflow
@@ -136,15 +159,20 @@ pip install "zotero-keeper[all]"
 User: 「幫我找 CRISPR 相關論文並加入 Zotero」
 
 Agent:
-1. search_pubmed_and_import(query="CRISPR", limit=10, auto_import=True)
-2. 回傳結果: "Found 10 articles, imported 10 to Zotero"
+1. pubmed: search_literature("CRISPR", limit=10) → PMIDs
+2. pubmed: prepare_export(pmids, format="ris") → RIS text
+3. keeper: import_ris_to_zotero(ris_text, tags=["CRISPR"])
+
+Or directly:
+1. pubmed: search_literature("CRISPR", limit=10) → PMIDs  
+2. keeper: import_from_pmids(pmids, tags=["CRISPR"])
 ```
 
 ---
 
 ## 🔄 Phase 3: Smart Features (In Progress)
 
-**Target Version**: v1.4.0  
+**Target Version**: v1.5.0  
 **Status**: 🔄 In Progress  
 **Target Date**: Jan 2025
 
@@ -154,10 +182,13 @@ Agent:
 > Agent 只需調用 MCP 工具並等待結果，不需要自行處理邏輯。
 
 ### Goals
-- [ ] Duplicate detection (MCP internal)
+- [ ] Duplicate detection (using rapidfuzz)
 - [ ] Reference validation (MCP internal)
 - [ ] Better error messages
 - [ ] Search improvements
+
+### Dependencies Added
+- `rapidfuzz>=3.0.0` - Fuzzy string matching for duplicate detection
 
 ### New MCP Tools
 
@@ -179,7 +210,7 @@ Agent:
 
 | Function | Description |
 |----------|-------------|
-| `_fuzzy_match_title()` | 模糊比對標題 (Levenshtein distance) |
+| `_fuzzy_match_title()` | 模糊比對標題 (rapidfuzz) |
 | `_normalize_doi()` | DOI 格式正規化 |
 | `_normalize_isbn()` | ISBN-10/13 正規化 |
 | `_validate_fields()` | 欄位驗證邏輯 |
