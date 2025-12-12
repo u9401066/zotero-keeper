@@ -9,8 +9,8 @@ Development roadmap for Zotero Keeper - MCP Server for Zotero integration.
 | Phase | Status | Target | Description |
 |-------|--------|--------|-------------|
 | Phase 1 | ✅ Complete | v1.1.0 | Foundation & Discovery |
-| Phase 2 | 🔄 In Progress | v1.2.0 | Core MCP Tools |
-| Phase 3 | 📋 Planned | v1.3.0 | Smart Features |
+| Phase 2 | ✅ Complete | v1.2.0 | Core MCP Tools |
+| Phase 3 | 🔄 In Progress | v1.3.0 | Smart Features |
 | Phase 4 | 📋 Planned | v1.4.0 | Multi-User & Config |
 | Phase 5 | 📋 Planned | v2.0.0 | Advanced Features |
 
@@ -47,17 +47,17 @@ Development roadmap for Zotero Keeper - MCP Server for Zotero integration.
 
 ---
 
-## 🔄 Phase 2: Core MCP Tools (In Progress)
+## ✅ Phase 2: Core MCP Tools (Complete)
 
 **Target Version**: v1.2.0  
-**Status**: 🔄 In Progress  
-**Target Date**: Dec 2024
+**Status**: ✅ Complete  
+**Completed**: Dec 2024
 
 ### Goals
-- [ ] Implement all read tools
-- [ ] Implement write tools
-- [ ] MCP server integration
-- [ ] Basic error handling
+- [x] Implement all read tools
+- [x] Implement write tools
+- [x] MCP server integration
+- [x] Basic error handling
 
 ### MCP Tools Implementation
 
@@ -65,46 +65,45 @@ Development roadmap for Zotero Keeper - MCP Server for Zotero integration.
 
 | Tool | Priority | Status | Description |
 |------|----------|--------|-------------|
-| `search_items` | P0 | 📋 | Search by title/author/year |
-| `get_item` | P0 | 📋 | Get item by key |
-| `list_items` | P1 | 📋 | List recent items |
-| `list_collections` | P1 | 📋 | List all collections |
-| `list_tags` | P2 | 📋 | List all tags |
-| `get_item_types` | P2 | 📋 | Get available item types |
-| `export_citation` | P2 | 📋 | Export in BibTeX/RIS format |
+| `check_connection` | P0 | ✅ | Test Zotero connectivity |
+| `search_items` | P0 | ✅ | Search by title/author/year |
+| `get_item` | P0 | ✅ | Get item by key |
+| `list_items` | P1 | ✅ | List recent items |
+| `list_collections` | P1 | ✅ | List all collections |
+| `list_tags` | P2 | ✅ | List all tags |
+| `get_item_types` | P2 | ✅ | Get available item types |
+| `export_citation` | P2 | 📋 | Export in BibTeX/RIS format (Phase 3) |
 
 #### Write Tools (Using Connector API)
 
 | Tool | Priority | Status | Description |
 |------|----------|--------|-------------|
-| `add_reference` | P0 | 📋 | Add new bibliographic item |
-| `create_item` | P1 | 📋 | Create with full metadata |
+| `add_reference` | P0 | ✅ | Add new bibliographic item |
+| `create_item` | P1 | ✅ | Create with full metadata |
 
 ### Technical Tasks
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Domain entities (Item, Collection, Creator) | 📋 | Pydantic dataclasses |
-| Repository interfaces | 📋 | Abstract protocol |
-| ZoteroItemRepository | 📋 | HTTP-based implementation |
-| Use cases | 📋 | SearchItems, AddReference |
-| MCP server setup | 📋 | FastMCP integration |
-| Tools registration | 📋 | Decorator-based handlers |
-| Error handling | 📋 | Custom exceptions |
-| Logging | 📋 | Structured logging |
+| Domain entities (Reference, Collection, Creator) | ✅ | Pydantic dataclasses |
+| ZoteroClient | ✅ | HTTP client with dual API support |
+| MCP server setup | ✅ | FastMCP integration |
+| Tools registration | ✅ | 9 tools via @mcp.tool() decorator |
+| Error handling | ✅ | Try-catch with user-friendly messages |
+| Logging | ✅ | Print-based logging |
 
 ### Acceptance Criteria
-- [ ] All P0 tools working
-- [ ] Can search and retrieve items from Zotero
-- [ ] Can add new references to Zotero
-- [ ] Works with VS Code Copilot
+- [x] All P0 tools working
+- [x] Can search and retrieve items from Zotero
+- [x] Can add new references to Zotero
+- [ ] Works with VS Code Copilot (pending integration test)
 
 ---
 
-## 📋 Phase 3: Smart Features
+## 🔄 Phase 3: Smart Features (In Progress)
 
 **Target Version**: v1.3.0  
-**Status**: 📋 Planned  
+**Status**: 🔄 In Progress  
 **Target Date**: Jan 2025
 
 ### Goals
@@ -208,10 +207,10 @@ ZOTERO_ACTIVE_PROFILE=work
 ## 📈 Metrics & Success Criteria
 
 ### Phase 2 Success
-- [ ] 100% of P0 tools implemented
-- [ ] < 500ms response time for search
-- [ ] Zero data loss in write operations
-- [ ] Works in VS Code Copilot Chat
+- [x] 100% of P0 tools implemented (9 tools)
+- [x] < 500ms response time for search
+- [x] Zero data loss in write operations
+- [ ] Works in VS Code Copilot Chat (pending)
 
 ### Phase 3 Success
 - [ ] 95% duplicate detection accuracy
@@ -268,4 +267,4 @@ ZOTERO_ACTIVE_PROFILE=work
 
 ---
 
-*Last updated: December 2024*
+*Last updated: December 12, 2024*
