@@ -1,4 +1,4 @@
-# Progress (Updated: 2024-12-11)
+# Progress (Updated: 2024-12-12)
 
 ## Done
 
@@ -11,20 +11,22 @@
 - Created test item: "Test Article from MCP Bridge" (Key: UUZTDXFW)
 - Project renamed to "zotero-keeper"
 - Full documentation: README, CHANGELOG, ARCHITECTURE, ROADMAP
+- **Phase 2 Complete: Core MCP Tools (v1.2.0)**
+  - Implemented 9 MCP tools via FastMCP
+  - All tools tested successfully against live Zotero
+  - Cleaned up project structure (removed legacy files)
 
 ## Doing
 
-- Phase 2: Core MCP Tools implementation
-- Domain entities design
+- Phase 3 planning: Smart features
 
 ## Next
 
-- Implement domain entities (Item, Collection, Creator, Tag)
-- Create repository interfaces
-- Implement ZoteroItemRepository
-- Create use cases (SearchItems, AddReference)
-- Setup FastMCP server with tools registration
-- Test with VS Code Copilot
+- Duplicate detection for references
+- ISBN/DOI validation
+- Batch operations support
+- PDF attachment handling
+- Multi-user support design
 
 ## Blocked
 
