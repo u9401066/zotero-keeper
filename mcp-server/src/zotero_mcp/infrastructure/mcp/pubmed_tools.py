@@ -357,24 +357,19 @@ def register_pubmed_tools(mcp, zotero_client):
             email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
             client = PubMedClient(email=email)
             
-            # Fetch article details (returns SearchResult objects)
-            results = client.fetch_by_pmids(pmids)
+            # Fetch article details (returns dicts directly)
+            articles = client.fetch_details(pmids)
             
-            if not results:
+            if not articles:
                 return {
                     "success": False,
                     "message": "No articles found for given PMIDs",
                     "imported": 0,
                 }
             
-            # Convert SearchResult objects to dicts, then to Zotero format
+            # Convert to Zotero format
             zotero_items = []
-            articles_info = []
-            for result in results:
-                # Convert SearchResult to dict
-                article = result.to_dict() if hasattr(result, 'to_dict') else result
-                articles_info.append(article)
-                
+            for article in articles:
                 item = _pmid_to_zotero_item(article)
                 if tags:
                     existing_tags = item.get("tags", [])
@@ -389,7 +384,7 @@ def register_pubmed_tools(mcp, zotero_client):
             # Build response
             imported_info = [
                 {"pmid": a.get("pmid"), "title": a.get("title", "")[:50]}
-                for a in articles_info
+                for a in articles
             ]
             
             return {

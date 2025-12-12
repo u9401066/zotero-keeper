@@ -1,0 +1,3 @@
+[submodule "external/pubmed-search-mcp"]
+	path = external/pubmed-search-mcp
+	url = https://github.com/u9401066/pubmed-search-mcp.git
