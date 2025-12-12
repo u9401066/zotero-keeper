@@ -10,8 +10,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Phase 3: Smart features (duplicate detection, validation)
 - Phase 4: Multi-user support
+- Batch operations
+
+---
+
+## [1.5.0] - 2024-12-12
+
+### 🧠 Smart Features (Phase 3)
+
+Intelligent reference management with duplicate detection and validation.
+
+### Added
+- **Smart Tools Module** (smart_tools.py)
+  - `check_duplicate`: Fuzzy title matching + exact DOI/ISBN/PMID matching
+  - `validate_reference`: Check required fields based on item type
+  - `smart_add_reference`: Validate + check duplicates + add in one call
+
+- **Duplicate Detection**
+  - Uses `rapidfuzz` for high-performance fuzzy string matching
+  - 85% similarity threshold for title matching
+  - Exact matching on identifiers (DOI, ISBN, PMID)
+  - Returns confidence level: high/medium/low
+
+- **Validation**
+  - Type-specific required fields (journalArticle, book, thesis, etc.)
+  - Creator structure validation
+  - Warnings for recommended fields
+
+### Example Usage
+```python
+# Check if reference exists
+check_duplicate(title="CRISPR gene editing", doi="10.1234/example")
+
+# Validate before adding
+validate_reference(item_type="journalArticle", title="My Paper", creators=[...])
+
+# Smart add: validates, checks duplicates, then adds
+smart_add_reference(
+    item_type="journalArticle",
+    title="New Paper",
+    creators=[{"firstName": "John", "lastName": "Doe", "creatorType": "author"}],
+    doi="10.1234/new",
+    tags=["research"]
+)
+```
 
 ---
 

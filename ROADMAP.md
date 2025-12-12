@@ -11,7 +11,7 @@ Development roadmap for Zotero Keeper - MCP Server for Zotero integration.
 | Phase 1 | ✅ Complete | v1.1.0 | Foundation & Discovery |
 | Phase 2 | ✅ Complete | v1.2.0 | Core MCP Tools |
 | Phase 2.5 | ✅ Complete | v1.4.0 | Dual MCP Architecture |
-| Phase 3 | 🔄 In Progress | v1.5.0 | Smart Features |
+| Phase 3 | ✅ Complete | v1.5.0 | Smart Features |
 | Phase 4 | 📋 Planned | v1.6.0 | Multi-User & Config |
 | Phase 5 | 📋 Planned | v2.0.0 | Advanced Features |
 
@@ -170,11 +170,11 @@ Or directly:
 
 ---
 
-## 🔄 Phase 3: Smart Features (In Progress)
+## ✅ Phase 3: Smart Features (Complete)
 
 **Target Version**: v1.5.0  
-**Status**: 🔄 In Progress  
-**Target Date**: Jan 2025
+**Status**: ✅ Complete  
+**Completed**: Dec 2024
 
 ### Design Philosophy
 
@@ -182,35 +182,29 @@ Or directly:
 > Agent 只需調用 MCP 工具並等待結果，不需要自行處理邏輯。
 
 ### Goals
-- [ ] Duplicate detection (using rapidfuzz)
-- [ ] Reference validation (MCP internal)
-- [ ] Better error messages
-- [ ] Search improvements
+- [x] Duplicate detection (using rapidfuzz)
+- [x] Reference validation (MCP internal)
+- [x] Smart add with auto-check
+- [ ] Better error messages (future)
+- [ ] Search improvements (future)
 
 ### Dependencies Added
 - `rapidfuzz>=3.0.0` - Fuzzy string matching for duplicate detection
 
 ### New MCP Tools
 
-| Tool | Priority | Description |
-|------|----------|-------------|
-| `check_duplicate` | P0 | 檢查重複：比對 title + DOI/ISBN，回傳是否重複及相似項目 |
-| `validate_reference` | P1 | 驗證欄位：檢查必填欄位，回傳驗證結果及錯誤訊息 |
-| `smart_add_reference` | P0 | 智慧新增：自動檢查重複 + 驗證後新增，回傳完整結果 |
-| `batch_add_references` | P2 | 批次新增：一次新增多筆，每筆都會檢查重複和驗證 |
+| Tool | Status | Description |
+|------|--------|-------------|
+| `check_duplicate` | ✅ | 檢查重複：模糊標題比對 + 精確 DOI/ISBN/PMID 比對 |
+| `validate_reference` | ✅ | 驗證欄位：檢查必填欄位，回傳驗證結果及錯誤訊息 |
+| `smart_add_reference` | ✅ | 智慧新增：自動檢查重複 + 驗證後新增，回傳完整結果 |
 
-### Enhanced Existing Tools
+### Technical Implementation
 
-| Tool | Enhancement |
-|------|-------------|
-| `search_items` | 加入模糊搜尋、過濾條件 (type, date, collection) |
-| `add_reference` | 可選參數 `skip_duplicate_check` |
-
-### Internal Functions (Non-MCP)
-
-| Function | Description |
-|----------|-------------|
-| `_fuzzy_match_title()` | 模糊比對標題 (rapidfuzz) |
+- **Fuzzy Matching**: Uses `rapidfuzz.fuzz.token_sort_ratio` with 85% threshold
+- **Exact Matching**: DOI, ISBN, PMID identifiers
+- **Validation**: Type-specific required fields
+- **Confidence Levels**: high (exact/95%+), medium (90-95%), low (<90%)
 | `_normalize_doi()` | DOI 格式正規化 |
 | `_normalize_isbn()` | ISBN-10/13 正規化 |
 | `_validate_fields()` | 欄位驗證邏輯 |

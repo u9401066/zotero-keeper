@@ -26,6 +26,7 @@ from ...domain.entities.reference import Reference, Creator, ItemType
 from ...domain.entities.collection import Collection
 from .config import McpServerConfig, default_config
 from .pubmed_tools import register_pubmed_tools, is_pubmed_available
+from .smart_tools import register_smart_tools
 
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,10 @@ class ZoteroKeeperServer:
         
         # Register tools
         self._register_tools()
+        
+        # Register Smart tools (duplicate detection, validation)
+        register_smart_tools(self._mcp, self._zotero)
+        logger.info("Smart tools enabled (check_duplicate, validate_reference, smart_add_reference)")
         
         # Register PubMed tools if available
         if is_pubmed_available():
