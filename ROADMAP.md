@@ -106,30 +106,81 @@ Development roadmap for Zotero Keeper - MCP Server for Zotero integration.
 **Status**: 🔄 In Progress  
 **Target Date**: Jan 2025
 
+### Design Philosophy
+
+> **MCP Server 內部功能**：所有智慧功能都在 MCP Server 內部實現。
+> Agent 只需調用 MCP 工具並等待結果，不需要自行處理邏輯。
+
 ### Goals
-- [ ] Duplicate detection
-- [ ] Reference validation
+- [ ] Duplicate detection (MCP internal)
+- [ ] Reference validation (MCP internal)
 - [ ] Better error messages
 - [ ] Search improvements
 
-### Features
+### New MCP Tools
 
-| Feature | Priority | Description |
-|---------|----------|-------------|
-| `check_duplicate` | P0 | Check by title + DOI before adding |
-| `validate_reference` | P1 | Validate required fields |
-| Fuzzy title matching | P1 | Handle slight title variations |
-| Search filters | P2 | Filter by type, date, collection |
-| Batch operations | P2 | Add multiple items at once |
+| Tool | Priority | Description |
+|------|----------|-------------|
+| `check_duplicate` | P0 | 檢查重複：比對 title + DOI/ISBN，回傳是否重複及相似項目 |
+| `validate_reference` | P1 | 驗證欄位：檢查必填欄位，回傳驗證結果及錯誤訊息 |
+| `smart_add_reference` | P0 | 智慧新增：自動檢查重複 + 驗證後新增，回傳完整結果 |
+| `batch_add_references` | P2 | 批次新增：一次新增多筆，每筆都會檢查重複和驗證 |
+
+### Enhanced Existing Tools
+
+| Tool | Enhancement |
+|------|-------------|
+| `search_items` | 加入模糊搜尋、過濾條件 (type, date, collection) |
+| `add_reference` | 可選參數 `skip_duplicate_check` |
+
+### Internal Functions (Non-MCP)
+
+| Function | Description |
+|----------|-------------|
+| `_fuzzy_match_title()` | 模糊比對標題 (Levenshtein distance) |
+| `_normalize_doi()` | DOI 格式正規化 |
+| `_normalize_isbn()` | ISBN-10/13 正規化 |
+| `_validate_fields()` | 欄位驗證邏輯 |
+| `_find_similar_items()` | 搜尋相似項目 |
 
 ### Technical Tasks
 
 | Task | Description |
 |------|-------------|
-| Title similarity matching | Levenshtein distance or fuzzy matching |
-| DOI normalization | Handle different DOI formats |
-| Validation service | Field-level validation |
-| Error enrichment | User-friendly error messages |
+| Add `rapidfuzz` dependency | 高效模糊字串比對 |
+| Duplicate detection service | 內部服務類別 |
+| Validation service | 欄位驗證服務 |
+| Error response schema | 統一錯誤回應格式 |
+
+### Example: `smart_add_reference` Response
+
+```json
+{
+  "success": true,
+  "action": "created",
+  "item_key": "ABC12345",
+  "checks": {
+    "duplicate": {"passed": true, "similar_items": []},
+    "validation": {"passed": true, "errors": []}
+  }
+}
+```
+
+```json
+{
+  "success": false,
+  "action": "rejected",
+  "reason": "duplicate_found",
+  "checks": {
+    "duplicate": {
+      "passed": false,
+      "similar_items": [
+        {"key": "XYZ789", "title": "...", "similarity": 0.95}
+      ]
+    }
+  }
+}
+```
 
 ---
 
