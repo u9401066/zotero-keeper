@@ -6,7 +6,7 @@ MCP 伺服器：讓 AI Agent (Copilot Agent 等) 管理本地 Zotero 書目資�
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![MCP SDK](https://img.shields.io/badge/MCP-FastMCP-green.svg)](https://github.com/modelcontextprotocol/python-sdk)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Zotero 7](https://img.shields.io/badge/Zotero-7.0+-red.svg)](https://www.zotero.org/)
 
 ---
@@ -425,7 +425,7 @@ See [ROADMAP.md](ROADMAP.md) for detailed roadmap.
 
 ## 📄 License
 
-MIT - See [LICENSE](LICENSE)
+Apache 2.0 - See [LICENSE](LICENSE)
 
 ---
 
