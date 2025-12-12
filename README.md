@@ -313,6 +313,81 @@ For complex searches, use pubmed-search-mcp's strategy tools first:
 
 ---
 
+## 📋 Use Case: Building a Literature Collection | 案例：建立文獻專題
+
+### Scenario: "Anesthesia AI 2024-2025" Collection
+
+A real-world example of using zotero-keeper + pubmed-search-mcp to build a comprehensive literature collection.
+
+**Goal**: Create a Zotero collection with all 2024-2025 papers on AI/ML in Anesthesiology.
+
+#### Step 1: Create Collection in Zotero
+```
+In Zotero Desktop: Right-click → New Collection → "麻醉AI (2024-2025)"
+```
+
+#### Step 2: Search PubMed with MeSH Terms
+```
+[pubmed] generate_search_queries("anesthesiology artificial intelligence")
+         → Returns MeSH terms: "Artificial Intelligence"[MeSH], "Machine Learning"[MeSH]
+
+[pubmed] search_literature(
+           query='("Anesthesiology"[MeSH] OR anesthesia[tiab]) AND 
+                  ("Artificial Intelligence"[MeSH] OR "Machine Learning"[MeSH])',
+           min_year=2024, 
+           limit=50
+         )
+         → Returns 50 articles with PMIDs
+```
+
+#### Step 3: Import to Zotero
+```
+[keeper] smart_add_reference(
+           title="...",
+           doi="...",
+           pmid="...",
+           tags=["Anesthesia-AI", "2024"]
+         )
+         → Validates, checks duplicates, then adds to Zotero
+```
+
+#### Results | 成果
+- ✅ **20 papers** imported successfully
+- ✅ All with **DOI, PMID, Abstract, Tags**
+- ✅ **Duplicate detection** prevented re-imports
+- ✅ Papers organized by **tags** for easy filtering
+
+---
+
+### 🔴 Current Limitations (v1.6.0) | 目前限制
+
+| Issue | Description | 問題描述 |
+|-------|-------------|----------|
+| **No batch import** | Must call `smart_add_reference` one-by-one | 需要逐篇呼叫，沒有批次匯入 |
+| **Two MCPs not unified** | Agent uses pubmed-search directly, not via keeper | Agent 直接用 pubmed-search，未透過 keeper |
+| **RIS export disconnected** | `prepare_export` creates RIS but doesn't auto-import | RIS 匯出與匯入沒有連動 |
+
+### 🟢 Planned Improvements (v1.7.0) | 規劃改進
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  NEW: batch_import_from_pubmed(pmids, tags)                    │
+│       → Fetches metadata for ALL PMIDs at once                 │
+│       → Batch validates and checks duplicates                  │
+│       → Imports all in single operation                        │
+│       → Returns summary: added/skipped/failed                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Target Workflow:**
+```
+1. [keeper] search_pubmed_exclude_owned("anesthesia AI", limit=50)
+2. [keeper] batch_import_from_pubmed(pmids, tags=["Anesthesia-AI"])
+   → "Added 45, Skipped 3 duplicates, Failed 2"
+```
+
+---
+
 ## 🌐 Network Setup | 網路設定
 
 ### Scenario | 情境
