@@ -200,13 +200,22 @@ Add to `claude_desktop_config.json`:
 | `import_ris_to_zotero(ris_text)` | Import RIS format citations | 匯入 RIS 格式引用文獻 |
 | `import_from_pmids(pmids)` | Import by PubMed IDs (requires pubmed extra) | 直接用 PMID 匯入 |
 
-### 📋 Discovery Tools | 探索工具 (Planned)
+### 🧠 Smart Tools | 智慧工具
 
 | Tool | Description | 說明 |
 |------|-------------|------|
 | `check_duplicate(title, doi)` | Check if reference already exists | 檢查是否已有重複文獻 |
 | `validate_reference(...)` | Validate reference metadata | 驗證參考文獻元資料 |
-| `enrich_metadata(doi)` | Auto-fill metadata from DOI | 從 DOI 自動填充元資料 |
+| `smart_add_reference(...)` | Validate + check duplicate + add | 驗證 + 檢查重複 + 新增 |
+
+### 🔍 Integrated Search | 整合搜尋
+
+| Tool | Description | 說明 |
+|------|-------------|------|
+| `search_pubmed_exclude_owned` | Search PubMed, filter out owned articles | 搜尋 PubMed，排除已有文獻 |
+| `check_articles_owned` | Check which PMIDs are already in Zotero | 檢查哪些 PMID 已存在 |
+
+> ⚠️ **Note**: Integrated search requires both `pubmed-search-mcp` and `zotero-keeper[pubmed]` installed.
 
 ---
 
@@ -214,24 +223,47 @@ Add to `claude_desktop_config.json`:
 
 Zotero Keeper works seamlessly with [pubmed-search-mcp](https://github.com/u9401066/pubmed-search-mcp) for literature discovery and import.
 
-### Recommended Workflow | 建議工作流程
+### 🆕 Integrated Search (v1.6.0+) | 整合搜尋
+
+When both MCPs are installed, use **integrated search** to find NEW papers not in your library:
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                    zotero-keeper (v1.6.0+)                     │
+│  search_pubmed_exclude_owned("CRISPR")                         │
+│      ├── PubMed Search (via pubmed-search-mcp)                 │
+│      ├── Filter against Zotero library                         │
+│      └── Return only NEW articles 🆕                           │
+└────────────────────────────────────────────────────────────────┘
+```
+
+**Simple Workflow (Recommended):**
+```
+1. [keeper] search_pubmed_exclude_owned("CRISPR", limit=10) → NEW papers only
+2. [keeper] import_from_pmids(new_pmids, tags=["CRISPR"]) → Zotero
+```
+
+### Advanced Workflow | 進階工作流程
+
+For complex searches, use pubmed-search-mcp's strategy tools first:
 
 ```
 ┌────────────────────────┐    ┌────────────────────────┐
 │   pubmed-search-mcp    │    │     zotero-keeper      │
-│   (Literature Search)  │    │   (Zotero Management)  │
+│   (Strategy Building)  │    │   (Search & Import)    │
 │                        │    │                        │
-│  • search_literature   │───▶│  • import_ris_to_zotero│
-│  • prepare_export(ris) │    │  • import_from_pmids   │
-│  • fetch_details       │    │  • search_items        │
+│  • generate_search_    │    │  • search_pubmed_      │
+│    queries (MeSH)      │───▶│    exclude_owned       │
+│  • parse_pico          │    │  • import_from_pmids   │
+│  • prepare_export      │    │  • smart_add_reference │
 └────────────────────────┘    └────────────────────────┘
 ```
 
-**Example Workflow:**
+**Example:**
 ```
-1. [pubmed-search] search_literature("CRISPR gene editing") → PMIDs
-2. [pubmed-search] prepare_export(pmids, format="ris") → RIS text
-3. [zotero-keeper] import_ris_to_zotero(ris_text, tags=["CRISPR"]) → Zotero
+1. [pubmed] generate_search_queries("CRISPR gene therapy") → MeSH terms
+2. [keeper] search_pubmed_exclude_owned(query='"CRISPR-Cas Systems"[MeSH]') → NEW only
+3. [keeper] import_from_pmids(pmids, tags=["CRISPR"]) → Zotero
 ```
 
 ### Configuration | 設定

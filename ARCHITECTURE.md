@@ -94,17 +94,24 @@ Zotero Keeper is designed to work alongside `pubmed-search-mcp` for a complete l
 └────────────────────────────┘    └────────────────────────────┘
 ```
 
-**Recommended Workflow:**
+**Simple Workflow (v1.6.0+, Integrated Search):**
 ```
-1. [pubmed-search] search_literature("CRISPR") → PMIDs
-2. [pubmed-search] prepare_export(pmids, format="ris") → RIS text
-3. [zotero-keeper] import_ris_to_zotero(ris_text, tags=["CRISPR"]) → Zotero
+1. [zotero-keeper] search_pubmed_exclude_owned("CRISPR") → Only NEW papers
+2. [zotero-keeper] import_from_pmids(pmids, tags=["CRISPR"]) → Zotero
+```
+
+**Advanced Workflow (Strategy Building):**
+```
+1. [pubmed-search] generate_search_queries("CRISPR") → MeSH terms
+2. [zotero-keeper] search_pubmed_exclude_owned(query='"CRISPR-Cas"[MeSH]')
+3. [zotero-keeper] import_from_pmids(pmids) → Zotero
 ```
 
 | MCP Server | Responsibility | Key Tools |
 |------------|----------------|-----------|
-| **pubmed-search-mcp** | Literature Discovery | search_literature, prepare_export, fetch_details, parse_pico |
-| **zotero-keeper** | Reference Management | search_items, import_ris_to_zotero, add_reference, list_collections |
+| **pubmed-search-mcp** | Strategy Building | generate_search_queries, parse_pico, merge_search_results, search_literature |
+| **zotero-keeper** | Integrated Search & Import | search_pubmed_exclude_owned, import_from_pmids, smart_add_reference |
+| **zotero-keeper** | Library Management | search_items, check_duplicate, list_collections |
 
 ---
 

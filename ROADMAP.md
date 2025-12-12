@@ -12,7 +12,8 @@ Development roadmap for Zotero Keeper - MCP Server for Zotero integration.
 | Phase 2 | ✅ Complete | v1.2.0 | Core MCP Tools |
 | Phase 2.5 | ✅ Complete | v1.4.0 | Dual MCP Architecture |
 | Phase 3 | ✅ Complete | v1.5.0 | Smart Features |
-| Phase 4 | 📋 Planned | v1.6.0 | Multi-User & Config |
+| Phase 3.5 | ✅ Complete | v1.6.0 | Integrated Search |
+| Phase 4 | 📋 Planned | v1.7.0 | Multi-User & Config |
 | Phase 5 | 📋 Planned | v2.0.0 | Advanced Features |
 
 ---
@@ -251,9 +252,85 @@ Or directly:
 
 ---
 
+## ✅ Phase 3.5: Integrated Search (Complete)
+
+**Target Version**: v1.6.0  
+**Status**: ✅ Complete  
+**Completed**: Dec 2024
+
+### Design Philosophy
+
+> **Best Agent Experience**: 當兩個 MCP 都安裝時，提供整合搜尋功能，
+> 自動排除已存在於 Zotero 的文獻，讓 Agent 一步完成「找新論文」。
+
+### Goals
+- [x] Search PubMed with Zotero filtering
+- [x] Exclude already-owned articles
+- [x] Integrate with pubmed-search-mcp strategy tools
+- [x] Check articles owned batch API
+
+### New MCP Tools
+
+| Tool | Status | Description |
+|------|--------|-------------|
+| `search_pubmed_exclude_owned` | ✅ | 搜尋 PubMed 並排除已有文獻（DOI/PMID/Title 比對） |
+| `check_articles_owned` | ✅ | 批次檢查 PMIDs 是否已存在 |
+
+### Technical Implementation
+
+- **Identifier Matching**: DOI (exact), PMID (exact)
+- **Title Matching**: rapidfuzz token_sort_ratio with 85% threshold
+- **Library Scan**: Loads up to 500 items for comparison
+- **Filter Logic**: DOI → PMID → Fuzzy Title
+
+### Integration Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Agent Workflow                               │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+        ▼                     ▼                     ▼
+┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+│ pubmed-search │    │ zotero-keeper │    │ zotero-keeper │
+│ (Strategy)    │    │ (Integrated)  │    │ (Import)      │
+│               │    │               │    │               │
+│ generate_     │───▶│ search_pubmed_│───▶│ import_from_  │
+│ search_queries│    │ exclude_owned │    │ pmids         │
+│ parse_pico    │    │               │    │               │
+└───────────────┘    └───────────────┘    └───────────────┘
+```
+
+### Example Usage
+
+```python
+# Simple: Find new CRISPR papers
+search_pubmed_exclude_owned(query="CRISPR gene therapy", limit=10)
+# Returns: only NEW papers not in Zotero
+
+# With MeSH strategy:
+# 1. generate_search_queries("CRISPR") → MeSH terms
+# 2. search_pubmed_exclude_owned(query='"CRISPR-Cas Systems"[MeSH]')
+# 3. import_from_pmids(pmids)
+```
+
+### Requirements
+
+```bash
+# Must install BOTH packages for integrated search
+pip install pubmed-search-mcp "zotero-keeper[pubmed]"
+```
+
+> ⚠️ **Note**: pubmed-search-mcp's `search_literature` still works independently.
+> The integrated search is an ADDITIONAL option for "find new papers" workflow.
+
+---
+
 ## 📋 Phase 4: Multi-User & Configuration
 
-**Target Version**: v1.4.0  
+**Target Version**: v1.7.0  
 **Status**: 📋 Planned  
 **Target Date**: Feb 2025
 
@@ -379,8 +456,10 @@ ZOTERO_ACTIVE_PROFILE=work
 |---------|------|-----------|
 | v1.1.0 | Dec 2024 | Foundation complete |
 | v1.2.0 | Dec 2024 | Core tools working |
-| v1.3.0 | Jan 2025 | Smart features |
-| v1.4.0 | Feb 2025 | Multi-user ready |
+| v1.4.0 | Dec 2024 | Dual MCP architecture |
+| v1.5.0 | Dec 2024 | Smart features |
+| v1.6.0 | Dec 2024 | Integrated search |
+| v1.7.0 | Jan 2025 | Multi-user ready |
 | v2.0.0 | Q2 2025 | Full-featured release |
 
 ---

@@ -27,6 +27,7 @@ from ...domain.entities.collection import Collection
 from .config import McpServerConfig, default_config
 from .pubmed_tools import register_pubmed_tools, is_pubmed_available
 from .smart_tools import register_smart_tools
+from .search_tools import register_search_tools, is_search_tools_available
 
 
 logger = logging.getLogger(__name__)
@@ -65,10 +66,17 @@ class ZoteroKeeperServer:
         register_smart_tools(self._mcp, self._zotero)
         logger.info("Smart tools enabled (check_duplicate, validate_reference, smart_add_reference)")
         
+        # Register Integrated Search tools (PubMed + Zotero filtering)
+        if is_search_tools_available():
+            register_search_tools(self._mcp, self._zotero)
+            logger.info("Integrated search enabled (search_pubmed_exclude_owned, check_articles_owned)")
+        else:
+            logger.info("Integrated search disabled (install with: pip install 'zotero-keeper[pubmed]')")
+        
         # Register PubMed tools if available
         if is_pubmed_available():
             register_pubmed_tools(self._mcp, self._zotero)
-            logger.info("PubMed integration enabled")
+            logger.info("PubMed import enabled (import_ris_to_zotero, import_from_pmids)")
         else:
             logger.info("PubMed integration disabled (install with: pip install 'zotero-keeper[pubmed]')")
         
