@@ -350,3 +350,109 @@ class ZoteroClient:
         }
         result = await self._request("GET", "/api/users/0/items", params=params)
         return result if isinstance(result, str) else json.dumps(result)
+    
+    # ==================== Batch Operations ====================
+    
+    async def batch_check_identifiers(
+        self,
+        pmids: list[str] | None = None,
+        dois: list[str] | None = None,
+    ) -> dict[str, set[str]]:
+        """
+        Check which PMIDs and DOIs already exist in Zotero.
+        
+        Efficiently checks for duplicates by scanning the library once.
+        
+        Args:
+            pmids: List of PMIDs to check
+            dois: List of DOIs to check
+        
+        Returns:
+            {
+                "existing_pmids": set of PMIDs that exist,
+                "existing_dois": set of DOIs that exist,
+                "pmid_to_key": dict mapping PMID to Zotero item key,
+                "doi_to_key": dict mapping DOI to Zotero item key,
+            }
+        """
+        import re
+        
+        pmids = set(pmids or [])
+        dois = set(d.lower() for d in (dois or []))
+        
+        existing_pmids: set[str] = set()
+        existing_dois: set[str] = set()
+        pmid_to_key: dict[str, str] = {}
+        doi_to_key: dict[str, str] = {}
+        
+        # Get all items (paginated if needed)
+        # For now, get a reasonable batch - adjust if library is huge
+        all_items: list[dict] = []
+        start = 0
+        batch_size = 100
+        
+        while True:
+            items = await self.get_items(limit=batch_size, start=start)
+            if not items:
+                break
+            all_items.extend(items)
+            if len(items) < batch_size:
+                break
+            start += batch_size
+            # Safety limit
+            if start > 5000:
+                break
+        
+        # Scan items for PMIDs and DOIs
+        for item in all_items:
+            data = item.get("data", item)
+            key = item.get("key", "")
+            
+            # Check DOI
+            item_doi = data.get("DOI", "")
+            if item_doi:
+                item_doi_lower = item_doi.lower()
+                if item_doi_lower in dois:
+                    existing_dois.add(item_doi_lower)
+                    doi_to_key[item_doi_lower] = key
+            
+            # Check PMID in extra field
+            extra = data.get("extra", "")
+            if extra:
+                pmid_match = re.search(r'PMID:\s*(\d+)', extra, re.IGNORECASE)
+                if pmid_match:
+                    item_pmid = pmid_match.group(1)
+                    if item_pmid in pmids:
+                        existing_pmids.add(item_pmid)
+                        pmid_to_key[item_pmid] = key
+        
+        return {
+            "existing_pmids": existing_pmids,
+            "existing_dois": existing_dois,
+            "pmid_to_key": pmid_to_key,
+            "doi_to_key": doi_to_key,
+        }
+    
+    async def batch_save_items(
+        self,
+        items: list[dict[str, Any]],
+        uri: str = "http://mcp-bridge.local/batch-import",
+        title: str = "MCP Batch Import",
+    ) -> dict[str, Any]:
+        """
+        Save multiple items in a single request.
+        
+        Wrapper around save_items with batch-specific settings.
+        
+        Args:
+            items: List of items in Zotero API format
+            uri: Source URI for tracking
+            title: Source title for tracking
+        
+        Returns:
+            Response from Zotero API
+        """
+        if not items:
+            return {"success": True, "items": []}
+        
+        return await self.save_items(items, uri=uri, title=title)
