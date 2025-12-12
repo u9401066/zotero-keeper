@@ -21,6 +21,13 @@ classifiers = [
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+dependencies = [
+    "mcp>=1.0.0",
+    "httpx>=0.27.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "rapidfuzz>=3.0.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/u9401066/zotero-keeper"
@@ -28,14 +35,6 @@ Documentation = "https://github.com/u9401066/zotero-keeper#readme"
 Repository = "https://github.com/u9401066/zotero-keeper.git"
 Issues = "https://github.com/u9401066/zotero-keeper/issues"
 Changelog = "https://github.com/u9401066/zotero-keeper/blob/main/CHANGELOG.md"
-
-dependencies = [
-    "mcp>=1.0.0",
-    "httpx>=0.27.0",
-    "pydantic>=2.0.0",
-    "pydantic-settings>=2.0.0",
-    "rapidfuzz>=3.0.0",  # For fuzzy matching (Phase 3)
-]
 
 [project.optional-dependencies]
 pubmed = [

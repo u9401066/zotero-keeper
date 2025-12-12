@@ -139,18 +139,33 @@ mcp dev src/zotero_mcp/main.py
 
 ### Configure with VS Code Copilot | 與 VS Code Copilot 整合
 
-Add to your VS Code settings (`settings.json`):
+Create `.vscode/mcp.json` in your workspace:
 
 ```json
 {
-  "github.copilot.chat.agent.mcpServers": {
+  "servers": {
     "zotero-keeper": {
-      "command": "python",
-      "args": ["-m", "zotero_mcp"],
-      "cwd": "/path/to/zotero-keeper/mcp-server",
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/path/to/zotero-keeper/mcp-server",
+        "python",
+        "-m",
+        "zotero_mcp"
+      ],
       "env": {
         "ZOTERO_HOST": "localhost",
         "ZOTERO_PORT": "23119"
+      }
+    },
+    "pubmed-search": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["--with", "mcp>=1.0.0", "pubmed-search-mcp"],
+      "env": {
+        "NCBI_EMAIL": "your-email@example.com"
       }
     }
   }
@@ -159,6 +174,8 @@ Add to your VS Code settings (`settings.json`):
 
 > 📝 **Note**: Change `ZOTERO_HOST` to your Zotero machine's IP if running remotely.
 > See `.env.example` for configuration reference.
+> 
+> 💡 **Tip**: Use absolute path for `--directory` and ensure [uv](https://docs.astral.sh/uv/) is installed.
 
 ### Configure with Claude Desktop | 與 Claude Desktop 整合
 
