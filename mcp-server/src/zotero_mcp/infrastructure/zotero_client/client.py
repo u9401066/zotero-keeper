@@ -13,7 +13,8 @@ Zotero 7 提供兩套 API:
 - 請求需要 Host: 127.0.0.1:23119 header
 """
 
-from dataclasses import dataclass
+import os
+from dataclasses import dataclass, field
 from typing import Any, Optional
 import json
 
@@ -36,9 +37,9 @@ class ZoteroAPIError(Exception):
 @dataclass
 class ZoteroConfig:
     """Zotero connection configuration"""
-    host: str = "YOUR_ZOTERO_HOST"  # Windows machine IP
-    port: int = 23119
-    timeout: float = 30.0
+    host: str = field(default_factory=lambda: os.getenv("ZOTERO_HOST", "localhost"))
+    port: int = field(default_factory=lambda: int(os.getenv("ZOTERO_PORT", "23119")))
+    timeout: float = field(default_factory=lambda: float(os.getenv("ZOTERO_TIMEOUT", "30")))
     
     @property
     def base_url(self) -> str:
@@ -48,6 +49,11 @@ class ZoteroConfig:
     def host_header(self) -> str:
         """Required header for port proxy"""
         return f"127.0.0.1:{self.port}"
+    
+    @property
+    def needs_host_header(self) -> bool:
+        """Check if we need Host header override (remote connection via port proxy)"""
+        return self.host not in ("localhost", "127.0.0.1")
 
 
 class ZoteroClient:
@@ -65,13 +71,16 @@ class ZoteroClient:
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create HTTP client"""
         if self._client is None:
+            headers = {"Content-Type": "application/json"}
+            
+            # Add Host header override for remote connections (port proxy)
+            if self.config.needs_host_header:
+                headers["Host"] = self.config.host_header
+            
             self._client = httpx.AsyncClient(
                 base_url=self.config.base_url,
                 timeout=self.config.timeout,
-                headers={
-                    "Content-Type": "application/json",
-                    "Host": self.config.host_header,  # Required for port proxy
-                },
+                headers=headers,
             )
         return self._client
     
