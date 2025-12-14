@@ -52,23 +52,23 @@ def _extract_identifier(item: dict, field: str) -> Optional[str]:
 
 
 def _get_required_fields(item_type: str) -> list[str]:
-    """Get required fields for an item type."""
-    # Common required fields for all types
-    base_required = ["title"]
-    
-    # Type-specific requirements
-    type_requirements = {
-        "journalArticle": ["title", "creators"],
-        "book": ["title", "creators"],
-        "bookSection": ["title", "creators", "bookTitle"],
-        "conferencePaper": ["title", "creators"],
-        "thesis": ["title", "creators", "university"],
-        "report": ["title"],
-        "webpage": ["title", "url"],
-        "patent": ["title"],
-    }
-    
-    return type_requirements.get(item_type, base_required)
+    """Get required fields for an item type using Python 3.10+ match-case."""
+    # Python 3.10+ structural pattern matching
+    match item_type:
+        case "journalArticle" | "book":
+            return ["title", "creators"]
+        case "bookSection":
+            return ["title", "creators", "bookTitle"]
+        case "conferencePaper":
+            return ["title", "creators"]
+        case "thesis":
+            return ["title", "creators", "university"]
+        case "webpage":
+            return ["title", "url"]
+        case "report" | "patent":
+            return ["title"]
+        case _:
+            return ["title"]  # Default base required
 
 
 def _validate_item(item: dict) -> dict[str, Any]:

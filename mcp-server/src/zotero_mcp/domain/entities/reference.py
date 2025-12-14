@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Self
 from enum import Enum
 
 
@@ -35,12 +35,14 @@ class Creator:
         return self.last_name
     
     @classmethod
-    def from_full_name(cls, name: str, creator_type: str = "author") -> "Creator":
+    def from_full_name(cls, name: str, creator_type: str = "author") -> Self:
         """Parse full name into first/last name"""
         parts = name.strip().split(maxsplit=1)
-        if len(parts) == 1:
-            return cls(last_name=parts[0], creator_type=creator_type)
-        return cls(first_name=parts[0], last_name=parts[1], creator_type=creator_type)
+        match len(parts):
+            case 1:
+                return cls(last_name=parts[0], creator_type=creator_type)
+            case _:
+                return cls(first_name=parts[0], last_name=parts[1], creator_type=creator_type)
     
     def to_dict(self) -> dict:
         return {
@@ -146,7 +148,7 @@ class Reference:
         return data
     
     @classmethod
-    def from_zotero_dict(cls, data: dict) -> "Reference":
+    def from_zotero_dict(cls, data: dict) -> Self:
         """Create Reference from Zotero API response"""
         creators = []
         for c in data.get("creators", []):

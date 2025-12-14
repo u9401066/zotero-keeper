@@ -72,19 +72,21 @@ class BatchImportResult:
         """Add an item result and update counters."""
         self.total += 1
         
-        if item.action == ImportAction.ADDED:
-            self.added += 1
-            self.added_items.append(item)
-        elif item.action == ImportAction.SKIPPED:
-            self.skipped += 1
-            self.skipped_items.append(item)
-        elif item.action == ImportAction.WARNING:
-            self.warnings += 1
-            self.warning_items.append(item)
-        elif item.action == ImportAction.FAILED:
-            self.failed += 1
-            self.failed_items.append(item)
-            self.success = False  # Mark overall as failed if any item fails
+        # Python 3.10+ match-case for cleaner enum handling
+        match item.action:
+            case ImportAction.ADDED:
+                self.added += 1
+                self.added_items.append(item)
+            case ImportAction.SKIPPED:
+                self.skipped += 1
+                self.skipped_items.append(item)
+            case ImportAction.WARNING:
+                self.warnings += 1
+                self.warning_items.append(item)
+            case ImportAction.FAILED:
+                self.failed += 1
+                self.failed_items.append(item)
+                self.success = False  # Mark overall as failed if any item fails
     
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MCP response."""

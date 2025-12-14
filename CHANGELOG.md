@@ -15,6 +15,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.1] - 2025-12-14
+
+### Changed
+
+- **Python 3.10+ Modern Syntax**
+  - Adopted `match-case` pattern matching for cleaner code
+    - `batch_result.py`: Replaced if-elif chain with match-case in `add_item()`
+    - `smart_tools.py`: Replaced dict lookup with match-case in `_get_required_fields()`
+    - `reference.py`: Improved `from_full_name()` with match-case
+  - Adopted `Self` type (Python 3.11+) for classmethod return types
+    - `Creator.from_full_name() -> Self`
+    - `Reference.from_zotero_dict() -> Self`
+
+### Removed
+
+- **Duplicate Repository**: Removed `mcp-server/pubmed-search-mcp/` 
+  - Use PyPI package `pubmed-search-mcp>=0.1.13` instead
+  - Or use git submodule at `external/pubmed-search-mcp/`
+
+---
+
+## [1.6.0] - 2024-12-14
+
+(Previous release - Batch Import)
+
+---
+
 ## [1.5.0] - 2024-12-12
 
 ### 🧠 Smart Features (Phase 3)
