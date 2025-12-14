@@ -34,18 +34,23 @@ from ..mappers.pubmed_mapper import (
 )
 
 # Import pubmed integration
-from ..pubmed import fetch_pubmed_articles, get_pubmed_client
+from ..pubmed import fetch_pubmed_articles, get_pubmed_client, is_using_submodule
 
 # Check if pubmed-search is available
 try:
     _pubmed_client = get_pubmed_client()
     BATCH_IMPORT_AVAILABLE = True
-except ImportError:
+    if is_using_submodule():
+        logger.info("Batch import enabled (using submodule)")
+    else:
+        logger.info("Batch import enabled (using installed package)")
+except ImportError as e:
     BATCH_IMPORT_AVAILABLE = False
     logger.warning(
-        "pubmed-search submodule not available. "
-        "Batch import disabled. "
-        "Run: git submodule update --init --recursive"
+        f"pubmed-search not available: {e}\n"
+        "Batch import disabled. Options:\n"
+        "  1. Development: git submodule update --init --recursive\n"
+        "  2. Production: pip install pubmed-search-mcp"
     )
 
 

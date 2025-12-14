@@ -1,8 +1,13 @@
 """
 PubMed Search Integration
 
-Provides direct access to pubmed-search library as a Python import.
-This module handles the path configuration to import from the submodule.
+Provides direct access to pubmed-search library.
+
+Priority:
+1. Git submodule (development mode) - external/pubmed-search-mcp/src
+2. Installed package via pip/uv (production mode) - pubmed_search
+
+This allows both development with submodule and production with installed package.
 """
 
 import sys
@@ -13,53 +18,107 @@ from typing import TYPE_CHECKING
 
 logger = logging.getLogger(__name__)
 
-# Flag to track if we've already configured the path
-_path_configured = False
+# Flag to track configuration status
+_configured = False
+_use_submodule = False  # True if using submodule, False if using installed package
 
 
-def _configure_pubmed_search_path() -> bool:
+def _find_submodule_path() -> Path | None:
     """
-    Configure sys.path to allow importing pubmed_search from submodule.
+    Find the pubmed-search submodule path.
+    
+    Returns:
+        Path to submodule src/ directory, or None if not found.
+    """
+    current_file = Path(__file__).resolve()
+    
+    # Walk up from current file to find project root (contains external/)
+    def find_external(start_path: Path) -> Path | None:
+        current = start_path
+        for _ in range(10):  # Max 10 levels up
+            external = current / "external" / "pubmed-search-mcp" / "src"
+            if external.exists() and (external / "pubmed_search").is_dir():
+                return external
+            parent = current.parent
+            if parent == current:
+                break
+            current = parent
+        return None
+    
+    # Check environment variable first
+    env_path = os.environ.get("PUBMED_SEARCH_PATH")
+    if env_path:
+        p = Path(env_path)
+        if p.exists() and (p / "pubmed_search").is_dir():
+            return p
+    
+    # Search from current file location
+    found = find_external(current_file.parent)
+    if found:
+        return found
+    
+    # Search from cwd
+    found = find_external(Path.cwd())
+    if found:
+        return found
+    
+    return None
+
+
+def _configure_pubmed_search() -> bool:
+    """
+    Configure pubmed_search import.
+    
+    Priority:
+    1. Git submodule (if available) - for development
+    2. Installed package - for production
     
     Returns:
         True if successful, False otherwise.
     """
-    global _path_configured
+    global _configured, _use_submodule
     
-    if _path_configured:
+    if _configured:
         return True
     
-    # Find the external/pubmed-search-mcp/src directory
-    # We need to search upward from the current file location
-    current_file = Path(__file__).resolve()
-    
-    # Try different possible locations
-    possible_paths = [
-        # From mcp-server/src/zotero_mcp/infrastructure/pubmed/ (current location)
-        current_file.parent.parent.parent.parent.parent.parent / "external" / "pubmed-search-mcp" / "src",
-        # From workspace root
-        Path.cwd() / "external" / "pubmed-search-mcp" / "src",
-        # Alternative: environment variable
-    ]
-    
-    # Check PUBMED_SEARCH_PATH environment variable
-    env_path = os.environ.get("PUBMED_SEARCH_PATH")
-    if env_path:
-        possible_paths.insert(0, Path(env_path))
-    
-    for path in possible_paths:
-        if path.exists() and (path / "pubmed_search").is_dir():
-            path_str = str(path)
-            if path_str not in sys.path:
-                sys.path.insert(0, path_str)
-                logger.info(f"Added pubmed-search path: {path_str}")
-            _path_configured = True
+    # Priority 1: Try submodule first (development mode)
+    submodule_path = _find_submodule_path()
+    if submodule_path:
+        path_str = str(submodule_path)
+        if path_str not in sys.path:
+            sys.path.insert(0, path_str)
+        
+        # Verify import works
+        try:
+            import pubmed_search
+            # Reload if already imported from installed package
+            if hasattr(pubmed_search, '__file__') and submodule_path not in Path(pubmed_search.__file__).parents:
+                import importlib
+                importlib.reload(pubmed_search)
+            
+            logger.info(f"Using pubmed-search from submodule: {submodule_path}")
+            _configured = True
+            _use_submodule = True
             return True
+        except ImportError:
+            # Remove the path if import failed
+            if path_str in sys.path:
+                sys.path.remove(path_str)
+    
+    # Priority 2: Try installed package (production mode)
+    try:
+        import pubmed_search
+        logger.info(f"Using installed pubmed-search package: {pubmed_search.__file__}")
+        _configured = True
+        _use_submodule = False
+        return True
+    except ImportError:
+        pass
     
     logger.warning(
-        "Could not find pubmed-search-mcp submodule. "
-        "Please ensure the submodule is cloned: "
-        "git submodule update --init --recursive"
+        "pubmed-search not available. Options:\n"
+        "  1. Development: git submodule update --init --recursive\n"
+        "  2. Production: pip install pubmed-search-mcp"
     )
     return False
 
@@ -76,10 +135,11 @@ def get_pubmed_client():
     Raises:
         ImportError: If pubmed-search cannot be imported
     """
-    if not _configure_pubmed_search_path():
+    if not _configure_pubmed_search():
         raise ImportError(
             "Cannot import pubmed_search. "
-            "Please ensure external/pubmed-search-mcp submodule is available."
+            "Install via 'pip install pubmed-search-mcp' or "
+            "clone submodule via 'git submodule update --init --recursive'"
         )
     
     from pubmed_search.client import PubMedClient
@@ -89,6 +149,12 @@ def get_pubmed_client():
     api_key = os.environ.get("NCBI_API_KEY")
     
     return PubMedClient(email=email, api_key=api_key)
+
+
+def is_using_submodule() -> bool:
+    """Check if using submodule (development) or installed package (production)."""
+    _configure_pubmed_search()
+    return _use_submodule
 
 
 def fetch_pubmed_articles(pmids: list[str]) -> list[dict]:
