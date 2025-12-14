@@ -11,7 +11,11 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-def map_pubmed_to_zotero(article: dict[str, Any], extra_tags: list[str] | None = None) -> dict[str, Any]:
+def map_pubmed_to_zotero(
+    article: dict[str, Any],
+    extra_tags: list[str] | None = None,
+    collection_keys: list[str] | None = None,
+) -> dict[str, Any]:
     """
     Map a PubMed article (from pubmed-search) to Zotero journalArticle schema.
 
@@ -19,6 +23,7 @@ def map_pubmed_to_zotero(article: dict[str, Any], extra_tags: list[str] | None =
         article: Article dict from PubMedClient.fetch_details()
                  (SearchResult.to_dict() or raw dict)
         extra_tags: Additional tags to add (user-provided)
+        collection_keys: Zotero collection keys to add item to
 
     Returns:
         Zotero item dict ready for save_items()
@@ -192,6 +197,10 @@ def map_pubmed_to_zotero(article: dict[str, Any], extra_tags: list[str] | None =
 
     if tags:
         item["tags"] = tags
+
+    # Collections - add to specified collections
+    if collection_keys:
+        item["collections"] = collection_keys
 
     return item
 

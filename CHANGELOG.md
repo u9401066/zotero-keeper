@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.2] - 2025-12-14
+
+### 🐛 Bug Fix: batch_import_from_pubmed collection support
+
+Fixed a critical bug where `collection_key` parameter in `batch_import_from_pubmed` 
+was not actually adding items to the specified collection.
+
+### Fixed
+
+- **`batch_import_from_pubmed`** now correctly adds items to the specified collection
+  - Added `collection_keys` parameter to `map_pubmed_to_zotero()` mapper
+  - Items now include `collections` field in Zotero item schema
+  - Removed "not yet implemented" placeholder code
+  
+### Technical Details
+
+- Modified files:
+  - `infrastructure/mappers/pubmed_mapper.py`: Added `collection_keys` parameter
+  - `infrastructure/mcp/batch_tools.py`: Pass `collection_key` to mapper
+- **Test Coverage**: 358 tests passing (+3 new tests for collection_keys)
+
+---
+
 ## [1.7.1] - 2025-12-14
 
 ### 🧹 Code Quality & Static Analysis Release

@@ -192,6 +192,37 @@ class TestMapPubmedToZotero:
         # Count occurrences of "artificial intelligence"
         count = sum(1 for t in tag_values if t == "artificial intelligence")
         assert count == 1  # Should not duplicate
+
+    def test_map_collection_keys(self, mock_pubmed_article):
+        """Test adding collection keys."""
+        from zotero_mcp.infrastructure.mappers.pubmed_mapper import map_pubmed_to_zotero
+        
+        result = map_pubmed_to_zotero(
+            mock_pubmed_article,
+            collection_keys=["ABC123", "DEF456"],
+        )
+        
+        assert "collections" in result
+        assert result["collections"] == ["ABC123", "DEF456"]
+
+    def test_map_collection_keys_single(self, mock_pubmed_article):
+        """Test adding single collection key."""
+        from zotero_mcp.infrastructure.mappers.pubmed_mapper import map_pubmed_to_zotero
+        
+        result = map_pubmed_to_zotero(
+            mock_pubmed_article,
+            collection_keys=["MHT7CZ8U"],
+        )
+        
+        assert result["collections"] == ["MHT7CZ8U"]
+
+    def test_map_no_collection_keys(self, mock_pubmed_article):
+        """Test that collections field is absent when no collection_keys provided."""
+        from zotero_mcp.infrastructure.mappers.pubmed_mapper import map_pubmed_to_zotero
+        
+        result = map_pubmed_to_zotero(mock_pubmed_article)
+        
+        assert "collections" not in result
     
     def test_map_empty_article(self):
         """Test mapping article with minimal data."""

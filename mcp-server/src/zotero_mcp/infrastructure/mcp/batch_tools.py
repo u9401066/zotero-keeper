@@ -223,7 +223,13 @@ def register_batch_tools(mcp, zotero_client):
 
                 # Map to Zotero schema (complete metadata!)
                 try:
-                    zotero_item = map_pubmed_to_zotero(article, extra_tags=tags)
+                    # Pass collection_key to mapper so items are added to collection
+                    collection_keys = [collection_key] if collection_key else None
+                    zotero_item = map_pubmed_to_zotero(
+                        article,
+                        extra_tags=tags,
+                        collection_keys=collection_keys,
+                    )
                     items_to_save.append((pmid, title, zotero_item))
                 except Exception as e:
                     logger.error(f"Failed to map article {pmid}: {e}")
@@ -270,12 +276,10 @@ def register_batch_tools(mcp, zotero_client):
                             error=f"Save error: {e}",
                         ))
 
-            # 6. Add to collection if specified
-            if collection_key and result.added > 0:
+            # 6. Record collection info in result
+            if collection_key:
                 result.collection_key = collection_key
-                # Note: Adding to collection requires additional API calls
-                # This would need to be implemented via Zotero Local API
-                logger.info(f"Collection key specified: {collection_key} (not yet implemented)")
+                logger.info(f"Items added to collection: {collection_key}")
 
             # 7. Finalize result
             result.elapsed_time = time.time() - start_time
