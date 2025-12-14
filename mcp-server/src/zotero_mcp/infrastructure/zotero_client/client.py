@@ -13,10 +13,10 @@ Zotero 7 提供兩套 API:
 - 請求需要 Host: 127.0.0.1:23119 header
 """
 
+import json
 import os
 from dataclasses import dataclass, field
-from typing import Any, Optional
-import json
+from typing import Any
 
 import httpx
 
@@ -40,16 +40,16 @@ class ZoteroConfig:
     host: str = field(default_factory=lambda: os.getenv("ZOTERO_HOST", "localhost"))
     port: int = field(default_factory=lambda: int(os.getenv("ZOTERO_PORT", "23119")))
     timeout: float = field(default_factory=lambda: float(os.getenv("ZOTERO_TIMEOUT", "30")))
-    
+
     @property
     def base_url(self) -> str:
         return f"http://{self.host}:{self.port}"
-    
+
     @property
     def host_header(self) -> str:
         """Required header for port proxy"""
         return f"127.0.0.1:{self.port}"
-    
+
     @property
     def needs_host_header(self) -> bool:
         """Check if we need Host header override (remote connection via port proxy)"""
@@ -59,47 +59,47 @@ class ZoteroConfig:
 class ZoteroClient:
     """
     HTTP Client for Zotero Local API
-    
+
     Uses Zotero 7's built-in Local API for read operations
     and Connector API for write operations.
     """
-    
-    def __init__(self, config: Optional[ZoteroConfig] = None):
+
+    def __init__(self, config: ZoteroConfig | None = None):
         self.config = config or ZoteroConfig()
-        self._client: Optional[httpx.AsyncClient] = None
-    
+        self._client: httpx.AsyncClient | None = None
+
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create HTTP client"""
         if self._client is None:
             headers = {"Content-Type": "application/json"}
-            
+
             # Add Host header override for remote connections (port proxy)
             if self.config.needs_host_header:
                 headers["Host"] = self.config.host_header
-            
+
             self._client = httpx.AsyncClient(
                 base_url=self.config.base_url,
                 timeout=self.config.timeout,
                 headers=headers,
             )
         return self._client
-    
+
     async def close(self) -> None:
         """Close the HTTP client"""
         if self._client:
             await self._client.aclose()
             self._client = None
-    
+
     async def _request(
         self,
         method: str,
         path: str,
-        json_data: Optional[dict] = None,
-        params: Optional[dict] = None,
+        json_data: dict | None = None,
+        params: dict | None = None,
     ) -> Any:
         """Make HTTP request to Zotero API"""
         client = await self._get_client()
-        
+
         try:
             response = await client.request(
                 method=method,
@@ -107,7 +107,7 @@ class ZoteroClient:
                 json=json_data,
                 params=params,
             )
-            
+
             # Check for error responses
             if response.status_code >= 400:
                 raise ZoteroAPIError(
@@ -115,7 +115,7 @@ class ZoteroClient:
                     status_code=response.status_code,
                     response_text=response.text,
                 )
-            
+
             # Parse JSON response
             if response.text:
                 try:
@@ -123,7 +123,7 @@ class ZoteroClient:
                 except json.JSONDecodeError:
                     return response.text
             return None
-            
+
         except httpx.ConnectError as e:
             raise ZoteroConnectionError(
                 f"無法連接到 Zotero ({self.config.base_url})。\n"
@@ -139,7 +139,7 @@ class ZoteroClient:
             ) from e
 
     # ==================== Health Check ====================
-    
+
     async def ping(self) -> bool:
         """Check if Zotero is running"""
         try:
@@ -147,23 +147,23 @@ class ZoteroClient:
             return "Zotero is running" in str(result)
         except Exception:
             return False
-    
+
     # ==================== Local API (Read) ====================
     # Uses /api/users/0/... endpoints
-    
+
     async def get_items(
         self,
         limit: int = 50,
         start: int = 0,
         sort: str = "dateModified",
         direction: str = "desc",
-        item_type: Optional[str] = None,
-        q: Optional[str] = None,
+        item_type: str | None = None,
+        q: str | None = None,
         qmode: str = "titleCreatorYear",
     ) -> list[dict[str, Any]]:
         """
         Get items from user library
-        
+
         Args:
             limit: Maximum number of items to return
             start: Offset for pagination
@@ -184,17 +184,17 @@ class ZoteroClient:
         if q:
             params["q"] = q
             params["qmode"] = qmode
-        
+
         return await self._request("GET", "/api/users/0/items", params=params)
-    
+
     async def get_item(self, item_key: str) -> dict[str, Any]:
         """Get a single item by key"""
         return await self._request("GET", f"/api/users/0/items/{item_key}")
-    
+
     async def get_item_children(self, item_key: str) -> list[dict[str, Any]]:
         """Get child items (attachments, notes) of an item"""
         return await self._request("GET", f"/api/users/0/items/{item_key}/children")
-    
+
     async def search_items(
         self,
         query: str,
@@ -202,17 +202,17 @@ class ZoteroClient:
     ) -> list[dict[str, Any]]:
         """Search for items by title, creator, year"""
         return await self.get_items(q=query, limit=limit)
-    
+
     # ==================== Collections ====================
-    
+
     async def get_collections(self) -> list[dict[str, Any]]:
         """Get all collections"""
         return await self._request("GET", "/api/users/0/collections")
-    
+
     async def get_collection(self, collection_key: str) -> dict[str, Any]:
         """Get a single collection"""
         return await self._request("GET", f"/api/users/0/collections/{collection_key}")
-    
+
     async def get_collection_items(
         self,
         collection_key: str,
@@ -224,7 +224,7 @@ class ZoteroClient:
             f"/api/users/0/collections/{collection_key}/items",
             params={"limit": limit},
         )
-    
+
     async def find_collection_by_name(
         self,
         name: str,
@@ -232,38 +232,37 @@ class ZoteroClient:
     ) -> dict[str, Any] | None:
         """
         Find a collection by name (case-insensitive).
-        
+
         Args:
             name: Collection name to search for
             parent_key: Optional parent collection key to narrow search
-            
+
         Returns:
             Collection dict if found, None otherwise
         """
         collections = await self.get_collections()
         name_lower = name.lower().strip()
-        
+
         for col in collections:
             data = col.get("data", col)
             col_name = data.get("name", "").lower().strip()
             col_parent = data.get("parentCollection")
-            
-            if col_name == name_lower:
-                # If parent_key specified, must match
-                if parent_key is None or col_parent == parent_key:
-                    return col
-        
+
+            # If name matches and (no parent_key specified OR parent matches)
+            if col_name == name_lower and (parent_key is None or col_parent == parent_key):
+                return col
+
         return None
-    
+
     async def get_collection_tree(self) -> list[dict[str, Any]]:
         """
         Get collections organized as a tree structure.
-        
+
         Returns:
             List of root collections, each with 'children' array
         """
         collections = await self.get_collections()
-        
+
         # Build lookup dict
         col_by_key: dict[str, dict] = {}
         for col in collections:
@@ -276,61 +275,61 @@ class ZoteroClient:
                 "itemCount": data.get("numItems", 0),
                 "children": [],
             }
-        
+
         # Build tree
         roots = []
-        for key, col in col_by_key.items():
+        for _, col in col_by_key.items():
             parent_key = col["parentKey"]
             if parent_key and parent_key in col_by_key:
                 col_by_key[parent_key]["children"].append(col)
             else:
                 roots.append(col)
-        
+
         return roots
-    
+
     # ==================== Tags ====================
-    
+
     async def get_tags(self) -> list[dict[str, Any]]:
         """Get all tags"""
         return await self._request("GET", "/api/users/0/tags")
-    
+
     # ==================== Saved Searches (Local API Exclusive!) ====================
     # 🌟 This is a unique Local API feature - Web API cannot execute saved searches!
-    
+
     async def get_searches(self) -> list[dict[str, Any]]:
         """
         Get all saved searches.
-        
+
         Local API 獨有功能！
-        
+
         Returns:
             List of saved search objects with keys and conditions
         """
         return await self._request("GET", "/api/users/0/searches")
-    
+
     async def get_search(self, search_key: str) -> dict[str, Any]:
         """
         Get a specific saved search by key.
-        
+
         Args:
             search_key: The search key (e.g., "ABC12345")
-            
+
         Returns:
             Saved search object with name and conditions
         """
         return await self._request("GET", f"/api/users/0/searches/{search_key}")
-    
+
     async def execute_search(self, search_key: str, limit: int = 100) -> list[dict[str, Any]]:
         """
         Execute a saved search and return matching items.
-        
+
         🌟 這是 Local API 獨有的功能！Web API 只能讀取 search 的 metadata，
         無法實際執行搜尋並取得結果。這讓 AI 可以利用使用者預設的複雜搜尋條件。
-        
+
         Args:
             search_key: The search key to execute
             limit: Maximum number of items to return (default: 100)
-            
+
         Returns:
             List of items matching the saved search conditions
         """
@@ -339,34 +338,34 @@ class ZoteroClient:
             f"/api/users/0/searches/{search_key}/items",
             params={"limit": limit}
         )
-    
+
     async def find_search_by_name(self, name: str) -> dict[str, Any] | None:
         """
         Find a saved search by name (case-insensitive).
-        
+
         Args:
             name: Search name to look for
-            
+
         Returns:
             Search dict if found, None otherwise
         """
         searches = await self.get_searches()
         name_lower = name.lower().strip()
-        
+
         for search in searches:
             data = search.get("data", search)
             search_name = data.get("name", "").lower().strip()
             if search_name == name_lower:
                 return search
-        
+
         return None
-    
+
     # ==================== Schema ====================
-    
+
     async def get_item_types(self) -> list[dict[str, Any]]:
         """Get available item types"""
         return await self._request("GET", "/api/itemTypes")
-    
+
     async def get_item_fields(self, item_type: str) -> list[dict[str, Any]]:
         """Get fields for a specific item type"""
         return await self._request(
@@ -374,7 +373,7 @@ class ZoteroClient:
             "/api/itemTypeFields",
             params={"itemType": item_type},
         )
-    
+
     async def get_creator_types(self, item_type: str) -> list[dict[str, Any]]:
         """Get creator types for a specific item type"""
         return await self._request(
@@ -382,10 +381,10 @@ class ZoteroClient:
             "/api/itemTypeCreatorTypes",
             params={"itemType": item_type},
         )
-    
+
     # ==================== Connector API (Write) ====================
     # Uses /connector/... endpoints for write operations
-    
+
     async def save_items(
         self,
         items: list[dict[str, Any]],
@@ -394,15 +393,15 @@ class ZoteroClient:
     ) -> dict[str, Any]:
         """
         Save items using Connector API
-        
+
         This is the main method for WRITING to Zotero.
         Uses the same API that browser connectors use.
-        
+
         Args:
             items: List of items in Zotero API format
             uri: Source URI (for tracking)
             title: Page title (for tracking)
-        
+
         Returns:
             Response from Zotero including saved item keys
         """
@@ -412,25 +411,25 @@ class ZoteroClient:
             "title": title,
         }
         return await self._request("POST", "/connector/saveItems", json_data=payload)
-    
+
     async def create_item(
         self,
         item_type: str,
         title: str,
-        creators: Optional[list[dict[str, str]]] = None,
+        creators: list[dict[str, str]] | None = None,
         **fields,
     ) -> dict[str, Any]:
         """
         Create a single item
-        
+
         Convenience method that wraps save_items().
-        
+
         Args:
             item_type: Type of item (journalArticle, book, etc.)
             title: Item title
             creators: List of creators [{"firstName": "", "lastName": "", "creatorType": "author"}]
             **fields: Additional fields (date, DOI, url, abstract, etc.)
-        
+
         Example:
             await client.create_item(
                 item_type="journalArticle",
@@ -445,19 +444,19 @@ class ZoteroClient:
             "itemType": item_type,
             "title": title,
         }
-        
+
         if creators:
             item["creators"] = creators
-        
+
         # Add additional fields
         for key, value in fields.items():
             if value is not None:
                 item[key] = value
-        
+
         return await self.save_items([item])
-    
+
     # ==================== Export ====================
-    
+
     async def export_items(
         self,
         item_keys: list[str],
@@ -465,11 +464,11 @@ class ZoteroClient:
     ) -> str:
         """
         Export items in bibliographic format
-        
+
         Args:
             item_keys: List of item keys to export
             format: Export format (bibtex, ris, csljson, etc.)
-        
+
         Note: This may require the item keys to be fetched first
               and use translation API.
         """
@@ -480,9 +479,9 @@ class ZoteroClient:
         }
         result = await self._request("GET", "/api/users/0/items", params=params)
         return result if isinstance(result, str) else json.dumps(result)
-    
+
     # ==================== Batch Operations ====================
-    
+
     async def batch_check_identifiers(
         self,
         pmids: list[str] | None = None,
@@ -490,13 +489,13 @@ class ZoteroClient:
     ) -> dict[str, set[str]]:
         """
         Check which PMIDs and DOIs already exist in Zotero.
-        
+
         Efficiently checks for duplicates by scanning the library once.
-        
+
         Args:
             pmids: List of PMIDs to check
             dois: List of DOIs to check
-        
+
         Returns:
             {
                 "existing_pmids": set of PMIDs that exist,
@@ -506,21 +505,21 @@ class ZoteroClient:
             }
         """
         import re
-        
+
         pmids = set(pmids or [])
-        dois = set(d.lower() for d in (dois or []))
-        
+        dois = {d.lower() for d in (dois or [])}
+
         existing_pmids: set[str] = set()
         existing_dois: set[str] = set()
         pmid_to_key: dict[str, str] = {}
         doi_to_key: dict[str, str] = {}
-        
+
         # Get all items (paginated if needed)
         # For now, get a reasonable batch - adjust if library is huge
         all_items: list[dict] = []
         start = 0
         batch_size = 100
-        
+
         while True:
             items = await self.get_items(limit=batch_size, start=start)
             if not items:
@@ -532,12 +531,12 @@ class ZoteroClient:
             # Safety limit
             if start > 5000:
                 break
-        
+
         # Scan items for PMIDs and DOIs
         for item in all_items:
             data = item.get("data", item)
             key = item.get("key", "")
-            
+
             # Check DOI
             item_doi = data.get("DOI", "")
             if item_doi:
@@ -545,7 +544,7 @@ class ZoteroClient:
                 if item_doi_lower in dois:
                     existing_dois.add(item_doi_lower)
                     doi_to_key[item_doi_lower] = key
-            
+
             # Check PMID in extra field
             extra = data.get("extra", "")
             if extra:
@@ -555,14 +554,14 @@ class ZoteroClient:
                     if item_pmid in pmids:
                         existing_pmids.add(item_pmid)
                         pmid_to_key[item_pmid] = key
-        
+
         return {
             "existing_pmids": existing_pmids,
             "existing_dois": existing_dois,
             "pmid_to_key": pmid_to_key,
             "doi_to_key": doi_to_key,
         }
-    
+
     async def batch_save_items(
         self,
         items: list[dict[str, Any]],
@@ -571,18 +570,18 @@ class ZoteroClient:
     ) -> dict[str, Any]:
         """
         Save multiple items in a single request.
-        
+
         Wrapper around save_items with batch-specific settings.
-        
+
         Args:
             items: List of items in Zotero API format
             uri: Source URI for tracking
             title: Source title for tracking
-        
+
         Returns:
             Response from Zotero API
         """
         if not items:
             return {"success": True, "items": []}
-        
+
         return await self.save_items(items, uri=uri, title=title)

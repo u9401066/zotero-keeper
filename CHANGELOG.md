@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.1] - 2025-12-14
+
+### 🧹 Code Quality & Static Analysis Release
+
+Comprehensive code quality improvements via ruff static analysis.
+
+### Fixed
+
+- **~750 code issues** identified and fixed by ruff linter:
+  - Removed unused imports (F401) - ~15 instances
+  - Fixed f-strings without placeholders (F541) - ~5 instances  
+  - Fixed unused loop variables (B007) - `for key, col` → `for _, col`
+  - Simplified nested if statements (SIM102)
+  - Sorted and formatted import blocks (I001) - ~20 instances
+  - Modernized type annotations: `Optional[X]` → `X | None` (UP045)
+  - Removed trailing whitespace (W293) - ~300+ instances
+
+### Changed
+
+- Added `# noqa` comments for intentional design patterns:
+  - `TYPE_CHECKING` imports in `pubmed/__init__.py`
+  - Conditional imports in `batch_tools.py`
+
+### Technical Details
+
+- **Test Coverage**: 355 tests passing, 67% coverage
+- **Linter Status**: All critical errors resolved (only E501 line length warnings remain)
+- **Python**: Requires 3.11+ (modern syntax throughout)
+
+---
+
 ## [1.7.0] - 2025-12-14
 
 ### 🎯 Tool Simplification & MCP Enhancement Release

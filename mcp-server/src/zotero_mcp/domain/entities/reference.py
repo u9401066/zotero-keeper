@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, Self
 from enum import Enum
+from typing import Self
 
 
 class ItemType(str, Enum):
@@ -27,13 +27,13 @@ class Creator:
     last_name: str
     first_name: str = ""
     creator_type: str = "author"
-    
+
     @property
     def full_name(self) -> str:
         if self.first_name:
             return f"{self.first_name} {self.last_name}"
         return self.last_name
-    
+
     @classmethod
     def from_full_name(cls, name: str, creator_type: str = "author") -> Self:
         """Parse full name into first/last name"""
@@ -43,7 +43,7 @@ class Creator:
                 return cls(last_name=parts[0], creator_type=creator_type)
             case _:
                 return cls(first_name=parts[0], last_name=parts[1], creator_type=creator_type)
-    
+
     def to_dict(self) -> dict:
         return {
             "firstName": self.first_name,
@@ -56,39 +56,39 @@ class Creator:
 class Reference:
     """
     Reference Entity
-    
+
     Represents a bibliographic reference in the Zotero library.
     This is the core domain entity.
     """
     title: str
     item_type: ItemType = ItemType.JOURNAL_ARTICLE
-    key: Optional[str] = None
+    key: str | None = None
     creators: list[Creator] = field(default_factory=list)
-    
+
     # Publication info
-    date: Optional[str] = None
-    doi: Optional[str] = None
-    url: Optional[str] = None
-    abstract: Optional[str] = None
-    
+    date: str | None = None
+    doi: str | None = None
+    url: str | None = None
+    abstract: str | None = None
+
     # Journal/Book info
-    publication_title: Optional[str] = None
-    volume: Optional[str] = None
-    issue: Optional[str] = None
-    pages: Optional[str] = None
-    publisher: Optional[str] = None
-    place: Optional[str] = None
-    
+    publication_title: str | None = None
+    volume: str | None = None
+    issue: str | None = None
+    pages: str | None = None
+    publisher: str | None = None
+    place: str | None = None
+
     # Identifiers
-    isbn: Optional[str] = None
-    issn: Optional[str] = None
-    
+    isbn: str | None = None
+    issn: str | None = None
+
     # Metadata
     tags: list[str] = field(default_factory=list)
     collections: list[str] = field(default_factory=list)
-    date_added: Optional[datetime] = None
-    date_modified: Optional[datetime] = None
-    
+    date_added: datetime | None = None
+    date_modified: datetime | None = None
+
     @property
     def authors_string(self) -> str:
         """Get formatted authors string"""
@@ -96,7 +96,7 @@ class Reference:
         if not authors:
             return ""
         return ", ".join(c.full_name for c in authors)
-    
+
     @property
     def citation_key(self) -> str:
         """Generate a citation key"""
@@ -104,21 +104,21 @@ class Reference:
             first_word = self.title.split()[0] if self.title else "unknown"
             year = self.date[:4] if self.date else ""
             return f"{first_word}{year}"
-        
+
         first_author = self.creators[0].last_name.lower()
         year = self.date[:4] if self.date else ""
         return f"{first_author}{year}"
-    
+
     def to_zotero_dict(self) -> dict:
         """Convert to Zotero API format"""
         data: dict = {
             "itemType": self.item_type.value,
             "title": self.title,
         }
-        
+
         if self.creators:
             data["creators"] = [c.to_dict() for c in self.creators]
-        
+
         # Optional fields
         field_mappings = {
             "date": self.date,
@@ -134,19 +134,19 @@ class Reference:
             "ISBN": self.isbn,
             "ISSN": self.issn,
         }
-        
+
         for key, value in field_mappings.items():
             if value:
                 data[key] = value
-        
+
         if self.tags:
             data["tags"] = [{"tag": t} for t in self.tags]
-        
+
         if self.collections:
             data["collections"] = self.collections
-        
+
         return data
-    
+
     @classmethod
     def from_zotero_dict(cls, data: dict) -> Self:
         """Create Reference from Zotero API response"""
@@ -157,9 +157,9 @@ class Reference:
                 last_name=c.get("lastName", c.get("name", "")),
                 creator_type=c.get("creatorType", "author"),
             ))
-        
+
         tags = [t["tag"] if isinstance(t, dict) else t for t in data.get("tags", [])]
-        
+
         return cls(
             key=data.get("key"),
             title=data.get("title", ""),

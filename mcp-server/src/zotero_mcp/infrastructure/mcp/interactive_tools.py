@@ -18,12 +18,11 @@ Key Features:
 """
 
 import logging
-from typing import Any, Optional
-
-from pydantic import BaseModel, Field
+from typing import Any
 
 from mcp.server.fastmcp import Context
 from mcp.server.session import ServerSession
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
@@ -32,16 +31,16 @@ logger = logging.getLogger(__name__)
 # Auto-fetch Metadata Functions (Data Integrity Guarantee)
 # =============================================================================
 
-async def _fetch_metadata_from_pmid(pmid: str) -> Optional[dict]:
+async def _fetch_metadata_from_pmid(pmid: str) -> dict | None:
     """
     Fetch complete article metadata from PubMed using PMID.
-    
+
     Returns Zotero-compatible item dict with all fields including abstract.
     """
     try:
-        from ..pubmed import fetch_pubmed_articles
         from ..mappers.pubmed_mapper import pubmed_to_zotero_item
-        
+        from ..pubmed import fetch_pubmed_articles
+
         articles = fetch_pubmed_articles([pmid])
         if articles:
             article = articles[0]
@@ -53,31 +52,31 @@ async def _fetch_metadata_from_pmid(pmid: str) -> Optional[dict]:
     return None
 
 
-async def _fetch_metadata_from_doi(doi: str) -> Optional[dict]:
+async def _fetch_metadata_from_doi(doi: str) -> dict | None:
     """
     Fetch complete article metadata from CrossRef using DOI.
-    
+
     Returns Zotero-compatible item dict with all fields including abstract.
     """
     import httpx
-    
+
     try:
         url = f"https://api.crossref.org/works/{doi}"
         async with httpx.AsyncClient(timeout=10) as client:
             response = await client.get(url)
-            
+
         if response.status_code != 200:
             return None
-            
+
         data = response.json().get("message", {})
-        
+
         # Convert CrossRef format to Zotero format
         item = {
             "itemType": "journalArticle",
             "title": " ".join(data.get("title", [])),
             "DOI": doi,
         }
-        
+
         # Abstract
         abstract = data.get("abstract", "")
         if abstract:
@@ -85,7 +84,7 @@ async def _fetch_metadata_from_doi(doi: str) -> Optional[dict]:
             import re
             abstract = re.sub(r'<[^>]+>', '', abstract)
             item["abstractNote"] = abstract
-        
+
         # Authors
         authors = data.get("author", [])
         if authors:
@@ -97,12 +96,12 @@ async def _fetch_metadata_from_doi(doi: str) -> Optional[dict]:
                 }
                 for a in authors
             ]
-        
+
         # Journal
         containers = data.get("container-title", [])
         if containers:
             item["publicationTitle"] = containers[0]
-        
+
         # Date
         published = data.get("published", {}).get("date-parts", [[]])
         if published and published[0]:
@@ -113,7 +112,7 @@ async def _fetch_metadata_from_doi(doi: str) -> Optional[dict]:
                     item["date"] = f"{date_parts[0]}-{date_parts[1]:02d}"
                 if len(date_parts) >= 3:
                     item["date"] = f"{date_parts[0]}-{date_parts[1]:02d}-{date_parts[2]:02d}"
-        
+
         # Volume, Issue, Pages
         if data.get("volume"):
             item["volume"] = data["volume"]
@@ -121,14 +120,14 @@ async def _fetch_metadata_from_doi(doi: str) -> Optional[dict]:
             item["issue"] = data["issue"]
         if data.get("page"):
             item["pages"] = data["page"]
-        
+
         # URL
         if data.get("URL"):
             item["url"] = data["URL"]
-        
+
         logger.info(f"Fetched complete metadata from DOI {doi}")
         return item
-        
+
     except Exception as e:
         logger.warning(f"Failed to fetch metadata from DOI {doi}: {e}")
     return None
@@ -137,18 +136,18 @@ async def _fetch_metadata_from_doi(doi: str) -> Optional[dict]:
 def _merge_metadata(user_input: dict, fetched: dict) -> dict:
     """
     Merge user-provided data with fetched metadata.
-    
+
     User-provided data takes priority, fetched data fills gaps.
     This ensures:
     1. User's explicit values are preserved
     2. Missing fields (especially abstract!) are filled from API
     """
     result = fetched.copy()
-    
+
     for key, value in user_input.items():
         if value is not None and value != "" and value != []:
             result[key] = value
-    
+
     return result
 
 
@@ -177,27 +176,27 @@ class DuplicateConfirmSchema(BaseModel):
 def _format_collection_options(collections: list[dict], suggestions: list[dict] = None) -> str:
     """
     Format collections as numbered options for user selection.
-    
+
     Returns a formatted string like:
-    
+
     📁 Available Collections:
     ─────────────────────────
     ⭐ Suggested:
        1. AI Research (score: 85) - 12 items
        2. Machine Learning (score: 70) - 8 items
-    
+
     📂 All Collections:
        3. Biology - 15 items
        4. Chemistry - 10 items
        ...
-       
+
     0. Save to My Library (no collection)
     """
     lines = ["", "📁 **Select a Collection:**", "─" * 30]
-    
+
     option_num = 1
     key_to_num: dict[str, int] = {}
-    
+
     # Add suggestions first if available
     if suggestions:
         lines.append("")
@@ -210,11 +209,11 @@ def _format_collection_options(collections: list[dict], suggestions: list[dict] 
             lines.append(f"   **{option_num}.** {name} (match: {score}%) - {reason}")
             key_to_num[key] = option_num
             option_num += 1
-    
+
     # Add all collections (excluding already suggested)
     suggested_keys = {s.get("key") for s in (suggestions or [])}
     other_collections = [c for c in collections if c.get("key") not in suggested_keys]
-    
+
     if other_collections:
         lines.append("")
         lines.append("📂 **All Collections:**")
@@ -227,31 +226,31 @@ def _format_collection_options(collections: list[dict], suggestions: list[dict] 
             lines.append(f"{indent}**{option_num}.** {name} ({item_count} items)")
             key_to_num[key] = option_num
             option_num += 1
-        
+
         if len(other_collections) > 15:
             lines.append(f"   ... and {len(other_collections) - 15} more collections")
-    
+
     # Always add "no collection" option
     lines.append("")
     lines.append("**0.** Save to My Library (no collection)")
     lines.append("")
     lines.append("─" * 30)
-    
+
     return "\n".join(lines), key_to_num
 
 
-def _num_to_collection_key(num_str: str, key_to_num: dict[str, int]) -> Optional[str]:
+def _num_to_collection_key(num_str: str, key_to_num: dict[str, int]) -> str | None:
     """Convert user's number choice back to collection key"""
     try:
         choice_num = int(num_str.strip())
         if choice_num == 0:
             return None  # No collection
-        
+
         # Reverse lookup
         for key, num in key_to_num.items():
             if num == choice_num:
                 return key
-        
+
         return None
     except ValueError:
         return None
@@ -293,26 +292,26 @@ def _validate_item(item: dict) -> dict[str, Any]:
     """Validate a reference item."""
     errors = []
     warnings = []
-    
+
     item_type = item.get("itemType", "document")
     required_fields = _get_required_fields(item_type)
-    
+
     for field in required_fields:
         if field == "creators":
             creators = item.get("creators", [])
             if not creators:
-                errors.append(f"Missing required: creators (at least one author)")
+                errors.append("Missing required: creators (at least one author)")
         else:
             if not item.get(field):
                 errors.append(f"Missing required: {field}")
-    
+
     # Warnings for journal articles
     if item_type == "journalArticle":
         if not item.get("publicationTitle"):
             warnings.append("Recommended: publicationTitle (journal name)")
         if not item.get("DOI"):
             warnings.append("Recommended: DOI")
-    
+
     return {
         "valid": len(errors) == 0,
         "errors": errors,
@@ -326,23 +325,23 @@ def _validate_item(item: dict) -> dict[str, Any]:
 
 def register_interactive_save_tools(mcp, zotero_client):
     """Register the interactive save tool with elicitation support."""
-    
+
     # Import suggestion function from smart_tools
-    from .smart_tools import _suggest_collections, _find_duplicates
-    
+    from .smart_tools import _find_duplicates, _suggest_collections
+
     @mcp.tool()
     async def interactive_save(
         item_type: str,
         title: str,
-        creators: Optional[list[dict]] = None,
-        doi: Optional[str] = None,
-        isbn: Optional[str] = None,
-        pmid: Optional[str] = None,
-        publication_title: Optional[str] = None,
-        date: Optional[str] = None,
-        abstract: Optional[str] = None,
-        url: Optional[str] = None,
-        tags: Optional[list[str]] = None,
+        creators: list[dict] | None = None,
+        doi: str | None = None,
+        isbn: str | None = None,
+        pmid: str | None = None,
+        publication_title: str | None = None,
+        date: str | None = None,
+        abstract: str | None = None,
+        url: str | None = None,
+        tags: list[str] | None = None,
         skip_collection_prompt: bool = False,
         auto_fetch_metadata: bool = True,
         ctx: Context[ServerSession, None] = None,
@@ -350,20 +349,20 @@ def register_interactive_save_tools(mcp, zotero_client):
     ) -> dict[str, Any]:
         """
         💾 Interactive save with collection selection
-        
+
         互動式儲存 - 會列出所有收藏夾讓你選擇
-        
+
         🎯 This tool uses MCP Elicitation to:
         1. Show all available collections as numbered options
         2. Highlight suggested collections based on title/tags
         3. Let you choose by entering a number
         4. Confirm if duplicates are found
-        
+
         🔒 DATA INTEGRITY:
         When DOI or PMID is provided, this tool will **automatically fetch**
         complete article metadata from external APIs (CrossRef/PubMed).
         This ensures the saved reference includes abstract and all fields!
-        
+
         Args:
             item_type: Type (journalArticle, book, etc.)
             title: Reference title (required)
@@ -379,7 +378,7 @@ def register_interactive_save_tools(mcp, zotero_client):
             skip_collection_prompt: If True, save without asking (to My Library)
             auto_fetch_metadata: If True (default), auto-fetch from DOI/PMID
             **extra_fields: Additional Zotero fields
-            
+
         Returns:
             {
                 "success": bool,
@@ -387,7 +386,7 @@ def register_interactive_save_tools(mcp, zotero_client):
                 "saved_to": collection info or "My Library",
                 "metadata_source": "user" | "pmid" | "doi" | "merged"
             }
-            
+
         Example:
             interactive_save(
                 item_type="journalArticle",
@@ -395,7 +394,7 @@ def register_interactive_save_tools(mcp, zotero_client):
                 doi="10.1234/example",  # ← Will auto-fetch abstract!
                 tags=["AI", "medical"]
             )
-            
+
             → Fetches complete metadata from CrossRef
             → Shows numbered collection list
             → User enters "2" to select second option
@@ -407,7 +406,7 @@ def register_interactive_save_tools(mcp, zotero_client):
             "saved_to": None,
             "metadata_source": "user",
         }
-        
+
         try:
             # ========== Step 0: Auto-fetch metadata if DOI/PMID provided ==========
             user_input = {
@@ -415,7 +414,7 @@ def register_interactive_save_tools(mcp, zotero_client):
                 "title": title,
                 "creators": creators or [],
             }
-            
+
             if doi:
                 user_input["DOI"] = doi
             if isbn:
@@ -432,25 +431,25 @@ def register_interactive_save_tools(mcp, zotero_client):
                 user_input["url"] = url
             if tags:
                 user_input["tags"] = [{"tag": t} for t in tags]
-            
+
             user_input.update(extra_fields)
-            
+
             # Auto-fetch if enabled and we have identifiers
             fetched_metadata = None
-            
+
             if auto_fetch_metadata:
                 # Try PMID first (more reliable for academic articles)
                 if pmid:
                     fetched_metadata = await _fetch_metadata_from_pmid(pmid)
                     if fetched_metadata:
                         result["metadata_source"] = "pmid"
-                
+
                 # If no PMID or fetch failed, try DOI
                 if not fetched_metadata and doi:
                     fetched_metadata = await _fetch_metadata_from_doi(doi)
                     if fetched_metadata:
                         result["metadata_source"] = "doi"
-            
+
             # Merge: user input takes priority, fetched fills gaps
             if fetched_metadata:
                 item = _merge_metadata(user_input, fetched_metadata)
@@ -459,24 +458,24 @@ def register_interactive_save_tools(mcp, zotero_client):
                 logger.info(f"Merged metadata from {result['metadata_source']}")
             else:
                 item = user_input
-            
+
             # Log if abstract is present
             if item.get("abstractNote"):
                 logger.info(f"✅ Abstract included ({len(item['abstractNote'])} chars)")
             else:
                 logger.warning("⚠️ No abstract in final item - consider providing DOI/PMID")
                 result["warning"] = "No abstract available. Provide DOI or PMID for complete metadata."
-            
+
             # ========== Step 1: Validation ==========
             validation = _validate_item(item)
             if not validation["valid"]:
                 result["message"] = f"❌ Validation failed: {', '.join(validation['errors'])}"
                 result["validation"] = validation
                 return result
-            
+
             # ========== Step 2: Duplicate Check ==========
             duplicates = await _find_duplicates(item, zotero_client)
-            
+
             if duplicates and ctx:
                 # Ask user to confirm
                 best = duplicates[0]
@@ -486,13 +485,13 @@ def register_interactive_save_tools(mcp, zotero_client):
                     f"Match: {best['score']}% ({best['match_type']})\n\n"
                     f"Do you want to add anyway?"
                 )
-                
+
                 try:
                     dup_result = await ctx.elicit(
                         message=dup_msg,
                         schema=DuplicateConfirmSchema,
                     )
-                    
+
                     if dup_result.action == "accept" and dup_result.data:
                         if dup_result.data.confirm.lower() not in ("yes", "y", "是", "確定"):
                             result["message"] = "❌ Cancelled - duplicate exists"
@@ -505,11 +504,11 @@ def register_interactive_save_tools(mcp, zotero_client):
                     # Elicitation not supported, proceed with warning
                     logger.warning(f"Elicitation failed (duplicate check): {e}")
                     result["duplicate_warning"] = f"Duplicate found: {best['title']} ({best['score']}%)"
-            
+
             # ========== Step 3: Collection Selection ==========
             target_collection_key = None
             target_collection_name = None
-            
+
             if not skip_collection_prompt and ctx:
                 try:
                     # Get all collections
@@ -523,30 +522,30 @@ def register_interactive_save_tools(mcp, zotero_client):
                         }
                         for c in collections
                     ]
-                    
+
                     # Get suggestions
                     suggestions = await _suggest_collections(item, zotero_client)
-                    
+
                     # Format options
                     options_text, key_to_num = _format_collection_options(all_collections, suggestions)
-                    
+
                     # Build elicitation message
                     elicit_msg = (
                         f"📚 **Saving:** {title}\n"
                         f"{options_text}\n"
                         f"Enter the number of your choice:"
                     )
-                    
+
                     # Ask user
                     choice_result = await ctx.elicit(
                         message=elicit_msg,
                         schema=CollectionChoiceSchema,
                     )
-                    
+
                     if choice_result.action == "accept" and choice_result.data:
                         choice = choice_result.data.choice.strip()
                         target_collection_key = _num_to_collection_key(choice, key_to_num)
-                        
+
                         if target_collection_key:
                             # Find the name
                             for c in all_collections:
@@ -556,18 +555,18 @@ def register_interactive_save_tools(mcp, zotero_client):
                     elif choice_result.action in ("decline", "cancel"):
                         result["message"] = "❌ Cancelled by user"
                         return result
-                        
+
                 except Exception as e:
                     # Elicitation not supported, save without collection
                     logger.warning(f"Elicitation failed (collection selection): {e}")
                     result["note"] = "Collection selection skipped (elicitation not supported)"
-            
+
             # ========== Step 4: Save ==========
             if target_collection_key:
                 item["collections"] = [target_collection_key]
-            
+
             await zotero_client.save_items([item])
-            
+
             result["success"] = True
             if target_collection_key:
                 result["saved_to"] = {
@@ -578,51 +577,51 @@ def register_interactive_save_tools(mcp, zotero_client):
             else:
                 result["saved_to"] = "My Library (no collection)"
                 result["message"] = f"✅ Saved '{title}' to My Library"
-            
+
             if validation.get("warnings"):
                 result["warnings"] = validation["warnings"]
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"Interactive save failed: {e}")
             result["message"] = f"❌ Save failed: {str(e)}"
             return result
-    
-    
+
+
     @mcp.tool()
     async def quick_save(
         item_type: str,
         title: str,
-        collection_key: Optional[str] = None,
-        collection_name: Optional[str] = None,
-        creators: Optional[list[dict]] = None,
-        doi: Optional[str] = None,
-        isbn: Optional[str] = None,
-        pmid: Optional[str] = None,
-        publication_title: Optional[str] = None,
-        date: Optional[str] = None,
-        abstract: Optional[str] = None,
-        url: Optional[str] = None,
-        tags: Optional[list[str]] = None,
+        collection_key: str | None = None,
+        collection_name: str | None = None,
+        creators: list[dict] | None = None,
+        doi: str | None = None,
+        isbn: str | None = None,
+        pmid: str | None = None,
+        publication_title: str | None = None,
+        date: str | None = None,
+        abstract: str | None = None,
+        url: str | None = None,
+        tags: list[str] | None = None,
         force_add: bool = False,
         auto_fetch_metadata: bool = True,
         **extra_fields,
     ) -> dict[str, Any]:
         """
         ⚡ Quick save without interactive prompts
-        
+
         快速儲存（不詢問，直接存）
-        
+
         Use this when you already know the collection, or want to save
         without interaction. For interactive collection selection,
         use `interactive_save` instead.
-        
+
         🔒 DATA INTEGRITY:
         When DOI or PMID is provided, this tool will **automatically fetch**
         complete article metadata from external APIs (CrossRef/PubMed).
         This ensures the saved reference includes abstract and all fields!
-        
+
         Args:
             item_type: Type (journalArticle, book, etc.)
             title: Reference title (required)
@@ -640,10 +639,10 @@ def register_interactive_save_tools(mcp, zotero_client):
             force_add: Add even if duplicate found
             auto_fetch_metadata: If True (default), auto-fetch from DOI/PMID
             **extra_fields: Additional Zotero fields
-            
+
         Returns:
             Success/failure with details
-            
+
         Example:
             quick_save(
                 item_type="journalArticle",
@@ -658,7 +657,7 @@ def register_interactive_save_tools(mcp, zotero_client):
             "saved_to": None,
             "metadata_source": "user",
         }
-        
+
         try:
             # ========== Step 0: Auto-fetch metadata if DOI/PMID provided ==========
             user_input = {
@@ -666,7 +665,7 @@ def register_interactive_save_tools(mcp, zotero_client):
                 "title": title,
                 "creators": creators or [],
             }
-            
+
             if doi:
                 user_input["DOI"] = doi
             if isbn:
@@ -683,25 +682,25 @@ def register_interactive_save_tools(mcp, zotero_client):
                 user_input["url"] = url
             if tags:
                 user_input["tags"] = [{"tag": t} for t in tags]
-            
+
             user_input.update(extra_fields)
-            
+
             # Auto-fetch if enabled and we have identifiers
             fetched_metadata = None
-            
+
             if auto_fetch_metadata:
                 # Try PMID first (more reliable for academic articles)
                 if pmid:
                     fetched_metadata = await _fetch_metadata_from_pmid(pmid)
                     if fetched_metadata:
                         result["metadata_source"] = "pmid"
-                
+
                 # If no PMID or fetch failed, try DOI
                 if not fetched_metadata and doi:
                     fetched_metadata = await _fetch_metadata_from_doi(doi)
                     if fetched_metadata:
                         result["metadata_source"] = "doi"
-            
+
             # Merge: user input takes priority, fetched fills gaps
             if fetched_metadata:
                 item = _merge_metadata(user_input, fetched_metadata)
@@ -710,20 +709,20 @@ def register_interactive_save_tools(mcp, zotero_client):
                 logger.info(f"Merged metadata from {result['metadata_source']}")
             else:
                 item = user_input
-            
+
             # Log if abstract is present
             if item.get("abstractNote"):
                 logger.info(f"✅ Abstract included ({len(item['abstractNote'])} chars)")
             else:
                 logger.warning("⚠️ No abstract in final item")
                 result["warning"] = "No abstract available. Provide DOI or PMID for complete metadata."
-            
+
             # Validation
             validation = _validate_item(item)
             if not validation["valid"]:
                 result["message"] = f"❌ Validation failed: {', '.join(validation['errors'])}"
                 return result
-            
+
             # Duplicate check
             if not force_add:
                 duplicates = await _find_duplicates(item, zotero_client)
@@ -732,11 +731,11 @@ def register_interactive_save_tools(mcp, zotero_client):
                     result["message"] = f"⚠️ Duplicate found: '{best['title']}' ({best['score']}% match). Use force_add=True to add anyway."
                     result["duplicate"] = best
                     return result
-            
+
             # Resolve collection
             target_key = None
             target_name = None
-            
+
             if collection_key:
                 try:
                     col = await zotero_client.get_collection(collection_key)
@@ -745,7 +744,7 @@ def register_interactive_save_tools(mcp, zotero_client):
                 except Exception:
                     result["message"] = f"❌ Collection key '{collection_key}' not found"
                     return result
-                    
+
             elif collection_name:
                 found = await zotero_client.find_collection_by_name(collection_name)
                 if found:
@@ -754,13 +753,13 @@ def register_interactive_save_tools(mcp, zotero_client):
                 else:
                     result["message"] = f"❌ Collection '{collection_name}' not found"
                     return result
-            
+
             # Save
             if target_key:
                 item["collections"] = [target_key]
-            
+
             await zotero_client.save_items([item])
-            
+
             result["success"] = True
             if target_key:
                 result["saved_to"] = {"key": target_key, "name": target_name}
@@ -768,13 +767,13 @@ def register_interactive_save_tools(mcp, zotero_client):
             else:
                 result["saved_to"] = "My Library"
                 result["message"] = f"✅ Saved '{title}' to My Library"
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"Quick save failed: {e}")
             result["message"] = f"❌ Save failed: {str(e)}"
             return result
-    
-    
+
+
     logger.info("Interactive save tools registered (interactive_save, quick_save)")

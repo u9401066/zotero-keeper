@@ -17,7 +17,6 @@ NOTE: 原本的 6 個 tools 已整合進 interactive_tools.py（方案 A 精簡�
 """
 
 import logging
-from typing import Any, Optional
 
 from rapidfuzz import fuzz, process
 
@@ -40,11 +39,11 @@ def _normalize_title(title: str) -> str:
     return title.strip()
 
 
-def _extract_identifier(item: dict, field: str) -> Optional[str]:
+def _extract_identifier(item: dict, field: str) -> str | None:
     """Extract identifier from item, checking multiple locations."""
     if item.get(field):
         return str(item[field]).strip().lower()
-    
+
     extra = item.get("extra", "")
     if extra and field in extra.upper():
         import re
@@ -52,7 +51,7 @@ def _extract_identifier(item: dict, field: str) -> Optional[str]:
         match = re.search(pattern, extra, re.IGNORECASE)
         if match:
             return match.group(1).strip().lower()
-    
+
     return None
 
 
@@ -62,37 +61,37 @@ async def _suggest_collections(
 ) -> list[dict]:
     """
     Suggest appropriate collections for an item based on title/keywords.
-    
+
     Uses fuzzy matching to find relevant collections.
-    
+
     Returns list of suggested collections with relevance scores.
     """
     suggestions = []
-    
+
     title = item.get("title", "").lower()
     abstract = item.get("abstractNote", item.get("abstract", "")).lower()
     tags = [t.get("tag", t) if isinstance(t, dict) else str(t) for t in item.get("tags", [])]
-    
+
     item_text = f"{title} {abstract} {' '.join(tags)}".lower()
-    
+
     if not item_text.strip():
         return suggestions
-    
+
     try:
         collections = await zotero_client.get_collections()
     except Exception:
         return suggestions
-    
+
     for col in collections:
         data = col.get("data", col)
         col_name = data.get("name", "")
         col_key = col.get("key")
-        
+
         if not col_name or not col_key:
             continue
-        
+
         col_name_lower = col_name.lower()
-        
+
         # Method 1: Direct keyword match in title
         if col_name_lower in title:
             suggestions.append({
@@ -102,7 +101,7 @@ async def _suggest_collections(
                 "reason": f"Collection name '{col_name}' found in title",
             })
             continue
-        
+
         # Method 2: Fuzzy match collection name with title keywords
         title_words = [w for w in title.split() if len(w) > 3]
         for word in title_words:
@@ -115,7 +114,7 @@ async def _suggest_collections(
                     "reason": f"Keyword '{word}' matches collection",
                 })
                 break
-        
+
         # Method 3: Check tags match collection name
         for tag in tags:
             tag_lower = tag.lower()
@@ -128,7 +127,7 @@ async def _suggest_collections(
                     "reason": f"Tag '{tag}' matches collection",
                 })
                 break
-    
+
     # Sort by score descending and deduplicate
     seen_keys = set()
     unique_suggestions = []
@@ -136,7 +135,7 @@ async def _suggest_collections(
         if s["key"] not in seen_keys:
             seen_keys.add(s["key"])
             unique_suggestions.append(s)
-    
+
     return unique_suggestions[:5]
 
 
@@ -147,16 +146,16 @@ async def _find_duplicates(
 ) -> list[dict]:
     """
     Find potential duplicates in Zotero library.
-    
+
     Returns list of potential matches with similarity scores.
     """
     duplicates = []
     title = item.get("title", "")
     normalized_title = _normalize_title(title)
-    
+
     if not normalized_title:
         return duplicates
-    
+
     # Check exact identifier matches first
     for field in EXACT_MATCH_FIELDS:
         identifier = _extract_identifier(item, field)
@@ -172,16 +171,16 @@ async def _find_duplicates(
                         "score": 100,
                         "identifier": identifier,
                     })
-    
+
     if duplicates:
         return duplicates
-    
+
     # Fuzzy title matching
     existing_items = await zotero_client.get_items(limit=limit)
-    
+
     existing_titles = []
     title_to_item = {}
-    
+
     for existing in existing_items:
         data = existing.get("data", existing)
         existing_title = data.get("title", "")
@@ -194,7 +193,7 @@ async def _find_duplicates(
                     "title": existing_title,
                     "data": data,
                 }
-    
+
     if existing_titles:
         matches = process.extract(
             normalized_title,
@@ -202,7 +201,7 @@ async def _find_duplicates(
             scorer=fuzz.token_sort_ratio,
             limit=5,
         )
-        
+
         for match_title, score, _ in matches:
             if score >= TITLE_MATCH_THRESHOLD:
                 matched_item = title_to_item.get(match_title, {})
@@ -212,14 +211,14 @@ async def _find_duplicates(
                     "match_type": "fuzzy_title",
                     "score": score,
                 })
-    
+
     return duplicates
 
 
 def register_smart_tools(mcp, zotero_client):
     """
     Register smart tools (空函數，向後兼容).
-    
+
     所有 tools 已移至 interactive_tools.py
     """
     logger.info("Smart tools module loaded (helpers only, no tools)")

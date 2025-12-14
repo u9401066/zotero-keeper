@@ -11,11 +11,11 @@ Local API 可以執行 Saved Search 並返回符合條件的文獻。
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from ..zotero_client.client import ZoteroClient, ZoteroConnectionError, ZoteroAPIError
+from ..zotero_client.client import ZoteroAPIError, ZoteroClient, ZoteroConnectionError
 
 logger = logging.getLogger(__name__)
 
@@ -23,22 +23,22 @@ logger = logging.getLogger(__name__)
 def register_saved_search_tools(mcp: FastMCP, zotero: ZoteroClient) -> None:
     """
     Register Saved Search MCP tools.
-    
+
     These tools leverage the Local API's unique ability to execute saved searches.
     """
-    
+
     @mcp.tool()
     async def list_saved_searches() -> dict[str, Any]:
         """
         📋 List all saved searches in Zotero
-        
+
         列出所有已儲存的搜尋條件
-        
+
         🌟 Local API 獨有功能！
-        
+
         Returns:
             List of saved searches with names and keys
-            
+
         Example response:
             {
                 "count": 3,
@@ -66,35 +66,35 @@ def register_saved_search_tools(mcp: FastMCP, zotero: ZoteroClient) -> None:
             }
         except (ZoteroConnectionError, ZoteroAPIError) as e:
             return {"count": 0, "searches": [], "error": str(e)}
-    
+
     @mcp.tool()
     async def run_saved_search(
-        search_key: Optional[str] = None,
-        search_name: Optional[str] = None,
+        search_key: str | None = None,
+        search_name: str | None = None,
         limit: int = 50,
     ) -> dict[str, Any]:
         """
         ▶️ Execute a saved search and return matching items
-        
+
         執行已儲存的搜尋條件並返回符合的文獻
-        
+
         🌟 這是 Local API 獨有的功能！Web API 無法做到這點。
-        
+
         Args:
             search_key: The saved search key (e.g., "ABC12345")
             search_name: OR the saved search name (e.g., "Missing PDF")
             limit: Maximum items to return (default: 50)
-            
+
         Returns:
             List of items matching the saved search conditions
-            
+
         Example:
             # By key
             run_saved_search(search_key="ABC12345")
-            
+
             # By name (case-insensitive)
             run_saved_search(search_name="Missing PDF")
-            
+
         Use cases:
             - "Which papers don't have PDFs?" → run_saved_search(search_name="Missing PDF")
             - "What did I add this week?" → run_saved_search(search_name="Recent Additions")
@@ -104,7 +104,7 @@ def register_saved_search_tools(mcp: FastMCP, zotero: ZoteroClient) -> None:
             # Resolve search key
             key_to_use = search_key
             search_info = None
-            
+
             if not key_to_use and search_name:
                 # Find by name
                 found = await zotero.find_search_by_name(search_name)
@@ -117,13 +117,13 @@ def register_saved_search_tools(mcp: FastMCP, zotero: ZoteroClient) -> None:
                         "error": f"Saved search '{search_name}' not found",
                         "hint": "Use list_saved_searches to see available searches",
                     }
-            
+
             if not key_to_use:
                 return {
                     "success": False,
                     "error": "Please provide either search_key or search_name",
                 }
-            
+
             # Get search info if we don't have it yet
             if not search_info:
                 try:
@@ -131,10 +131,10 @@ def register_saved_search_tools(mcp: FastMCP, zotero: ZoteroClient) -> None:
                     search_info = search_obj.get("data", search_obj)
                 except ZoteroAPIError:
                     search_info = {"name": key_to_use}
-            
+
             # Execute the search
             items = await zotero.execute_search(key_to_use, limit=limit)
-            
+
             # Format results
             results = []
             for item in items:
@@ -149,7 +149,7 @@ def register_saved_search_tools(mcp: FastMCP, zotero: ZoteroClient) -> None:
                     "creators": _format_creators(data.get("creators", [])),
                     "DOI": data.get("DOI", ""),
                 })
-            
+
             return {
                 "success": True,
                 "search": {
@@ -161,26 +161,26 @@ def register_saved_search_tools(mcp: FastMCP, zotero: ZoteroClient) -> None:
                 "items": results,
                 "note": "🌟 This feature is exclusive to Local API!",
             }
-            
+
         except (ZoteroConnectionError, ZoteroAPIError) as e:
             return {
                 "success": False,
                 "error": str(e),
             }
-    
+
     @mcp.tool()
     async def get_saved_search_details(search_key: str) -> dict[str, Any]:
         """
         🔍 Get details of a specific saved search
-        
+
         取得特定已儲存搜尋的詳細條件
-        
+
         Args:
             search_key: The saved search key (e.g., "ABC12345")
-            
+
         Returns:
             Saved search details including all conditions
-            
+
         Example response:
             {
                 "found": true,

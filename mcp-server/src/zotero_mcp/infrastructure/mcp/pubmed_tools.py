@@ -16,7 +16,7 @@ Alternative (requires pubmed extra):
 
 import logging
 import re
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ except ImportError:
 def _parse_ris_to_zotero_items(ris_text: str) -> list[dict[str, Any]]:
     """
     Parse RIS format text to Zotero item format.
-    
+
     RIS tags reference:
     - TY: Type (JOUR = journalArticle)
     - TI/T1: Title
@@ -52,7 +52,7 @@ def _parse_ris_to_zotero_items(ris_text: str) -> list[dict[str, Any]]:
     current_item: dict[str, Any] = {}
     current_authors: list[dict] = []
     current_tags: list[dict] = []
-    
+
     # RIS type to Zotero type mapping
     type_map = {
         "JOUR": "journalArticle",
@@ -64,20 +64,20 @@ def _parse_ris_to_zotero_items(ris_text: str) -> list[dict[str, Any]]:
         "ELEC": "webpage",
         "GEN": "document",
     }
-    
+
     for line in ris_text.strip().split('\n'):
         line = line.strip()
         if not line or len(line) < 6:
             continue
-        
+
         # Parse RIS tag format: "XX  - value"
         match = re.match(r'^([A-Z][A-Z0-9])\s+-\s+(.*)$', line)
         if not match:
             continue
-            
+
         tag, value = match.groups()
         value = value.strip()
-        
+
         if tag == "TY":
             # Start new record
             if current_item:
@@ -151,7 +151,7 @@ def _parse_ris_to_zotero_items(ris_text: str) -> list[dict[str, Any]]:
                     current_item["extra"] = f"PMID: {pmid.group(1)}"
             else:
                 current_item["extra"] = value
-    
+
     # Don't forget last item if no ER tag
     if current_item and current_item.get("title"):
         if current_authors:
@@ -159,7 +159,7 @@ def _parse_ris_to_zotero_items(ris_text: str) -> list[dict[str, Any]]:
         if current_tags:
             current_item["tags"] = current_tags
         items.append(current_item)
-    
+
     return items
 
 
@@ -187,13 +187,13 @@ def _pmid_to_zotero_item(article: dict) -> dict[str, Any]:
                 "lastName": author.get("lastName", author.get("last_name", "")),
                 "creatorType": "author",
             })
-    
+
     item: dict[str, Any] = {
         "itemType": "journalArticle",
         "title": article.get("title", ""),
         "creators": creators,
     }
-    
+
     if article.get("abstract"):
         item["abstractNote"] = article["abstract"]
     if article.get("journal"):
@@ -208,7 +208,7 @@ def _pmid_to_zotero_item(article: dict) -> dict[str, Any]:
         item["pages"] = article["pages"]
     if article.get("doi"):
         item["DOI"] = article["doi"]
-    
+
     # PMID and PMCID in extra field
     extra_parts = []
     if article.get("pmid"):
@@ -217,51 +217,51 @@ def _pmid_to_zotero_item(article: dict) -> dict[str, Any]:
         extra_parts.append(f"PMCID: {article['pmc_id']}")
     if extra_parts:
         item["extra"] = "\n".join(extra_parts)
-    
+
     # URL
     if article.get("url"):
         item["url"] = article["url"]
     elif article.get("pmid"):
         item["url"] = f"https://pubmed.ncbi.nlm.nih.gov/{article['pmid']}/"
-    
+
     # Tags from MeSH or keywords
     if article.get("mesh_terms"):
         item["tags"] = [{"tag": term} for term in article["mesh_terms"][:10]]
     elif article.get("keywords"):
         item["tags"] = [{"tag": kw} for kw in article["keywords"][:10]]
-    
+
     return item
 
 
 def register_pubmed_tools(mcp, zotero_client):
     """
     Register PubMed import tools.
-    
+
     These tools complement pubmed-search-mcp by providing import functionality.
     """
-    
+
     @mcp.tool()
     async def import_ris_to_zotero(
         ris_text: str,
-        tags: Optional[list[str]] = None,
+        tags: list[str] | None = None,
     ) -> dict[str, Any]:
         """
         📥 Import RIS format citations to Zotero
-        
+
         將 RIS 格式的引用文獻匯入 Zotero
-        
+
         Recommended workflow with pubmed-search-mcp:
         1. pubmed: search_literature("query") → PMIDs
         2. pubmed: prepare_export(pmids, format="ris") → RIS text
         3. keeper: import_ris_to_zotero(ris_text) → Zotero
-        
+
         Args:
             ris_text: RIS format citation text (from prepare_export or other sources)
             tags: Optional tags to add to all imported items
-            
+
         Returns:
             Import result with count of imported items
-            
+
         Example:
             import_ris_to_zotero(
                 ris_text=\"\"\"
@@ -279,14 +279,14 @@ def register_pubmed_tools(mcp, zotero_client):
         try:
             # Parse RIS to Zotero items
             items = _parse_ris_to_zotero_items(ris_text)
-            
+
             if not items:
                 return {
                     "success": False,
                     "message": "No valid items found in RIS text",
                     "imported": 0,
                 }
-            
+
             # Add custom tags
             if tags:
                 for item in items:
@@ -294,50 +294,50 @@ def register_pubmed_tools(mcp, zotero_client):
                     for tag in tags:
                         existing_tags.append({"tag": tag})
                     item["tags"] = existing_tags
-            
+
             # Import to Zotero
             await zotero_client.save_items(items)
-            
+
             # Build response
             imported_titles = [item.get("title", "Untitled")[:50] for item in items]
-            
+
             return {
                 "success": True,
                 "imported": len(items),
                 "items": imported_titles,
                 "message": f"Successfully imported {len(items)} items to Zotero",
             }
-            
+
         except Exception as e:
             logger.error(f"RIS import failed: {e}")
             return {
                 "success": False,
                 "error": str(e),
             }
-    
+
     @mcp.tool()
     async def import_from_pmids(
         pmids: list[str],
-        tags: Optional[list[str]] = None,
+        tags: list[str] | None = None,
     ) -> dict[str, Any]:
         """
         📥 Import PubMed articles directly by PMID
-        
+
         直接透過 PMID 匯入 PubMed 文獻到 Zotero
-        
+
         Requires: pip install "zotero-keeper[pubmed]"
-        
+
         Alternative workflow (without pubmed extra):
         1. pubmed: search_literature("query") → PMIDs
         2. keeper: import_from_pmids(pmids) → Zotero
-        
+
         Args:
             pmids: List of PubMed IDs ["12345678", "87654321"]
             tags: Optional tags to add to all items
-            
+
         Returns:
             Import result
-            
+
         Example:
             import_from_pmids(
                 pmids=["28968381", "28324054"],
@@ -351,22 +351,22 @@ def register_pubmed_tools(mcp, zotero_client):
                 "hint": "Install with: pip install 'zotero-keeper[pubmed]'",
                 "alternative": "Use import_ris_to_zotero with RIS text from pubmed-search-mcp's prepare_export tool",
             }
-        
+
         try:
             import os
             email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
             client = PubMedClient(email=email)
-            
+
             # Fetch article details (returns dicts directly)
             articles = client.fetch_details(pmids)
-            
+
             if not articles:
                 return {
                     "success": False,
                     "message": "No articles found for given PMIDs",
                     "imported": 0,
                 }
-            
+
             # Convert to Zotero format
             zotero_items = []
             for article in articles:
@@ -377,30 +377,30 @@ def register_pubmed_tools(mcp, zotero_client):
                         existing_tags.append({"tag": tag})
                     item["tags"] = existing_tags
                 zotero_items.append(item)
-            
+
             # Import to Zotero
             await zotero_client.save_items(zotero_items)
-            
+
             # Build response
             imported_info = [
                 {"pmid": a.get("pmid"), "title": a.get("title", "")[:50]}
                 for a in articles
             ]
-            
+
             return {
                 "success": True,
                 "imported": len(zotero_items),
                 "items": imported_info,
                 "message": f"Successfully imported {len(zotero_items)} articles to Zotero",
             }
-            
+
         except Exception as e:
             logger.error(f"PMID import failed: {e}")
             return {
                 "success": False,
                 "error": str(e),
             }
-    
+
     logger.info("PubMed import tools registered (import_ris_to_zotero, import_from_pmids)")
 
 

@@ -1,13 +1,13 @@
 """Domain Entities"""
 
-from .reference import Reference, Creator
-from .collection import Collection
 from .batch_result import (
     BatchImportResult,
-    ImportedItem,
     ImportAction,
+    ImportedItem,
     RisImportResult,
 )
+from .collection import Collection
+from .reference import Creator, Reference
 
 __all__ = [
     "Reference",

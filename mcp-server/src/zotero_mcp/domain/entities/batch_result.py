@@ -5,8 +5,8 @@ Domain entities for batch import operations.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
 from enum import Enum
+from typing import Any
 
 
 class ImportAction(Enum):
@@ -23,11 +23,11 @@ class ImportedItem:
     pmid: str
     title: str
     action: ImportAction
-    zotero_key: Optional[str] = None
-    reason: Optional[str] = None
-    warning: Optional[str] = None
-    error: Optional[str] = None
-    
+    zotero_key: str | None = None
+    reason: str | None = None
+    warning: str | None = None
+    error: str | None = None
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         result = {
@@ -50,7 +50,7 @@ class ImportedItem:
 class BatchImportResult:
     """
     Result from a batch import operation.
-    
+
     Provides detailed statistics and per-item results.
     """
     success: bool = True
@@ -59,19 +59,19 @@ class BatchImportResult:
     skipped: int = 0
     warnings: int = 0
     failed: int = 0
-    
+
     added_items: list[ImportedItem] = field(default_factory=list)
     skipped_items: list[ImportedItem] = field(default_factory=list)
     warning_items: list[ImportedItem] = field(default_factory=list)
     failed_items: list[ImportedItem] = field(default_factory=list)
-    
-    collection_key: Optional[str] = None
+
+    collection_key: str | None = None
     elapsed_time: float = 0.0
-    
+
     def add_item(self, item: ImportedItem) -> None:
         """Add an item result and update counters."""
         self.total += 1
-        
+
         # Python 3.10+ match-case for cleaner enum handling
         match item.action:
             case ImportAction.ADDED:
@@ -87,7 +87,7 @@ class BatchImportResult:
                 self.failed += 1
                 self.failed_items.append(item)
                 self.success = False  # Mark overall as failed if any item fails
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MCP response."""
         return {
@@ -104,7 +104,7 @@ class BatchImportResult:
             "collection_key": self.collection_key,
             "elapsed_time": round(self.elapsed_time, 2),
         }
-    
+
     def summary(self) -> str:
         """Generate a human-readable summary."""
         parts = [f"Total: {self.total}"]
@@ -130,7 +130,7 @@ class RisImportResult:
     failed: int = 0
     message: str = ""
     errors: list[str] = field(default_factory=list)
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {

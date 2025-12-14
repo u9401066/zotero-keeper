@@ -8,7 +8,7 @@ Resources:
 - zotero://collections - List all collections
 - zotero://collections/{key} - Get collection details
 - zotero://collections/{key}/items - Get items in a collection
-- zotero://items - List recent items  
+- zotero://items - List recent items
 - zotero://items/{key} - Get item details
 - zotero://tags - List all tags
 - zotero://searches - List saved searches
@@ -16,7 +16,6 @@ Resources:
 
 import json
 import logging
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,20 +23,20 @@ logger = logging.getLogger(__name__)
 def register_resources(mcp, zotero_client):
     """
     Register MCP Resources for Zotero data access.
-    
+
     Resources provide a read-only browsable interface to Zotero data,
     reducing the need for explicit tool calls for read operations.
     """
-    
+
     # ==================== Collections ====================
-    
+
     @mcp.resource("zotero://collections")
     async def list_collections_resource() -> str:
         """
         📁 Browse all Zotero collections
-        
+
         列出所有收藏夾（用於瀏覽和選擇）
-        
+
         Returns JSON with all collections including:
         - key: Collection identifier
         - name: Collection name
@@ -62,12 +61,12 @@ def register_resources(mcp, zotero_client):
             }, ensure_ascii=False, indent=2)
         except Exception as e:
             return json.dumps({"error": str(e)})
-    
+
     @mcp.resource("zotero://collections/tree")
     async def get_collection_tree_resource() -> str:
         """
         🌳 Browse collections as a hierarchical tree
-        
+
         以樹狀結構瀏覽收藏夾（含子收藏夾）
         """
         try:
@@ -79,12 +78,12 @@ def register_resources(mcp, zotero_client):
             }, ensure_ascii=False, indent=2)
         except Exception as e:
             return json.dumps({"error": str(e)})
-    
+
     @mcp.resource("zotero://collections/{key}")
     async def get_collection_resource(key: str) -> str:
         """
         📁 Get details of a specific collection
-        
+
         取得特定收藏夾的詳細資訊
         """
         try:
@@ -99,12 +98,12 @@ def register_resources(mcp, zotero_client):
             }, ensure_ascii=False, indent=2)
         except Exception as e:
             return json.dumps({"error": str(e), "key": key})
-    
+
     @mcp.resource("zotero://collections/{key}/items")
     async def get_collection_items_resource(key: str) -> str:
         """
         📚 Browse items in a specific collection
-        
+
         瀏覽特定收藏夾內的文獻
         """
         try:
@@ -129,14 +128,14 @@ def register_resources(mcp, zotero_client):
             }, ensure_ascii=False, indent=2)
         except Exception as e:
             return json.dumps({"error": str(e), "collection_key": key})
-    
+
     # ==================== Items ====================
-    
+
     @mcp.resource("zotero://items")
     async def list_items_resource() -> str:
         """
         📋 Browse recent items in library
-        
+
         瀏覽最近的文獻（前50筆）
         """
         try:
@@ -160,12 +159,12 @@ def register_resources(mcp, zotero_client):
             }, ensure_ascii=False, indent=2)
         except Exception as e:
             return json.dumps({"error": str(e)})
-    
+
     @mcp.resource("zotero://items/{key}")
     async def get_item_resource(key: str) -> str:
         """
         📖 Get detailed metadata for a specific item
-        
+
         取得特定文獻的完整資料
         """
         try:
@@ -190,14 +189,14 @@ def register_resources(mcp, zotero_client):
             }, ensure_ascii=False, indent=2)
         except Exception as e:
             return json.dumps({"error": str(e), "key": key})
-    
+
     # ==================== Tags ====================
-    
+
     @mcp.resource("zotero://tags")
     async def list_tags_resource() -> str:
         """
         🏷️ Browse all tags in library
-        
+
         瀏覽所有標籤
         """
         try:
@@ -210,14 +209,14 @@ def register_resources(mcp, zotero_client):
             }, ensure_ascii=False, indent=2)
         except Exception as e:
             return json.dumps({"error": str(e)})
-    
+
     # ==================== Saved Searches ====================
-    
+
     @mcp.resource("zotero://searches")
     async def list_searches_resource() -> str:
         """
         🔍 Browse saved searches
-        
+
         瀏覽已儲存的搜尋條件（Local API 獨有功能！）
         """
         try:
@@ -238,12 +237,12 @@ def register_resources(mcp, zotero_client):
             }, ensure_ascii=False, indent=2)
         except Exception as e:
             return json.dumps({"error": str(e)})
-    
+
     @mcp.resource("zotero://searches/{key}")
     async def get_search_resource(key: str) -> str:
         """
         🔍 Get details of a specific saved search
-        
+
         取得特定已儲存搜尋的詳細條件
         """
         try:
@@ -258,14 +257,14 @@ def register_resources(mcp, zotero_client):
             }, ensure_ascii=False, indent=2)
         except Exception as e:
             return json.dumps({"error": str(e), "key": key})
-    
+
     # ==================== Schema ====================
-    
+
     @mcp.resource("zotero://schema/item-types")
     async def get_item_types_resource() -> str:
         """
         📝 Browse available item types
-        
+
         瀏覽可用的文獻類型（journalArticle, book 等）
         """
         try:
@@ -277,7 +276,7 @@ def register_resources(mcp, zotero_client):
             }, ensure_ascii=False, indent=2)
         except Exception as e:
             return json.dumps({"error": str(e)})
-    
+
     logger.info("MCP Resources registered (zotero://collections, zotero://items, zotero://tags, zotero://searches)")
 
 
@@ -297,5 +296,5 @@ def _format_creators_short(creators: list[dict]) -> str:
             names.append(c.get("lastName", c.get("name", "")))
     result = ", ".join(names)
     if len(creators) > 3:
-        result += f" et al."
+        result += " et al."
     return result

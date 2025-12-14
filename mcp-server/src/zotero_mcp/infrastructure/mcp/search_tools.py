@@ -20,7 +20,7 @@ When to use:
 import logging
 import os
 import re
-from typing import Any, Optional
+from typing import Any
 
 from rapidfuzz import fuzz
 
@@ -49,7 +49,7 @@ def _normalize_title(title: str) -> str:
     return title.strip()
 
 
-def _extract_pmid_from_extra(extra: str) -> Optional[str]:
+def _extract_pmid_from_extra(extra: str) -> str | None:
     """Extract PMID from Zotero extra field."""
     if not extra:
         return None
@@ -60,7 +60,7 @@ def _extract_pmid_from_extra(extra: str) -> Optional[str]:
 async def _get_owned_identifiers(zotero_client, limit: int = 500) -> dict[str, set]:
     """
     Get identifiers of owned items in Zotero.
-    
+
     Returns:
         {
             "dois": set of DOIs (lowercase),
@@ -73,41 +73,41 @@ async def _get_owned_identifiers(zotero_client, limit: int = 500) -> dict[str, s
         "pmids": set(),
         "titles": set(),
     }
-    
+
     try:
         items = await zotero_client.get_items(limit=limit)
-        
+
         for item in items:
             data = item.get("data", item)
-            
+
             # DOI
             doi = data.get("DOI", "")
             if doi:
                 owned["dois"].add(doi.lower().strip())
-            
+
             # PMID from extra field
             extra = data.get("extra", "")
             pmid = _extract_pmid_from_extra(extra)
             if pmid:
                 owned["pmids"].add(pmid)
-            
+
             # Title (normalized)
             title = data.get("title", "")
             if title:
                 owned["titles"].add(_normalize_title(title))
-        
+
         logger.info(f"Loaded {len(owned['dois'])} DOIs, {len(owned['pmids'])} PMIDs, {len(owned['titles'])} titles from Zotero")
-        
+
     except Exception as e:
         logger.error(f"Failed to load owned items: {e}")
-    
+
     return owned
 
 
 def _is_owned(article: dict, owned: dict[str, set]) -> tuple[bool, str]:
     """
     Check if an article is already owned.
-    
+
     Returns:
         (is_owned: bool, reason: str)
     """
@@ -115,12 +115,12 @@ def _is_owned(article: dict, owned: dict[str, set]) -> tuple[bool, str]:
     doi = article.get("doi", "")
     if doi and doi.lower().strip() in owned["dois"]:
         return True, f"DOI match: {doi}"
-    
+
     # Check PMID
     pmid = article.get("pmid", "")
     if pmid and pmid in owned["pmids"]:
         return True, f"PMID match: {pmid}"
-    
+
     # Fuzzy title matching
     title = article.get("title", "")
     if title:
@@ -129,7 +129,7 @@ def _is_owned(article: dict, owned: dict[str, set]) -> tuple[bool, str]:
             score = fuzz.token_sort_ratio(normalized, owned_title)
             if score >= TITLE_MATCH_THRESHOLD:
                 return True, f"Title match ({score}%)"
-    
+
     return False, ""
 
 
@@ -137,7 +137,7 @@ def _format_search_results(results: list[dict], show_owned: bool = False) -> str
     """Format search results as markdown."""
     if not results:
         return "No results found."
-    
+
     output = ""
     for i, r in enumerate(results, 1):
         pmid = r.get("pmid", "")
@@ -146,22 +146,19 @@ def _format_search_results(results: list[dict], show_owned: bool = False) -> str
         journal = r.get("journal", r.get("journal_abbrev", ""))
         year = r.get("year", "")
         doi = r.get("doi", "")
-        
+
         # Format authors
         if authors:
-            if len(authors) > 3:
-                author_str = f"{authors[0]} et al."
-            else:
-                author_str = ", ".join(authors)
+            author_str = f"{authors[0]} et al." if len(authors) > 3 else ", ".join(authors)
         else:
             author_str = "Unknown"
-        
+
         # Owned indicator
         owned_mark = ""
         if show_owned:
             is_owned = r.get("_is_owned", False)
             owned_mark = " 📚" if is_owned else " 🆕"
-        
+
         output += f"**{i}. {title}**{owned_mark}\n"
         output += f"   - PMID: {pmid}\n"
         output += f"   - Authors: {author_str}\n"
@@ -169,55 +166,55 @@ def _format_search_results(results: list[dict], show_owned: bool = False) -> str
         if doi:
             output += f"   - DOI: {doi}\n"
         output += "\n"
-    
+
     return output
 
 
 def register_search_tools(mcp, zotero_client):
     """
     Register integrated search tools.
-    
+
     These tools combine pubmed-search-mcp's search with zotero-keeper's
     library filtering to provide a seamless experience.
     """
-    
+
     if not PUBMED_AVAILABLE:
         logger.info("Skipping search_tools registration (pubmed-search-mcp not available)")
         return
-    
+
     @mcp.tool()
     async def search_pubmed_exclude_owned(
         query: str,
         limit: int = 10,
-        min_year: Optional[int] = None,
-        max_year: Optional[int] = None,
-        date_from: Optional[str] = None,
-        date_to: Optional[str] = None,
-        article_type: Optional[str] = None,
+        min_year: int | None = None,
+        max_year: int | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        article_type: str | None = None,
         strategy: str = "relevance",
         show_owned: bool = False,
         library_limit: int = 500,
     ) -> dict[str, Any]:
         """
         🔍📚 Search PubMed and filter out articles already in Zotero
-        
+
         搜尋 PubMed 並排除已存在於 Zotero 的文獻
-        
+
         This integrated tool combines pubmed-search-mcp's search with
         zotero-keeper's library to show only NEW articles you don't own.
-        
+
         ⚠️ Requires: Both pubmed-search-mcp and zotero-keeper[pubmed] installed
-        
+
         When to use this vs basic search:
         - Use this for discovery: "Find new papers about X that I don't have"
         - Use pubmed-search-mcp's search_literature for: exploratory search,
           building search strategies, when you want to see ALL results
-        
+
         Advanced workflow:
         1. Use generate_search_queries() to get MeSH terms (pubmed-search-mcp)
-        2. Use parse_pico() for clinical questions (pubmed-search-mcp)  
+        2. Use parse_pico() for clinical questions (pubmed-search-mcp)
         3. Use THIS tool for final search with the optimized query
-        
+
         Args:
             query: PubMed search query (can be simple or complex with MeSH/Boolean)
             limit: Maximum NEW articles to return (default: 10)
@@ -229,7 +226,7 @@ def register_search_tools(mcp, zotero_client):
             strategy: Search strategy (relevance, recent, most_cited, impact)
             show_owned: If True, show owned articles marked with 📚 (default: False, only show 🆕 new)
             library_limit: How many Zotero items to check (default: 500)
-            
+
         Returns:
             {
                 "query": str,
@@ -240,18 +237,18 @@ def register_search_tools(mcp, zotero_client):
                 "owned_results": list of owned articles (if show_owned),
                 "formatted": markdown formatted results
             }
-            
+
         Example:
             # Simple search
             search_pubmed_exclude_owned(query="CRISPR gene therapy", limit=10)
-            
+
             # With MeSH terms (from generate_search_queries)
             search_pubmed_exclude_owned(
                 query='"CRISPR-Cas Systems"[MeSH] AND "Genetic Therapy"[MeSH]',
                 min_year=2023,
                 article_type="Review"
             )
-            
+
             # See what you already have
             search_pubmed_exclude_owned(query="CRISPR", show_owned=True)
         """
@@ -260,10 +257,10 @@ def register_search_tools(mcp, zotero_client):
             email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
             api_key = os.environ.get("NCBI_API_KEY")
             pubmed = PubMedClient(email=email, api_key=api_key)
-            
+
             # Search PubMed with extra buffer for filtering
             search_limit = limit * 3  # Fetch more to account for owned items
-            
+
             results_raw = pubmed.search_raw(
                 query=query,
                 limit=search_limit,
@@ -274,7 +271,7 @@ def register_search_tools(mcp, zotero_client):
                 article_type=article_type,
                 strategy=strategy,
             )
-            
+
             if not results_raw:
                 return {
                     "query": query,
@@ -284,33 +281,33 @@ def register_search_tools(mcp, zotero_client):
                     "results": [],
                     "formatted": "No results found for this query.",
                 }
-            
+
             # Get owned items from Zotero
             owned = await _get_owned_identifiers(zotero_client, limit=library_limit)
-            
+
             # Filter results
             new_results = []
             owned_results = []
-            
+
             for article in results_raw:
                 is_owned, reason = _is_owned(article, owned)
                 article["_is_owned"] = is_owned
                 article["_owned_reason"] = reason
-                
+
                 if is_owned:
                     owned_results.append(article)
                 else:
                     new_results.append(article)
-                    
+
                     # Stop when we have enough new results
                     if len(new_results) >= limit and not show_owned:
                         break
-            
+
             # Format output
             if show_owned:
                 # Show all with markers
-                all_results = new_results[:limit] + owned_results
-                formatted = f"## 🔍 PubMed Search Results\n"
+                new_results[:limit] + owned_results
+                formatted = "## 🔍 PubMed Search Results\n"
                 formatted += f"Query: `{query}`\n\n"
                 formatted += f"Found: **{len(new_results)} new** 🆕 + **{len(owned_results)} owned** 📚\n\n"
                 formatted += "### New Articles 🆕\n\n"
@@ -319,12 +316,12 @@ def register_search_tools(mcp, zotero_client):
                     formatted += "\n### Already in Zotero 📚\n\n"
                     formatted += _format_search_results(owned_results[:5], show_owned=False)
             else:
-                formatted = f"## 🆕 New PubMed Articles (not in Zotero)\n"
+                formatted = "## 🆕 New PubMed Articles (not in Zotero)\n"
                 formatted += f"Query: `{query}`\n\n"
                 formatted += f"Showing **{len(new_results[:limit])}** new articles "
                 formatted += f"(filtered {len(owned_results)} already owned)\n\n"
                 formatted += _format_search_results(new_results[:limit], show_owned=False)
-            
+
             # Build response
             response = {
                 "query": query,
@@ -334,15 +331,15 @@ def register_search_tools(mcp, zotero_client):
                 "results": new_results[:limit],
                 "formatted": formatted,
             }
-            
+
             if show_owned:
                 response["owned_results"] = owned_results
-            
+
             # Add PMIDs for easy import
             response["new_pmids"] = [r.get("pmid") for r in new_results[:limit] if r.get("pmid")]
-            
+
             return response
-            
+
         except Exception as e:
             logger.error(f"Integrated search failed: {e}")
             return {
@@ -350,29 +347,29 @@ def register_search_tools(mcp, zotero_client):
                 "error": str(e),
                 "hint": "Make sure both pubmed-search-mcp and zotero-keeper[pubmed] are installed",
             }
-    
+
     @mcp.tool()
     async def check_articles_owned(
         pmids: list[str],
     ) -> dict[str, Any]:
         """
         📚 Check which PubMed articles are already in Zotero
-        
+
         檢查哪些 PubMed 文獻已存在於 Zotero
-        
+
         Useful after using pubmed-search-mcp's search_literature to
         check which results you already own before importing.
-        
+
         Args:
             pmids: List of PubMed IDs to check
-            
+
         Returns:
             {
                 "owned": list of PMIDs already in Zotero,
                 "new": list of PMIDs not in Zotero,
                 "details": dict with match reasons
             }
-            
+
         Example:
             # After search_literature returns PMIDs
             check_articles_owned(pmids=["12345678", "87654321", "11111111"])
@@ -380,21 +377,21 @@ def register_search_tools(mcp, zotero_client):
         try:
             # Get owned identifiers
             owned_ids = await _get_owned_identifiers(zotero_client, limit=500)
-            
+
             # If pubmed is available, fetch details for title matching
             owned_pmids = []
             new_pmids = []
             details = {}
-            
+
             if PUBMED_AVAILABLE:
                 email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
                 pubmed = PubMedClient(email=email)
                 articles = pubmed.fetch_details(pmids)
-                
+
                 for article in articles:
                     pmid = article.get("pmid", "")
                     is_owned, reason = _is_owned(article, owned_ids)
-                    
+
                     if is_owned:
                         owned_pmids.append(pmid)
                         details[pmid] = {"owned": True, "reason": reason}
@@ -410,7 +407,7 @@ def register_search_tools(mcp, zotero_client):
                     else:
                         new_pmids.append(pmid)
                         details[pmid] = {"owned": False}
-            
+
             return {
                 "total": len(pmids),
                 "owned": owned_pmids,
@@ -420,11 +417,11 @@ def register_search_tools(mcp, zotero_client):
                 "details": details,
                 "message": f"Found {len(owned_pmids)} already owned, {len(new_pmids)} new",
             }
-            
+
         except Exception as e:
             logger.error(f"Check owned failed: {e}")
             return {"error": str(e)}
-    
+
     logger.info("Search tools registered (search_pubmed_exclude_owned, check_articles_owned)")
 
 

@@ -14,16 +14,16 @@ class ZoteroConfig:
     host: str = field(default_factory=lambda: os.getenv("ZOTERO_HOST", "localhost"))
     port: int = field(default_factory=lambda: int(os.getenv("ZOTERO_PORT", "23119")))
     timeout: float = field(default_factory=lambda: float(os.getenv("ZOTERO_TIMEOUT", "30")))
-    
+
     @property
     def base_url(self) -> str:
         return f"http://{self.host}:{self.port}"
-    
+
     @property
     def host_header(self) -> str:
         """Required header for port proxy (when Zotero is on remote machine)"""
         return f"127.0.0.1:{self.port}"
-    
+
     @property
     def needs_host_header(self) -> bool:
         """Check if we need to override Host header (remote connection)"""
@@ -35,10 +35,10 @@ class McpServerConfig:
     """MCP Server configuration"""
     name: str = "Zotero Keeper"
     version: str = "1.2.0"
-    
+
     # Zotero connection
     zotero: ZoteroConfig = field(default_factory=ZoteroConfig)
-    
+
     # Server instructions for AI agents
     instructions: str = """
 Zotero Keeper - MCP Server for managing local Zotero libraries.
