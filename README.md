@@ -1,8 +1,6 @@
 # Zotero Keeper 📚
 
-A MCP Server for managing local Zotero libraries via AI Agents. Enables Copilot Agent and other AI assistants to read, search, and write bibliographic references to Zotero.
-
-MCP 伺服器：讓 AI Agent (Copilot Agent 等) 管理本地 Zotero 書目資料庫。
+Let AI manage your references! A MCP Server connecting VS Code Copilot / Claude Desktop to your local Zotero library.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![MCP SDK](https://img.shields.io/badge/MCP-FastMCP-green.svg)](https://github.com/modelcontextprotocol/python-sdk)
@@ -10,134 +8,66 @@ MCP 伺服器：讓 AI Agent (Copilot Agent 等) 管理本地 Zotero 書目資�
 [![Zotero 7](https://img.shields.io/badge/Zotero-7.0+-red.svg)](https://www.zotero.org/)
 [![CI](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml/badge.svg)](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![GitHub issues](https://img.shields.io/github/issues/u9401066/zotero-keeper)](https://github.com/u9401066/zotero-keeper/issues)
 
-
-> 🎉 **Contributions Welcome!** See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+> 🌐 **English** | **[繁體中文](README.zh-TW.md)**
 
 ---
 
-## 📖 Table of Contents | 目錄
+## ✨ What is this?
 
-- [Features | 特色功能](#-features--特色功能)
-- [Architecture | 架構](#-architecture--架構)
-- [Quick Start | 快速開始](#-quick-start--快速開始)
-- [Available Tools | 可用工具](#-available-tools--可用工具)
-- [Network Setup | 網路設定](#-network-setup--網路設定)
-- [Development | 開發指南](#-development--開發指南)
-- [Roadmap | 路線圖](#-roadmap--路線圖)
-- [References | 參考資料](#-references--參考資料)
+**Zotero Keeper** is a [MCP Server](https://modelcontextprotocol.io/) that lets your AI assistant:
 
----
+- 🔍 **Search references**: "Find papers about CRISPR from 2024"
+- 📖 **View details**: "What's the abstract of this article?"
+- ➕ **Add references**: "Add this DOI to my Zotero" (with auto-fetch metadata!)
+- 🔄 **PubMed integration**: "Search PubMed, skip what I already have"
+- 📁 **Interactive save**: Shows collection options for you to choose!
 
-## 🎯 Features | 特色功能
-
-### English
-
-- **🔌 MCP Native Integration**: Built with FastMCP SDK for seamless AI Agent integration
-- **📖 Read Operations**: Search, list, and retrieve bibliographic items from local Zotero
-- **✏️ Write Operations**: Add new references to Zotero via Connector API
-- **🧠 Smart Features**: Duplicate detection, reference validation, intelligent import
-- **🏗️ DDD Architecture**: Clean Domain-Driven Design with onion architecture
-- **🔒 No Cloud Required**: All operations are local, no Zotero account needed
-
-### 中文
-
-- **🔌 MCP 原生整合**：使用 FastMCP SDK，與 AI Agent 無縫整合
-- **📖 讀取操作**：搜尋、列出、取得本地 Zotero 書目資料
-- **✏️ 寫入操作**：透過 Connector API 將新參考文獻加入 Zotero
-- **🧠 智慧功能**：重複偵測、參考文獻驗證、智能匯入
-- **🏗️ DDD 架構**：乾淨的領域驅動設計，洋蔥式架構
-- **🔒 無需雲端**：所有操作都在本地，無需 Zotero 帳號
+No more manually searching, copying, pasting. Just tell your AI in natural language!
 
 ---
 
-## 🏗️ Architecture | 架構
+## ✨ Features
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      AI Agent Layer                             │
-│         (VS Code Copilot / Claude Desktop / Other)              │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │ MCP Protocol
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Zotero Keeper MCP Server                     │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │  Infrastructure Layer (FastMCP)                          │    │
-│  │  ├── MCP Tools (search, read, write)                     │    │
-│  │  └── ZoteroClient (HTTP Client)                          │    │
-│  └─────────────────────────────────────────────────────────┘    │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │  Application Layer                                       │    │
-│  │  └── Use Cases (SearchItems, AddReference, etc.)         │    │
-│  └─────────────────────────────────────────────────────────┘    │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │  Domain Layer                                            │    │
-│  │  └── Entities (Item, Collection, Creator, Tag)           │    │
-│  └─────────────────────────────────────────────────────────┘    │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │ HTTP (port 23119)
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Zotero Desktop Client                        │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │  Built-in HTTP Server (127.0.0.1:23119)                  │    │
-│  │  ├── Local API (/api/...) - READ operations              │    │
-│  │  └── Connector API (/connector/...) - WRITE operations   │    │
-│  └─────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Key Design Decisions | 關鍵設計決策
-
-| Decision | Rationale | 決策理由 |
-|----------|-----------|----------|
-| **DDD Onion** | Domain logic isolated from infrastructure | 領域邏輯與基礎設施隔離 |
-| **FastMCP** | Native Python MCP SDK, simple decorator-based API | 原生 Python MCP SDK，簡潔裝飾器 API |
-| **Built-in API** | Use Zotero 7's native HTTP server, no plugin needed | 使用 Zotero 7 內建 API，無需自製插件 |
-| **Dual API** | Local API for read, Connector API for write | 讀取用 Local API，寫入用 Connector API |
+- **🔌 MCP Native**: Built with FastMCP SDK for seamless AI integration
+- **📖 MCP Resources**: Browse Zotero data via URIs (`zotero://collections`, etc.)
+- **💬 MCP Elicitation**: Interactive collection selection with numbered options
+- **🔒 Auto-fetch Metadata**: DOI/PMID → complete abstract + all fields automatically!
+- **📖 Read Operations**: Search, list, retrieve items from local Zotero
+- **✏️ Write Operations**: Add references via Connector API
+- **🧠 Smart Features**: Duplicate detection, validation, intelligent import
+- **📁 Collection Support**: Nested collections (folders) with hierarchy
+- **🏗️ Clean Architecture**: DDD with onion architecture
+- **🔒 No Cloud Required**: All operations are local
 
 ---
 
-## 🚀 Quick Start | 快速開始
+## 🚀 Quick Start
 
-### Prerequisites | 前置需求
+### Prerequisites
 
-- Python 3.11+
-- Zotero 7.0+ (running on local or network machine)
-- pip or uv package manager
+- ✅ [Python 3.11+](https://www.python.org/downloads/)
+- ✅ [Zotero 7](https://www.zotero.org/download/) (must be running)
+- ✅ [VS Code](https://code.visualstudio.com/) + GitHub Copilot, or [Claude Desktop](https://claude.ai/)
+- ✅ [uv](https://docs.astral.sh/uv/getting-started/installation/) (recommended)
 
-### Installation | 安裝
+### Installation
 
 ```bash
-# Clone the repository | 複製專案
+# Clone the repository
 git clone https://github.com/u9401066/zotero-keeper.git
 cd zotero-keeper/mcp-server
 
-# Create virtual environment | 建立虛擬環境
-python -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-# or: .venv\Scripts\activate  # Windows
-
-# Install dependencies | 安裝依賴
+# Install
 pip install -e .
 # or with uv:
 uv pip install -e .
-```
 
-### Run MCP Server | 執行 MCP 伺服器
-
-```bash
-# Start MCP server (stdio transport)
+# Test (make sure Zotero is running)
 python -m zotero_mcp
-
-# Or with MCP development inspector
-pip install "mcp[cli]"
-mcp dev src/zotero_mcp/main.py
 ```
 
-### Configure with VS Code Copilot | 與 VS Code Copilot 整合
+### Configure VS Code Copilot
 
 Create `.vscode/mcp.json` in your workspace:
 
@@ -151,33 +81,14 @@ Create `.vscode/mcp.json` in your workspace:
         "run",
         "--directory",
         "/path/to/zotero-keeper/mcp-server",
-        "python",
-        "-m",
-        "zotero_mcp"
-      ],
-      "env": {
-        "ZOTERO_HOST": "localhost",
-        "ZOTERO_PORT": "23119"
-      }
-    },
-    "pubmed-search": {
-      "type": "stdio",
-      "command": "uvx",
-      "args": ["--with", "mcp>=1.0.0", "pubmed-search-mcp"],
-      "env": {
-        "NCBI_EMAIL": "your-email@example.com"
-      }
+        "python", "-m", "zotero_mcp"
+      ]
     }
   }
 }
 ```
 
-> 📝 **Note**: Change `ZOTERO_HOST` to your Zotero machine's IP if running remotely.
-> See `.env.example` for configuration reference.
-> 
-> 💡 **Tip**: Use absolute path for `--directory` and ensure [uv](https://docs.astral.sh/uv/) is installed.
-
-### Configure with Claude Desktop | 與 Claude Desktop 整合
+### Configure Claude Desktop
 
 Add to `claude_desktop_config.json`:
 
@@ -187,353 +98,305 @@ Add to `claude_desktop_config.json`:
     "zotero-keeper": {
       "command": "python",
       "args": ["-m", "zotero_mcp"],
-      "cwd": "/path/to/zotero-keeper/mcp-server",
-      "env": {
-        "ZOTERO_HOST": "localhost",
-        "ZOTERO_PORT": "23119"
-      }
-    }
-  }
-}
-```
-
----
-
-## 🔧 Available Tools | 可用工具
-
-### 📖 Read Tools | 讀取工具
-
-| Tool | Description | 說明 |
-|------|-------------|------|
-| `search_items(query)` | Search items by title/creator/year | 搜尋文獻（標題/作者/年份） |
-| `get_item(key)` | Get item details by key | 取得文獻詳細資料 |
-| `list_items(limit)` | List recent items | 列出最近文獻 |
-| `list_collections()` | List all collections | 列出所有收藏夾 |
-| `list_tags()` | List all tags | 列出所有標籤 |
-| `get_item_types()` | Get available item types | 取得可用文獻類型 |
-
-### ✏️ Write Tools | 寫入工具
-
-| Tool | Description | 說明 |
-|------|-------------|------|
-| `add_reference(...)` | Add a new bibliographic reference | 新增書目參考文獻 |
-| `create_item(type, title, ...)` | Create item with full metadata | 建立完整元資料的文獻 |
-
-### 📥 Import Tools | 匯入工具
-
-| Tool | Description | 說明 |
-|------|-------------|------|
-| `import_ris_to_zotero(ris_text)` | Import RIS format citations | 匯入 RIS 格式引用文獻 |
-| `import_from_pmids(pmids)` | Import by PubMed IDs (requires pubmed extra) | 直接用 PMID 匯入 |
-
-### 🧠 Smart Tools | 智慧工具
-
-| Tool | Description | 說明 |
-|------|-------------|------|
-| `check_duplicate(title, doi)` | Check if reference already exists | 檢查是否已有重複文獻 |
-| `validate_reference(...)` | Validate reference metadata | 驗證參考文獻元資料 |
-| `smart_add_reference(...)` | Validate + check duplicate + add | 驗證 + 檢查重複 + 新增 |
-
-### 🔍 Integrated Search | 整合搜尋
-
-| Tool | Description | 說明 |
-|------|-------------|------|
-| `search_pubmed_exclude_owned` | Search PubMed, filter out owned articles | 搜尋 PubMed，排除已有文獻 |
-| `check_articles_owned` | Check which PMIDs are already in Zotero | 檢查哪些 PMID 已存在 |
-
-> ⚠️ **Note**: Integrated search requires both `pubmed-search-mcp` and `zotero-keeper[pubmed]` installed.
-
----
-
-## 🔬 PubMed Integration | PubMed 整合
-
-Zotero Keeper works seamlessly with [pubmed-search-mcp](https://github.com/u9401066/pubmed-search-mcp) for literature discovery and import.
-
-### 🆕 Integrated Search (v1.6.0+) | 整合搜尋
-
-When both MCPs are installed, use **integrated search** to find NEW papers not in your library:
-
-```
-┌────────────────────────────────────────────────────────────────┐
-│                    zotero-keeper (v1.6.0+)                     │
-│  search_pubmed_exclude_owned("CRISPR")                         │
-│      ├── PubMed Search (via pubmed-search-mcp)                 │
-│      ├── Filter against Zotero library                         │
-│      └── Return only NEW articles 🆕                           │
-└────────────────────────────────────────────────────────────────┘
-```
-
-**Simple Workflow (Recommended):**
-```
-1. [keeper] search_pubmed_exclude_owned("CRISPR", limit=10) → NEW papers only
-2. [keeper] import_from_pmids(new_pmids, tags=["CRISPR"]) → Zotero
-```
-
-### Advanced Workflow | 進階工作流程
-
-For complex searches, use pubmed-search-mcp's strategy tools first:
-
-```
-┌────────────────────────┐    ┌────────────────────────┐
-│   pubmed-search-mcp    │    │     zotero-keeper      │
-│   (Strategy Building)  │    │   (Search & Import)    │
-│                        │    │                        │
-│  • generate_search_    │    │  • search_pubmed_      │
-│    queries (MeSH)      │───▶│    exclude_owned       │
-│  • parse_pico          │    │  • import_from_pmids   │
-│  • prepare_export      │    │  • smart_add_reference │
-└────────────────────────┘    └────────────────────────┘
-```
-
-**Example:**
-```
-1. [pubmed] generate_search_queries("CRISPR gene therapy") → MeSH terms
-2. [keeper] search_pubmed_exclude_owned(query='"CRISPR-Cas Systems"[MeSH]') → NEW only
-3. [keeper] import_from_pmids(pmids, tags=["CRISPR"]) → Zotero
-```
-
-### Configuration | 設定
-
-```json
-// claude_desktop_config.json - Run both MCPs
-{
-  "mcpServers": {
-    "pubmed-search": {
-      "command": "uvx",
-      "args": ["pubmed-search-mcp"]
-    },
-    "zotero-keeper": {
-      "command": "python",
-      "args": ["-m", "zotero_mcp"],
       "cwd": "/path/to/zotero-keeper/mcp-server"
     }
   }
 }
 ```
 
----
-
-## 📋 Use Case: Building a Literature Collection | 案例：建立文獻專題
-
-### Scenario: "Anesthesia AI 2024-2025" Collection
-
-A real-world example of using zotero-keeper + pubmed-search-mcp to build a comprehensive literature collection.
-
-**Goal**: Create a Zotero collection with all 2024-2025 papers on AI/ML in Anesthesiology.
-
-#### Step 1: Create Collection in Zotero
-```
-In Zotero Desktop: Right-click → New Collection → "麻醉AI (2024-2025)"
-```
-
-#### Step 2: Search PubMed with MeSH Terms
-```
-[pubmed] generate_search_queries("anesthesiology artificial intelligence")
-         → Returns MeSH terms: "Artificial Intelligence"[MeSH], "Machine Learning"[MeSH]
-
-[pubmed] search_literature(
-           query='("Anesthesiology"[MeSH] OR anesthesia[tiab]) AND 
-                  ("Artificial Intelligence"[MeSH] OR "Machine Learning"[MeSH])',
-           min_year=2024, 
-           limit=50
-         )
-         → Returns 50 articles with PMIDs
-```
-
-#### Step 3: Import to Zotero
-```
-[keeper] smart_add_reference(
-           title="...",
-           doi="...",
-           pmid="...",
-           tags=["Anesthesia-AI", "2024"]
-         )
-         → Validates, checks duplicates, then adds to Zotero
-```
-
-#### Results | 成果
-- ✅ **20 papers** imported successfully
-- ✅ All with **DOI, PMID, Abstract, Tags**
-- ✅ **Duplicate detection** prevented re-imports
-- ✅ Papers organized by **tags** for easy filtering
+> 💡 Use absolute paths and ensure [uv](https://docs.astral.sh/uv/) is installed.
 
 ---
 
-### 🔴 Current Limitations (v1.6.0) | 目前限制
+## 🔧 Available Tools (21 Total)
 
-| Issue | Description | 問題描述 |
-|-------|-------------|----------|
-| **No batch import** | Must call `smart_add_reference` one-by-one | 需要逐篇呼叫，沒有批次匯入 |
-| **Two MCPs not unified** | Agent uses pubmed-search directly, not via keeper | Agent 直接用 pubmed-search，未透過 keeper |
-| **RIS export disconnected** | `prepare_export` creates RIS but doesn't auto-import | RIS 匯出與匯入沒有連動 |
+### 📖 Read Tools (server.py - 11 tools)
 
-### 🟢 Planned Improvements (v1.7.0) | 規劃改進
+| Tool | Description | Example |
+|------|-------------|---------|
+| `check_connection` | Test Zotero connectivity | "Is Zotero running?" |
+| `search_items` | Search references | "Find papers about CRISPR" |
+| `get_item` | Get item details | "Show abstract for key:ABC123" |
+| `list_items` | List recent items | "Show papers in collection X" |
+| `list_collections` | List all folders | "What collections do I have?" |
+| `get_collection` | Get collection details | "How many items in AI Research?" |
+| `get_collection_items` | Items in a collection | "List papers in AI Research" |
+| `get_collection_tree` | Hierarchical tree view | "Show collection structure" |
+| `find_collection` | Find by name | "Find collection called 'AI'" |
+| `list_tags` | List all tags | "What tags have I used?" |
+| `get_item_types` | Available item types | "What types can I add?" |
+
+### ✏️ Save Tools (interactive_tools.py - 2 tools)
+
+| Tool | Description | Example |
+|------|-------------|---------|
+| `interactive_save` ⭐ | Interactive save with collection selection | "Save this paper to Zotero" |
+| `quick_save` | Quick save without interaction | "Quick save to AI Research" |
+
+### 🔍 Saved Search Tools (saved_search_tools.py - 3 tools)
+
+| Tool | Description | Example |
+|------|-------------|---------|
+| `list_saved_searches` | List all saved searches | "What saved searches exist?" |
+| `run_saved_search` | Execute a saved search | "Which papers have no PDF?" |
+| `get_saved_search_details` | Get search conditions | "What's in 'Missing PDF' search?" |
+
+### 🔬 PubMed Integration (search_tools.py - 2 tools)
+
+| Tool | Description | Example |
+|------|-------------|---------|
+| `search_pubmed_exclude_owned` | Find new papers | "Find CRISPR papers I don't have" |
+| `check_articles_owned` | Check if PMIDs exist | "Do I have these PMIDs?" |
+
+### 📥 Import Tools (pubmed_tools.py - 2 tools, batch_tools.py - 1 tool)
+
+| Tool | Description | Example |
+|------|-------------|---------|
+| `import_ris_to_zotero` | Import RIS citations | "Import this RIS text" |
+| `import_from_pmids` | Import by PMID | "Import PMID 12345678" |
+| `batch_import_from_pubmed` | Batch import with full metadata | "Import PMIDs: 123,456,789" |
+
+---
+
+## 📖 MCP Resources (Browsable Data)
+
+No tool calls needed! AI can directly browse Zotero data:
+
+| Resource URI | Description |
+|--------------|-------------|
+| `zotero://collections` | All collections |
+| `zotero://collections/tree` | Collection hierarchy |
+| `zotero://collections/{key}` | Specific collection |
+| `zotero://collections/{key}/items` | Items in collection |
+| `zotero://items` | Recent items |
+| `zotero://items/{key}` | Item details |
+| `zotero://tags` | All tags |
+| `zotero://searches` | Saved searches |
+| `zotero://searches/{key}` | Search details |
+| `zotero://schema/item-types` | Available item types |
+
+---
+
+## 🎯 Interactive Save (Recommended!)
+
+The `interactive_save` tool uses **MCP Elicitation** to show collection options:
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  NEW: batch_import_from_pubmed(pmids, tags)                    │
-│       → Fetches metadata for ALL PMIDs at once                 │
-│       → Batch validates and checks duplicates                  │
-│       → Imports all in single operation                        │
-│       → Returns summary: added/skipped/failed                  │
-└─────────────────────────────────────────────────────────────────┘
+User: "Save this DOI:10.1234/example paper to Zotero"
+
+[MCP Elicitation pops up]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📚 Saving: Deep Learning for Medical Imaging
+
+⭐ Suggested:
+   1. AI Research (match: 90%) - Title matches
+   2. Medical Imaging (match: 75%) - Keyword matches
+
+📂 All Collections:
+   3. Biology (12 items)
+   4. Chemistry (8 items)
+   5. To Read (23 items)
+
+0. Save to My Library (no collection)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Enter the number of your choice: [User enters: 1]
+
+AI: ✅ Saved to 'AI Research' collection!
 ```
 
-**Target Workflow:**
+### 🔒 Data Integrity: Auto-fetch Metadata
+
+When you provide a **DOI** or **PMID**, the tool automatically fetches complete metadata:
+
+- **DOI** → CrossRef API → Full abstract, authors, journal, date
+- **PMID** → PubMed API → Full abstract, MeSH terms, affiliations
+
+No more missing abstracts! Just provide the identifier.
+
+---
+
+## 📁 Collection Organization
+
+Zotero supports **nested collections**. Recommended strategies:
+
+### By Topic (Recommended)
 ```
-1. [keeper] search_pubmed_exclude_owned("anesthesia AI", limit=50)
-2. [keeper] batch_import_from_pubmed(pmids, tags=["Anesthesia-AI"])
-   → "Added 45, Skipped 3 duplicates, Failed 2"
+📁 My Library
+├── 📁 Research Topics
+│   ├── 📂 CRISPR Gene Editing
+│   ├── 📂 Machine Learning in Medicine
+│   └── 📂 Anesthesia Safety
+├── 📁 Projects
+│   ├── 📂 2024 Paper Draft
+│   └── 📂 PhD Thesis
+└── 📁 Reading List
+    ├── 📂 To Read
+    └── 📂 Important
+```
+
+> 💡 **Best Practice**: Use **collections** for primary organization, **tags** for cross-cutting attributes (e.g., "to-read", "important", "review").
+
+---
+
+## 🔬 PubMed Integration
+
+Works seamlessly with [pubmed-search-mcp](https://github.com/u9401066/pubmed-search-mcp):
+
+```
+You: "Find new anesthesia AI papers from 2024 that I don't have"
+
+AI executes:
+1. search_pubmed_exclude_owned("anesthesia AI", min_year=2024)
+   → Found 30, you own 5, returns 25 new ones
+
+2. batch_import_from_pubmed(pmids="12345,67890,...")
+   → Batch imports with complete abstracts, authors, DOI
+
+You: Done! 25 new papers in Zotero
+```
+
+### Install PubMed Integration
+
+```bash
+pip install -e ".[pubmed]"
 ```
 
 ---
 
-## 🌐 Network Setup | 網路設定
+## 🌐 Remote Zotero Setup
 
-### Scenario | 情境
+If Zotero runs on another computer:
 
-```
-┌──────────────┐           ┌──────────────┐
-│  MCP Server  │  ──────▶  │   Zotero     │
-│  (Linux VM)  │   HTTP    │  (Windows)   │
-│  <MCP_HOST>  │  :23119   │ <ZOTERO_HOST>│
-└──────────────┘           └──────────────┘
-```
+### 1. On Zotero Machine (Windows)
 
-### Zotero Configuration (Windows) | Zotero 設定 (Windows)
-
-**1. Enable Local API (Run JavaScript in Zotero):**
-```javascript
+```powershell
+# Enable Local API (in Zotero → Tools → Developer → Run JavaScript)
 Zotero.Prefs.set("httpServer.localAPI.enabled", true)
-```
 
-**2. Add Firewall Rule:**
-```powershell
-netsh advfirewall firewall add rule name="Zotero HTTP Server" dir=in action=allow protocol=TCP localport=23119
-```
+# Open firewall
+netsh advfirewall firewall add rule name="Zotero" dir=in action=allow protocol=TCP localport=23119
 
-**3. Setup Port Proxy (Required - Zotero binds to 127.0.0.1 only):**
-```powershell
+# Setup port proxy (Zotero only listens on 127.0.0.1)
 netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=23119 connectaddress=127.0.0.1 connectport=23119
 ```
 
-### Connection Test | 連線測試
+### 2. Configure MCP Server
+
+```json
+{
+  "env": {
+    "ZOTERO_HOST": "192.168.1.100",
+    "ZOTERO_PORT": "23119"
+  }
+}
+```
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────┐
+│           AI Agent (VS Code / Claude)           │
+└──────────────────────┬──────────────────────────┘
+                       │ MCP Protocol
+                       │ ├── Tools (21)
+                       │ ├── Resources (10 URIs)
+                       │ └── Elicitation (interactive input)
+                       ▼
+┌─────────────────────────────────────────────────┐
+│              Zotero Keeper MCP Server           │
+│  ┌───────────────────────────────────────────┐  │
+│  │  MCP Layer                                │  │
+│  │  ├── server.py (11 core tools)            │  │
+│  │  ├── resources.py (10 Resource URIs)      │  │
+│  │  ├── interactive_tools.py (2 save tools)  │  │
+│  │  ├── saved_search_tools.py (3 tools)      │  │
+│  │  ├── search_tools.py (2 tools)            │  │
+│  │  ├── pubmed_tools.py (2 tools)            │  │
+│  │  ├── batch_tools.py (1 tool)              │  │
+│  │  └── smart_tools.py (helpers only)        │  │
+│  └───────────────────────────────────────────┘  │
+└──────────────────────┬──────────────────────────┘
+                       │ HTTP (port 23119)
+                       ▼
+┌─────────────────────────────────────────────────┐
+│              Zotero Desktop Client              │
+│  ├── Local API (/api/...) → Read               │
+│  └── Connector API (/connector/...) → Write    │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+## ⚠️ Zotero API Limitations
+
+### Collection Creation Limitation
+
+Per [Zotero's official source code](https://github.com/zotero/zotero/blob/main/chrome/content/zotero/xpcom/server/server_localAPI.js#L28-L43):
+
+> **"Write access is not yet supported."**
+
+**Collections cannot be created via API.** Create them in Zotero first, then use AI to classify.
+
+### 🌟 Local API Exclusive: Execute Saved Searches
+
+| API | Execute Saved Search |
+|-----|---------------------|
+| Web API (api.zotero.org) | ❌ Can only read search metadata |
+| **Local API** | ✅ Can execute and retrieve results! |
+
+**Recommended Saved Searches** (create once, use forever):
+
+| Name | Condition | AI Prompt |
+|------|-----------|-----------|
+| Missing PDF | Attachment File Type is not PDF | "Which papers have no PDF?" |
+| Missing DOI | DOI is empty | "Which items lack DOI?" |
+| Recent | Date Added in last 7 days | "What did I add this week?" |
+| Unread | Tag is not "read" | "What haven't I read?" |
+
+---
+
+## 🤔 Troubleshooting
+
+### Can't connect to Zotero?
+
+1. Make sure Zotero is running
+2. Test: `curl http://127.0.0.1:23119/connector/ping`
+3. Should return: `Zotero is running`
+
+### MCP Server not found?
+
+1. Use absolute paths
+2. Check Python environment
+3. Restart VS Code / Claude Desktop
+
+### PubMed features missing?
 
 ```bash
-# Test from remote machine (requires Host header due to port proxy)
-# Replace <ZOTERO_HOST> with your Zotero machine's IP
-curl -s -H "Host: 127.0.0.1:23119" "http://<ZOTERO_HOST>:23119/connector/ping"
-# Expected: <!DOCTYPE html><html><body>Zotero is running</body></html>
-
-curl -s -H "Host: 127.0.0.1:23119" "http://<ZOTERO_HOST>:23119/api/users/0/items?limit=5"
-# Expected: JSON array of items
+pip install -e ".[pubmed]"
 ```
 
 ---
 
-## 👨‍💻 Development | 開發指南
+## 📚 Resources
 
-### Project Structure | 專案結構
-
-```
-zotero-keeper/
-├── README.md
-├── CHANGELOG.md
-├── ARCHITECTURE.md
-├── ROADMAP.md
-├── LICENSE
-├── mcp-server/
-│   ├── pyproject.toml
-│   ├── src/
-│   │   └── zotero_mcp/
-│   │       ├── __init__.py
-│   │       ├── main.py              # Entry point
-│   │       ├── domain/              # Domain Layer
-│   │       │   ├── entities/        # Item, Collection, Creator
-│   │       │   └── repositories/    # Repository interfaces
-│   │       ├── application/         # Application Layer
-│   │       │   └── use_cases/       # Business logic
-│   │       └── infrastructure/      # Infrastructure Layer
-│   │           ├── mcp/             # MCP Server & Tools
-│   │           └── zotero_client/   # HTTP Client
-│   └── tests/
-└── docs/
-    └── memory-bank/                 # Development context
-```
-
-### Testing | 測試
-
-```bash
-# Run tests
-pytest
-
-# Run with coverage
-pytest --cov=zotero_mcp
-
-# Run specific test
-pytest tests/test_client.py -v
-```
-
-### Code Quality | 程式碼品質
-
-```bash
-# Lint
-ruff check src/
-
-# Type check
-mypy src/
-```
+- [CHANGELOG](CHANGELOG.md) - Release notes
+- [ARCHITECTURE](ARCHITECTURE.md) - Technical architecture
+- [CONTRIBUTING](CONTRIBUTING.md) - How to contribute
+- [ROADMAP](ROADMAP.md) - Development roadmap
+- [pubmed-search-mcp](https://github.com/u9401066/pubmed-search-mcp) - PubMed search (Apache 2.0)
 
 ---
 
-## 🗺️ Roadmap | 路線圖
+## 🤝 Contributing
 
-See [ROADMAP.md](ROADMAP.md) for detailed roadmap.
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-| Phase | Status | Description |
-|-------|--------|-------------|
-| **Phase 1** | ✅ Done | Network connectivity, API discovery |
-| **Phase 2** | 🔄 In Progress | MCP Tools implementation (read/write) |
-| **Phase 3** | 📋 Planned | Smart features (duplicate detection, validation) |
-| **Phase 4** | 📋 Planned | Multi-user support, configuration |
-| **Phase 5** | 📋 Planned | Enrichment (DOI lookup, metadata completion) |
-
----
-
-## 📚 References | 參考資料
-
-### APIs & Protocols
-
-- [Zotero Web API v3](https://www.zotero.org/support/dev/web_api/v3/basics)
-- [Zotero Local API Source](https://github.com/zotero/zotero/blob/main/chrome/content/zotero/xpcom/server/server_localAPI.js)
-- [Model Context Protocol](https://modelcontextprotocol.io/)
-- [FastMCP Python SDK](https://github.com/jlowin/fastmcp)
-
-### Similar Projects
-
-- [stevenyuyy/zotero-mcp](https://stevenyuyy.us/zotero-mcp/) - Official Zotero MCP documentation
-- [54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) - Read-only MCP server
-- [kujenga/zotero-mcp](https://github.com/kujenga/zotero-mcp) - Local API based
-
-### Design References
-
-- [medical-calc-mcp](https://github.com/u9401066/medical-calc-mcp) - DDD architecture reference
-
----
-
-## 🤝 Contributing | 貢獻
-
-We welcome contributions! Please see our:
-
-- [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
-- [SECURITY.md](SECURITY.md) - Security policy
-- [ROADMAP.md](ROADMAP.md) - Project roadmap
-
-**Ways to contribute:**
-- 🐛 Report bugs
-- 💡 Suggest features
-- 📖 Improve documentation
-- 🔧 Submit pull requests
+- 🐛 [Report Bugs](https://github.com/u9401066/zotero-keeper/issues)
+- 💡 [Request Features](https://github.com/u9401066/zotero-keeper/issues)
+- 🔧 [Submit PRs](https://github.com/u9401066/zotero-keeper/pulls)
 
 ---
 
@@ -543,20 +406,7 @@ Apache 2.0 - See [LICENSE](LICENSE)
 
 ---
 
-## 🙏 Acknowledgments | 致謝
-
-- [Zotero](https://www.zotero.org/) - The amazing open-source reference manager
-- [Model Context Protocol](https://modelcontextprotocol.io/) - Anthropic's open protocol for AI-tool communication
-- [FastMCP](https://github.com/jlowin/fastmcp) - Python SDK for MCP
-
----
-
 <p align="center">
-  Made with ❤️ for the research community
-  <br>
-  <a href="https://github.com/u9401066/zotero-keeper/issues">Report Bug</a>
-  ·
-  <a href="https://github.com/u9401066/zotero-keeper/issues">Request Feature</a>
-  ·
-  <a href="CONTRIBUTING.md">Contribute</a>
+  Made with ❤️ for researchers<br>
+  Let AI manage your references, focus on your research!
 </p>

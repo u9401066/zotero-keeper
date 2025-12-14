@@ -29,6 +29,9 @@ from .pubmed_tools import register_pubmed_tools, is_pubmed_available
 from .smart_tools import register_smart_tools
 from .search_tools import register_search_tools, is_search_tools_available
 from .batch_tools import register_batch_tools, is_batch_import_available
+from .saved_search_tools import register_saved_search_tools
+from .resources import register_resources
+from .interactive_tools import register_interactive_save_tools
 
 
 logger = logging.getLogger(__name__)
@@ -63,9 +66,23 @@ class ZoteroKeeperServer:
         # Register tools
         self._register_tools()
         
-        # Register Smart tools (duplicate detection, validation)
+        # Register MCP Resources (read-only browsable data)
+        register_resources(self._mcp, self._zotero)
+        logger.info("MCP Resources enabled (zotero://collections, zotero://items, zotero://tags, zotero://searches)")
+        
+        # Register Smart tools helpers (internal functions only, no tools)
         register_smart_tools(self._mcp, self._zotero)
-        logger.info("Smart tools enabled (check_duplicate, validate_reference, smart_add_reference)")
+        # Note: Smart tools (check_duplicate, validate_reference, etc.) have been 
+        # integrated into interactive_save/quick_save - see interactive_tools.py
+        
+        # Register Interactive Save tools (with elicitation support)
+        # These are the MAIN save tools now! (方案 A 精簡後)
+        register_interactive_save_tools(self._mcp, self._zotero)
+        logger.info("Save tools enabled (interactive_save, quick_save) 🎯 Uses MCP Elicitation + Auto-fetch metadata!")
+        
+        # Register Saved Search tools (Local API exclusive feature!)
+        register_saved_search_tools(self._mcp, self._zotero)
+        logger.info("Saved Search tools enabled (list_saved_searches, run_saved_search) 🌟 Local API exclusive!")
         
         # Register Integrated Search tools (PubMed + Zotero filtering)
         if is_search_tools_available():
@@ -281,6 +298,175 @@ class ZoteroKeeperServer:
             except (ZoteroConnectionError, ZoteroAPIError) as e:
                 return {"count": 0, "collections": [], "error": str(e)}
         
+        @self._mcp.tool()
+        async def get_collection(key: str) -> dict[str, Any]:
+            """
+            📁 Get a specific collection by key
+            
+            取得特定收藏夾的詳細資訊
+            
+            Args:
+                key: Collection key (e.g., "ABC12345")
+                
+            Returns:
+                Collection details including name and item count
+            """
+            try:
+                col = await self._zotero.get_collection(key)
+                data = col.get("data", col)
+                return {
+                    "found": True,
+                    "collection": {
+                        "key": col.get("key"),
+                        "name": data.get("name", ""),
+                        "parentKey": data.get("parentCollection"),
+                        "itemCount": data.get("numItems", 0),
+                    },
+                }
+            except ZoteroAPIError as e:
+                if e.status_code == 404:
+                    return {"found": False, "error": f"Collection '{key}' not found"}
+                return {"found": False, "error": str(e)}
+            except ZoteroConnectionError as e:
+                return {"found": False, "error": str(e)}
+        
+        @self._mcp.tool()
+        async def get_collection_items(
+            collection_key: str,
+            limit: int = 50,
+        ) -> dict[str, Any]:
+            """
+            📚 Get items in a specific collection
+            
+            取得特定收藏夾內的所有文獻
+            
+            Args:
+                collection_key: Collection key (e.g., "ABC12345")
+                limit: Maximum items to return (default: 50)
+                
+            Returns:
+                List of items in the collection
+            """
+            try:
+                items = await self._zotero.get_collection_items(collection_key, limit=limit)
+                results = []
+                for item in items:
+                    data = item.get("data", item)
+                    if data.get("itemType") == "attachment":
+                        continue
+                    results.append({
+                        "key": item.get("key"),
+                        "title": data.get("title", ""),
+                        "itemType": data.get("itemType", ""),
+                        "date": data.get("date", ""),
+                        "creators": _format_creators(data.get("creators", [])),
+                    })
+                return {
+                    "collection_key": collection_key,
+                    "count": len(results),
+                    "items": results,
+                }
+            except (ZoteroConnectionError, ZoteroAPIError) as e:
+                return {"collection_key": collection_key, "count": 0, "items": [], "error": str(e)}
+        
+        @self._mcp.tool()
+        async def get_collection_tree() -> dict[str, Any]:
+            """
+            🌳 Get collections as a hierarchical tree
+            
+            取得收藏夾的樹狀結構（含子收藏夾）
+            
+            Returns:
+                Tree structure with nested children
+                
+            Example response:
+                {
+                    "count": 2,
+                    "tree": [
+                        {
+                            "key": "ABC123",
+                            "name": "AI Research",
+                            "itemCount": 10,
+                            "children": [
+                                {"key": "DEF456", "name": "Deep Learning", ...}
+                            ]
+                        }
+                    ]
+                }
+            """
+            try:
+                tree = await self._zotero.get_collection_tree()
+                return {
+                    "count": len(tree),
+                    "tree": tree,
+                }
+            except (ZoteroConnectionError, ZoteroAPIError) as e:
+                return {"count": 0, "tree": [], "error": str(e)}
+        
+        @self._mcp.tool()
+        async def find_collection(
+            name: str,
+            parent_name: Optional[str] = None,
+        ) -> dict[str, Any]:
+            """
+            🔍 Find a collection by name
+            
+            用名稱查找收藏夾（不區分大小寫）
+            
+            Args:
+                name: Collection name to search for
+                parent_name: Optional parent collection name to narrow search
+                
+            Returns:
+                Collection if found, or suggestions if not found
+                
+            Example:
+                find_collection(name="AI Research")
+                find_collection(name="Deep Learning", parent_name="AI Research")
+            """
+            try:
+                # First find parent if specified
+                parent_key = None
+                if parent_name:
+                    parent = await self._zotero.find_collection_by_name(parent_name)
+                    if parent:
+                        parent_key = parent.get("key")
+                    else:
+                        return {
+                            "found": False,
+                            "error": f"Parent collection '{parent_name}' not found",
+                        }
+                
+                col = await self._zotero.find_collection_by_name(name, parent_key)
+                if col:
+                    data = col.get("data", col)
+                    return {
+                        "found": True,
+                        "collection": {
+                            "key": col.get("key"),
+                            "name": data.get("name", ""),
+                            "parentKey": data.get("parentCollection"),
+                            "itemCount": data.get("numItems", 0),
+                        },
+                    }
+                else:
+                    # Provide suggestions
+                    all_collections = await self._zotero.get_collections()
+                    suggestions = []
+                    name_lower = name.lower()
+                    for c in all_collections:
+                        cdata = c.get("data", c)
+                        cname = cdata.get("name", "")
+                        if name_lower in cname.lower():
+                            suggestions.append(cname)
+                    return {
+                        "found": False,
+                        "error": f"Collection '{name}' not found",
+                        "suggestions": suggestions[:5] if suggestions else None,
+                    }
+            except (ZoteroConnectionError, ZoteroAPIError) as e:
+                return {"found": False, "error": str(e)}
+        
         # ==================== Read: Tags ====================
         
         @self._mcp.tool()
@@ -324,164 +510,11 @@ class ZoteroKeeperServer:
             except (ZoteroConnectionError, ZoteroAPIError) as e:
                 return {"count": 0, "itemTypes": [], "error": str(e)}
         
-        # ==================== Write: Add Reference ====================
-        
-        @self._mcp.tool()
-        async def add_reference(
-            title: str,
-            item_type: str = "journalArticle",
-            authors: Optional[list[str]] = None,
-            date: Optional[str] = None,
-            doi: Optional[str] = None,
-            url: Optional[str] = None,
-            abstract: Optional[str] = None,
-            publication_title: Optional[str] = None,
-            volume: Optional[str] = None,
-            issue: Optional[str] = None,
-            pages: Optional[str] = None,
-            publisher: Optional[str] = None,
-            tags: Optional[list[str]] = None,
-        ) -> dict[str, Any]:
-            """
-            ➕ Add a new reference to Zotero
-            
-            新增書目參考文獻到 Zotero
-            
-            Args:
-                title: Reference title (required)
-                item_type: Type - journalArticle, book, bookSection, conferencePaper, thesis, webpage, etc.
-                authors: List of author names ["First Last", "First Last"]
-                date: Publication date (2024, 2024-01, 2024-01-15)
-                doi: Digital Object Identifier
-                url: Web URL
-                abstract: Abstract text
-                publication_title: Journal/book name
-                volume: Volume number
-                issue: Issue number
-                pages: Page range (e.g., "1-10")
-                publisher: Publisher name
-                tags: List of tags
-                
-            Returns:
-                Success status and created item info
-                
-            Example:
-                add_reference(
-                    title="Deep Learning for NLP",
-                    item_type="journalArticle",
-                    authors=["Yann LeCun", "Geoffrey Hinton"],
-                    date="2024",
-                    doi="10.1234/example",
-                    publication_title="Nature"
-                )
-            """
-            try:
-                # Build item data
-                item: dict[str, Any] = {
-                    "itemType": item_type,
-                    "title": title,
-                }
-                
-                # Add creators
-                if authors:
-                    item["creators"] = []
-                    for author in authors:
-                        parts = author.strip().split(maxsplit=1)
-                        if len(parts) == 1:
-                            item["creators"].append({
-                                "lastName": parts[0],
-                                "creatorType": "author",
-                            })
-                        else:
-                            item["creators"].append({
-                                "firstName": parts[0],
-                                "lastName": parts[1],
-                                "creatorType": "author",
-                            })
-                
-                # Add optional fields
-                if date:
-                    item["date"] = date
-                if doi:
-                    item["DOI"] = doi
-                if url:
-                    item["url"] = url
-                if abstract:
-                    item["abstractNote"] = abstract
-                if publication_title:
-                    item["publicationTitle"] = publication_title
-                if volume:
-                    item["volume"] = volume
-                if issue:
-                    item["issue"] = issue
-                if pages:
-                    item["pages"] = pages
-                if publisher:
-                    item["publisher"] = publisher
-                if tags:
-                    item["tags"] = [{"tag": t} for t in tags]
-                
-                # Save via Connector API
-                result = await self._zotero.save_items([item])
-                
-                return {
-                    "success": True,
-                    "message": f"Reference '{title}' added successfully",
-                    "result": result,
-                }
-            except (ZoteroConnectionError, ZoteroAPIError) as e:
-                return {
-                    "success": False,
-                    "message": f"Failed to add reference: {str(e)}",
-                }
-        
-        @self._mcp.tool()
-        async def create_item(
-            item_type: str,
-            title: str,
-            creators: Optional[list[dict[str, str]]] = None,
-            **fields,
-        ) -> dict[str, Any]:
-            """
-            ➕ Create item with full metadata
-            
-            使用完整元資料建立文獻（進階用法）
-            
-            Args:
-                item_type: Type (journalArticle, book, etc.)
-                title: Item title
-                creators: Full creator dicts [{"firstName": "...", "lastName": "...", "creatorType": "author"}]
-                **fields: Any Zotero fields (date, DOI, abstractNote, publicationTitle, etc.)
-                
-            Returns:
-                Success status and result
-                
-            Example:
-                create_item(
-                    item_type="journalArticle",
-                    title="My Paper",
-                    creators=[{"firstName": "John", "lastName": "Doe", "creatorType": "author"}],
-                    date="2024",
-                    DOI="10.1234/example"
-                )
-            """
-            try:
-                result = await self._zotero.create_item(
-                    item_type=item_type,
-                    title=title,
-                    creators=creators,
-                    **fields,
-                )
-                return {
-                    "success": True,
-                    "message": f"Item '{title}' created successfully",
-                    "result": result,
-                }
-            except (ZoteroConnectionError, ZoteroAPIError) as e:
-                return {
-                    "success": False,
-                    "message": f"Failed to create item: {str(e)}",
-                }
+        # ==================== Write: Use interactive_save or quick_save ====================
+        # Note: add_reference and create_item have been removed in favor of:
+        # - interactive_save: Interactive collection selection with elicitation
+        # - quick_save: Direct save with optional collection specification
+        # See interactive_tools.py for implementation
     
     def run(self, transport: str = "stdio"):
         """Run the MCP server"""

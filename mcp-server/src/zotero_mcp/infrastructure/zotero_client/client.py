@@ -225,11 +225,141 @@ class ZoteroClient:
             params={"limit": limit},
         )
     
+    async def find_collection_by_name(
+        self,
+        name: str,
+        parent_key: str | None = None,
+    ) -> dict[str, Any] | None:
+        """
+        Find a collection by name (case-insensitive).
+        
+        Args:
+            name: Collection name to search for
+            parent_key: Optional parent collection key to narrow search
+            
+        Returns:
+            Collection dict if found, None otherwise
+        """
+        collections = await self.get_collections()
+        name_lower = name.lower().strip()
+        
+        for col in collections:
+            data = col.get("data", col)
+            col_name = data.get("name", "").lower().strip()
+            col_parent = data.get("parentCollection")
+            
+            if col_name == name_lower:
+                # If parent_key specified, must match
+                if parent_key is None or col_parent == parent_key:
+                    return col
+        
+        return None
+    
+    async def get_collection_tree(self) -> list[dict[str, Any]]:
+        """
+        Get collections organized as a tree structure.
+        
+        Returns:
+            List of root collections, each with 'children' array
+        """
+        collections = await self.get_collections()
+        
+        # Build lookup dict
+        col_by_key: dict[str, dict] = {}
+        for col in collections:
+            key = col.get("key")
+            data = col.get("data", col)
+            col_by_key[key] = {
+                "key": key,
+                "name": data.get("name", ""),
+                "parentKey": data.get("parentCollection"),
+                "itemCount": data.get("numItems", 0),
+                "children": [],
+            }
+        
+        # Build tree
+        roots = []
+        for key, col in col_by_key.items():
+            parent_key = col["parentKey"]
+            if parent_key and parent_key in col_by_key:
+                col_by_key[parent_key]["children"].append(col)
+            else:
+                roots.append(col)
+        
+        return roots
+    
     # ==================== Tags ====================
     
     async def get_tags(self) -> list[dict[str, Any]]:
         """Get all tags"""
         return await self._request("GET", "/api/users/0/tags")
+    
+    # ==================== Saved Searches (Local API Exclusive!) ====================
+    # 🌟 This is a unique Local API feature - Web API cannot execute saved searches!
+    
+    async def get_searches(self) -> list[dict[str, Any]]:
+        """
+        Get all saved searches.
+        
+        Local API 獨有功能！
+        
+        Returns:
+            List of saved search objects with keys and conditions
+        """
+        return await self._request("GET", "/api/users/0/searches")
+    
+    async def get_search(self, search_key: str) -> dict[str, Any]:
+        """
+        Get a specific saved search by key.
+        
+        Args:
+            search_key: The search key (e.g., "ABC12345")
+            
+        Returns:
+            Saved search object with name and conditions
+        """
+        return await self._request("GET", f"/api/users/0/searches/{search_key}")
+    
+    async def execute_search(self, search_key: str, limit: int = 100) -> list[dict[str, Any]]:
+        """
+        Execute a saved search and return matching items.
+        
+        🌟 這是 Local API 獨有的功能！Web API 只能讀取 search 的 metadata，
+        無法實際執行搜尋並取得結果。這讓 AI 可以利用使用者預設的複雜搜尋條件。
+        
+        Args:
+            search_key: The search key to execute
+            limit: Maximum number of items to return (default: 100)
+            
+        Returns:
+            List of items matching the saved search conditions
+        """
+        return await self._request(
+            "GET",
+            f"/api/users/0/searches/{search_key}/items",
+            params={"limit": limit}
+        )
+    
+    async def find_search_by_name(self, name: str) -> dict[str, Any] | None:
+        """
+        Find a saved search by name (case-insensitive).
+        
+        Args:
+            name: Search name to look for
+            
+        Returns:
+            Search dict if found, None otherwise
+        """
+        searches = await self.get_searches()
+        name_lower = name.lower().strip()
+        
+        for search in searches:
+            data = search.get("data", search)
+            search_name = data.get("name", "").lower().strip()
+            if search_name == name_lower:
+                return search
+        
+        return None
     
     # ==================== Schema ====================
     

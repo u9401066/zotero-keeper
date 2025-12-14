@@ -284,3 +284,7 @@ def extract_doi_from_zotero_item(item: dict[str, Any]) -> Optional[str]:
     """Extract DOI from a Zotero item."""
     data = item.get("data", item)
     return data.get("DOI") or data.get("doi")
+
+
+# Alias for backward compatibility
+pubmed_to_zotero_item = map_pubmed_to_zotero

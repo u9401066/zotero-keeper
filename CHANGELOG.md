@@ -7,265 +7,192 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [1.7.0] - 2025-12-14
 
-### Planned
-- Phase 4: Multi-user support
-- Batch operations
+### 🎯 Tool Simplification & MCP Enhancement Release
 
----
+This release focuses on reducing complexity while adding powerful MCP features.
 
-## [1.6.1] - 2025-12-14
+### Added
+
+- **MCP Resources** (10 URIs): Passive browsable data endpoints
+  - `zotero://collections` - List all collections
+  - `zotero://collections/tree` - Collection hierarchy
+  - `zotero://collections/{key}` - Collection details
+  - `zotero://collections/{key}/items` - Items in collection
+  - `zotero://items` - Recent items
+  - `zotero://items/{key}` - Item details
+  - `zotero://tags` - All tags
+  - `zotero://searches` - Saved searches
+  - `zotero://searches/{key}` - Search details
+  - `zotero://schema/item-types` - Available item types
+
+- **MCP Elicitation**: Interactive collection selection in `interactive_save`
+  - Presents numbered options to user
+  - Supports user input validation
+  - Graceful fallback if elicitation unavailable
+
+- **Auto-fetch Metadata**:
+  - DOI → CrossRef API for complete metadata
+  - PMID → PubMed E-utilities for complete metadata
+  - User input takes priority, fetched data fills gaps
 
 ### Changed
 
-- **Python 3.10+ Modern Syntax**
-  - Adopted `match-case` pattern matching for cleaner code
-    - `batch_result.py`: Replaced if-elif chain with match-case in `add_item()`
-    - `smart_tools.py`: Replaced dict lookup with match-case in `_get_required_fields()`
-    - `reference.py`: Improved `from_full_name()` with match-case
-  - Adopted `Self` type (Python 3.11+) for classmethod return types
-    - `Creator.from_full_name() -> Self`
-    - `Reference.from_zotero_dict() -> Self`
+- **Tool Count Reduced**: 27 → 21 tools
+- **smart_tools.py**: Now helpers only (no tools registered)
+  - `_suggest_collections()` - Internal helper for collection matching
+  - `_find_duplicates()` - Internal helper for duplicate detection
 
 ### Removed
 
-- **Duplicate Repository**: Removed `mcp-server/pubmed-search-mcp/` 
-  - Use PyPI package `pubmed-search-mcp>=0.1.13` instead
-  - Or use git submodule at `external/pubmed-search-mcp/`
+- **collection_tools.py**: Deleted (replaced by `resources.py`)
+- **6 Smart Tools**: Consolidated into `interactive_save`/`quick_save`
+  - `smart_add_reference` → use `interactive_save`
+  - `smart_add_with_collection` → use `interactive_save`
+  - `suggest_collections` → now internal helper
+  - `check_duplicate` → now internal helper
+  - `validate_reference` → built into save tools
+  - `add_reference` → use `quick_save`
+
+### Technical Details
+
+- **Tool Distribution**:
+  - server.py: 11 tools (core CRUD operations)
+  - interactive_tools.py: 2 tools (`interactive_save`, `quick_save`)
+  - saved_search_tools.py: 3 tools
+  - search_tools.py: 2 tools
+  - pubmed_tools.py: 2 tools
+  - batch_tools.py: 1 tool
 
 ---
 
-## [1.6.0] - 2024-12-14
-
-(Previous release - Batch Import)
-
----
-
-## [1.5.0] - 2024-12-12
-
-### 🧠 Smart Features (Phase 3)
-
-Intelligent reference management with duplicate detection and validation.
+## [1.6.0] - 2024-12-12
 
 ### Added
-- **Smart Tools Module** (smart_tools.py)
-  - `check_duplicate`: Fuzzy title matching + exact DOI/ISBN/PMID matching
-  - `validate_reference`: Check required fields based on item type
-  - `smart_add_reference`: Validate + check duplicates + add in one call
 
-- **Duplicate Detection**
-  - Uses `rapidfuzz` for high-performance fuzzy string matching
-  - 85% similarity threshold for title matching
-  - Exact matching on identifiers (DOI, ISBN, PMID)
-  - Returns confidence level: high/medium/low
+- **PubMed Integration Tools**:
+  - `search_pubmed_exclude_owned` - Search PubMed, automatically exclude owned items
+  - `check_articles_owned` - Check if PMIDs/DOIs exist in Zotero
+  - `batch_import_from_pubmed` - Batch import from PMIDs with collection support
 
-- **Validation**
-  - Type-specific required fields (journalArticle, book, thesis, etc.)
-  - Creator structure validation
-  - Warnings for recommended fields
+- **Saved Search Support** (Local API Exclusive):
+  - `list_saved_searches` - List all saved searches
+  - `run_saved_search` - Execute saved search by key or name
+  - `get_saved_search_details` - Get search conditions
 
-### Example Usage
-```python
-# Check if reference exists
-check_duplicate(title="CRISPR gene editing", doi="10.1234/example")
+- **Import Tools**:
+  - `import_ris_to_zotero` - Import RIS format data
+  - `import_from_pmids` - Import single/multiple PMIDs
 
-# Validate before adding
-validate_reference(item_type="journalArticle", title="My Paper", creators=[...])
+### Technical Details
 
-# Smart add: validates, checks duplicates, then adds
-smart_add_reference(
-    item_type="journalArticle",
-    title="New Paper",
-    creators=[{"firstName": "John", "lastName": "Doe", "creatorType": "author"}],
-    doi="10.1234/new",
-    tags=["research"]
-)
-```
+- Module structure reorganized for clarity
+- Integration with `pubmed-search-mcp` for literature workflow
 
 ---
 
-## [1.4.0] - 2024-12-12
-
-### 📥 PubMed Import Integration (Redesigned)
-
-Redesigned PubMed integration to complement `pubmed-search-mcp` instead of duplicating.
+## [1.5.0] - 2024-12-10
 
 ### Added
-- **Import Tools** (focused on Zotero import only)
-  - `import_ris_to_zotero`: Import RIS format citations (works with any RIS source)
-  - `import_from_pmids`: Direct PMID import (requires pubmed extra)
-- **RIS Parser**: Full RIS format parsing with field mapping
-  - Supports: JOUR, BOOK, CHAP, CONF, THES, RPRT, ELEC types
-  - Maps: Title, Authors, Year, Journal, DOI, Abstract, Keywords
+
+- **Dual API Support**: Local API (read) + Connector API (write)
+- **Smart Add Features**:
+  - Collection suggestion (fuzzy matching)
+  - Duplicate detection (DOI/PMID/title)
+  - Validation before save
 
 ### Changed
-- **Architecture**: Separated concerns between search (pubmed-search-mcp) and storage (zotero-keeper)
-- **Workflow**: Recommended 2-MCP workflow for best experience
 
-### Removed
-- `search_pubmed_and_import`: Use pubmed-search-mcp's `search_literature` instead
-- `get_pubmed_article_details`: Use pubmed-search-mcp's `fetch_article_details` instead
-
-### Recommended Workflow
-```
-1. pubmed: search_literature("query") → PMIDs
-2. pubmed: prepare_export(pmids, format="ris") → RIS text
-3. keeper: import_ris_to_zotero(ris_text) → Zotero
-```
+- HTTP client refactored for dual API support
+- Configuration via environment variables
 
 ---
 
-## [1.3.0] - 2024-12-12 (Superseded)
-
-### 🔬 PubMed Integration (Initial)
-
-Initial PubMed integration - superseded by v1.4.0 redesign.
+## [1.4.0] - 2024-12-08
 
 ### Added
-- PubMed Integration Module (pubmed_tools.py)
-- Optional dependencies for PubMed features
 
----
-
-## [1.2.0] - 2024-12-12
-
-### 🛠️ Core MCP Tools (Phase 2 Complete)
-
-Implemented all core MCP tools for read/write operations.
-
-### Added
-- **9 MCP Tools** via FastMCP:
-  - `check_connection` - Test Zotero connectivity
-  - `search_items` - Search by title/author/year
-  - `get_item` - Get item by key
-  - `list_items` - List recent items
+- **Collection Management**:
   - `list_collections` - List all collections
+  - `get_collection` - Get collection details
+  - `get_collection_items` - Items in collection
+  - `get_collection_tree` - Hierarchical view
+  - `find_collection` - Search by name
+
+---
+
+## [1.3.0] - 2024-12-06
+
+### Added
+
+- **Search Capabilities**:
+  - `search_items` - Full-text search
+  - `list_items` - Recent items with filters
+  - `get_item` - Get item by key
+
+---
+
+## [1.2.0] - 2024-12-04
+
+### Added
+
+- **Basic CRUD Operations**:
+  - `add_reference` - Add new reference
+  - `create_item` - Create with full metadata
   - `list_tags` - List all tags
-  - `get_item_types` - Get available item types
-  - `add_reference` - Add new reference (simple API)
-  - `create_item` - Create with full metadata (advanced)
-- **Test Script**: `test_mcp_tools.py` for all tools validation
-
-### Changed
-- Refactored from use_cases architecture to direct MCP tools
-- Renamed project to "zotero-keeper"
-
-### Removed
-- Legacy `application/use_cases/` layer
-- Legacy `domain/repositories/` interfaces
-- Duplicate README in mcp-server/
+  - `get_item_types` - Available item types
 
 ---
 
-## [1.1.0] - 2024-12-11
-
-### 🎉 Major Discovery - Built-in API
-This release pivots from custom plugin development to using Zotero 7's built-in HTTP APIs.
+## [1.1.0] - 2024-12-02
 
 ### Added
-- **ZoteroClient**: Full HTTP client implementation for Zotero APIs
-  - Local API integration (`/api/users/0/...`) for READ operations
-  - Connector API integration (`/connector/saveItems`) for WRITE operations
-  - Proper Host header handling for port proxy setup
-- **API Documentation**: Complete endpoint documentation in README
-- **Network Setup Guide**: Step-by-step instructions for Windows port proxy
 
-### Changed
-- **Architecture**: Switched from custom plugin to built-in Zotero APIs
-  - Eliminated need for Zotero plugin development
-  - Simplified deployment (no plugin installation required)
-- **Project Structure**: Reorganized to DDD onion architecture
+- **Initial MCP Server Setup**:
+  - FastMCP framework integration
+  - `check_connection` - Verify Zotero connectivity
 
-### Discovered
-- Zotero 7 has comprehensive built-in Local API (previously undocumented)
-- Connector API supports write operations via `POST /connector/saveItems`
-- Port proxy required because Zotero binds only to `127.0.0.1`
+---
 
-### Technical Notes
+## [1.0.0] - 2024-12-01
+
+### Added
+
+- Initial release
+- Project structure (DDD architecture)
+- Zotero HTTP client (Local API)
+- Basic configuration
+
+---
+
+## Migration Guides
+
+### From v1.6.x to v1.7.0
+
+**Tool Changes:**
 ```
-- Local API: /api/users/0/items, /collections, /tags
-- Connector API: /connector/saveItems, /connector/ping
-- Network: netsh portproxy for external access
-- Header: Host: 127.0.0.1:23119 required
+# Old (multiple tools)
+smart_add_reference(title=..., doi=...)
+suggest_collections(title=...)
+check_duplicate(title=..., doi=...)
+
+# New (single tool with auto-fetch + elicitation)
+interactive_save(title=..., doi=...)
+# → Auto-fetches metadata from CrossRef
+# → Suggests collections via elicitation
+# → Checks duplicates internally
 ```
 
----
+**Resources:**
+```
+# Old (tool call)
+list_collections()  # Still available as tool
 
-## [1.0.3] - 2024-12-10
-
-### Attempted
-- Custom HTTP server in Zotero Plugin (external binding)
-
-### Issues
-- Zotero's XPCOMUtils.jsm restrictions prevent binding to external interfaces
-- ServerSocket hardcoded to loopback only
+# New (also available as resource)
+zotero://collections  # Passive browsing
+```
 
 ---
 
-## [1.0.2] - 2024-12-10
-
-### Attempted
-- Zotero Plugin v1.0.2 with custom HTTP endpoint
-- Manifest updates for Zotero 7 compatibility
-
-### Issues
-- Bootstrap initialization errors
-- HTTP server failed to bind external interface
-
----
-
-## [1.0.1] - 2024-12-09
-
-### Added
-- Initial Zotero Plugin for Zotero 7
-  - `manifest.json` with proper schema
-  - `bootstrap.js` with lifecycle handlers
-  - Fixed `update_url` and `strict_max_version` issues
-- Successfully installed on Windows Zotero 7.0.30
-
-### Issues
-- Custom HTTP server not functioning as expected
-
----
-
-## [1.0.0] - 2024-12-08
-
-### Added
-- **Project Initialization**
-  - MCP Server skeleton with FastMCP
-  - DDD directory structure
-  - Basic `pyproject.toml` configuration
-  - Initial README documentation
-
-### Technical Stack
-- Python 3.11+
-- FastMCP SDK
-- httpx for HTTP client
-- Pydantic for data validation
-
----
-
-## Development Notes
-
-### Version Naming Convention
-- **Major**: Breaking changes or major feature releases
-- **Minor**: New features, significant improvements
-- **Patch**: Bug fixes, documentation updates
-
-### Related Issues
-- Zotero Local API only supports READ (as of 2024-12)
-- Connector API required for WRITE operations
-- Port proxy needed for network access
-
----
-
-[Unreleased]: https://github.com/u9401066/zotero-keeper/compare/v1.4.0...HEAD
-[1.4.0]: https://github.com/u9401066/zotero-keeper/compare/v1.3.0...v1.4.0
-[1.3.0]: https://github.com/u9401066/zotero-keeper/compare/v1.2.0...v1.3.0
-[1.2.0]: https://github.com/u9401066/zotero-keeper/compare/v1.1.0...v1.2.0
-[1.1.0]: https://github.com/u9401066/zotero-keeper/compare/v1.0.0...v1.1.0
-[1.0.3]: https://github.com/u9401066/zotero-keeper/compare/v1.0.2...v1.0.3
-[1.0.2]: https://github.com/u9401066/zotero-keeper/compare/v1.0.1...v1.0.2
-[1.0.1]: https://github.com/u9401066/zotero-keeper/compare/v1.0.0...v1.0.1
-[1.0.0]: https://github.com/u9401066/zotero-keeper/releases/tag/v1.0.0
+*For detailed architecture, see [ARCHITECTURE.md](ARCHITECTURE.md)*

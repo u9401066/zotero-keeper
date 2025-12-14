@@ -7,6 +7,7 @@ This document describes the system architecture of Zotero Keeper, a MCP server f
 ## 📖 Table of Contents
 
 - [System Overview](#system-overview)
+- [MCP Interface](#mcp-interface)
 - [Layer Architecture](#layer-architecture)
 - [Component Details](#component-details)
 - [API Reference](#api-reference)
@@ -30,26 +31,32 @@ This document describes the system architecture of Zotero Keeper, a MCP server f
 │          └───────────────────┼───────────────────┘                        │
 │                              │                                            │
 │                              │ MCP Protocol (stdio/sse)                   │
+│                              │ ├── Tools (21)                             │
+│                              │ ├── Resources (10 URIs)                    │
+│                              │ └── Elicitation (interactive input)        │
 │                              ▼                                            │
 │  ┌───────────────────────────────────────────────────────────────────┐   │
 │  │                    ZOTERO KEEPER MCP SERVER                        │   │
 │  │  ┌─────────────────────────────────────────────────────────────┐  │   │
-│  │  │  Infrastructure Layer                                        │  │   │
-│  │  │  ├── FastMCP Server (Tools Registration)                     │  │   │
-│  │  │  ├── MCP Tools Handler                                       │  │   │
-│  │  │  └── Zotero HTTP Client                                      │  │   │
+│  │  │  MCP Layer (src/zotero_mcp/infrastructure/mcp/)              │  │   │
+│  │  │  ├── server.py (11 core tools + setup)                       │  │   │
+│  │  │  ├── resources.py (10 Resource URIs)                         │  │   │
+│  │  │  ├── interactive_tools.py (2 tools + elicitation)            │  │   │
+│  │  │  ├── saved_search_tools.py (3 tools)                         │  │   │
+│  │  │  ├── search_tools.py (2 tools)                               │  │   │
+│  │  │  ├── pubmed_tools.py (2 tools)                               │  │   │
+│  │  │  ├── batch_tools.py (1 tool)                                 │  │   │
+│  │  │  └── smart_tools.py (helpers only, no tools)                 │  │   │
 │  │  └──────────────────────────┬──────────────────────────────────┘  │   │
 │  │                             │                                      │   │
 │  │  ┌──────────────────────────▼──────────────────────────────────┐  │   │
-│  │  │  Application Layer                                           │  │   │
-│  │  │  └── Use Cases (SearchItems, AddReference, ValidateRef)      │  │   │
+│  │  │  Infrastructure Layer                                        │  │   │
+│  │  │  └── Zotero HTTP Client (dual API support)                   │  │   │
 │  │  └──────────────────────────┬──────────────────────────────────┘  │   │
 │  │                             │                                      │   │
 │  │  ┌──────────────────────────▼──────────────────────────────────┐  │   │
 │  │  │  Domain Layer                                                │  │   │
-│  │  │  ├── Entities (Item, Collection, Creator, Tag)               │  │   │
-│  │  │  ├── Value Objects (ItemType, DOI, ISBN)                     │  │   │
-│  │  │  └── Repository Interfaces                                   │  │   │
+│  │  │  └── Entities (Reference, Collection, Creator)               │  │   │
 │  │  └─────────────────────────────────────────────────────────────┘  │   │
 │  └───────────────────────────────────────────────────────────────────┘   │
 │                              │                                            │
@@ -57,22 +64,8 @@ This document describes the system architecture of Zotero Keeper, a MCP server f
 │                              ▼                                            │
 │  ┌───────────────────────────────────────────────────────────────────┐   │
 │  │                    ZOTERO DESKTOP CLIENT                           │   │
-│  │  ┌─────────────────────────────────────────────────────────────┐  │   │
-│  │  │  Built-in HTTP Server (127.0.0.1:23119)                      │  │   │
-│  │  │  ├── Local API (/api/users/0/...)  → READ Operations         │  │   │
-│  │  │  │   - GET /api/users/0/items                                │  │   │
-│  │  │  │   - GET /api/users/0/collections                          │  │   │
-│  │  │  │   - GET /api/users/0/tags                                 │  │   │
-│  │  │  │                                                           │  │   │
-│  │  │  └── Connector API (/connector/...)  → WRITE Operations      │  │   │
-│  │  │      - POST /connector/saveItems                             │  │   │
-│  │  │      - GET /connector/ping                                   │  │   │
-│  │  └─────────────────────────────────────────────────────────────┘  │   │
-│  │                              │                                     │   │
-│  │                              ▼                                     │   │
-│  │  ┌─────────────────────────────────────────────────────────────┐  │   │
-│  │  │  SQLite Database (zotero.sqlite)                             │  │   │
-│  │  └─────────────────────────────────────────────────────────────┘  │   │
+│  │  ├── Local API (/api/users/0/...)  → READ Operations              │   │
+│  │  └── Connector API (/connector/...) → WRITE Operations            │   │
 │  └───────────────────────────────────────────────────────────────────┘   │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
@@ -88,402 +81,177 @@ Zotero Keeper is designed to work alongside `pubmed-search-mcp` for a complete l
 │                            │    │                            │
 │  • search_literature       │    │  • search_items            │
 │  • prepare_export (RIS)    │───▶│  • import_ris_to_zotero    │
-│  • fetch_article_details   │    │  • import_from_pmids       │
-│  • parse_pico              │    │  • add_reference           │
-│  • merge_search_results    │    │  • list_collections        │
+│  • fetch_article_details   │    │  • batch_import_from_pubmed│
+│  • parse_pico              │    │  • interactive_save        │
+│  • merge_search_results    │    │  • quick_save              │
 └────────────────────────────┘    └────────────────────────────┘
 ```
 
-**Simple Workflow (v1.6.0+, Integrated Search):**
+**Simple Workflow (Integrated Search):**
 ```
 1. [zotero-keeper] search_pubmed_exclude_owned("CRISPR") → Only NEW papers
-2. [zotero-keeper] import_from_pmids(pmids, tags=["CRISPR"]) → Zotero
+2. [zotero-keeper] batch_import_from_pubmed(pmids, tags=["CRISPR"]) → Zotero
 ```
 
 **Advanced Workflow (Strategy Building):**
 ```
 1. [pubmed-search] generate_search_queries("CRISPR") → MeSH terms
 2. [zotero-keeper] search_pubmed_exclude_owned(query='"CRISPR-Cas"[MeSH]')
-3. [zotero-keeper] import_from_pmids(pmids) → Zotero
+3. [zotero-keeper] batch_import_from_pubmed(pmids) → Zotero
 ```
 
-| MCP Server | Responsibility | Key Tools |
-|------------|----------------|-----------|
-| **pubmed-search-mcp** | Strategy Building | generate_search_queries, parse_pico, merge_search_results, search_literature |
-| **zotero-keeper** | Integrated Search & Import | search_pubmed_exclude_owned, import_from_pmids, smart_add_reference |
-| **zotero-keeper** | Library Management | search_items, check_duplicate, list_collections |
+---
+
+## MCP Interface
+
+### Tools (21 Total)
+
+| File | Count | Tools |
+|------|-------|-------|
+| server.py | 11 | `check_connection`, `search_items`, `get_item`, `list_items`, `list_collections`, `get_collection`, `get_collection_items`, `get_collection_tree`, `find_collection`, `list_tags`, `get_item_types` |
+| interactive_tools.py | 2 | `interactive_save`, `quick_save` |
+| saved_search_tools.py | 3 | `list_saved_searches`, `run_saved_search`, `get_saved_search_details` |
+| search_tools.py | 2 | `search_pubmed_exclude_owned`, `check_articles_owned` |
+| pubmed_tools.py | 2 | `import_ris_to_zotero`, `import_from_pmids` |
+| batch_tools.py | 1 | `batch_import_from_pubmed` |
+
+### Resources (10 URIs)
+
+| URI | Description |
+|-----|-------------|
+| `zotero://collections` | List all collections |
+| `zotero://collections/tree` | Collection hierarchy |
+| `zotero://collections/{key}` | Specific collection details |
+| `zotero://collections/{key}/items` | Items in collection |
+| `zotero://items` | Recent items |
+| `zotero://items/{key}` | Item details |
+| `zotero://tags` | All tags |
+| `zotero://searches` | Saved searches |
+| `zotero://searches/{key}` | Search details |
+| `zotero://schema/item-types` | Available item types |
+
+### Elicitation (Interactive Input)
+
+The `interactive_save` tool uses MCP Elicitation to prompt users:
+
+```python
+# Example: Collection selection via elicitation
+result = await ctx.elicit(
+    message=formatted_options,  # Numbered list of collections
+    schema={
+        "type": "object",
+        "properties": {
+            "selection": {
+                "type": "string",
+                "description": "Enter the number of your choice"
+            }
+        }
+    }
+)
+```
 
 ---
 
 ## Layer Architecture
 
-### DDD Onion Architecture
-
-We follow Domain-Driven Design with an onion (clean) architecture:
+### File Structure
 
 ```
-          ┌─────────────────────────────────────┐
-          │     Infrastructure Layer            │
-          │   (FastMCP, HTTP Client, Adapters)  │
-          │  ┌───────────────────────────────┐  │
-          │  │    Application Layer          │  │
-          │  │  (Use Cases, DTOs, Services)  │  │
-          │  │  ┌─────────────────────────┐  │  │
-          │  │  │    Domain Layer         │  │  │
-          │  │  │  (Entities, Value Obj,  │  │  │
-          │  │  │   Repository Interface) │  │  │
-          │  │  └─────────────────────────┘  │  │
-          │  └───────────────────────────────┘  │
-          └─────────────────────────────────────┘
+src/zotero_mcp/
+├── infrastructure/
+│   ├── mcp/                    # MCP Server Layer
+│   │   ├── server.py           # 11 core tools + server setup
+│   │   ├── resources.py        # 10 Resource URIs
+│   │   ├── interactive_tools.py # 2 save tools with elicitation
+│   │   ├── saved_search_tools.py # 3 saved search tools
+│   │   ├── search_tools.py     # 2 PubMed integration tools
+│   │   ├── pubmed_tools.py     # 2 import tools
+│   │   ├── batch_tools.py      # 1 batch import tool
+│   │   ├── smart_tools.py      # Helper functions only (no tools)
+│   │   └── config.py           # Configuration
+│   └── zotero_client/          # Zotero HTTP Client
+│       └── client.py           # Dual API (Local + Connector)
+└── domain/
+    └── entities/               # Domain entities
+        ├── reference.py
+        ├── collection.py
+        └── creator.py
 ```
 
-### Layer Responsibilities
+### smart_tools.py - Helpers Only
 
-| Layer | Responsibilities | Dependencies |
-|-------|-----------------|--------------|
-| **Domain** | Business entities, value objects, repository interfaces | None (pure Python) |
-| **Application** | Use cases, DTOs, business logic orchestration | Domain |
-| **Infrastructure** | MCP server, HTTP client, external integrations | Application, Domain |
+After simplification (v1.7.0), `smart_tools.py` contains only internal helper functions:
+
+```python
+# No @mcp.tool() decorators - just internal functions
+def _normalize_title(title: str) -> str: ...
+def _extract_identifier(item: dict, field: str) -> Optional[str]: ...
+async def _suggest_collections(item: dict, zotero_client) -> list[dict]: ...
+async def _find_duplicates(item: dict, zotero_client) -> list[dict]: ...
+```
+
+These functions are used by `interactive_tools.py` for:
+- Collection suggestion (fuzzy matching)
+- Duplicate detection (DOI/PMID/title)
 
 ---
 
 ## Component Details
 
-### Domain Layer
+### MCP Server (server.py)
 
-#### Entities
-
-```python
-# src/zotero_mcp/domain/entities/item.py
-
-@dataclass
-class Item:
-    """Zotero bibliographic item"""
-    key: str
-    item_type: ItemType
-    title: str
-    creators: list[Creator]
-    date: Optional[str]
-    abstract: Optional[str]
-    doi: Optional[DOI]
-    url: Optional[str]
-    tags: list[Tag]
-    collections: list[str]  # collection keys
-    
-@dataclass
-class Creator:
-    """Author, editor, or other contributor"""
-    first_name: str
-    last_name: str
-    creator_type: CreatorType  # author, editor, translator, etc.
-
-@dataclass
-class Collection:
-    """Zotero collection (folder)"""
-    key: str
-    name: str
-    parent_key: Optional[str]
-
-@dataclass
-class Tag:
-    """Item tag"""
-    name: str
-    type: int  # 0 = user, 1 = automatic
-```
-
-#### Value Objects
+The main entry point that:
+1. Initializes FastMCP server
+2. Creates Zotero HTTP client
+3. Registers 11 core tools
+4. Imports and registers tools from other modules
+5. Registers Resources from `resources.py`
 
 ```python
-# src/zotero_mcp/domain/value_objects.py
-
-class ItemType(StrEnum):
-    """Supported Zotero item types"""
-    JOURNAL_ARTICLE = "journalArticle"
-    BOOK = "book"
-    BOOK_SECTION = "bookSection"
-    CONFERENCE_PAPER = "conferencePaper"
-    THESIS = "thesis"
-    REPORT = "report"
-    WEBPAGE = "webpage"
-    # ... more types
-
-@dataclass(frozen=True)
-class DOI:
-    """Digital Object Identifier value object"""
-    value: str
-    
-    def __post_init__(self):
-        if not self._is_valid():
-            raise ValueError(f"Invalid DOI: {self.value}")
-    
-    def _is_valid(self) -> bool:
-        return self.value.startswith("10.")
-    
-    @property
-    def url(self) -> str:
-        return f"https://doi.org/{self.value}"
-```
-
-#### Repository Interfaces
-
-```python
-# src/zotero_mcp/domain/repositories/item_repository.py
-
-from abc import ABC, abstractmethod
-from typing import Protocol
-
-class ItemRepository(Protocol):
-    """Interface for item persistence"""
-    
-    async def get_by_key(self, key: str) -> Optional[Item]: ...
-    async def search(self, query: str, limit: int = 25) -> list[Item]: ...
-    async def list_recent(self, limit: int = 50) -> list[Item]: ...
-    async def save(self, item: Item) -> str: ...
-    async def check_duplicate(self, title: str, doi: Optional[str]) -> Optional[Item]: ...
-```
-
-### Application Layer
-
-#### Use Cases
-
-```python
-# src/zotero_mcp/application/use_cases/search_items.py
-
-@dataclass
-class SearchItemsRequest:
-    query: str
-    limit: int = 25
-    item_type: Optional[str] = None
-
-@dataclass
-class SearchItemsResponse:
-    items: list[ItemDTO]
-    total: int
-    query: str
-
-class SearchItemsUseCase:
-    def __init__(self, item_repository: ItemRepository):
-        self._repo = item_repository
-    
-    async def execute(self, request: SearchItemsRequest) -> SearchItemsResponse:
-        items = await self._repo.search(
-            query=request.query,
-            limit=request.limit
-        )
-        return SearchItemsResponse(
-            items=[ItemDTO.from_entity(item) for item in items],
-            total=len(items),
-            query=request.query
-        )
-```
-
-```python
-# src/zotero_mcp/application/use_cases/add_reference.py
-
-@dataclass
-class AddReferenceRequest:
-    item_type: str
-    title: str
-    creators: list[CreatorDTO]
-    date: Optional[str] = None
-    doi: Optional[str] = None
-    url: Optional[str] = None
-    abstract: Optional[str] = None
-    tags: list[str] = field(default_factory=list)
-    check_duplicate: bool = True
-
-@dataclass
-class AddReferenceResponse:
-    success: bool
-    item_key: Optional[str]
-    is_duplicate: bool = False
-    existing_key: Optional[str] = None
-    message: str = ""
-
-class AddReferenceUseCase:
-    def __init__(self, item_repository: ItemRepository):
-        self._repo = item_repository
-    
-    async def execute(self, request: AddReferenceRequest) -> AddReferenceResponse:
-        # Check for duplicates
-        if request.check_duplicate:
-            existing = await self._repo.check_duplicate(
-                title=request.title,
-                doi=request.doi
-            )
-            if existing:
-                return AddReferenceResponse(
-                    success=False,
-                    item_key=None,
-                    is_duplicate=True,
-                    existing_key=existing.key,
-                    message=f"Duplicate found: {existing.title}"
-                )
-        
-        # Create and save item
-        item = Item(
-            key="",  # Will be assigned by Zotero
-            item_type=ItemType(request.item_type),
-            title=request.title,
-            creators=[c.to_entity() for c in request.creators],
-            date=request.date,
-            doi=DOI(request.doi) if request.doi else None,
-            # ... more fields
-        )
-        
-        item_key = await self._repo.save(item)
-        
-        return AddReferenceResponse(
-            success=True,
-            item_key=item_key,
-            message=f"Item created successfully"
-        )
-```
-
-### Infrastructure Layer
-
-#### MCP Server
-
-```python
-# src/zotero_mcp/infrastructure/mcp/server.py
-
-from mcp.server.fastmcp import FastMCP
-
-from .config import ZoteroMcpConfig, default_config
-from .handlers import ZoteroToolsHandler
-
 class ZoteroKeeperServer:
-    """MCP Server for Zotero integration"""
-    
     def __init__(self, config: ZoteroMcpConfig = None):
-        self._config = config or default_config
-        
-        self._mcp = FastMCP(
-            name=self._config.name,
-            version=self._config.version,
-            instructions=self._config.instructions,
-        )
-        
-        # Initialize components
-        self._zotero_client = ZoteroClient(self._config.zotero)
-        self._item_repo = ZoteroItemRepository(self._zotero_client)
-        
-        # Register handlers
-        self._tools_handler = ZoteroToolsHandler(
-            mcp=self._mcp,
-            item_repo=self._item_repo,
-        )
-    
-    def run(self, transport: str = "stdio"):
-        """Run the MCP server"""
-        self._mcp.run(transport=transport)
-```
-
-#### MCP Tools Handler
-
-```python
-# src/zotero_mcp/infrastructure/mcp/handlers/tools_handler.py
-
-class ZoteroToolsHandler:
-    """Registers and handles MCP tools"""
-    
-    def __init__(self, mcp: FastMCP, item_repo: ItemRepository):
-        self._mcp = mcp
-        self._item_repo = item_repo
+        self._mcp = FastMCP(name="zotero-keeper", version="1.7.0")
+        self._zotero = ZoteroClient(config.zotero)
         self._register_tools()
-    
-    def _register_tools(self):
-        """Register all MCP tools"""
-        
-        @self._mcp.tool()
-        async def search_items(
-            query: str,
-            limit: int = 25
-        ) -> dict:
-            """
-            🔍 Search for bibliographic items in Zotero
-            
-            搜尋 Zotero 中的書目資料
-            
-            Args:
-                query: Search terms (title, author, year)
-                limit: Maximum results to return
-                
-            Returns:
-                List of matching items with metadata
-            """
-            use_case = SearchItemsUseCase(self._item_repo)
-            result = await use_case.execute(
-                SearchItemsRequest(query=query, limit=limit)
-            )
-            return {
-                "items": [item.to_dict() for item in result.items],
-                "total": result.total,
-                "query": result.query
-            }
-        
-        @self._mcp.tool()
-        async def add_reference(
-            item_type: str,
-            title: str,
-            authors: list[dict] = None,
-            date: str = None,
-            doi: str = None,
-            url: str = None,
-            abstract: str = None,
-            tags: list[str] = None,
-            check_duplicate: bool = True
-        ) -> dict:
-            """
-            ➕ Add a new bibliographic reference to Zotero
-            
-            新增書目參考文獻到 Zotero
-            
-            Args:
-                item_type: Type of item (journalArticle, book, etc.)
-                title: Item title
-                authors: List of authors [{"firstName": "...", "lastName": "..."}]
-                date: Publication date
-                doi: Digital Object Identifier
-                url: Web URL
-                abstract: Abstract text
-                tags: List of tags
-                check_duplicate: Check for existing duplicates
-                
-            Returns:
-                Result with item key or duplicate info
-            """
-            # ... implementation
+        self._register_external_modules()
 ```
 
-#### Zotero HTTP Client
+### Interactive Tools (interactive_tools.py)
+
+Two main save tools with different interaction models:
+
+| Tool | Interaction | Use Case |
+|------|-------------|----------|
+| `interactive_save` | Elicitation (numbered options) | User wants to choose collection |
+| `quick_save` | None (direct save) | User specifies collection or skips |
+
+**Auto-fetch Metadata Feature:**
+```python
+# When DOI or PMID provided, automatically fetch complete metadata
+if auto_fetch_metadata:
+    if pmid:
+        fetched_metadata = await _fetch_metadata_from_pmid(pmid)
+    elif doi:
+        fetched_metadata = await _fetch_metadata_from_doi(doi)
+    
+    # Merge: user input takes priority, fetched fills gaps
+    item = _merge_metadata(user_input, fetched_metadata)
+```
+
+### Resources (resources.py)
+
+Replaces the old `collection_tools.py` with passive browsable data:
 
 ```python
-# src/zotero_mcp/infrastructure/zotero_client/client.py
+@mcp.resource("zotero://collections")
+async def list_collections_resource() -> str:
+    collections = await zotero_client.get_collections()
+    return json.dumps({"collections": collections})
 
-class ZoteroClient:
-    """HTTP Client for Zotero APIs"""
-    
-    # READ operations via Local API
-    async def get_items(self, limit: int = 50, q: str = None) -> list[dict]:
-        return await self._request("GET", "/api/users/0/items", params={...})
-    
-    async def get_item(self, key: str) -> dict:
-        return await self._request("GET", f"/api/users/0/items/{key}")
-    
-    async def get_collections(self) -> list[dict]:
-        return await self._request("GET", "/api/users/0/collections")
-    
-    async def get_tags(self) -> list[dict]:
-        return await self._request("GET", "/api/users/0/tags")
-    
-    # WRITE operations via Connector API
-    async def save_items(self, items: list[dict]) -> dict:
-        return await self._request("POST", "/connector/saveItems", json_data={
-            "items": items,
-            "uri": "http://zotero-keeper.local",
-            "title": "Zotero Keeper Import"
-        })
+@mcp.resource("zotero://collections/{key}/items")
+async def get_collection_items_resource(key: str) -> str:
+    items = await zotero_client.get_collection_items(key)
+    return json.dumps({"items": items})
 ```
 
 ---
@@ -497,13 +265,11 @@ class ZoteroClient:
 | `/api/users/0/items` | GET | List all items |
 | `/api/users/0/items?q={query}` | GET | Search items |
 | `/api/users/0/items/{key}` | GET | Get single item |
-| `/api/users/0/items/{key}/children` | GET | Get item attachments/notes |
 | `/api/users/0/collections` | GET | List collections |
-| `/api/users/0/collections/{key}` | GET | Get single collection |
 | `/api/users/0/collections/{key}/items` | GET | Get collection items |
+| `/api/users/0/searches` | GET | List saved searches |
+| `/api/users/0/searches/{key}/items` | GET | **Execute saved search** (Local API exclusive!) |
 | `/api/users/0/tags` | GET | List all tags |
-| `/api/itemTypes` | GET | Get item type schema |
-| `/api/itemTypeFields?itemType={type}` | GET | Get fields for item type |
 
 ### Zotero Connector API (WRITE)
 
@@ -512,86 +278,117 @@ class ZoteroClient:
 | `/connector/ping` | GET | Health check |
 | `/connector/saveItems` | POST | Save items |
 
-#### saveItems Payload
+### External APIs (Auto-fetch Metadata)
 
-```json
-{
-  "items": [
-    {
-      "itemType": "journalArticle",
-      "title": "Article Title",
-      "creators": [
-        {"firstName": "John", "lastName": "Doe", "creatorType": "author"}
-      ],
-      "date": "2024",
-      "DOI": "10.1234/example",
-      "publicationTitle": "Journal Name",
-      "abstract": "Abstract text...",
-      "tags": [
-        {"tag": "machine learning"},
-        {"tag": "ai"}
-      ]
-    }
-  ],
-  "uri": "http://source.url",
-  "title": "Page Title"
-}
-```
+| API | Purpose | Used By |
+|-----|---------|---------|
+| CrossRef API | DOI → full metadata | `_fetch_metadata_from_doi()` |
+| PubMed E-utilities | PMID → full metadata | `_fetch_metadata_from_pmid()` |
 
 ---
 
 ## Data Flow
 
-### Search Flow
+### Interactive Save Flow
 
 ```
-User Query → MCP Tool → Use Case → Repository → HTTP Client → Zotero API
-                                                                  ↓
-User Response ← MCP Response ← DTO ← Entity ← JSON Parser ← API Response
+User Request (title, DOI/PMID)
+        │
+        ▼
+┌──────────────────────────┐
+│  Auto-fetch Metadata     │ ← CrossRef/PubMed API
+│  (if DOI/PMID provided)  │
+└──────────┬───────────────┘
+           │
+           ▼
+┌──────────────────────────┐
+│  Validation              │ ← Check required fields
+│  Duplicate Check         │ ← _find_duplicates()
+└──────────┬───────────────┘
+           │
+           ▼
+┌──────────────────────────┐
+│  Suggest Collections     │ ← _suggest_collections()
+│  (fuzzy matching)        │
+└──────────┬───────────────┘
+           │
+           ▼
+┌──────────────────────────┐
+│  MCP Elicitation         │ ← User selects number
+│  (numbered options)      │
+└──────────┬───────────────┘
+           │
+           ▼
+┌──────────────────────────┐
+│  Save to Zotero          │ → Connector API
+│  (with collection)       │
+└──────────────────────────┘
 ```
 
-### Add Reference Flow
+### Resource Browse Flow
 
 ```
-Reference Data → MCP Tool → Use Case (validate, check duplicate)
-                               ↓
-                         [Duplicate?] ─Yes→ Return existing item
-                               │No
-                               ↓
-                         Repository.save()
-                               ↓
-                         HTTP Client → Connector API → Zotero
-                               ↓
-                         Return new item key
+AI Agent
+    │
+    │ Request: zotero://collections
+    ▼
+┌──────────────────────────┐
+│  MCP Resource Handler    │
+│  (resources.py)          │
+└──────────┬───────────────┘
+           │
+           ▼
+┌──────────────────────────┐
+│  Zotero Local API        │
+│  GET /api/users/0/...    │
+└──────────┬───────────────┘
+           │
+           ▼
+┌──────────────────────────┐
+│  JSON Response           │
+│  (collections list)      │
+└──────────────────────────┘
 ```
 
 ---
 
 ## Design Decisions
 
-### Why Built-in API over Custom Plugin?
+### Why Resources over Collection Tools?
 
-| Factor | Custom Plugin | Built-in API |
-|--------|---------------|--------------|
-| **Maintenance** | Need to update with Zotero versions | Maintained by Zotero team |
-| **Deployment** | Requires plugin installation | No installation needed |
-| **Security** | Custom network binding needed | Uses existing Zotero server |
-| **Features** | Can add custom endpoints | Limited to existing API |
+| Aspect | Old (collection_tools.py) | New (resources.py) |
+|--------|---------------------------|-------------------|
+| Interaction | Active tool calls | Passive browsing |
+| Tool Count | 3 tools | 0 tools (10 URIs) |
+| Use Case | Explicit queries | Background context |
+| AI Decision | Must choose tool | Can browse freely |
 
-**Decision**: Use built-in API for simplicity and maintainability. Only READ is supported natively, but Connector API covers WRITE needs.
+### Why Auto-fetch Metadata?
 
-### Why DDD Architecture?
+Problem: Users often provide only DOI/PMID, resulting in incomplete records (missing abstract).
 
-1. **Testability**: Domain logic can be tested without infrastructure
-2. **Maintainability**: Clear separation of concerns
-3. **Flexibility**: Easy to swap infrastructure (e.g., different HTTP client)
-4. **Scalability**: Can add features without affecting existing code
+Solution: Automatically fetch complete metadata from external APIs when identifiers are provided.
+
+```python
+# User provides minimal info
+interactive_save(title="My Paper", doi="10.1234/example")
+
+# System auto-fetches from CrossRef
+→ Full abstract, all authors, journal name, volume, issue, pages
+```
+
+### Why Helpers in smart_tools.py?
+
+The 6 original smart tools were redundant with `interactive_save`/`quick_save`. Consolidating them:
+- Reduced tool count from 27 to 21
+- Simplified AI decision-making
+- Kept useful logic as internal helpers
 
 ### Why FastMCP?
 
 - Native Python SDK for MCP
-- Simple decorator-based API
-- Built-in stdio/sse transport support
+- Simple decorator-based API (`@mcp.tool()`, `@mcp.resource()`)
+- Built-in elicitation support (`ctx.elicit()`)
 - Active development and community
 
 ---
@@ -612,14 +409,11 @@ Reference Data → MCP Tool → Use Case (validate, check duplicate)
 
 ```
 ┌──────────────┐           ┌──────────────┐           ┌──────────────┐
-│  MCP Server  │────────────▶│  Port Proxy  │────────────▶│   Zotero     │
+│  MCP Server  │──────────▶│  Port Proxy  │──────────▶│   Zotero     │
 │  (Linux VM)  │ HTTP:23119│  (Windows)   │ localhost │  (Windows)   │
 │  <MCP_HOST>  │           │    netsh     │  :23119   │ 127.0.0.1    │
 └──────────────┘           └──────────────┘           └──────────────┘
-                          (0.0.0.0:23119)
 ```
-
-**Note**: Host header `127.0.0.1:23119` required for port proxy to route correctly.
 
 ---
 
@@ -630,7 +424,6 @@ Reference Data → MCP Tool → Use Case (validate, check duplicate)
    - Use firewall rules to restrict access
 
 2. **Data Validation**: All input validated before sending to Zotero
-   - DOI format validation
    - Required field checks
    - Item type validation
 
@@ -640,9 +433,13 @@ Reference Data → MCP Tool → Use Case (validate, check duplicate)
 
 ---
 
-## Future Architecture Considerations
+## Future Considerations
 
 1. **Multi-Library Support**: Support for group libraries
-2. **Caching Layer**: Redis/memory cache for frequently accessed data
-3. **Event Sourcing**: Track all changes for audit/undo
-4. **WebSocket**: Real-time updates when Zotero changes
+2. **Caching Layer**: Cache frequently accessed data
+3. **WebSocket**: Real-time updates when Zotero changes
+4. **Attachment Handling**: PDF management
+
+---
+
+*Last updated: December 14, 2024*
