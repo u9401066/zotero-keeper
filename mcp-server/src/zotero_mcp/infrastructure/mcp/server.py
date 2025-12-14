@@ -80,12 +80,13 @@ class ZoteroKeeperServer:
         register_saved_search_tools(self._mcp, self._zotero)
         logger.info("Saved Search tools enabled (list_saved_searches, run_saved_search) 🌟 Local API exclusive!")
 
-        # Register Integrated Search tools (PubMed + Zotero filtering)
+        # Register Integrated Search tools (advanced_search is always available, PubMed filtering is optional)
+        register_search_tools(self._mcp, self._zotero)
+        logger.info("Search tools enabled (advanced_search)")
         if is_search_tools_available():
-            register_search_tools(self._mcp, self._zotero)
-            logger.info("Integrated search enabled (search_pubmed_exclude_owned, check_articles_owned)")
+            logger.info("PubMed integration enabled (search_pubmed_exclude_owned, check_articles_owned)")
         else:
-            logger.info("Integrated search disabled (install with: pip install 'zotero-keeper[pubmed]')")
+            logger.info("PubMed integration disabled (install with: pip install 'zotero-keeper[pubmed]')")
 
         # Register PubMed tools if available
         if is_pubmed_available():

@@ -178,6 +178,91 @@ def fetch_pubmed_articles(pmids: list[str]) -> list[dict]:
     return client.fetch_details(pmids)
 
 
+def fetch_citation_metrics(pmids: list[str]) -> dict[str, dict]:
+    """
+    Fetch citation metrics (RCR, percentile) from NIH iCite.
+
+    Args:
+        pmids: List of PubMed IDs
+
+    Returns:
+        Dictionary mapping PMID to metrics:
+        {
+            "12345678": {
+                "relative_citation_ratio": 2.5,
+                "nih_percentile": 85.0,
+                "citation_count": 50,
+                "citations_per_year": 10.0,
+                "apt": 0.7
+            }
+        }
+    """
+    if not pmids:
+        return {}
+
+    try:
+        client = get_pubmed_client()
+        from pubmed_search.entrez import LiteratureSearcher  # type: ignore
+
+        searcher = LiteratureSearcher(
+            email=getattr(client, 'email', 'zotero@example.com'),
+            api_key=getattr(client, 'api_key', None)
+        )
+        metrics = searcher.get_citation_metrics(pmids)
+        logger.info(f"Fetched citation metrics for {len(metrics)} articles")
+        return metrics
+
+    except ImportError as e:
+        logger.warning(f"Cannot import LiteratureSearcher for citation metrics: {e}")
+        return {}
+    except Exception as e:
+        logger.warning(f"Failed to fetch citation metrics: {e}")
+        return {}
+
+
+def enrich_articles_with_metrics(articles: list[dict], pmids: list[str] | None = None) -> list[dict]:
+    """
+    Enrich article data with citation metrics.
+
+    Modifies articles in-place by adding RCR and other metrics.
+
+    Args:
+        articles: List of article dictionaries (will be modified)
+        pmids: Optional list of PMIDs. If not provided, extracted from articles.
+
+    Returns:
+        The same articles list with metrics added
+    """
+    if not articles:
+        return articles
+
+    # Extract PMIDs if not provided
+    if pmids is None:
+        pmids = [str(a.get("pmid", "")) for a in articles if a.get("pmid")]
+
+    if not pmids:
+        return articles
+
+    # Fetch metrics
+    metrics = fetch_citation_metrics(pmids)
+
+    if not metrics:
+        return articles
+
+    # Merge metrics into articles
+    for article in articles:
+        pmid = str(article.get("pmid", ""))
+        if pmid in metrics:
+            m = metrics[pmid]
+            article["relative_citation_ratio"] = m.get("relative_citation_ratio")
+            article["nih_percentile"] = m.get("nih_percentile")
+            article["citation_count"] = m.get("citation_count")
+            article["citations_per_year"] = m.get("citations_per_year")
+            article["apt"] = m.get("apt")
+
+    return articles
+
+
 # Type checking support
 if TYPE_CHECKING:
     from pubmed_search.client import PubMedClient, SearchResult  # noqa: F401

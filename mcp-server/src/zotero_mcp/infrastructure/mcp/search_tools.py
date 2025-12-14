@@ -178,8 +178,182 @@ def register_search_tools(mcp, zotero_client):
     library filtering to provide a seamless experience.
     """
 
+    # ==================== Advanced Search (Always Available) ====================
+
+    @mcp.tool()
+    async def advanced_search(
+        q: str | None = None,
+        item_type: str | None = None,
+        tag: str | None = None,
+        tags: list[str] | None = None,
+        sort: str = "dateModified",
+        direction: str = "desc",
+        qmode: str = "titleCreatorYear",
+        limit: int = 50,
+        include_trashed: bool = False,
+    ) -> dict[str, Any]:
+        """
+        🔍 Advanced search with multiple conditions in Zotero library
+
+        使用多重條件搜尋 Zotero 書庫
+
+        Supports all Local API search parameters for powerful filtering.
+
+        Args:
+            q: Quick search query (searches title, creator, year by default)
+            item_type: Filter by item type. Examples:
+                - "journalArticle" - Journal articles only
+                - "book" - Books only
+                - "-attachment" - Exclude attachments
+                - "book || bookSection" - Books OR book sections
+            tag: Filter by single tag. Examples:
+                - "AI" - Items with AI tag
+                - "-exclude" - Items WITHOUT this tag
+                - "AI || ML" - Items with AI OR ML tag
+            tags: Filter by multiple tags (AND logic). Example:
+                - ["AI", "Review"] - Items with BOTH AI AND Review tags
+            sort: Sort field. Options:
+                - "dateModified" (default)
+                - "dateAdded"
+                - "title"
+                - "creator"
+                - "itemType"
+                - "date"
+                - "publisher"
+                - "publicationTitle"
+            direction: Sort direction ("desc" or "asc")
+            qmode: Search mode for 'q' parameter:
+                - "titleCreatorYear" (default) - Search title, creator, year
+                - "everything" - Full-text search including abstract
+            limit: Maximum results to return (default: 50)
+            include_trashed: Include items in trash (default: False)
+
+        Returns:
+            {
+                "count": number of results,
+                "items": list of matching items,
+                "search_params": the parameters used,
+                "formatted": markdown formatted results
+            }
+
+        Examples:
+            # Find all journal articles with "deep learning" in title
+            advanced_search(q="deep learning", item_type="journalArticle")
+
+            # Find all items tagged with "AI" AND "Review"
+            advanced_search(tags=["AI", "Review"])
+
+            # Find books added recently, sorted by date added
+            advanced_search(item_type="book", sort="dateAdded", direction="desc")
+
+            # Full-text search including abstract
+            advanced_search(q="CRISPR gene therapy", qmode="everything")
+
+            # Exclude attachments and notes
+            advanced_search(item_type="-attachment || -note")
+        """
+        try:
+            # Prepare tag parameter
+            tag_param = tags if tags else tag
+
+            # Execute search
+            items = await zotero_client.get_items(
+                q=q,
+                item_type=item_type,
+                tag=tag_param,
+                sort=sort,
+                direction=direction,
+                qmode=qmode,
+                limit=limit,
+                include_trashed=include_trashed,
+            )
+
+            # Format results
+            formatted = f"## 🔍 Advanced Search Results\n\n"
+            formatted += f"Found **{len(items)}** items\n\n"
+
+            # Show search params used
+            params_used = []
+            if q:
+                params_used.append(f"q=\"{q}\" (mode: {qmode})")
+            if item_type:
+                params_used.append(f"itemType={item_type}")
+            if tag:
+                params_used.append(f"tag={tag}")
+            if tags:
+                params_used.append(f"tags={tags} (AND)")
+            params_used.append(f"sort={sort} {direction}")
+
+            formatted += f"Parameters: {', '.join(params_used)}\n\n"
+
+            # Format items
+            for i, item in enumerate(items[:20], 1):  # Show max 20 in formatted
+                data = item.get("data", item)
+                title = data.get("title", "Untitled")
+                item_type_val = data.get("itemType", "")
+                date = data.get("date", "")
+                creators = data.get("creators", [])
+
+                # Format creators
+                if creators:
+                    first_creator = creators[0]
+                    author = first_creator.get("lastName", first_creator.get("name", "Unknown"))
+                    if len(creators) > 1:
+                        author += " et al."
+                else:
+                    author = "Unknown"
+
+                # Item type emoji
+                type_emoji = {
+                    "journalArticle": "📄",
+                    "book": "📕",
+                    "bookSection": "📖",
+                    "conferencePaper": "🎤",
+                    "thesis": "🎓",
+                    "report": "📋",
+                    "webpage": "🌐",
+                    "note": "📝",
+                    "attachment": "📎",
+                }.get(item_type_val, "📄")
+
+                formatted += f"{i}. {type_emoji} **{title}**\n"
+                formatted += f"   - Author: {author} ({date})\n"
+                formatted += f"   - Type: {item_type_val}\n"
+                formatted += f"   - Key: `{item.get('key', '')}`\n\n"
+
+            if len(items) > 20:
+                formatted += f"\n*... and {len(items) - 20} more items*\n"
+
+            return {
+                "count": len(items),
+                "items": items,
+                "search_params": {
+                    "q": q,
+                    "item_type": item_type,
+                    "tag": tag,
+                    "tags": tags,
+                    "sort": sort,
+                    "direction": direction,
+                    "qmode": qmode,
+                    "limit": limit,
+                    "include_trashed": include_trashed,
+                },
+                "formatted": formatted,
+            }
+
+        except Exception as e:
+            logger.error(f"Advanced search failed: {e}")
+            return {
+                "error": str(e),
+                "hint": "Make sure Zotero is running and Local API is enabled",
+            }
+
+    logger.info("Advanced search tool registered (advanced_search)")
+
+    # ==================== PubMed Integration (Optional) ====================
+
     if not PUBMED_AVAILABLE:
-        logger.info("Skipping search_tools registration (pubmed-search-mcp not available)")
+        logger.info("Skipping PubMed search tools (pubmed-search-mcp not available)")
         return
 
     @mcp.tool()

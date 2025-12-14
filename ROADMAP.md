@@ -94,7 +94,7 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
   - ✅ PMID → PubMed E-utilities
   - ✅ Intelligent merge (user priority)
 
-### v1.8.0 (December 2024) - Current
+### v1.8.0 (December 2024)
 
 - ✅ **Collection 防呆機制**
   - ✅ `collection_name` parameter (auto-validates!)
@@ -111,38 +111,273 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
   - ✅ `docs/ZOTERO_LOCAL_API.md` created
   - ✅ API reference and limitations documented
 
+### v1.8.1 (December 2024) - Current
+
+- ✅ **Advanced Search Tool** ⭐
+  - ✅ `advanced_search` with multi-condition support
+  - ✅ `item_type` filter (journalArticle, book, -attachment)
+  - ✅ `tag` / `tags` filter (single, multiple, OR logic)
+  - ✅ `qmode` for full-text search (everything = abstract)
+  - ✅ `sort` / `direction` for flexible sorting
+
+- ✅ **Enhanced Documentation**
+  - ✅ API Capability Matrix (Local API vs Connector API)
+  - ✅ Detailed technical limitations explanation
+  - ✅ One-click installation roadmap section
+
 ---
 
 ## Phase 4: Enhanced User Experience 📋
 
-### v1.9.0 (Planned)
+### v1.9.0 (Planned) - Library Analytics & Insights
+
+> 🎯 **核心價值**：幫助用戶了解自己的文獻庫，發現問題並提供改善建議
+
+- 📋 **文獻庫分析** ⭐ 高價值
+  - 📋 `get_library_stats` - 統計分析（年份/作者/期刊分布）
+  - 📋 `find_orphan_items` - 找出無 Collection、無標籤的「孤兒」文獻
+  - 📋 `find_potential_duplicates` - 模糊比對找可能重複的文獻
+  - 📋 `analyze_reading_progress` - 分析「待讀」vs「已讀」比例
 
 - 📋 **Note & Annotation Support**
-  - 📋 Read item notes
-  - 📋 Create/update notes
-  - 📋 Read PDF annotations (if possible)
-
-- 📋 **Attachment Management**
-  - 📋 List item attachments
-  - 📋 Get attachment metadata
-  - 📋 Attachment search
+  - 📋 `get_item_notes` - 讀取文獻筆記
+  - 📋 `get_item_attachments` - 列出附件
+  - 📋 `get_pdf_annotations` - 讀取 PDF 標註 (if possible)
 
 - 📋 **Better Error Handling**
   - 📋 Detailed error messages
   - 📋 Retry logic for transient failures
   - 📋 Connection recovery
 
-### v2.0.0 (Planned)
+### v2.0.0 (Planned) - One-Click Installation + Citation Analysis 🎯
+
+> ⚠️ **目標用戶**：研究人員，不是開發者。需要簡化安裝流程。
+
+- 📋 **安裝簡化**
+  - 📋 PyPI Package: `pip install zotero-keeper-mcp`
+  - 📋 Standalone Executable (PyInstaller)
+  - 📋 Auto-configure MCP settings
+
+- 📋 **VS Code Extension** ⭐ (詳見下方 Phase 4.5)
+  - 📋 從 Marketplace 一鍵安裝
+  - 📋 內嵌 MCP Server
+  - 📋 自動配置
+
+- 📋 **引用關係分析** ⭐ 結合 PubMed
+  - 📋 `find_missing_citations` - 找出「我有 A 但沒有 A 引用的 B」
+  - 📋 `suggest_related_papers` - 基於現有文獻推薦相關論文
+  - 📋 `build_citation_map` - 視覺化文獻引用關係 (Mermaid)
+
+- 📋 **智能標籤建議** (AI-Assisted)
+  - 📋 `suggest_tags` - 根據標題/摘要建議標籤
+  - 📋 `suggest_collection` - 建議應該放入哪個 Collection
+  - 📋 `detect_topic_clusters` - 自動發現主題群組
+
+- 📋 **Better Duplicate Detection**
+  - 📋 Fuzzy title matching improvements
+  - 📋 Author name normalization
+  - 📋 ISBN validation
+
+### v2.1.0 (Planned) - Report Generation
+
+> 📝 **核心價值**：讓 AI Agent 幫助產生文獻報告
+
+- 📋 **報告生成** ⭐
+  - 📋 `generate_bibliography` - 產生特定格式引用列表 (APA/MLA/Chicago)
+  - 📋 `summarize_collection` - 總結一個 Collection 的主題和內容
+  - 📋 `create_reading_list` - 根據主題產生推薦閱讀順序
+  - 📋 `export_collection_report` - 匯出 Collection 報告 (Markdown)
 
 - 📋 **Caching Layer**
   - 📋 Cache frequently accessed collections
   - 📋 TTL-based invalidation
   - 📋 Memory-efficient storage
 
-- 📋 **Better Duplicate Detection**
-  - 📋 Fuzzy title matching improvements
-  - 📋 Author name normalization
-  - 📋 ISBN validation
+---
+
+## Phase 4.5: VS Code Extension & Marketplace 📋
+
+> 💡 **研究結果**：VS Code 支援三種 MCP 安裝方式
+
+### 安裝方式比較
+
+| 方式 | 簡易度 | 發布管道 | 適合用戶 |
+|------|--------|----------|----------|
+| **MCP Install URL** | ⭐⭐⭐⭐⭐ | 網站連結 | 所有用戶 |
+| **VS Code Extension** | ⭐⭐⭐⭐⭐ | Marketplace | 所有用戶 |
+| **mcp.json 配置** | ⭐⭐ | 手動 | 開發者 |
+
+### 方案 A: MCP Install URL (最簡單) 🎯
+
+VS Code 支援 `vscode:mcp/install?{json-config}` URL scheme：
+
+```typescript
+// 生成安裝連結
+const config = {
+  "name": "zotero-keeper",
+  "command": "uvx",
+  "args": ["zotero-keeper-mcp"]
+};
+const link = `vscode:mcp/install?${encodeURIComponent(JSON.stringify(config))}`;
+// 結果: vscode:mcp/install?%7B%22name%22%3A%22zotero-keeper%22...
+```
+
+**優點**:
+- 用戶點擊連結即可安裝
+- 不需要發布到 Marketplace
+- 可放在 GitHub README 或網站
+
+**實作步驟**:
+1. 📋 發布到 PyPI: `zotero-keeper-mcp`
+2. 📋 在 README 加入一鍵安裝按鈕
+3. 📋 建立 Landing Page 頁面
+
+### 🚀 立即行動項目 (Next Actions)
+
+> 📅 **目標**: v2.0.0 發布前完成以下項目
+
+#### Step 1: 發布 PyPI 套件
+
+```bash
+# 1. 更新 pyproject.toml
+[project]
+name = "zotero-keeper-mcp"
+version = "2.0.0"
+
+# 2. 建構並發布
+cd mcp-server
+uv build
+uv publish  # 或 twine upload dist/*
+```
+
+#### Step 2: 產生一鍵安裝連結
+
+```python
+import json
+from urllib.parse import quote
+
+config = {
+    "name": "zotero-keeper",
+    "command": "uvx", 
+    "args": ["zotero-keeper-mcp"]
+}
+
+# VS Code 安裝連結
+vscode_link = f"vscode:mcp/install?{quote(json.dumps(config))}"
+# vscode:mcp/install?%7B%22name%22%3A%22zotero-keeper%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22zotero-keeper-mcp%22%5D%7D
+
+# VS Code Insiders 安裝連結  
+insiders_link = f"vscode-insiders:mcp/install?{quote(json.dumps(config))}"
+```
+
+#### Step 3: 更新 GitHub README
+
+```markdown
+## 🚀 一鍵安裝
+
+[![Install in VS Code](https://img.shields.io/badge/VS%20Code-Install%20MCP-007ACC?logo=visualstudiocode)](vscode:mcp/install?%7B%22name%22%3A%22zotero-keeper%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22zotero-keeper-mcp%22%5D%7D)
+
+[![Install in VS Code Insiders](https://img.shields.io/badge/VS%20Code%20Insiders-Install%20MCP-24bfa5?logo=visualstudiocode)](vscode-insiders:mcp/install?%7B%22name%22%3A%22zotero-keeper%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22zotero-keeper-mcp%22%5D%7D)
+
+**或手動安裝:**
+\`\`\`bash
+pip install zotero-keeper-mcp
+\`\`\`
+```
+
+#### Step 4: Git 提交與標籤
+
+```bash
+# 提交變更
+git add .
+git commit -m "feat: v2.0.0 - One-click installation support"
+
+# 建立標籤
+git tag -a v2.0.0 -m "Release v2.0.0 - One-click MCP installation"
+git push origin main --tags
+
+# 建立 GitHub Release
+gh release create v2.0.0 --title "v2.0.0 - One-Click Installation" --notes "..."
+```
+
+### 方案 B: VS Code Extension (完整整合)
+
+使用 `vscode.lm.registerMcpServerDefinitionProvider` API：
+
+```json
+// package.json
+{
+  "contributes": {
+    "mcpServerDefinitionProviders": [{
+      "id": "zoteroKeeper",
+      "label": "Zotero Keeper MCP Server"
+    }]
+  }
+}
+```
+
+```typescript
+// extension.ts
+import * as vscode from 'vscode';
+
+export function activate(context: vscode.ExtensionContext) {
+  context.subscriptions.push(
+    vscode.lm.registerMcpServerDefinitionProvider('zoteroKeeper', {
+      provideMcpServerDefinitions: () => [{
+        name: 'zotero-keeper',
+        command: 'uvx',
+        args: ['zotero-keeper-mcp']
+      }]
+    })
+  );
+}
+```
+
+**優點**:
+- Marketplace 一鍵安裝 + 自動更新
+- 可加入 UI (狀態列、設定頁面)
+- 與 VS Code 深度整合
+
+**實作步驟**:
+1. 📋 建立 VS Code Extension 專案
+2. 📋 實作 `registerMcpServerDefinitionProvider`
+3. 📋 申請 Publisher ID
+4. 📋 發布到 Marketplace
+
+### 方案 C: Chat Participant (進階)
+
+超越 MCP，直接實作 Chat Participant：
+
+```json
+// package.json
+{
+  "contributes": {
+    "chatParticipants": [{
+      "id": "zotero-keeper.zotero",
+      "name": "zotero",
+      "fullName": "Zotero Keeper",
+      "description": "Manage your Zotero library"
+    }]
+  }
+}
+```
+
+**優點**:
+- `@zotero` 呼叫方式
+- 完全控制 prompt 和回應
+- 可加入 slash commands (`/search`, `/import`)
+
+**註**: 需要更多開發工作，但提供最佳用戶體驗
+
+### 推薦路徑
+
+```
+v2.0: PyPI + MCP Install URL (簡單快速)
+       ↓
+v2.5: VS Code Extension (完整整合)
+       ↓
+v3.0: Chat Participant (最佳體驗)
+```
 
 ---
 
@@ -258,8 +493,11 @@ if (items?.length > 0) {
 | v1.5.0  | 19 | + Smart tools |
 | v1.6.0  | 27 | + PubMed + Saved Search |
 | v1.7.0 | 21 | Simplification |
-| **v1.8.0** | **21** | **Collection 防呆 + RCR (current)** |
-| v1.9.0  | ~24 | + Notes + Attachments |
+| v1.8.0 | 21 | Collection 防呆 + RCR |
+| **v1.8.1** | **22** | **+ advanced_search (current)** |
+| v1.9.0  | ~26 | + Library Analytics (stats, orphans, duplicates) |
+| v2.0.0  | ~32 | + Citation Analysis + Smart Suggestions |
+| v2.1.0  | ~36 | + Report Generation |
 
 ---
 
@@ -286,4 +524,4 @@ Priority considerations:
 
 ---
 
-*Last updated: December 14, 2024*
+*Last updated: December 14, 2024 (v1.8.1)*

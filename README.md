@@ -110,9 +110,11 @@ Add to `claude_desktop_config.json`:
 
 ---
 
-## 🔧 Available Tools (21 Total)
+## 🔧 Available Tools (22 Total)
 
-### 📖 Read Tools (server.py - 11 tools)
+> 💡 **Tip**: Most read operations can also be done via [MCP Resources](#-mcp-resources-browsable-data) without calling tools.
+
+### 📖 Core Tools (server.py - 6 tools)
 
 | Tool | Description | Example |
 |------|-------------|---------|
@@ -120,20 +122,29 @@ Add to `claude_desktop_config.json`:
 | `search_items` | Search references | "Find papers about CRISPR" |
 | `get_item` | Get item details | "Show abstract for key:ABC123" |
 | `list_items` | List recent items | "Show papers in collection X" |
-| `list_collections` | List all folders | "What collections do I have?" |
-| `get_collection` | Get collection details | "How many items in AI Research?" |
-| `get_collection_items` | Items in a collection | "List papers in AI Research" |
-| `get_collection_tree` | Hierarchical tree view | "Show collection structure" |
-| `find_collection` | Find by name | "Find collection called 'AI'" |
 | `list_tags` | List all tags | "What tags have I used?" |
 | `get_item_types` | Available item types | "What types can I add?" |
 
+### 📁 Collection Tools (server.py - 5 tools)
+
+> ⚠️ These can also be accessed via `zotero://collections/...` Resources
+
+| Tool | Description | Equivalent Resource |
+|------|-------------|--------------------|
+| `list_collections` | List all folders | `zotero://collections` |
+| `get_collection` | Get collection details | `zotero://collections/{key}` |
+| `get_collection_items` | Items in a collection | `zotero://collections/{key}/items` |
+| `get_collection_tree` | Hierarchical tree view | `zotero://collections/tree` |
+| `find_collection` | Find by name | — (Tool only) |
+
 ### ✏️ Save Tools (interactive_tools.py - 2 tools)
 
+> 📊 **Auto RCR**: When PMID is provided, automatically fetches Relative Citation Ratio from iCite and stores in Zotero's extra field
+
 | Tool | Description | Example |
-|------|-------------|---------|
-| `interactive_save` ⭐ | Interactive save with collection selection | "Save this paper to Zotero" |
-| `quick_save` | Quick save without interaction | "Quick save to AI Research" |
+|------|-------------|--------|
+| `interactive_save` ⭐ | Interactive save + auto RCR | "Save this paper to Zotero" |
+| `quick_save` | Quick save + auto RCR | "Quick save to AI Research" |
 
 ### 🔍 Saved Search Tools (saved_search_tools.py - 3 tools)
 
@@ -143,29 +154,32 @@ Add to `claude_desktop_config.json`:
 | `run_saved_search` | Execute a saved search | "Which papers have no PDF?" |
 | `get_saved_search_details` | Get search conditions | "What's in 'Missing PDF' search?" |
 
-### 🔬 PubMed Integration (search_tools.py - 2 tools)
+### 🔍 Advanced Search & PubMed Integration (search_tools.py - 3 tools)
 
 | Tool | Description | Example |
 |------|-------------|---------|
-| `search_pubmed_exclude_owned` | Find new papers | "Find CRISPR papers I don't have" |
-| `check_articles_owned` | Check if PMIDs exist | "Do I have these PMIDs?" |
+| `advanced_search` ⭐ | Multi-condition search (itemType, tag, qmode) | "Find all journal articles tagged with AI" |
+| `search_pubmed_exclude_owned` | Search PubMed, exclude owned | "Find CRISPR papers I don't have" |
+| `check_articles_owned` | Check if PMIDs exist in Zotero | "Do I have these PMIDs?" |
 
 ### 📥 Import Tools (pubmed_tools.py - 2 tools, batch_tools.py - 1 tool)
 
-| Tool | Description | Example |
-|------|-------------|---------|
-| `import_ris_to_zotero` | Import RIS citations | "Import this RIS text" |
-| `import_from_pmids` | Import by PMID | "Import PMID 12345678" |
-| `batch_import_from_pubmed` | Batch import with full metadata + RCR | "Import PMIDs to 'AI Research'" |
+> 📊 **RCR Default ON**: All PubMed import tools automatically fetch RCR by default
 
-#### batch_import_from_pubmed v1.8.0 新功能
+| Tool | Description | Example |
+|------|-------------|--------|
+| `import_ris_to_zotero` | Import RIS citations | "Import this RIS text" |
+| `import_from_pmids` | Import by PMID + auto RCR | "Import PMID 12345678" |
+| `batch_import_from_pubmed` ⭐ | Batch import + auto RCR | "Import PMIDs to 'AI Research'" |
+
+#### batch_import_from_pubmed v1.8.0+ Features
 
 ```python
-# ✅ 防呆機制: 用 collection_name (自動驗證!)
+# ✅ Simple: just provide PMIDs and collection
+# RCR is automatically fetched by default!
 batch_import_from_pubmed(
     pmids="38353755,37864754",
-    collection_name="AI Research",  # 自動驗證並解析
-    include_citation_metrics=True   # 取得 RCR 並存入 extra
+    collection_name="AI Research"  # Auto-validates name
 )
 
 # Zotero extra 欄位會包含:
@@ -173,6 +187,32 @@ batch_import_from_pubmed(
 # RCR: 5.23
 # NIH Percentile: 85.2
 # Citations: 127
+```
+
+#### advanced_search v1.8.0 新功能
+
+```python
+# 🔍 依文獻類型搜尋
+advanced_search(item_type="journalArticle")  # 只找期刊論文
+advanced_search(item_type="book")  # 只找書籍
+advanced_search(item_type="-attachment")  # 排除附件
+
+# 🏷️ 依標籤搜尋
+advanced_search(tag="AI")  # 具有 AI 標籤的文獻
+advanced_search(tags=["AI", "Review"])  # 同時具有兩個標籤 (AND)
+advanced_search(tag="AI || ML")  # 具有任一標籤 (OR)
+
+# 📝 全文搜尋 (含 abstract)
+advanced_search(q="XGBoost", qmode="everything")  # 搜尋摘要內容
+
+# 🌟 組合條件
+advanced_search(
+    q="machine learning",
+    item_type="journalArticle",
+    tag="AI",
+    sort="dateAdded",
+    direction="desc"
+)
 ```
 
 ---
@@ -320,7 +360,7 @@ netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=23119 conn
 │           AI Agent (VS Code / Claude)           │
 └──────────────────────┬──────────────────────────┘
                        │ MCP Protocol
-                       │ ├── Tools (21)
+                       │ ├── Tools (22)
                        │ ├── Resources (10 URIs)
                        │ └── Elicitation (interactive input)
                        ▼
@@ -328,11 +368,11 @@ netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=23119 conn
 │              Zotero Keeper MCP Server           │
 │  ┌───────────────────────────────────────────┐  │
 │  │  MCP Layer                                │  │
-│  │  ├── server.py (11 core tools)            │  │
-│  │  ├── resources.py (10 Resource URIs)      │  │
-│  │  ├── interactive_tools.py (2 save tools)  │  │
+│  │  ├── server.py (11 tools: 6 core + 5 collection) │
+│  │  ├── resources.py (10 URIs, incl. collections)   │
+│  ├── interactive_tools.py (2 save tools)  │  │
 │  │  ├── saved_search_tools.py (3 tools)      │  │
-│  │  ├── search_tools.py (2 tools)            │  │
+│  │  ├── search_tools.py (3 tools)            │  │
 │  │  ├── pubmed_tools.py (2 tools)            │  │
 │  │  ├── batch_tools.py (1 tool)              │  │
 │  │  └── smart_tools.py (helpers only)        │  │
@@ -351,20 +391,39 @@ netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=23119 conn
 
 ## ⚠️ Zotero API Limitations (Important!)
 
+### � API Capability Matrix
+
+Zotero provides **two local APIs**, but neither supports full CRUD:
+
+| API | Endpoint | Read | Create | Update | Delete |
+|-----|----------|:----:|:------:|:------:|:------:|
+| **Local API** | `/api/...` | ✅ | ❌ | ❌ | ❌ |
+| **Connector API** | `/connector/...` | ❌ | ✅ | ❌ | ❌ |
+
+### 🔍 Technical Details
+
+**Local API** (port 23119):
+- Designed for reading Zotero data (items, collections, tags)
+- Per [official source code](https://github.com/zotero/zotero/blob/main/chrome/content/zotcom/server/server_localAPI.js#L28-L43): **"Write access is not yet supported."**
+- DELETE/PATCH/PUT methods return `501 Not Implemented`
+
+**Connector API** (port 23119):
+- Designed for browser extensions to **save new items**
+- `saveItems` endpoint: **Always creates NEW items, never updates**
+- Even if you import the same PMID twice → creates duplicate items
+- No `updateItem` or `deleteItem` endpoints exist
+
 ### 🔴 Operations NOT Supported
 
-Per [Zotero's official source code](https://github.com/zotero/zotero/blob/main/chrome/content/zotero/xpcom/server/server_localAPI.js#L28-L43):
-
-> **"Write access is not yet supported."**
-
-| Operation | API Support | Reason |
-|-----------|-------------|--------|
-| ❌ **Delete items** | 501 Not Implemented | Local API doesn't support DELETE |
-| ❌ **Update items** | 501 Not Implemented | Local API doesn't support PATCH/PUT |
-| ❌ **Move items** | Cannot modify | Existing items' collections cannot be changed |
+| Operation | API Support | Technical Reason |
+|-----------|-------------|------------------|
+| ❌ **Delete items** | 501 Not Implemented | Local API is read-only |
+| ❌ **Update items** | 501 Not Implemented | Local API is read-only |
+| ❌ **Move items to collection** | Cannot modify | Connector API only creates, never updates |
+| ❌ **Add tags to existing items** | Cannot modify | No update endpoint available |
 | ❌ **Create collections** | 400 Bad Request | Connector API doesn't support it |
 | ❌ **Delete collections** | 501 Not Implemented | Local API is read-only |
-| ❌ **Modify tags** | 501 Not Implemented | Local API is read-only |
+| ❌ **Merge duplicates** | No API | Must use Zotero GUI |
 
 ### 💡 What This Means
 
@@ -418,6 +477,31 @@ Zotero team is working on **Local API write support**:
 | Recent | Date Added in last 7 days | "What did I add this week?" |
 | Unread | Tag is not "read" | "What haven't I read?" |
 | Duplicates | Similar titles | "Potential duplicate items?" |
+
+---
+
+## 🚧 Future: One-Click Installation
+
+We understand that **most users are researchers, not developers**. Installing Python, uv, and configuring MCP can be daunting.
+
+### 🎯 Planned Improvements
+
+| Current (v1.x) | Future (v2.x) |
+|----------------|---------------|
+| Requires Python 3.11+ | Standalone executable (.exe / .app) |
+| Requires `pip install` | One-click installer |
+| Manual `mcp.json` config | Auto-configure VS Code/Claude |
+| Developer-friendly | Researcher-friendly |
+
+### 📦 Planned Distribution Methods
+
+1. **PyPI Package**: `pip install zotero-keeper-mcp` (simplified)
+2. **Standalone Executable**: PyInstaller bundle (no Python needed)
+3. **VS Code Extension**: One-click install from Marketplace (planned)
+4. **Homebrew/Chocolatey**: Package manager support
+
+> 💡 **Want to help?** We welcome contributions to simplify installation!
+> See [CONTRIBUTING.md](CONTRIBUTING.md) for how to help.
 
 ---
 

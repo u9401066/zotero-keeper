@@ -73,7 +73,7 @@ def register_batch_tools(mcp, zotero_client):
         skip_duplicates: bool = True,
         collection_key: str | None = None,
         collection_name: str | None = None,
-        include_citation_metrics: bool = False,
+        include_citation_metrics: bool = True,
     ) -> dict[str, Any]:
         """
         📦 Batch import PubMed articles to Zotero with complete metadata
@@ -87,7 +87,7 @@ def register_batch_tools(mcp, zotero_client):
         - ✅ Batch duplicate detection (by PMID/DOI)
         - ✅ Detailed result reporting
         - ✅ Collection validation (防呆機制!)
-        - ✅ Citation metrics (RCR, percentile) → extra field (optional)
+        - ✅ Citation metrics (RCR, percentile) → extra field (default ON!)
 
         ⚠️ IMPORTANT - 防呆提醒:
         - 使用 collection_name 參數 (推薦!) 可自動驗證名稱是否存在
@@ -102,8 +102,8 @@ def register_batch_tools(mcp, zotero_client):
             skip_duplicates: Skip if exact PMID or DOI match found (default: True)
             collection_key: Zotero collection key (⚠️ 不建議直接使用，容易出錯)
             collection_name: Collection name (推薦! 自動驗證並解析為 key)
-            include_citation_metrics: If True, fetch RCR/percentile from iCite and add to extra field
-                                      (slower but adds citation impact data to Zotero)
+            include_citation_metrics: If True (default), fetch RCR/percentile from iCite
+                                      and add to extra field
 
         Returns:
             Detailed import result:
@@ -122,16 +122,17 @@ def register_batch_tools(mcp, zotero_client):
 
         Example:
             # ✅ 推薦：使用 collection_name (會自動驗證!)
+            # RCR 預設會自動取得並存入 extra 欄位
             batch_import_from_pubmed(
                 pmids="38353755,37864754",
                 collection_name="test1"
             )
 
-            # 包含 citation metrics (RCR 會顯示在 Zotero extra 欄位)
+            # 如果不需要 RCR (較快)
             batch_import_from_pubmed(
                 pmids="38353755,37864754",
-                collection_name="high-impact",
-                include_citation_metrics=True
+                collection_name="test1",
+                include_citation_metrics=False
             )
 
         Workflow:

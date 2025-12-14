@@ -319,6 +319,7 @@ def register_pubmed_tools(mcp, zotero_client):
     async def import_from_pmids(
         pmids: list[str],
         tags: list[str] | None = None,
+        include_citation_metrics: bool = True,
     ) -> dict[str, Any]:
         """
         📥 Import PubMed articles directly by PMID
@@ -327,6 +328,10 @@ def register_pubmed_tools(mcp, zotero_client):
 
         Requires: pip install "zotero-keeper[pubmed]"
 
+        📊 CITATION METRICS (RCR):
+        When include_citation_metrics=True (default), automatically fetches
+        Relative Citation Ratio from iCite and stores in Zotero's extra field.
+
         Alternative workflow (without pubmed extra):
         1. pubmed: search_literature("query") → PMIDs
         2. keeper: import_from_pmids(pmids) → Zotero
@@ -334,6 +339,7 @@ def register_pubmed_tools(mcp, zotero_client):
         Args:
             pmids: List of PubMed IDs ["12345678", "87654321"]
             tags: Optional tags to add to all items
+            include_citation_metrics: If True (default), fetch RCR from iCite
 
         Returns:
             Import result
@@ -367,6 +373,19 @@ def register_pubmed_tools(mcp, zotero_client):
                     "imported": 0,
                 }
 
+            # Enrich with citation metrics if requested
+            citation_metrics_count = 0
+            if include_citation_metrics:
+                try:
+                    from ..pubmed import enrich_articles_with_metrics
+                    enrich_articles_with_metrics(articles, pmids)
+                    citation_metrics_count = sum(
+                        1 for a in articles if a.get("relative_citation_ratio")
+                    )
+                    logger.info(f"Enriched {citation_metrics_count} articles with RCR")
+                except Exception as e:
+                    logger.warning(f"Failed to fetch citation metrics: {e}")
+
             # Convert to Zotero format
             zotero_items = []
             for article in articles:
@@ -387,12 +406,17 @@ def register_pubmed_tools(mcp, zotero_client):
                 for a in articles
             ]
 
-            return {
+            result = {
                 "success": True,
                 "imported": len(zotero_items),
                 "items": imported_info,
                 "message": f"Successfully imported {len(zotero_items)} articles to Zotero",
             }
+
+            if include_citation_metrics:
+                result["citation_metrics_fetched"] = citation_metrics_count
+
+            return result
 
         except Exception as e:
             logger.error(f"PMID import failed: {e}")

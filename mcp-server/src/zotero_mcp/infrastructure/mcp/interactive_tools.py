@@ -31,19 +31,34 @@ logger = logging.getLogger(__name__)
 # Auto-fetch Metadata Functions (Data Integrity Guarantee)
 # =============================================================================
 
-async def _fetch_metadata_from_pmid(pmid: str) -> dict | None:
+async def _fetch_metadata_from_pmid(pmid: str, include_citation_metrics: bool = True) -> dict | None:
     """
     Fetch complete article metadata from PubMed using PMID.
 
     Returns Zotero-compatible item dict with all fields including abstract.
+    Optionally includes citation metrics (RCR) from iCite.
+
+    Args:
+        pmid: PubMed ID
+        include_citation_metrics: If True, fetch RCR/percentile from iCite (default: True)
+
+    Returns:
+        Zotero-compatible item dict, or None if fetch fails
     """
     try:
         from ..mappers.pubmed_mapper import pubmed_to_zotero_item
-        from ..pubmed import fetch_pubmed_articles
+        from ..pubmed import fetch_pubmed_articles, enrich_articles_with_metrics
 
         articles = fetch_pubmed_articles([pmid])
         if articles:
             article = articles[0]
+
+            # Enrich with citation metrics (RCR) if requested
+            if include_citation_metrics:
+                enrich_articles_with_metrics([article], [pmid])
+                if article.get("relative_citation_ratio"):
+                    logger.info(f"✅ RCR {article['relative_citation_ratio']:.2f} for PMID {pmid}")
+
             zotero_item = pubmed_to_zotero_item(article)
             logger.info(f"Fetched complete metadata from PMID {pmid}")
             return zotero_item
@@ -344,6 +359,7 @@ def register_interactive_save_tools(mcp, zotero_client):
         tags: list[str] | None = None,
         skip_collection_prompt: bool = False,
         auto_fetch_metadata: bool = True,
+        include_citation_metrics: bool = True,
         ctx: Context[ServerSession, None] = None,
         **extra_fields,
     ) -> dict[str, Any]:
@@ -363,13 +379,18 @@ def register_interactive_save_tools(mcp, zotero_client):
         complete article metadata from external APIs (CrossRef/PubMed).
         This ensures the saved reference includes abstract and all fields!
 
+        📊 CITATION METRICS (RCR):
+        When PMID is provided and include_citation_metrics=True (default),
+        automatically fetches Relative Citation Ratio from iCite and stores
+        in Zotero's extra field.
+
         Args:
             item_type: Type (journalArticle, book, etc.)
             title: Reference title (required)
             creators: List of author dicts
             doi: Digital Object Identifier → 自動從 CrossRef 取得完整資料
             isbn: ISBN for books
-            pmid: PubMed ID → 自動從 PubMed 取得完整資料
+            pmid: PubMed ID → 自動從 PubMed 取得完整資料 + RCR
             publication_title: Journal name
             date: Publication date
             abstract: Abstract text
@@ -377,6 +398,7 @@ def register_interactive_save_tools(mcp, zotero_client):
             tags: List of tags
             skip_collection_prompt: If True, save without asking (to My Library)
             auto_fetch_metadata: If True (default), auto-fetch from DOI/PMID
+            include_citation_metrics: If True (default), fetch RCR from iCite when PMID provided
             **extra_fields: Additional Zotero fields
 
         Returns:
@@ -440,9 +462,13 @@ def register_interactive_save_tools(mcp, zotero_client):
             if auto_fetch_metadata:
                 # Try PMID first (more reliable for academic articles)
                 if pmid:
-                    fetched_metadata = await _fetch_metadata_from_pmid(pmid)
+                    fetched_metadata = await _fetch_metadata_from_pmid(
+                        pmid, include_citation_metrics=include_citation_metrics
+                    )
                     if fetched_metadata:
                         result["metadata_source"] = "pmid"
+                        if include_citation_metrics:
+                            result["citation_metrics_fetched"] = True
 
                 # If no PMID or fetch failed, try DOI
                 if not fetched_metadata and doi:
@@ -606,6 +632,7 @@ def register_interactive_save_tools(mcp, zotero_client):
         tags: list[str] | None = None,
         force_add: bool = False,
         auto_fetch_metadata: bool = True,
+        include_citation_metrics: bool = True,
         **extra_fields,
     ) -> dict[str, Any]:
         """
@@ -622,6 +649,11 @@ def register_interactive_save_tools(mcp, zotero_client):
         complete article metadata from external APIs (CrossRef/PubMed).
         This ensures the saved reference includes abstract and all fields!
 
+        📊 CITATION METRICS (RCR):
+        When PMID is provided and include_citation_metrics=True (default),
+        automatically fetches Relative Citation Ratio from iCite and stores
+        in Zotero's extra field.
+
         Args:
             item_type: Type (journalArticle, book, etc.)
             title: Reference title (required)
@@ -630,7 +662,7 @@ def register_interactive_save_tools(mcp, zotero_client):
             creators: List of author dicts
             doi: Digital Object Identifier → 自動從 CrossRef 取得完整資料
             isbn: ISBN for books
-            pmid: PubMed ID → 自動從 PubMed 取得完整資料
+            pmid: PubMed ID → 自動從 PubMed 取得完整資料 + RCR
             publication_title: Journal name
             date: Publication date
             abstract: Abstract text
@@ -638,6 +670,7 @@ def register_interactive_save_tools(mcp, zotero_client):
             tags: List of tags
             force_add: Add even if duplicate found
             auto_fetch_metadata: If True (default), auto-fetch from DOI/PMID
+            include_citation_metrics: If True (default), fetch RCR from iCite when PMID provided
             **extra_fields: Additional Zotero fields
 
         Returns:
@@ -647,7 +680,7 @@ def register_interactive_save_tools(mcp, zotero_client):
             quick_save(
                 item_type="journalArticle",
                 title="My Paper",
-                pmid="12345678",  # ← Will auto-fetch abstract!
+                pmid="12345678",  # ← Will auto-fetch abstract + RCR!
                 collection_name="AI Research"
             )
         """
@@ -691,9 +724,13 @@ def register_interactive_save_tools(mcp, zotero_client):
             if auto_fetch_metadata:
                 # Try PMID first (more reliable for academic articles)
                 if pmid:
-                    fetched_metadata = await _fetch_metadata_from_pmid(pmid)
+                    fetched_metadata = await _fetch_metadata_from_pmid(
+                        pmid, include_citation_metrics=include_citation_metrics
+                    )
                     if fetched_metadata:
                         result["metadata_source"] = "pmid"
+                        if include_citation_metrics:
+                            result["citation_metrics_fetched"] = True
 
                 # If no PMID or fetch failed, try DOI
                 if not fetched_metadata and doi:

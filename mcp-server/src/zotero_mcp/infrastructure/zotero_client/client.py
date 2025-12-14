@@ -160,18 +160,31 @@ class ZoteroClient:
         item_type: str | None = None,
         q: str | None = None,
         qmode: str = "titleCreatorYear",
+        tag: str | list[str] | None = None,
+        include_trashed: bool = False,
     ) -> list[dict[str, Any]]:
         """
-        Get items from user library
+        Get items from user library with advanced filtering
 
         Args:
             limit: Maximum number of items to return
             start: Offset for pagination
-            sort: Sort field (dateModified, dateAdded, title, etc.)
+            sort: Sort field (dateModified, dateAdded, title, creator, itemType, date, etc.)
             direction: Sort direction (asc, desc)
-            item_type: Filter by item type
+            item_type: Filter by item type (journalArticle, book, etc.)
+                       Supports negation with "-" prefix (e.g., "-attachment")
+                       Supports OR with "||" (e.g., "book || bookSection")
             q: Quick search query
             qmode: Search mode (titleCreatorYear, everything)
+            tag: Filter by tag(s). Can be:
+                 - Single tag: "AI"
+                 - Multiple tags (AND): ["AI", "Review"]
+                 - Negation: "-exclude_tag"
+                 - OR within tag: "AI || ML"
+            include_trashed: Include items in trash (default: False)
+
+        Returns:
+            List of items matching the criteria
         """
         params: dict[str, Any] = {
             "limit": limit,
@@ -184,6 +197,24 @@ class ZoteroClient:
         if q:
             params["q"] = q
             params["qmode"] = qmode
+        if tag:
+            # Support both single tag and list of tags
+            if isinstance(tag, list):
+                # Multiple tags = AND logic (each tag is a separate param)
+                # httpx will handle multiple same-name params
+                for t in tag:
+                    if "tag" not in params:
+                        params["tag"] = t
+                    else:
+                        # For multiple tags, we need to use a list
+                        if isinstance(params["tag"], list):
+                            params["tag"].append(t)
+                        else:
+                            params["tag"] = [params["tag"], t]
+            else:
+                params["tag"] = tag
+        if include_trashed:
+            params["includeTrashed"] = "1"
 
         return await self._request("GET", "/api/users/0/items", params=params)
 

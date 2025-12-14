@@ -105,9 +105,11 @@ python -m zotero_mcp
 
 ---
 
-## 🔧 可用工具 (共 21 個)
+## 🔧 可用工具 (共 22 個)
 
-### 📖 讀取工具 (server.py - 11 工具)
+> 💡 **提示**：大部分讀取操作也可透過 [MCP Resources](#-mcp-resources-可瀏覽的資料) 完成，不需呼叫 Tool。
+
+### 📖 核心工具 (server.py - 6 工具)
 
 | 工具 | 說明 | 範例問法 |
 |------|------|----------|
@@ -115,20 +117,29 @@ python -m zotero_mcp
 | `search_items` | 搜尋文獻 | 「幫我找 CRISPR 的論文」 |
 | `get_item` | 取得文獻詳情 | 「這篇文章 (key:ABC123) 的摘要」 |
 | `list_items` | 列出文獻 | 「列出 AI Research 收藏夾的文獻」 |
-| `list_collections` | 列出所有收藏夾 | 「我有哪些收藏夾？」 |
-| `get_collection` | 取得收藏夾詳情 | 「AI Research 有幾篇文獻？」 |
-| `get_collection_items` | 列出收藏夾內容 | 「列出 AI Research 的所有論文」 |
-| `get_collection_tree` | 取得樹狀結構 | 「顯示收藏夾的階層結構」 |
-| `find_collection` | 用名稱查找 | 「找出叫做 AI 的收藏夾」 |
 | `list_tags` | 列出標籤 | 「我用過哪些標籤？」 |
 | `get_item_types` | 取得文獻類型 | 「可以新增什麼類型？」 |
 
+### 📁 Collection 工具 (server.py - 5 工具)
+
+> ⚠️ 這些工具也可透過 `zotero://collections/...` Resources 存取
+
+| 工具 | 說明 | 對應 Resource |
+|------|------|----------------|
+| `list_collections` | 列出所有收藏夾 | `zotero://collections` |
+| `get_collection` | 取得收藏夾詳情 | `zotero://collections/{key}` |
+| `get_collection_items` | 列出收藏夾內容 | `zotero://collections/{key}/items` |
+| `get_collection_tree` | 取得樹狀結構 | `zotero://collections/tree` |
+| `find_collection` | 用名稱查找 | — (僅 Tool 支援) |
+
 ### ✏️ 存檔工具 (interactive_tools.py - 2 工具)
+
+> 📊 **RCR 自動取得**：當提供 PMID 時，預設會自動從 iCite 取得 Relative Citation Ratio 並存入 Zotero extra 欄位
 
 | 工具 | 說明 | 範例問法 |
 |------|------|----------|
-| `interactive_save` ⭐ | 互動式存檔（列出選項讓你選） | 「把這篇存到 Zotero」 |
-| `quick_save` | 快速存檔（不詢問） | 「快速存到 AI Research」 |
+| `interactive_save` ⭐ | 互動式存檔 + 自動 RCR | 「把這篇存到 Zotero」 |
+| `quick_save` | 快速存檔 + 自動 RCR | 「快速存到 AI Research」 |
 
 ### 🔍 Saved Search 工具 (saved_search_tools.py - 3 工具)
 
@@ -138,20 +149,49 @@ python -m zotero_mcp
 | `run_saved_search` | 執行 Saved Search | 「哪些論文還沒下載 PDF？」 |
 | `get_saved_search_details` | 取得搜尋條件 | 「『缺少 PDF』的條件是什麼？」 |
 
-### 🔬 PubMed 整合 (search_tools.py - 2 工具)
+### 🔍 進階搜尋 & PubMed 整合 (search_tools.py - 3 工具)
 
 | 工具 | 說明 | 範例問法 |
 |------|------|----------|
-| `search_pubmed_exclude_owned` | 搜尋新文獻 | 「找 CRISPR 論文，排除我已有的」 |
-| `check_articles_owned` | 檢查 PMID | 「這些 PMID 我有嗎？」 |
+| `advanced_search` ⭐ | 多條件搜尋 (itemType, tag, qmode) | 「找出所有標記為 AI 的期刊論文」 |
+| `search_pubmed_exclude_owned` | 搜尋 PubMed 新文獻 | 「找 CRISPR 論文，排除我已有的」 |
+| `check_articles_owned` | 檢查 PMID 是否已有 | 「這些 PMID 我有嗎？」 |
 
 ### 📥 匯入工具 (pubmed_tools.py - 2 工具, batch_tools.py - 1 工具)
+
+> 📊 **RCR 預設開啟**：所有 PubMed 匯入工具預設都會自動取得 RCR
 
 | 工具 | 說明 | 範例問法 |
 |------|------|----------|
 | `import_ris_to_zotero` | 匯入 RIS 格式 | 「匯入這段 RIS」 |
-| `import_from_pmids` | 用 PMID 匯入 | 「匯入 PMID 12345678」 |
-| `batch_import_from_pubmed` | 批次匯入（完整 metadata） | 「匯入這些 PMID: 123,456,789」 |
+| `import_from_pmids` | 用 PMID 匯入 + 自動 RCR | 「匯入 PMID 12345678」 |
+| `batch_import_from_pubmed` ⭐ | 批次匯入 + 自動 RCR | 「匯入這些 PMID: 123,456,789」 |
+
+#### advanced_search v1.8.0 新功能
+
+```python
+# 🔍 依文獻類型搜尋
+advanced_search(item_type="journalArticle")  # 只找期刊論文
+advanced_search(item_type="book")  # 只找書籍
+advanced_search(item_type="-attachment")  # 排除附件
+
+# 🏷️ 依標籤搜尋
+advanced_search(tag="AI")  # 具有 AI 標籤的文獻
+advanced_search(tags=["AI", "Review"])  # 同時具有兩個標籤 (AND)
+advanced_search(tag="AI || ML")  # 具有任一標籤 (OR)
+
+# 📝 全文搜尋 (含 abstract)
+advanced_search(q="XGBoost", qmode="everything")  # 搜尋摘要內容
+
+# 🌟 組合條件
+advanced_search(
+    q="machine learning",
+    item_type="journalArticle",
+    tag="AI",
+    sort="dateAdded",
+    direction="desc"
+)
+```
 
 ---
 
@@ -298,7 +338,7 @@ netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=23119 conn
 │           AI Agent (VS Code / Claude)           │
 └──────────────────────┬──────────────────────────┘
                        │ MCP Protocol
-                       │ ├── Tools (21 個)
+                       │ ├── Tools (22 個)
                        │ ├── Resources (10 個 URI)
                        │ └── Elicitation (互動輸入)
                        ▼
@@ -306,11 +346,11 @@ netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=23119 conn
 │              Zotero Keeper MCP Server           │
 │  ┌───────────────────────────────────────────┐  │
 │  │  MCP Layer                                │  │
-│  │  ├── server.py (11 核心工具)              │  │
-│  │  ├── resources.py (10 Resource URIs)      │  │
+│  │  ├── server.py (11 工具: 6 核心 + 5 Collection)  │  │
+│  │  ├── resources.py (10 URIs, 含 Collection)  │  │
 │  │  ├── interactive_tools.py (2 存檔工具)    │  │
 │  │  ├── saved_search_tools.py (3 工具)       │  │
-│  │  ├── search_tools.py (2 工具)             │  │
+│  │  ├── search_tools.py (3 工具)             │  │
 │  │  ├── pubmed_tools.py (2 工具)             │  │
 │  │  ├── batch_tools.py (1 工具)              │  │
 │  │  └── smart_tools.py (helpers only)        │  │
@@ -329,20 +369,39 @@ netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=23119 conn
 
 ## ⚠️ Zotero API 限制（重要！）
 
+### � API 能力矩陣
+
+Zotero 提供**兩個本地 API**，但都不支援完整的 CRUD：
+
+| API | 端點 | 讀取 | 新增 | 更新 | 刪除 |
+|-----|------|:----:|:----:|:----:|:----:|
+| **Local API** | `/api/...` | ✅ | ❌ | ❌ | ❌ |
+| **Connector API** | `/connector/...` | ❌ | ✅ | ❌ | ❌ |
+
+### 🔍 技術細節
+
+**Local API** (port 23119):
+- 設計用於讀取 Zotero 資料（文獻、收藏夾、標籤）
+- 根據[官方原始碼](https://github.com/zotero/zotero/blob/main/chrome/content/zotero/xpcom/server/server_localAPI.js#L28-L43)：**"Write access is not yet supported."**
+- DELETE/PATCH/PUT 方法回傳 `501 Not Implemented`
+
+**Connector API** (port 23119):
+- 設計用於瀏覽器擴充功能**儲存新項目**
+- `saveItems` 端點：**永遠建立新項目，不會更新既有項目**
+- 即使匯入相同 PMID 兩次 → 會建立重複項目
+- 沒有 `updateItem` 或 `deleteItem` 端點
+
 ### 🔴 無法執行的操作
 
-根據 [Zotero 官方原始碼](https://github.com/zotero/zotero/blob/main/chrome/content/zotero/xpcom/server/server_localAPI.js#L28-L43)：
-
-> **"Write access is not yet supported."**
-
-| 操作 | API 支援 | 原因 |
-|------|---------|------|
-| ❌ **刪除文獻** | 501 Not Implemented | Local API 不支援 DELETE |
-| ❌ **更新文獻** | 501 Not Implemented | Local API 不支援 PATCH/PUT |
-| ❌ **移動文獻** | 無法操作 | 已存在的文獻無法修改 collections |
+| 操作 | API 支援 | 技術原因 |
+|------|---------|----------|
+| ❌ **刪除文獻** | 501 Not Implemented | Local API 唯讀 |
+| ❌ **更新文獻** | 501 Not Implemented | Local API 唯讀 |
+| ❌ **移動文獻到收藏夾** | 無法操作 | Connector API 只能新增，不能更新 |
+| ❌ **為既有文獻加標籤** | 無法操作 | 沒有更新端點 |
 | ❌ **建立 Collection** | 400 Bad Request | Connector API 不支援 |
 | ❌ **刪除 Collection** | 501 Not Implemented | Local API 唯讀 |
-| ❌ **修改標籤** | 501 Not Implemented | Local API 唯讀 |
+| ❌ **合併重複** | 無 API | 必須使用 Zotero GUI |
 
 ### 💡 這意味著什麼？
 
@@ -396,6 +455,31 @@ Zotero 團隊正在開發 **Local API 寫入功能**：
 | Recent | Date Added in last 7 days | 「這週新增了什麼？」 |
 | Unread | Tag is not "read" | 「還沒讀的有哪些？」 |
 | Duplicates | 標題相似 | 「可能重複的文獻？」 |
+
+---
+
+## 🚧 未來計畫：一鍵安裝
+
+我們理解**大多數使用者是研究人員，不是開發者**。安裝 Python、uv、設定 MCP 可能讓人卻步。
+
+### 🎯 改進計畫
+
+| 目前 (v1.x) | 未來 (v2.x) |
+|-------------|-------------|
+| 需要 Python 3.11+ | 獨立執行檔 (.exe / .app) |
+| 需要 `pip install` | 一鍵安裝程式 |
+| 手動設定 `mcp.json` | 自動設定 VS Code/Claude |
+| 開發者友善 | 研究人員友善 |
+
+### 📦 計畫的發佈方式
+
+1. **PyPI 套件**：`pip install zotero-keeper-mcp`（簡化版）
+2. **獨立執行檔**：PyInstaller 打包（不需要 Python）
+3. **VS Code 擴充功能**：從 Marketplace 一鍵安裝（規劃中）
+4. **Homebrew/Chocolatey**：套件管理器支援
+
+> 💡 **想幫忙嗎？** 歡迎貢獻簡化安裝流程！
+> 參閱 [CONTRIBUTING.md](CONTRIBUTING.md) 了解如何幫忙。
 
 ---
 

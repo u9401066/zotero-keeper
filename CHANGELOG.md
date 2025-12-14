@@ -7,6 +7,122 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.8.2] - 2025-12-14
+
+### 📊 RCR Citation Metrics Default ON
+
+This release enables automatic citation metrics (RCR) fetching for all PubMed-related save/import tools.
+
+### Changed
+
+- **RCR Now Default ON** for all PubMed tools:
+  - `interactive_save`: Auto-fetches RCR when PMID provided
+  - `quick_save`: Auto-fetches RCR when PMID provided
+  - `import_from_pmids`: Auto-fetches RCR for all PMIDs
+  - `batch_import_from_pubmed`: Changed from `include_citation_metrics=False` to `True`
+
+### Added
+
+- **Shared Citation Metrics Functions** in `infrastructure/pubmed/__init__.py`:
+  - `fetch_citation_metrics(pmids)`: Get RCR/percentile from iCite
+  - `enrich_articles_with_metrics(articles)`: Add metrics to article dicts
+  - Reusable across all tools
+
+- **New Parameter** `include_citation_metrics`:
+  - Added to `interactive_save` (default: True)
+  - Added to `quick_save` (default: True)
+  - Added to `import_from_pmids` (default: True)
+
+### Technical Details
+
+When a PMID is provided, tools now automatically:
+1. Fetch article metadata from PubMed
+2. Fetch citation metrics from NIH iCite API
+3. Store RCR, percentile, citation count in Zotero's `extra` field
+
+Example extra field content:
+```
+PMID: 12345678
+RCR: 2.45
+NIH Percentile: 85.2
+Citation Count: 127
+```
+
+### Note
+
+- RCR (Relative Citation Ratio) is a field-normalized citation metric
+- RCR = 1.0 means average for the field
+- RCR > 2.0 indicates highly cited paper
+- Set `include_citation_metrics=False` to disable if needed
+
+---
+
+## [1.8.1] - 2025-12-14
+
+### 🔍 Advanced Search & Documentation Release
+
+This release adds powerful search capabilities and comprehensive API limitation documentation.
+
+### Added
+
+- **`advanced_search` Tool** ⭐:
+  - Multi-condition search using Zotero Local API parameters
+  - `item_type`: Filter by type (journalArticle, book, -attachment, etc.)
+  - `tag`: Single tag filter with OR support (`AI || ML`)
+  - `tags`: Multiple tags filter with AND logic
+  - `qmode`: Search mode (`titleCreatorYear` or `everything` for abstract)
+  - `sort` / `direction`: Flexible sorting options
+  - `include_trashed`: Include items in trash
+
+- **Enhanced Documentation**:
+  - Detailed API Capability Matrix in README
+  - Technical explanation of Local API vs Connector API
+  - Clear "Cannot Do" vs "Can Do" examples
+  - One-click installation roadmap section
+
+### Changed
+
+- **Tool Count**: 21 → 22 tools
+- **README Updates**: Both EN and zh-TW with:
+  - API limitation technical details
+  - `advanced_search` usage examples
+  - Future installation plans section
+
+### Technical Details
+
+- Modified files:
+  - `infrastructure/zotero_client/client.py`: Extended `get_items()` with `tag`, `include_trashed`
+  - `infrastructure/mcp/search_tools.py`: Added `advanced_search` tool
+  - `infrastructure/mcp/server.py`: Always register search_tools
+  - `README.md` & `README.zh-TW.md`: Enhanced documentation
+
+### Example Usage
+
+```python
+# 🔍 Search by item type
+advanced_search(item_type="journalArticle")  # Journal articles only
+advanced_search(item_type="-attachment")     # Exclude attachments
+
+# 🏷️ Search by tags
+advanced_search(tag="AI")                    # Single tag
+advanced_search(tags=["AI", "Review"])       # Multiple tags (AND)
+advanced_search(tag="AI || ML")              # Either tag (OR)
+
+# 📝 Full-text search (including abstract)
+advanced_search(q="XGBoost", qmode="everything")
+
+# 🌟 Combined search
+advanced_search(
+    q="machine learning",
+    item_type="journalArticle",
+    tag="AI",
+    sort="dateAdded",
+    direction="desc"
+)
+```
+
+---
+
 ## [1.8.0] - 2025-12-14
 
 ### 🛡️ Collection 防呆 & Citation Metrics Release
