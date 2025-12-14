@@ -349,15 +349,58 @@ netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=23119 conn
 
 ---
 
-## ⚠️ Zotero API Limitations
+## ⚠️ Zotero API Limitations (Important!)
 
-### Collection Creation Limitation
+### 🔴 Operations NOT Supported
 
 Per [Zotero's official source code](https://github.com/zotero/zotero/blob/main/chrome/content/zotero/xpcom/server/server_localAPI.js#L28-L43):
 
 > **"Write access is not yet supported."**
 
-**Collections cannot be created via API.** Create them in Zotero first, then use AI to classify.
+| Operation | API Support | Reason |
+|-----------|-------------|--------|
+| ❌ **Delete items** | 501 Not Implemented | Local API doesn't support DELETE |
+| ❌ **Update items** | 501 Not Implemented | Local API doesn't support PATCH/PUT |
+| ❌ **Move items** | Cannot modify | Existing items' collections cannot be changed |
+| ❌ **Create collections** | 400 Bad Request | Connector API doesn't support it |
+| ❌ **Delete collections** | 501 Not Implemented | Local API is read-only |
+| ❌ **Modify tags** | 501 Not Implemented | Local API is read-only |
+
+### 💡 What This Means
+
+**"Smart Management" Limitations:**
+
+```
+❌ Cannot do:
+- "Move these 10 papers to another collection"
+- "Delete all duplicate references"
+- "Help me organize my collections"
+- "Archive old papers"
+
+✅ Can do:
+- "Add to specific collection when importing" (at creation time)
+- "Search for matching references" (then handle manually)
+- "List potential duplicates" (but manual deletion needed)
+```
+
+### 🛠️ Workarounds
+
+| Need | Alternative |
+|------|-------------|
+| Organize collections | Drag & drop in Zotero GUI |
+| Delete duplicates | Zotero → Tools → "Merge duplicates" |
+| Batch operations | Use [Zotero Actions & Tags](https://github.com/windingwind/zotero-actions-tags) plugin |
+| Auto-categorize | Use [Zutilo](https://github.com/wshanks/Zutilo) plugin |
+
+### 🔮 Future Possibilities
+
+Zotero team is working on **Local API write support**:
+- [GitHub Issue #1320](https://github.com/zotero/zotero/issues/1320) - Request for write support
+- Expected in future Zotero 7.x releases
+
+**We'll update zotero-keeper as soon as Zotero supports it!**
+
+---
 
 ### 🌟 Local API Exclusive: Execute Saved Searches
 
@@ -374,6 +417,7 @@ Per [Zotero's official source code](https://github.com/zotero/zotero/blob/main/c
 | Missing DOI | DOI is empty | "Which items lack DOI?" |
 | Recent | Date Added in last 7 days | "What did I add this week?" |
 | Unread | Tag is not "read" | "What haven't I read?" |
+| Duplicates | Similar titles | "Potential duplicate items?" |
 
 ---
 

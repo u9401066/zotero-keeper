@@ -327,15 +327,58 @@ netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=23119 conn
 
 ---
 
-## ⚠️ Zotero API 限制
+## ⚠️ Zotero API 限制（重要！）
 
-### Collection 建立限制
+### 🔴 無法執行的操作
 
 根據 [Zotero 官方原始碼](https://github.com/zotero/zotero/blob/main/chrome/content/zotero/xpcom/server/server_localAPI.js#L28-L43)：
 
 > **"Write access is not yet supported."**
 
-**無法透過 API 建立 Collection。** 請先在 Zotero 建立，再用 AI 分類。
+| 操作 | API 支援 | 原因 |
+|------|---------|------|
+| ❌ **刪除文獻** | 501 Not Implemented | Local API 不支援 DELETE |
+| ❌ **更新文獻** | 501 Not Implemented | Local API 不支援 PATCH/PUT |
+| ❌ **移動文獻** | 無法操作 | 已存在的文獻無法修改 collections |
+| ❌ **建立 Collection** | 400 Bad Request | Connector API 不支援 |
+| ❌ **刪除 Collection** | 501 Not Implemented | Local API 唯讀 |
+| ❌ **修改標籤** | 501 Not Implemented | Local API 唯讀 |
+
+### 💡 這意味著什麼？
+
+**「智慧管理」的限制**：
+
+```
+❌ 無法做到：
+- 「把這 10 篇文獻移到另一個收藏夾」
+- 「刪除所有重複的文獻」  
+- 「幫我整理收藏夾」
+- 「把舊文獻移到 Archive」
+
+✅ 可以做到：
+- 「新增文獻時指定收藏夾」（新增時指定）
+- 「搜尋符合條件的文獻」（然後手動處理）
+- 「列出可能重複的文獻」（但需手動刪除）
+```
+
+### 🛠️ 替代方案
+
+| 需求 | 替代做法 |
+|------|----------|
+| 整理收藏夾 | 使用 Zotero GUI 拖拉文獻 |
+| 刪除重複 | Zotero → 工具 → 「合併重複項目」 |
+| 批次操作 | 使用 [Zotero Actions & Tags](https://github.com/windingwind/zotero-actions-tags) 外掛 |
+| 自動分類 | 使用 [Zutilo](https://github.com/wshanks/Zutilo) 外掛 |
+
+### 🔮 未來可能性
+
+Zotero 團隊正在開發 **Local API 寫入功能**：
+- [GitHub Issue #1320](https://github.com/zotero/zotero/issues/1320) - 請求寫入支援
+- 預計在 Zotero 7.x 後續版本加入
+
+**當 Zotero 支援後，我們會立即更新 zotero-keeper！**
+
+---
 
 ### 🌟 Local API 獨家功能：執行 Saved Search
 
@@ -352,6 +395,7 @@ netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=23119 conn
 | Missing DOI | DOI is empty | 「哪些缺 DOI？」 |
 | Recent | Date Added in last 7 days | 「這週新增了什麼？」 |
 | Unread | Tag is not "read" | 「還沒讀的有哪些？」 |
+| Duplicates | 標題相似 | 「可能重複的文獻？」 |
 
 ---
 

@@ -5,6 +5,7 @@ Domain entities for batch import operations.
 """
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from typing import Any
 
@@ -65,8 +66,16 @@ class BatchImportResult:
     warning_items: list[ImportedItem] = field(default_factory=list)
     failed_items: list[ImportedItem] = field(default_factory=list)
 
+    # Enhanced tracking
     collection_key: str | None = None
+    collection_name: str | None = None
+    target_library: str = "My Library"
+    timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     elapsed_time: float = 0.0
+    
+    # Data source tracking
+    data_source: str = "PubMed API"
+    pmids_requested: list[str] = field(default_factory=list)
 
     def add_item(self, item: ImportedItem) -> None:
         """Add an item result and update counters."""
@@ -90,7 +99,7 @@ class BatchImportResult:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MCP response."""
-        return {
+        result = {
             "success": self.success,
             "total": self.total,
             "added": self.added,
@@ -101,9 +110,67 @@ class BatchImportResult:
             "skipped_items": [item.to_dict() for item in self.skipped_items],
             "warning_items": [item.to_dict() for item in self.warning_items],
             "failed_items": [item.to_dict() for item in self.failed_items],
-            "collection_key": self.collection_key,
             "elapsed_time": round(self.elapsed_time, 2),
+            # Enhanced report fields
+            "timestamp": self.timestamp,
+            "data_source": self.data_source,
+            "target": {
+                "library": self.target_library,
+                "collection_key": self.collection_key,
+                "collection_name": self.collection_name,
+            },
+            "report": self._generate_report(),
         }
+        return result
+
+    def _generate_report(self) -> str:
+        """Generate a detailed human-readable report for agent debugging."""
+        lines = [
+            "=" * 60,
+            "📊 BATCH IMPORT REPORT",
+            "=" * 60,
+            f"⏰ Timestamp: {self.timestamp}",
+            f"📡 Data Source: {self.data_source}",
+            f"⏱️  Elapsed Time: {self.elapsed_time:.2f}s",
+            "",
+            "📍 TARGET:",
+            f"   Library: {self.target_library}",
+            f"   Collection: {self.collection_name or '(none)'} [{self.collection_key or 'root'}]",
+            "",
+            "📈 STATISTICS:",
+            f"   Total Processed: {self.total}",
+            f"   ✅ Added: {self.added}",
+            f"   ⏭️  Skipped: {self.skipped}",
+            f"   ⚠️  Warnings: {self.warnings}",
+            f"   ❌ Failed: {self.failed}",
+        ]
+        
+        if self.failed > 0:
+            lines.append("")
+            lines.append("❌ FAILED ITEMS:")
+            for item in self.failed_items[:10]:  # Limit to 10
+                lines.append(f"   - PMID {item.pmid}: {item.error or 'Unknown error'}")
+            if len(self.failed_items) > 10:
+                lines.append(f"   ... and {len(self.failed_items) - 10} more")
+        
+        if self.skipped > 0:
+            lines.append("")
+            lines.append("⏭️  SKIPPED ITEMS (first 5):")
+            for item in self.skipped_items[:5]:
+                lines.append(f"   - PMID {item.pmid}: {item.reason or 'Already exists'}")
+            if len(self.skipped_items) > 5:
+                lines.append(f"   ... and {len(self.skipped_items) - 5} more")
+        
+        if not self.collection_key:
+            lines.append("")
+            lines.append("⚠️  WARNING: No collection specified!")
+            lines.append("   Items were added to 'My Library' root, not a collection.")
+            lines.append("   Use collection_key parameter to specify target collection.")
+        
+        lines.append("")
+        lines.append("=" * 60)
+        
+        return "\n".join(lines)
 
     def summary(self) -> str:
         """Generate a human-readable summary."""
