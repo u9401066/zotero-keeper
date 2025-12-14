@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.8.0] - 2025-12-14
+
+### 🛡️ Collection 防呆 & Citation Metrics Release
+
+This release adds robust collection validation and citation metrics support.
+
+### Added
+
+- **Collection 防呆機制** for `batch_import_from_pubmed`:
+  - New `collection_name` parameter (recommended!) - auto-validates and resolves to key
+  - If collection not found, returns list of available collections
+  - `collection_info` in result confirms actual destination
+  - Tool description warns against using raw `collection_key`
+
+- **Citation Metrics Support**:
+  - New `include_citation_metrics` parameter for `batch_import_from_pubmed`
+  - Fetches RCR, NIH Percentile, Citations from iCite API
+  - Metrics stored in Zotero `extra` field (visible in Zotero UI!)
+  - Fields: `RCR`, `NIH Percentile`, `Citations`, `Citations/Year`, `APT`
+
+- **Documentation**:
+  - Created `docs/ZOTERO_LOCAL_API.md` - comprehensive API reference
+  - Documents Local API (read-only) vs Connector API (write)
+  - Includes test results and known limitations
+
+### Technical Details
+
+- Modified files:
+  - `infrastructure/mcp/batch_tools.py`: Added collection validation + citation metrics
+  - `infrastructure/mappers/pubmed_mapper.py`: Added RCR fields to extra
+  - `docs/ZOTERO_LOCAL_API.md`: New documentation file
+
+### Example Usage
+
+```python
+# ✅ Recommended: Use collection_name (auto-validates!)
+batch_import_from_pubmed(
+    pmids="38353755,37864754",
+    collection_name="AI Research",  # Validates existence!
+    include_citation_metrics=True    # Fetches RCR from iCite
+)
+
+# Result includes confirmation:
+{
+    "success": true,
+    "added": 2,
+    "collection_info": {
+        "key": "MHT7CZ8U",
+        "name": "AI Research",
+        "resolved_from": "name"
+    }
+}
+```
+
+---
+
 ## [1.7.2] - 2025-12-14
 
 ### 🐛 Bug Fix: batch_import_from_pubmed collection support

@@ -72,7 +72,7 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
   - ✅ `import_ris_to_zotero` - RIS format
   - ✅ `import_from_pmids` - From PMIDs
 
-### v1.7.0 (December 2024) - Current
+### v1.7.0 (December 2024)
 
 - ✅ **Tool Simplification** (21 tools, down from 27)
   - ✅ Consolidated smart tools into save tools
@@ -94,11 +94,28 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
   - ✅ PMID → PubMed E-utilities
   - ✅ Intelligent merge (user priority)
 
+### v1.8.0 (December 2024) - Current
+
+- ✅ **Collection 防呆機制**
+  - ✅ `collection_name` parameter (auto-validates!)
+  - ✅ Returns available collections if not found
+  - ✅ `collection_info` confirms destination
+  - ✅ Warns against raw `collection_key` usage
+
+- ✅ **Citation Metrics Support**
+  - ✅ `include_citation_metrics` parameter
+  - ✅ iCite API integration (RCR, Percentile)
+  - ✅ Metrics stored in Zotero `extra` field
+
+- ✅ **Documentation**
+  - ✅ `docs/ZOTERO_LOCAL_API.md` created
+  - ✅ API reference and limitations documented
+
 ---
 
 ## Phase 4: Enhanced User Experience 📋
 
-### v1.8.0 (Planned)
+### v1.9.0 (Planned)
 
 - 📋 **Note & Annotation Support**
   - 📋 Read item notes
@@ -115,7 +132,7 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
   - 📋 Retry logic for transient failures
   - 📋 Connection recovery
 
-### v1.9.0 (Planned)
+### v2.0.0 (Planned)
 
 - 📋 **Caching Layer**
   - 📋 Cache frequently accessed collections
@@ -179,8 +196,9 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
 | v1.4.0  | 13 | + Collections |
 | v1.5.0  | 19 | + Smart tools |
 | v1.6.0  | 27 | + PubMed + Saved Search |
-| **v1.7.0** | **21** | **Simplification (current)** |
-| v1.8.0  | ~24 | + Notes + Attachments |
+| v1.7.0 | 21 | Simplification |
+| **v1.8.0** | **21** | **Collection 防呆 + RCR (current)** |
+| v1.9.0  | ~24 | + Notes + Attachments |
 
 ---
 

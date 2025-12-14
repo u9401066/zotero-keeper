@@ -33,7 +33,9 @@ No more manually searching, copying, pasting. Just tell your AI in natural langu
 - **📖 MCP Resources**: Browse Zotero data via URIs (`zotero://collections`, etc.)
 - **💬 MCP Elicitation**: Interactive collection selection with numbered options
 - **🔒 Auto-fetch Metadata**: DOI/PMID → complete abstract + all fields automatically!
-- **📖 Read Operations**: Search, list, retrieve items from local Zotero
+- **� Citation Metrics**: RCR, NIH Percentile → stored in Zotero extra field (v1.8.0)
+- **🛡️ Collection 防呆**: Use collection_name for auto-validation (v1.8.0)
+- **�📖 Read Operations**: Search, list, retrieve items from local Zotero
 - **✏️ Write Operations**: Add references via Connector API
 - **🧠 Smart Features**: Duplicate detection, validation, intelligent import
 - **📁 Collection Support**: Nested collections (folders) with hierarchy
@@ -154,7 +156,24 @@ Add to `claude_desktop_config.json`:
 |------|-------------|---------|
 | `import_ris_to_zotero` | Import RIS citations | "Import this RIS text" |
 | `import_from_pmids` | Import by PMID | "Import PMID 12345678" |
-| `batch_import_from_pubmed` | Batch import with full metadata | "Import PMIDs: 123,456,789" |
+| `batch_import_from_pubmed` | Batch import with full metadata + RCR | "Import PMIDs to 'AI Research'" |
+
+#### batch_import_from_pubmed v1.8.0 新功能
+
+```python
+# ✅ 防呆機制: 用 collection_name (自動驗證!)
+batch_import_from_pubmed(
+    pmids="38353755,37864754",
+    collection_name="AI Research",  # 自動驗證並解析
+    include_citation_metrics=True   # 取得 RCR 並存入 extra
+)
+
+# Zotero extra 欄位會包含:
+# PMID: 38353755
+# RCR: 5.23
+# NIH Percentile: 85.2
+# Citations: 127
+```
 
 ---
 

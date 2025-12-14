@@ -157,6 +157,32 @@ def map_pubmed_to_zotero(
     if pmc_id:
         extra_parts.append(f"PMCID: {pmc_id}")
 
+    # === Citation Metrics (from iCite/pubmed-search) ===
+    # RCR (Relative Citation Ratio) - field-normalized citation metric
+    rcr = article.get("relative_citation_ratio") or article.get("rcr")
+    if rcr is not None:
+        extra_parts.append(f"RCR: {rcr}")
+
+    # NIH Percentile
+    nih_percentile = article.get("nih_percentile")
+    if nih_percentile is not None:
+        extra_parts.append(f"NIH Percentile: {nih_percentile}")
+
+    # Citation count
+    citation_count = article.get("citation_count") or article.get("citations")
+    if citation_count is not None:
+        extra_parts.append(f"Citations: {citation_count}")
+
+    # Citations per year
+    cpy = article.get("citations_per_year")
+    if cpy is not None:
+        extra_parts.append(f"Citations/Year: {cpy}")
+
+    # APT (Approximate Potential to Translate)
+    apt = article.get("apt")
+    if apt is not None:
+        extra_parts.append(f"APT: {apt}")
+
     pub_types = article.get("publication_types", [])
     if pub_types:
         extra_parts.append(f"Publication Type: {', '.join(pub_types)}")

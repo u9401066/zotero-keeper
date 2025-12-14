@@ -72,6 +72,8 @@ def register_batch_tools(mcp, zotero_client):
         tags: list[str] | None = None,
         skip_duplicates: bool = True,
         collection_key: str | None = None,
+        collection_name: str | None = None,
+        include_citation_metrics: bool = False,
     ) -> dict[str, Any]:
         """
         📦 Batch import PubMed articles to Zotero with complete metadata
@@ -84,13 +86,24 @@ def register_batch_tools(mcp, zotero_client):
         - ✅ PMID, PMCID, affiliations → extra field
         - ✅ Batch duplicate detection (by PMID/DOI)
         - ✅ Detailed result reporting
+        - ✅ Collection validation (防呆機制!)
+        - ✅ Citation metrics (RCR, percentile) → extra field (optional)
+
+        ⚠️ IMPORTANT - 防呆提醒:
+        - 使用 collection_name 參數 (推薦!) 可自動驗證名稱是否存在
+        - 如果名稱不存在，會回傳可用的 collections 清單
+        - 避免使用 collection_key，除非你確定 key 是對的
+        - 需要查看 collections？先呼叫 list_collections() 或 get_collection_tree()
 
         Args:
             pmids: Comma-separated PMIDs (e.g., "38353755,37864754")
                    or "last" to use results from last search (requires session)
             tags: Additional tags to apply to all imported articles
             skip_duplicates: Skip if exact PMID or DOI match found (default: True)
-            collection_key: Zotero collection key to add items to (optional)
+            collection_key: Zotero collection key (⚠️ 不建議直接使用，容易出錯)
+            collection_name: Collection name (推薦! 自動驗證並解析為 key)
+            include_citation_metrics: If True, fetch RCR/percentile from iCite and add to extra field
+                                      (slower but adds citation impact data to Zotero)
 
         Returns:
             Detailed import result:
@@ -103,21 +116,28 @@ def register_batch_tools(mcp, zotero_client):
                 "failed": 0,
                 "added_items": [...],
                 "skipped_items": [...],
-                "elapsed_time": 12.5
+                "elapsed_time": 12.5,
+                "collection_info": {"key": "ABC123", "name": "test1"}  // 確認用!
             }
 
         Example:
-            # After searching with pubmed-search-mcp
+            # ✅ 推薦：使用 collection_name (會自動驗證!)
             batch_import_from_pubmed(
-                pmids="38353755,37864754,38215710",
-                tags=["Anesthesia-AI", "2024"],
-                skip_duplicates=True
+                pmids="38353755,37864754",
+                collection_name="test1"
+            )
+
+            # 包含 citation metrics (RCR 會顯示在 Zotero extra 欄位)
+            batch_import_from_pubmed(
+                pmids="38353755,37864754",
+                collection_name="high-impact",
+                include_citation_metrics=True
             )
 
         Workflow:
-            1. pubmed-search: search_literature("AI anesthesia") → PMIDs
-            2. pubmed-search: (optional) analyze_fulltext_access(pmids)
-            3. zotero-keeper: batch_import_from_pubmed(pmids) → Zotero
+            1. (可選) zotero-keeper: list_collections() → 確認目標 collection 名稱
+            2. pubmed-search: search_literature("AI anesthesia") → PMIDs
+            3. zotero-keeper: batch_import_from_pubmed(pmids, collection_name="xxx")
         """
         if not BATCH_IMPORT_AVAILABLE:
             return {
@@ -128,6 +148,84 @@ def register_batch_tools(mcp, zotero_client):
 
         start_time = time.time()
         result = BatchImportResult()
+
+        # === 防呆機制 1: Collection 驗證 ===
+        validated_collection_key = None
+        collection_info = None
+
+        if collection_name or collection_key:
+            try:
+                if collection_name and not collection_key:
+                    # 用名稱查找 collection
+                    collections = await zotero_client.list_collections()
+                    found = None
+                    for col in collections:
+                        if col.get("name", "").lower() == collection_name.lower():
+                            found = col
+                            break
+
+                    if not found:
+                        # 提供相似名稱建議
+                        similar = [
+                            c.get("name") for c in collections
+                            if collection_name.lower() in c.get("name", "").lower()
+                        ][:5]
+                        return {
+                            "success": False,
+                            "error": f"Collection '{collection_name}' not found",
+                            "hint": f"Similar collections: {similar}" if similar else "Use list_collections() to see available collections",
+                            "available_collections": [
+                                {"key": c.get("key"), "name": c.get("name")}
+                                for c in collections[:10]
+                            ],
+                        }
+
+                    validated_collection_key = found.get("key")
+                    collection_info = {
+                        "key": validated_collection_key,
+                        "name": found.get("name"),
+                        "resolved_from": "name",
+                    }
+                    logger.info(f"Resolved collection '{collection_name}' → key: {validated_collection_key}")
+
+                elif collection_key:
+                    # 驗證 collection_key 是否存在
+                    collections = await zotero_client.list_collections()
+                    found = None
+                    for col in collections:
+                        if col.get("key") == collection_key:
+                            found = col
+                            break
+
+                    if not found:
+                        return {
+                            "success": False,
+                            "error": f"Collection key '{collection_key}' not found",
+                            "hint": "Use list_collections() to see available collections",
+                            "available_collections": [
+                                {"key": c.get("key"), "name": c.get("name")}
+                                for c in collections[:10]
+                            ],
+                        }
+
+                    validated_collection_key = collection_key
+                    collection_info = {
+                        "key": validated_collection_key,
+                        "name": found.get("name"),
+                        "resolved_from": "key",
+                    }
+                    logger.info(f"Validated collection key: {validated_collection_key} ({found.get('name')})")
+
+            except Exception as e:
+                logger.warning(f"Collection validation failed: {e}")
+                # 如果驗證失敗但有 key，繼續使用（向後相容）
+                if collection_key:
+                    validated_collection_key = collection_key
+                    collection_info = {
+                        "key": collection_key,
+                        "name": "unknown (validation failed)",
+                        "warning": str(e),
+                    }
 
         try:
             # 1. Parse PMIDs
@@ -162,6 +260,40 @@ def register_batch_tools(mcp, zotero_client):
                 }
 
             logger.info(f"Fetched {len(articles)} articles from PubMed")
+
+            # 2.5. Fetch citation metrics if requested
+            citation_metrics = {}
+            if include_citation_metrics:
+                try:
+                    from ..pubmed import get_pubmed_client
+                    client = get_pubmed_client()
+                    # Import LiteratureSearcher from pubmed_search
+                    # Note: pubmed_search is configured via ../pubmed/__init__.py
+                    from pubmed_search.entrez import LiteratureSearcher  # type: ignore
+                    searcher = LiteratureSearcher(
+                        email=getattr(client, 'email', 'zotero@example.com'),
+                        api_key=getattr(client, 'api_key', None)
+                    )
+                    citation_metrics = searcher.get_citation_metrics(pmid_list)
+                    logger.info(f"Fetched citation metrics for {len(citation_metrics)} articles")
+                except ImportError as e:
+                    logger.warning(f"Cannot import LiteratureSearcher for citation metrics: {e}")
+                except Exception as e:
+                    logger.warning(f"Failed to fetch citation metrics: {e}")
+                    # Continue without metrics
+
+            # Merge citation metrics into articles
+            if citation_metrics:
+                for article in articles:
+                    pmid = article.get("pmid", "")
+                    if pmid in citation_metrics:
+                        metrics = citation_metrics[pmid]
+                        # Add metrics fields to article
+                        article["relative_citation_ratio"] = metrics.get("relative_citation_ratio")
+                        article["nih_percentile"] = metrics.get("nih_percentile")
+                        article["citation_count"] = metrics.get("citation_count")
+                        article["citations_per_year"] = metrics.get("citations_per_year")
+                        article["apt"] = metrics.get("apt")
 
             # 3. Check for duplicates (batch)
             existing_identifiers = {"existing_pmids": set(), "existing_dois": set()}
@@ -223,8 +355,8 @@ def register_batch_tools(mcp, zotero_client):
 
                 # Map to Zotero schema (complete metadata!)
                 try:
-                    # Pass collection_key to mapper so items are added to collection
-                    collection_keys = [collection_key] if collection_key else None
+                    # Pass validated collection_key to mapper
+                    collection_keys = [validated_collection_key] if validated_collection_key else None
                     zotero_item = map_pubmed_to_zotero(
                         article,
                         extra_tags=tags,
@@ -277,14 +409,21 @@ def register_batch_tools(mcp, zotero_client):
                         ))
 
             # 6. Record collection info in result
-            if collection_key:
-                result.collection_key = collection_key
-                logger.info(f"Items added to collection: {collection_key}")
+            if validated_collection_key:
+                result.collection_key = validated_collection_key
+                logger.info(f"Items added to collection: {validated_collection_key}")
 
             # 7. Finalize result
             result.elapsed_time = time.time() - start_time
 
-            return result.to_dict()
+            final_result = result.to_dict()
+
+            # 加入 collection_info 讓使用者確認
+            if collection_info:
+                final_result["collection_info"] = collection_info
+                logger.info(f"Collection info: {collection_info}")
+
+            return final_result
 
         except Exception as e:
             logger.error(f"Batch import failed: {e}")

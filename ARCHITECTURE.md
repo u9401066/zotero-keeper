@@ -45,7 +45,7 @@ This document describes the system architecture of Zotero Keeper, a MCP server f
 │  │  │  ├── saved_search_tools.py (3 tools)                         │  │   │
 │  │  │  ├── search_tools.py (2 tools)                               │  │   │
 │  │  │  ├── pubmed_tools.py (2 tools)                               │  │   │
-│  │  │  ├── batch_tools.py (1 tool)                                 │  │   │
+│  │  │  ├── batch_tools.py (1 tool + collection防呆 + RCR)          │  │   │
 │  │  │  └── smart_tools.py (helpers only, no tools)                 │  │   │
 │  │  └──────────────────────────┬──────────────────────────────────┘  │   │
 │  │                             │                                      │   │
@@ -113,7 +113,7 @@ Zotero Keeper is designed to work alongside `pubmed-search-mcp` for a complete l
 | saved_search_tools.py | 3 | `list_saved_searches`, `run_saved_search`, `get_saved_search_details` |
 | search_tools.py | 2 | `search_pubmed_exclude_owned`, `check_articles_owned` |
 | pubmed_tools.py | 2 | `import_ris_to_zotero`, `import_from_pmids` |
-| batch_tools.py | 1 | `batch_import_from_pubmed` |
+| batch_tools.py | 1 | `batch_import_from_pubmed` (+ collection_name防呆 + include_citation_metrics) |
 
 ### Resources (10 URIs)
 
@@ -284,6 +284,7 @@ async def get_collection_items_resource(key: str) -> str:
 |-----|---------|---------|
 | CrossRef API | DOI → full metadata | `_fetch_metadata_from_doi()` |
 | PubMed E-utilities | PMID → full metadata | `_fetch_metadata_from_pmid()` |
+| NIH iCite API | PMID → citation metrics (RCR) | `batch_import_from_pubmed(include_citation_metrics=True)` |
 
 ---
 
@@ -442,4 +443,4 @@ The 6 original smart tools were redundant with `interactive_save`/`quick_save`. 
 
 ---
 
-*Last updated: December 14, 2024*
+*Last updated: December 14, 2024 (v1.8.0)*
