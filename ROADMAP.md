@@ -146,9 +146,66 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
 
 ---
 
-## Phase 5: Multi-Library & Collaboration 💡
+## Phase 5: Write Operations via Plugin Integration 🔄
 
-### v2.0.0 (Future Consideration)
+> ⚠️ **Zotero Local API 限制**: DELETE/PATCH/PUT 回傳 501 Not Implemented
+> 
+> 解決方案：整合 Zotero 外掛，透過外掛的內部 API 實現寫入操作
+
+### v2.0.0 - Plugin Bridge (Planned)
+
+- 📋 **Actions & Tags 整合** ⭐ 推薦
+  - 📋 研究 Actions & Tags 的 customScript API
+  - 📋 設計 MCP → Plugin 的通訊機制
+  - 📋 實作常用操作腳本模板
+  - 📋 文檔化腳本安裝步驟
+
+- 📋 **可能的寫入操作** (需 Plugin)
+  - 📋 `delete_items` - 刪除文獻 (`item.eraseTx()`)
+  - 📋 `move_to_collection` - 移動文獻 (`item.addToCollection()`)
+  - 📋 `remove_from_collection` - 從 Collection 移除
+  - 📋 `update_item_field` - 更新欄位 (`item.setField()`)
+  - 📋 `batch_add_tags` - 批次加標籤
+  - 📋 `batch_remove_tags` - 批次移除標籤
+
+- 📋 **實作方式探索**
+  - 💡 方案 A: MCP 輸出腳本 → 使用者貼到 Actions & Tags
+  - 💡 方案 B: 透過 Zotero 的 `Run JavaScript` 功能
+  - 💡 方案 C: 等待 Zotero 官方開放 Local API 寫入
+
+### 相關外掛資源
+
+| 外掛 | Stars | 功能 | 連結 |
+|------|-------|------|------|
+| **Actions & Tags** | 2.5k | 自訂腳本、事件觸發 | [GitHub](https://github.com/windingwind/zotero-actions-tags) |
+| **Zutilo** | 1.7k | 批次操作、快捷鍵 | [GitHub](https://github.com/wshanks/Zutilo) |
+| **Better BibTeX** | - | 引用鍵管理 | [GitHub](https://github.com/retorquere/zotero-better-bibtex) |
+
+### 常用腳本範例 (Actions & Tags)
+
+```javascript
+// 刪除選中文獻
+if (items?.length > 0) {
+    for (const item of items) {
+        await item.eraseTx();
+    }
+}
+
+// 移動到指定 Collection
+const targetKey = "MHT7CZ8U";
+if (items?.length > 0) {
+    for (const item of items) {
+        item.addToCollection(targetKey);
+        await item.saveTx();
+    }
+}
+```
+
+---
+
+## Phase 6: Multi-Library & Collaboration 💡
+
+### v2.x.0 (Future Consideration)
 
 - 💡 **Group Library Support**
   - 💡 List available libraries
@@ -160,14 +217,14 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
   - 💡 Show sync conflicts
   - 💡 Trigger sync (if possible)
 
-- 💡 **Collection Management**
+- 💡 **Collection Management** (等待 Zotero API 支援)
   - 💡 Create collections
   - 💡 Move items between collections
   - 💡 Rename collections
 
 ---
 
-## Phase 6: Advanced Integration 💡
+## Phase 7: Advanced Integration 💡
 
 ### Future Releases
 
@@ -183,6 +240,10 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
 - 💡 **Real-time Updates**
   - 💡 WebSocket support (if Zotero supports)
   - 💡 Push notifications for library changes
+
+- 💡 **等待 Zotero 官方支援**
+  - 💡 Local API Write Support ([Issue #1320](https://github.com/zotero/zotero/issues/1320))
+  - 💡 當支援後，直接實作原生寫入操作
 
 ---
 
