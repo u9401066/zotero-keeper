@@ -1,0 +1,128 @@
+{
+    "name": "vscode-zotero-mcp",
+    "displayName": "Zotero + PubMed MCP",
+    "description": "AI-powered research assistant - integrates Zotero reference management and PubMed literature search with GitHub Copilot",
+    "version": "0.1.0",
+    "publisher": "u9401066",
+    "license": "Apache-2.0",
+    "icon": "resources/icon.png",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/u9401066/zotero-keeper"
+    },
+    "bugs": {
+        "url": "https://github.com/u9401066/zotero-keeper/issues"
+    },
+    "homepage": "https://github.com/u9401066/zotero-keeper#readme",
+    "engines": {
+        "vscode": "^1.99.0"
+    },
+    "categories": [
+        "AI",
+        "Chat",
+        "Other"
+    ],
+    "keywords": [
+        "zotero",
+        "pubmed",
+        "mcp",
+        "model context protocol",
+        "copilot",
+        "research",
+        "bibliography",
+        "reference manager",
+        "literature search",
+        "academic"
+    ],
+    "activationEvents": [],
+    "main": "./out/extension.js",
+    "contributes": {
+        "mcpServerDefinitionProviders": [
+            {
+                "id": "zotero-mcp.servers",
+                "label": "Zotero + PubMed Research Tools"
+            }
+        ],
+        "configuration": {
+            "title": "Zotero MCP",
+            "properties": {
+                "zoteroMcp.pythonPath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Path to Python interpreter. Leave empty for auto-detect."
+                },
+                "zoteroMcp.zoteroHost": {
+                    "type": "string",
+                    "default": "localhost",
+                    "description": "Zotero host address (where Zotero is running)"
+                },
+                "zoteroMcp.zoteroPort": {
+                    "type": "number",
+                    "default": 23119,
+                    "description": "Zotero API port number"
+                },
+                "zoteroMcp.ncbiEmail": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Email for NCBI/PubMed API (required for high-volume searches)"
+                },
+                "zoteroMcp.enableZoteroKeeper": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable Zotero Keeper MCP server"
+                },
+                "zoteroMcp.enablePubmedSearch": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable PubMed Search MCP server"
+                },
+                "zoteroMcp.autoInstallPackages": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Automatically install required Python packages"
+                }
+            }
+        },
+        "commands": [
+            {
+                "command": "zoteroMcp.checkConnection",
+                "title": "Zotero MCP: Check Zotero Connection"
+            },
+            {
+                "command": "zoteroMcp.installPackages",
+                "title": "Zotero MCP: Install Python Packages"
+            },
+            {
+                "command": "zoteroMcp.showStatus",
+                "title": "Zotero MCP: Show Status"
+            },
+            {
+                "command": "zoteroMcp.openSettings",
+                "title": "Zotero MCP: Open Settings"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "lint": "eslint src",
+        "test": "vscode-test",
+        "package": "vsce package",
+        "publish": "vsce publish"
+    },
+    "devDependencies": {
+        "@types/node": "^20.11.0",
+        "@types/vscode": "^1.99.0",
+        "@typescript-eslint/eslint-plugin": "^7.0.0",
+        "@typescript-eslint/parser": "^7.0.0",
+        "@vscode/test-cli": "^0.0.10",
+        "@vscode/test-electron": "^2.4.1",
+        "@vscode/vsce": "^3.0.0",
+        "eslint": "^8.57.0",
+        "typescript": "^5.3.3"
+    },
+    "extensionDependencies": [],
+    "extensionPack": []
+}

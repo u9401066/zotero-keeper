@@ -1,0 +1,14 @@
+# Files to exclude from extension package
+.vscode/**
+.vscode-test/**
+node_modules/**
+src/**
+.gitignore
+.yarnrc
+vsc-extension-quickstart.md
+**/tsconfig.json
+**/.eslintrc.json
+**/*.map
+**/*.ts
+!out/**/*.js
+docs/**
