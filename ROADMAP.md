@@ -111,7 +111,7 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
   - ✅ `docs/ZOTERO_LOCAL_API.md` created
   - ✅ API reference and limitations documented
 
-### v1.8.1 (December 2024) - Current
+### v1.8.1 (December 2024)
 
 - ✅ **Advanced Search Tool** ⭐
   - ✅ `advanced_search` with multi-condition support
@@ -124,6 +124,20 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
   - ✅ API Capability Matrix (Local API vs Connector API)
   - ✅ Detailed technical limitations explanation
   - ✅ One-click installation roadmap section
+
+### v1.10.0 (December 2024) - Current ⭐
+
+- ✅ **PyPI Publication**
+  - ✅ `zotero-keeper` available on PyPI
+  - ✅ `pip install zotero-keeper` works out of the box
+  - ✅ All dependencies properly declared
+
+- ✅ **VS Code Extension v0.3.1** ⭐
+  - ✅ Replaced embedded Python with [uv](https://github.com/astral-sh/uv)
+  - ✅ 10-100x faster package installation
+  - ✅ Automatic Python 3.11 management
+  - ✅ Fixed Windows installation errors
+  - ✅ Smaller extension size (~30KB)
 
 ---
 
@@ -494,7 +508,7 @@ if (items?.length > 0) {
 | v1.6.0  | 27 | + PubMed + Saved Search |
 | v1.7.0 | 21 | Simplification |
 | v1.8.0 | 21 | Collection 防呆 + RCR |
-| **v1.8.1** | **22** | **+ advanced_search (current)** |
+| **v1.10.0** | **22** | **PyPI + VS Code Extension v0.3.1 (current)** |
 | v1.9.0  | ~26 | + Library Analytics (stats, orphans, duplicates) |
 | v2.0.0  | ~32 | + Citation Analysis + Smart Suggestions |
 | v2.1.0  | ~36 | + Report Generation |
@@ -524,4 +538,4 @@ Priority considerations:
 
 ---
 
-*Last updated: December 14, 2024 (v1.8.1)*
+*Last updated: December 15, 2024 (v1.10.0)*

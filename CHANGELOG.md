@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.10.0] - 2025-12-15
+
+### 🚀 PyPI Release & VS Code Extension v0.3.1
+
+This release marks the official PyPI publication and VS Code extension improvements.
+
+### Added
+
+- **PyPI Publication** ⭐:
+  - `zotero-keeper` now available on PyPI
+  - `pip install zotero-keeper` works out of the box
+  - All dependencies properly declared
+
+### VS Code Extension v0.3.1
+
+- **New Python Manager Using uv** ⭐:
+  - Replaced embedded Python with [uv](https://github.com/astral-sh/uv)
+  - 10-100x faster package installation
+  - Automatic Python 3.11 download and management
+  - Smaller extension size (~30KB, uv ~10MB on first run)
+
+- **Fixed**:
+  - Windows "Failed to set up Python environment" error
+  - Package name issues (removed `[all]` extras)
+  - Concurrent setup race conditions (added mutex)
+
+### Changed
+
+- Extension now uses `uvPythonManager.ts` instead of `embeddedPython.ts`
+- Removed bundled wheel infrastructure (no longer needed)
+
+---
+
 ## [1.8.2] - 2025-12-14
 
 ### 📊 RCR Citation Metrics Default ON

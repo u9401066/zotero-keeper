@@ -23,14 +23,16 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 ## Requirements
 
 - **VS Code** 1.99.0 or later
-- **Python** 3.11 or later
 - **Zotero 7** running locally (for Zotero features)
+
+**Note**: Python is managed automatically by the extension using [uv](https://github.com/astral-sh/uv).
 
 ## Installation
 
 1. Install this extension from the VS Code Marketplace
 2. The extension will automatically:
-   - Detect your Python installation
+   - Download [uv](https://github.com/astral-sh/uv) (fast Python package manager, ~10MB)
+   - Create an isolated Python 3.11 environment
    - Install required packages (`zotero-keeper`, `pubmed-search-mcp`)
    - Register MCP servers with VS Code
 
@@ -47,43 +49,54 @@ Once installed, the MCP tools will be available to GitHub Copilot. Try asking:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `zoteroMcp.pythonPath` | (auto) | Path to Python interpreter |
 | `zoteroMcp.zoteroHost` | `localhost` | Zotero host address |
 | `zoteroMcp.zoteroPort` | `23119` | Zotero API port |
 | `zoteroMcp.ncbiEmail` | | Email for NCBI API (recommended) |
 | `zoteroMcp.enableZoteroKeeper` | `true` | Enable Zotero Keeper server |
 | `zoteroMcp.enablePubmedSearch` | `true` | Enable PubMed Search server |
-| `zoteroMcp.autoInstallPackages` | `true` | Auto-install Python packages |
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
 | `Zotero MCP: Check Zotero Connection` | Verify Zotero is accessible |
-| `Zotero MCP: Install Python Packages` | Reinstall Python packages |
+| `Zotero MCP: Reinstall Python Environment` | Reinstall uv and Python packages |
 | `Zotero MCP: Show Status` | Show extension status |
 | `Zotero MCP: Open Settings` | Open extension settings |
 
-## Troubleshooting
+## How It Works
 
-### Python not found
-1. Install Python 3.11+ from [python.org](https://www.python.org/)
-2. Or set `zoteroMcp.pythonPath` to your Python interpreter path
+This extension uses [uv](https://github.com/astral-sh/uv) from Astral to manage Python:
+
+1. **First Run**: Downloads uv binary (~10MB) to extension storage
+2. **Environment Setup**: Creates isolated venv with Python 3.11
+3. **Package Install**: Installs `zotero-keeper` and `pubmed-search-mcp` (10-100x faster than pip)
+4. **MCP Servers**: Starts both servers and registers with VS Code
+
+The Python environment is completely isolated from your system Python.
+
+## Troubleshooting
 
 ### Cannot connect to Zotero
 1. Make sure Zotero 7 is running
 2. Check that the API is enabled (Edit → Settings → Advanced → Allow other applications...)
 3. Verify host/port settings match your setup
 
-### Packages not installing
-1. Try running `Zotero MCP: Install Python Packages` command
-2. Check the "Zotero MCP" output channel for errors
-3. Try installing manually: `pip install zotero-keeper[all] pubmed-search-mcp[mcp]`
+### Extension not activating
+1. Check the "Zotero MCP" output channel for errors
+2. Try running `Zotero MCP: Reinstall Python Environment` command
+3. Restart VS Code
+
+### uv download failed
+1. Check your internet connection
+2. Check if your firewall blocks downloads from `github.com`
+3. The extension will retry on next activation
 
 ## Related Projects
 
 - [zotero-keeper](https://github.com/u9401066/zotero-keeper) - Zotero MCP server
 - [pubmed-search-mcp](https://github.com/u9401066/pubmed-search-mcp) - PubMed MCP server
+- [uv](https://github.com/astral-sh/uv) - Fast Python package manager
 - [Model Context Protocol](https://modelcontextprotocol.io/) - MCP specification
 
 ## License

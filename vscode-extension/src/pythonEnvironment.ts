@@ -10,8 +10,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 const REQUIRED_PACKAGES = [
-    { name: 'zotero-keeper', importName: 'zotero_mcp', pipName: 'zotero-keeper[all]' },
-    { name: 'pubmed-search-mcp', importName: 'pubmed_search', pipName: 'pubmed-search-mcp[mcp]' },
+    { name: 'zotero-keeper', importName: 'zotero_mcp', pipName: 'zotero-keeper' },
+    { name: 'pubmed-search-mcp', importName: 'pubmed_search', pipName: 'pubmed-search-mcp' },
 ];
 
 const MIN_PYTHON_VERSION = [3, 11];

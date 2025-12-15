@@ -9,12 +9,12 @@
 
 import * as vscode from 'vscode';
 import { PythonEnvironment } from './pythonEnvironment';
-import { EmbeddedPythonManager } from './embeddedPython';
+import { UvPythonManager } from './uvPythonManager';
 import { ZoteroMcpServerProvider } from './mcpProvider';
 import { StatusBarManager } from './statusBar';
 
 let pythonEnv: PythonEnvironment;
-let embeddedPython: EmbeddedPythonManager;
+let uvPython: UvPythonManager;
 let mcpProvider: ZoteroMcpServerProvider;
 let statusBar: StatusBarManager;
 let extensionContext: vscode.ExtensionContext;
@@ -37,7 +37,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // Initialize components
     pythonEnv = new PythonEnvironment(context);
-    embeddedPython = new EmbeddedPythonManager(context);
+    uvPython = new UvPythonManager(context);
     statusBar = new StatusBarManager();
     
     // Register commands first (so they're available even if setup fails)
@@ -97,7 +97,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 }
 
 /**
- * Ensure Python is available - tries system Python first, then embedded
+ * Ensure Python is available - tries system Python first, then uv-managed
  */
 async function ensurePythonEnvironment(): Promise<string | undefined> {
     const config = vscode.workspace.getConfiguration('zoteroMcp');
@@ -111,18 +111,18 @@ async function ensurePythonEnvironment(): Promise<string | undefined> {
         return systemPython;
     }
     
-    // No system Python found - use embedded if enabled
+    // No system Python found - use uv-managed Python if enabled
     if (useEmbedded) {
-        console.log('System Python not found, using embedded Python...');
+        console.log('System Python not found, using uv to set up Python...');
         statusBar.setStatus('installing', 'Zotero MCP: Setting up Python environment...');
         
         try {
-            // EmbeddedPythonManager.ensureReady() handles download + package install
-            const embeddedPath = await embeddedPython.ensureReady();
-            console.log('Embedded Python ready:', embeddedPath);
-            return embeddedPath;
+            // UvPythonManager.ensureReady() handles uv download + Python install + packages
+            const uvPythonPath = await uvPython.ensureReady();
+            console.log('uv-managed Python ready:', uvPythonPath);
+            return uvPythonPath;
         } catch (error) {
-            console.error('Failed to set up embedded Python:', error);
+            console.error('Failed to set up Python with uv:', error);
             vscode.window.showErrorMessage(
                 `Failed to set up Python environment: ${error}`,
                 'Retry', 'Install Python Manually'
@@ -156,8 +156,8 @@ async function ensurePythonEnvironment(): Promise<string | undefined> {
  * Ensure packages are installed
  */
 async function ensurePackagesInstalled(): Promise<boolean> {
-    // If using embedded Python, packages were installed during setup
-    if (embeddedPython.isReady()) {
+    // If using uv-managed Python, packages were installed during setup
+    if (uvPython.isReady()) {
         return true;
     }
     
@@ -305,8 +305,8 @@ function registerCommands(context: vscode.ExtensionContext): void {
                 statusBar.setStatus('installing', 'Zotero MCP: Reinstalling Python...');
                 
                 try {
-                    await embeddedPython.cleanup();
-                    const newPath = await embeddedPython.ensureReady();
+                    await uvPython.cleanup();
+                    const newPath = await uvPython.ensureReady();
                     
                     if (newPath) {
                         resolvedPythonPath = newPath;
@@ -422,15 +422,15 @@ async function checkZoteroConnection(): Promise<boolean> {
  */
 async function getExtensionStatus(): Promise<ExtensionStatus> {
     const config = vscode.workspace.getConfiguration('zoteroMcp');
-    const isEmbedded = embeddedPython.isReady();
+    const isUvManaged = uvPython.isReady();
     
     return {
         pythonPath: resolvedPythonPath || 'Not configured',
-        pythonVersion: isEmbedded 
-            ? await embeddedPython.getPythonVersion() || 'Unknown'
+        pythonVersion: isUvManaged 
+            ? await uvPython.getPythonVersion() || 'Unknown'
             : await pythonEnv.getPythonVersion() || 'Unknown',
-        pythonType: isEmbedded ? 'Embedded (self-contained)' : 'System',
-        packagesInstalled: isEmbedded ? true : await pythonEnv.checkPackages(),
+        pythonType: isUvManaged ? 'uv-managed (self-contained)' : 'System',
+        packagesInstalled: isUvManaged ? true : await pythonEnv.checkPackages(),
         zoteroConnected: await checkZoteroConnection(),
         zoteroHost: config.get<string>('zoteroHost', 'localhost'),
         zoteroPort: config.get<number>('zoteroPort', 23119),
