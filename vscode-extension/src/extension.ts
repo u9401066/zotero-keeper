@@ -3,17 +3,24 @@
  * 
  * Provides AI-powered research assistant capabilities by integrating
  * Zotero reference management and PubMed literature search with GitHub Copilot.
+ * 
+ * Self-contained: Downloads Python automatically for non-technical users.
  */
 
 import * as vscode from 'vscode';
 import { PythonEnvironment } from './pythonEnvironment';
+import { EmbeddedPythonManager } from './embeddedPython';
 import { ZoteroMcpServerProvider } from './mcpProvider';
 import { StatusBarManager } from './statusBar';
 
 let pythonEnv: PythonEnvironment;
+let embeddedPython: EmbeddedPythonManager;
 let mcpProvider: ZoteroMcpServerProvider;
 let statusBar: StatusBarManager;
 let extensionContext: vscode.ExtensionContext;
+
+// The resolved Python path (either system or embedded)
+let resolvedPythonPath: string | undefined;
 
 // Context keys for walkthrough completion tracking
 const CONTEXT_PYTHON_READY = 'zoteroMcp.pythonReady';
@@ -30,6 +37,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // Initialize components
     pythonEnv = new PythonEnvironment(context);
+    embeddedPython = new EmbeddedPythonManager(context);
     statusBar = new StatusBarManager();
     
     // Register commands first (so they're available even if setup fails)
@@ -39,53 +47,30 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     statusBar.setStatus('initializing', 'Zotero MCP: Initializing...');
 
     try {
-        // Step 1: Ensure Python is available
-        const pythonPath = await pythonEnv.ensurePython();
-        if (!pythonPath) {
-            statusBar.setStatus('error', 'Zotero MCP: Python not found');
+        // Step 1: Ensure Python is available (try system first, then embedded)
+        resolvedPythonPath = await ensurePythonEnvironment();
+        
+        if (!resolvedPythonPath) {
+            statusBar.setStatus('error', 'Zotero MCP: Python setup failed');
             await vscode.commands.executeCommand('setContext', CONTEXT_PYTHON_READY, false);
             showFirstTimeWalkthrough(context);
             return;
         }
         await vscode.commands.executeCommand('setContext', CONTEXT_PYTHON_READY, true);
 
-        // Step 2: Check/install required packages
-        const config = vscode.workspace.getConfiguration('zoteroMcp');
-        const autoInstall = config.get<boolean>('autoInstallPackages', true);
+        // Step 2: Check/install required packages (handled by embedded Python if used)
+        const packagesReady = await ensurePackagesInstalled();
         
-        let packagesInstalled = await pythonEnv.checkPackages();
-        
-        if (!packagesInstalled) {
-            if (autoInstall) {
-                statusBar.setStatus('installing', 'Zotero MCP: Installing packages...');
-                packagesInstalled = await pythonEnv.installPackages();
-                if (!packagesInstalled) {
-                    statusBar.setStatus('error', 'Zotero MCP: Package install failed');
-                    await vscode.commands.executeCommand('setContext', CONTEXT_PACKAGES_READY, false);
-                    showFirstTimeWalkthrough(context);
-                    return;
-                }
-            } else {
-                const choice = await vscode.window.showInformationMessage(
-                    'Zotero MCP requires Python packages (zotero-keeper, pubmed-search-mcp). Install now?',
-                    'Install', 'Later'
-                );
-                if (choice === 'Install') {
-                    statusBar.setStatus('installing', 'Zotero MCP: Installing packages...');
-                    packagesInstalled = await pythonEnv.installPackages();
-                }
-                if (!packagesInstalled) {
-                    statusBar.setStatus('warning', 'Zotero MCP: Packages not installed');
-                    await vscode.commands.executeCommand('setContext', CONTEXT_PACKAGES_READY, false);
-                    showFirstTimeWalkthrough(context);
-                    return;
-                }
-            }
+        if (!packagesReady) {
+            statusBar.setStatus('error', 'Zotero MCP: Package install failed');
+            await vscode.commands.executeCommand('setContext', CONTEXT_PACKAGES_READY, false);
+            showFirstTimeWalkthrough(context);
+            return;
         }
         await vscode.commands.executeCommand('setContext', CONTEXT_PACKAGES_READY, true);
 
         // Step 3: Register MCP server provider
-        mcpProvider = new ZoteroMcpServerProvider(pythonEnv);
+        mcpProvider = new ZoteroMcpServerProvider(resolvedPythonPath);
         
         const providerDisposable = vscode.lm.registerMcpServerDefinitionProvider(
             'zotero-mcp.servers',
@@ -109,6 +94,96 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         statusBar.setStatus('error', 'Zotero MCP: Activation failed');
         vscode.window.showErrorMessage(`Zotero MCP activation failed: ${error}`);
     }
+}
+
+/**
+ * Ensure Python is available - tries system Python first, then embedded
+ */
+async function ensurePythonEnvironment(): Promise<string | undefined> {
+    const config = vscode.workspace.getConfiguration('zoteroMcp');
+    const useEmbedded = config.get<boolean>('useEmbeddedPython', true);
+    
+    // First, try to find system Python
+    const systemPython = await pythonEnv.ensurePython();
+    
+    if (systemPython) {
+        console.log('Using system Python:', systemPython);
+        return systemPython;
+    }
+    
+    // No system Python found - use embedded if enabled
+    if (useEmbedded) {
+        console.log('System Python not found, using embedded Python...');
+        statusBar.setStatus('installing', 'Zotero MCP: Setting up Python environment...');
+        
+        try {
+            // EmbeddedPythonManager.ensureReady() handles download + package install
+            const embeddedPath = await embeddedPython.ensureReady();
+            console.log('Embedded Python ready:', embeddedPath);
+            return embeddedPath;
+        } catch (error) {
+            console.error('Failed to set up embedded Python:', error);
+            vscode.window.showErrorMessage(
+                `Failed to set up Python environment: ${error}`,
+                'Retry', 'Install Python Manually'
+            ).then(choice => {
+                if (choice === 'Retry') {
+                    vscode.commands.executeCommand('zoteroMcp.setupWizard');
+                } else if (choice === 'Install Python Manually') {
+                    vscode.env.openExternal(vscode.Uri.parse('https://www.python.org/downloads/'));
+                }
+            });
+            return undefined;
+        }
+    }
+    
+    // Neither system nor embedded Python available
+    vscode.window.showErrorMessage(
+        'Python not found. Install Python or enable embedded Python in settings.',
+        'Download Python', 'Open Settings'
+    ).then(choice => {
+        if (choice === 'Download Python') {
+            vscode.env.openExternal(vscode.Uri.parse('https://www.python.org/downloads/'));
+        } else if (choice === 'Open Settings') {
+            vscode.commands.executeCommand('workbench.action.openSettings', 'zoteroMcp.useEmbeddedPython');
+        }
+    });
+    
+    return undefined;
+}
+
+/**
+ * Ensure packages are installed
+ */
+async function ensurePackagesInstalled(): Promise<boolean> {
+    // If using embedded Python, packages were installed during setup
+    if (embeddedPython.isReady()) {
+        return true;
+    }
+    
+    // Using system Python - check and install packages
+    const config = vscode.workspace.getConfiguration('zoteroMcp');
+    const autoInstall = config.get<boolean>('autoInstallPackages', true);
+    
+    let packagesInstalled = await pythonEnv.checkPackages();
+    
+    if (!packagesInstalled) {
+        if (autoInstall) {
+            statusBar.setStatus('installing', 'Zotero MCP: Installing packages...');
+            packagesInstalled = await pythonEnv.installPackages();
+        } else {
+            const choice = await vscode.window.showInformationMessage(
+                'Zotero MCP requires Python packages (zotero-keeper, pubmed-search-mcp). Install now?',
+                'Install', 'Later'
+            );
+            if (choice === 'Install') {
+                statusBar.setStatus('installing', 'Zotero MCP: Installing packages...');
+                packagesInstalled = await pythonEnv.installPackages();
+            }
+        }
+    }
+    
+    return packagesInstalled;
 }
 
 /**
@@ -217,6 +292,35 @@ function registerCommands(context: vscode.ExtensionContext): void {
             vscode.env.openExternal(vscode.Uri.parse('zotero://'));
         })
     );
+
+    // Reinstall embedded Python
+    context.subscriptions.push(
+        vscode.commands.registerCommand('zoteroMcp.reinstallPython', async () => {
+            const confirm = await vscode.window.showWarningMessage(
+                'This will remove and reinstall the embedded Python environment. Continue?',
+                'Yes', 'No'
+            );
+            
+            if (confirm === 'Yes') {
+                statusBar.setStatus('installing', 'Zotero MCP: Reinstalling Python...');
+                
+                try {
+                    await embeddedPython.cleanup();
+                    const newPath = await embeddedPython.ensureReady();
+                    
+                    if (newPath) {
+                        resolvedPythonPath = newPath;
+                        mcpProvider?.setPythonPath(newPath);
+                        statusBar.setStatus('ready', 'Zotero MCP: Ready');
+                        vscode.window.showInformationMessage('✅ Python environment reinstalled successfully!');
+                    }
+                } catch (error) {
+                    statusBar.setStatus('error', 'Zotero MCP: Reinstall failed');
+                    vscode.window.showErrorMessage(`Failed to reinstall: ${error}`);
+                }
+            }
+        })
+    );
 }
 
 /**
@@ -230,35 +334,29 @@ async function runSetupWizard(): Promise<void> {
             cancellable: false
         },
         async (progress) => {
-            // Step 1: Check Python
-            progress.report({ message: 'Checking Python...', increment: 0 });
-            const pythonPath = await pythonEnv.ensurePython();
+            // Step 1: Check/setup Python
+            progress.report({ message: 'Setting up Python environment...', increment: 0 });
+            
+            const pythonPath = await ensurePythonEnvironment();
             if (!pythonPath) {
-                vscode.window.showErrorMessage(
-                    'Python 3.11+ not found. Please install Python first.',
-                    'Download Python'
-                ).then(choice => {
-                    if (choice === 'Download Python') {
-                        vscode.env.openExternal(vscode.Uri.parse('https://www.python.org/downloads/'));
-                    }
-                });
                 return false;
             }
+            resolvedPythonPath = pythonPath;
             await vscode.commands.executeCommand('setContext', CONTEXT_PYTHON_READY, true);
-            progress.report({ message: 'Python OK ✓', increment: 25 });
+            progress.report({ message: 'Python OK ✓', increment: 33 });
 
-            // Step 2: Install packages
-            progress.report({ message: 'Installing Python packages...', increment: 25 });
-            const packagesOk = await pythonEnv.checkPackages() || await pythonEnv.installPackages();
+            // Step 2: Ensure packages are installed
+            progress.report({ message: 'Checking Python packages...', increment: 0 });
+            const packagesOk = await ensurePackagesInstalled();
             if (!packagesOk) {
                 vscode.window.showErrorMessage('Failed to install Python packages. Check the output panel.');
                 return false;
             }
             await vscode.commands.executeCommand('setContext', CONTEXT_PACKAGES_READY, true);
-            progress.report({ message: 'Packages OK ✓', increment: 25 });
+            progress.report({ message: 'Packages OK ✓', increment: 33 });
 
             // Step 3: Check Zotero
-            progress.report({ message: 'Checking Zotero connection...', increment: 25 });
+            progress.report({ message: 'Checking Zotero connection...', increment: 34 });
             const zoteroOk = await checkAndUpdateZoteroStatus();
             
             if (!zoteroOk) {
@@ -276,8 +374,20 @@ async function runSetupWizard(): Promise<void> {
     );
 
     if (progress) {
+        // Re-initialize MCP provider if needed
+        if (!mcpProvider && resolvedPythonPath) {
+            mcpProvider = new ZoteroMcpServerProvider(resolvedPythonPath);
+            const providerDisposable = vscode.lm.registerMcpServerDefinitionProvider(
+                'zotero-mcp.servers',
+                mcpProvider
+            );
+            extensionContext.subscriptions.push(providerDisposable);
+        }
+        
         // Refresh MCP provider
         mcpProvider?.refresh();
+        
+        statusBar.setStatus('ready', 'Zotero MCP: Ready');
         
         vscode.window.showInformationMessage(
             '🎉 Zotero MCP is ready! Try asking Copilot to search PubMed.',
@@ -312,11 +422,15 @@ async function checkZoteroConnection(): Promise<boolean> {
  */
 async function getExtensionStatus(): Promise<ExtensionStatus> {
     const config = vscode.workspace.getConfiguration('zoteroMcp');
+    const isEmbedded = embeddedPython.isReady();
     
     return {
-        pythonPath: pythonEnv.getPythonPath() || 'Not found',
-        pythonVersion: await pythonEnv.getPythonVersion() || 'Unknown',
-        packagesInstalled: await pythonEnv.checkPackages(),
+        pythonPath: resolvedPythonPath || 'Not configured',
+        pythonVersion: isEmbedded 
+            ? await embeddedPython.getPythonVersion() || 'Unknown'
+            : await pythonEnv.getPythonVersion() || 'Unknown',
+        pythonType: isEmbedded ? 'Embedded (self-contained)' : 'System',
+        packagesInstalled: isEmbedded ? true : await pythonEnv.checkPackages(),
         zoteroConnected: await checkZoteroConnection(),
         zoteroHost: config.get<string>('zoteroHost', 'localhost'),
         zoteroPort: config.get<number>('zoteroPort', 23119),
@@ -330,6 +444,7 @@ async function getExtensionStatus(): Promise<ExtensionStatus> {
 interface ExtensionStatus {
     pythonPath: string;
     pythonVersion: string;
+    pythonType: string;
     packagesInstalled: boolean;
     zoteroConnected: boolean;
     zoteroHost: string;
@@ -380,6 +495,7 @@ function getStatusWebviewContent(status: ExtensionStatus): string {
         .status { font-weight: bold; }
         .ok { color: #4caf50; }
         .error { color: #f44336; }
+        .info { color: #2196f3; }
     </style>
 </head>
 <body>
@@ -388,8 +504,12 @@ function getStatusWebviewContent(status: ExtensionStatus): string {
     <div class="section">
         <h2>Python Environment</h2>
         <div class="item">
+            <span>Type:</span>
+            <span class="info">${status.pythonType}</span>
+        </div>
+        <div class="item">
             <span>Python Path:</span>
-            <span>${status.pythonPath}</span>
+            <span style="font-size: 12px; word-break: break-all;">${status.pythonPath}</span>
         </div>
         <div class="item">
             <span>Python Version:</span>

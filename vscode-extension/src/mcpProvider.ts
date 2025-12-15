@@ -5,14 +5,25 @@
  */
 
 import * as vscode from 'vscode';
-import { PythonEnvironment } from './pythonEnvironment';
 
 export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvider<vscode.McpStdioServerDefinition> {
     
     private _onDidChangeMcpServerDefinitions = new vscode.EventEmitter<void>();
     readonly onDidChangeMcpServerDefinitions = this._onDidChangeMcpServerDefinitions.event;
 
-    constructor(private pythonEnv: PythonEnvironment) {}
+    private pythonPath: string;
+
+    constructor(pythonPath: string) {
+        this.pythonPath = pythonPath;
+    }
+
+    /**
+     * Update Python path (used when switching between system/embedded)
+     */
+    setPythonPath(pythonPath: string): void {
+        this.pythonPath = pythonPath;
+        this.refresh();
+    }
 
     /**
      * Provide available MCP servers
@@ -22,9 +33,8 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
     ): vscode.ProviderResult<vscode.McpStdioServerDefinition[]> {
         const servers: vscode.McpStdioServerDefinition[] = [];
         const config = vscode.workspace.getConfiguration('zoteroMcp');
-        const pythonPath = this.pythonEnv.getPythonPath();
 
-        if (!pythonPath) {
+        if (!this.pythonPath) {
             console.warn('ZoteroMcpProvider: Python path not available');
             return servers;
         }
@@ -37,7 +47,7 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
             servers.push(
                 new vscode.McpStdioServerDefinition(
                     'Zotero Keeper',
-                    pythonPath,
+                    this.pythonPath,
                     ['-m', 'zotero_mcp'],
                     {
                         ZOTERO_HOST: zoteroHost,
@@ -60,7 +70,7 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
             servers.push(
                 new vscode.McpStdioServerDefinition(
                     'PubMed Search',
-                    pythonPath,
+                    this.pythonPath,
                     ['-m', 'pubmed_search.mcp'],
                     env,
                     '0.1.14'

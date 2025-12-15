@@ -1,8 +1,8 @@
 {
     "name": "vscode-zotero-mcp",
     "displayName": "Zotero + PubMed MCP",
-    "description": "AI-powered research assistant - integrates Zotero reference management and PubMed literature search with GitHub Copilot",
-    "version": "0.2.0",
+    "description": "AI-powered research assistant - integrates Zotero reference management and PubMed literature search with GitHub Copilot. One-click setup for researchers!",
+    "version": "0.3.0",
     "publisher": "u9401066",
     "license": "Apache-2.0",
     "icon": "resources/icon.png",
@@ -32,7 +32,9 @@
         "bibliography",
         "reference manager",
         "literature search",
-        "academic"
+        "academic",
+        "one-click",
+        "self-contained"
     ],
     "activationEvents": [],
     "main": "./out/extension.js",
@@ -46,47 +48,60 @@
         "configuration": {
             "title": "Zotero MCP",
             "properties": {
+                "zoteroMcp.useEmbeddedPython": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Use embedded Python environment (recommended for non-technical users). When enabled, the extension will automatically download and configure Python - no manual installation required!",
+                    "order": 0
+                },
                 "zoteroMcp.pythonPath": {
                     "type": "string",
                     "default": "",
-                    "description": "Path to Python interpreter. Leave empty for auto-detect."
+                    "markdownDescription": "Path to Python interpreter. Leave empty for auto-detect. Only used when `#zoteroMcp.useEmbeddedPython#` is disabled.",
+                    "order": 1
                 },
                 "zoteroMcp.zoteroHost": {
                     "type": "string",
                     "default": "localhost",
-                    "description": "Zotero host address (where Zotero is running)"
+                    "description": "Zotero host address (where Zotero is running)",
+                    "order": 10
                 },
                 "zoteroMcp.zoteroPort": {
                     "type": "number",
                     "default": 23119,
-                    "description": "Zotero API port number"
+                    "description": "Zotero API port number",
+                    "order": 11
                 },
                 "zoteroMcp.ncbiEmail": {
                     "type": "string",
                     "default": "",
-                    "description": "Email for NCBI/PubMed API (required for high-volume searches)"
+                    "description": "Email for NCBI/PubMed API (recommended for high-volume searches)",
+                    "order": 20
                 },
                 "zoteroMcp.enableZoteroKeeper": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Enable Zotero Keeper MCP server"
+                    "description": "Enable Zotero Keeper MCP server",
+                    "order": 30
                 },
                 "zoteroMcp.enablePubmedSearch": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Enable PubMed Search MCP server"
+                    "description": "Enable PubMed Search MCP server",
+                    "order": 31
                 },
                 "zoteroMcp.autoInstallPackages": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Automatically install required Python packages"
+                    "description": "Automatically install required Python packages",
+                    "order": 40
                 }
             }
         },
         "commands": [
             {
                 "command": "zoteroMcp.setupWizard",
-                "title": "Zotero MCP: Setup Wizard",
+                "title": "Zotero MCP: Setup Wizard (One-Click Setup)",
                 "icon": "$(wand)"
             },
             {
@@ -96,6 +111,10 @@
             {
                 "command": "zoteroMcp.installPackages",
                 "title": "Zotero MCP: Install Python Packages"
+            },
+            {
+                "command": "zoteroMcp.reinstallPython",
+                "title": "Zotero MCP: Reinstall Embedded Python"
             },
             {
                 "command": "zoteroMcp.showStatus",
@@ -114,23 +133,14 @@
             {
                 "id": "zoteroMcp.welcome",
                 "title": "Get Started with Zotero + PubMed MCP",
-                "description": "Set up your AI-powered research assistant in just a few steps.",
+                "description": "Set up your AI-powered research assistant in just ONE click!",
                 "steps": [
                     {
-                        "id": "python",
-                        "title": "Python Environment",
-                        "description": "The extension automatically detects Python 3.11+. If not found, you'll be prompted to install it.\n\n[Check Python Status](command:zoteroMcp.showStatus)",
+                        "id": "oneclick",
+                        "title": "🚀 One-Click Setup",
+                        "description": "Click the button below and we'll handle everything automatically!\n\n[Run Setup Wizard](command:zoteroMcp.setupWizard)\n\nThis will:\n• Download Python (if needed)\n• Install required packages\n• Check Zotero connection",
                         "media": {
-                            "markdown": "resources/walkthrough/python.md"
-                        },
-                        "completionEvents": ["onContext:zoteroMcp.pythonReady"]
-                    },
-                    {
-                        "id": "packages",
-                        "title": "Install Python Packages",
-                        "description": "Required packages (zotero-keeper, pubmed-search-mcp) will be installed automatically.\n\n[Install Now](command:zoteroMcp.installPackages)",
-                        "media": {
-                            "markdown": "resources/walkthrough/packages.md"
+                            "markdown": "resources/walkthrough/oneclick.md"
                         },
                         "completionEvents": ["onContext:zoteroMcp.packagesReady"]
                     },
@@ -142,15 +152,6 @@
                             "markdown": "resources/walkthrough/zotero.md"
                         },
                         "completionEvents": ["onContext:zoteroMcp.zoteroConnected"]
-                    },
-                    {
-                        "id": "ncbi",
-                        "title": "Configure PubMed (Optional)",
-                        "description": "For high-volume PubMed searches, provide your email address.\n\n[Open Settings](command:workbench.action.openSettings?%22zoteroMcp.ncbiEmail%22)",
-                        "media": {
-                            "markdown": "resources/walkthrough/ncbi.md"
-                        },
-                        "completionEvents": ["onSettingChanged:zoteroMcp.ncbiEmail"]
                     },
                     {
                         "id": "ready",
