@@ -72,7 +72,7 @@ class BatchImportResult:
     target_library: str = "My Library"
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     elapsed_time: float = 0.0
-    
+
     # Data source tracking
     data_source: str = "PubMed API"
     pmids_requested: list[str] = field(default_factory=list)
@@ -144,7 +144,7 @@ class BatchImportResult:
             f"   ⚠️  Warnings: {self.warnings}",
             f"   ❌ Failed: {self.failed}",
         ]
-        
+
         if self.failed > 0:
             lines.append("")
             lines.append("❌ FAILED ITEMS:")
@@ -152,7 +152,7 @@ class BatchImportResult:
                 lines.append(f"   - PMID {item.pmid}: {item.error or 'Unknown error'}")
             if len(self.failed_items) > 10:
                 lines.append(f"   ... and {len(self.failed_items) - 10} more")
-        
+
         if self.skipped > 0:
             lines.append("")
             lines.append("⏭️  SKIPPED ITEMS (first 5):")
@@ -160,16 +160,16 @@ class BatchImportResult:
                 lines.append(f"   - PMID {item.pmid}: {item.reason or 'Already exists'}")
             if len(self.skipped_items) > 5:
                 lines.append(f"   ... and {len(self.skipped_items) - 5} more")
-        
+
         if not self.collection_key:
             lines.append("")
             lines.append("⚠️  WARNING: No collection specified!")
             lines.append("   Items were added to 'My Library' root, not a collection.")
             lines.append("   Use collection_key parameter to specify target collection.")
-        
+
         lines.append("")
         lines.append("=" * 60)
-        
+
         return "\n".join(lines)
 
     def summary(self) -> str:

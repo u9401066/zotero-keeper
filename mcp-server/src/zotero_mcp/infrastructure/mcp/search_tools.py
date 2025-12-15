@@ -269,7 +269,7 @@ def register_search_tools(mcp, zotero_client):
             )
 
             # Format results
-            formatted = f"## 🔍 Advanced Search Results\n\n"
+            formatted = "## 🔍 Advanced Search Results\n\n"
             formatted += f"Found **{len(items)}** items\n\n"
 
             # Show search params used

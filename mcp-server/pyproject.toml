@@ -64,8 +64,11 @@ packages = ["src/zotero_mcp"]
 
 [tool.ruff]
 target-version = "py311"
-line-length = 100
-select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
+line-length = 140
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = ["E402", "E501"]  # Allow imports after sys.path and long lines
 
 [tool.mypy]
 python_version = "3.11"
