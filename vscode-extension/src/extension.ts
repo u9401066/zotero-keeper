@@ -13,16 +13,27 @@ import { StatusBarManager } from './statusBar';
 let pythonEnv: PythonEnvironment;
 let mcpProvider: ZoteroMcpServerProvider;
 let statusBar: StatusBarManager;
+let extensionContext: vscode.ExtensionContext;
+
+// Context keys for walkthrough completion tracking
+const CONTEXT_PYTHON_READY = 'zoteroMcp.pythonReady';
+const CONTEXT_PACKAGES_READY = 'zoteroMcp.packagesReady';
+const CONTEXT_ZOTERO_CONNECTED = 'zoteroMcp.zoteroConnected';
+const FIRST_ACTIVATION_KEY = 'zoteroMcp.firstActivation';
 
 /**
  * Extension activation
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     console.log('Zotero MCP extension is activating...');
+    extensionContext = context;
 
     // Initialize components
     pythonEnv = new PythonEnvironment(context);
     statusBar = new StatusBarManager();
+    
+    // Register commands first (so they're available even if setup fails)
+    registerCommands(context);
     
     // Show initial status
     statusBar.setStatus('initializing', 'Zotero MCP: Initializing...');
@@ -32,29 +43,26 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         const pythonPath = await pythonEnv.ensurePython();
         if (!pythonPath) {
             statusBar.setStatus('error', 'Zotero MCP: Python not found');
-            vscode.window.showErrorMessage(
-                'Zotero MCP: Python 3.11+ not found. Please install Python or set the path in settings.',
-                'Open Settings'
-            ).then(choice => {
-                if (choice === 'Open Settings') {
-                    vscode.commands.executeCommand('workbench.action.openSettings', 'zoteroMcp.pythonPath');
-                }
-            });
+            await vscode.commands.executeCommand('setContext', CONTEXT_PYTHON_READY, false);
+            showFirstTimeWalkthrough(context);
             return;
         }
+        await vscode.commands.executeCommand('setContext', CONTEXT_PYTHON_READY, true);
 
         // Step 2: Check/install required packages
         const config = vscode.workspace.getConfiguration('zoteroMcp');
         const autoInstall = config.get<boolean>('autoInstallPackages', true);
         
-        const packagesInstalled = await pythonEnv.checkPackages();
+        let packagesInstalled = await pythonEnv.checkPackages();
         
         if (!packagesInstalled) {
             if (autoInstall) {
                 statusBar.setStatus('installing', 'Zotero MCP: Installing packages...');
-                const installed = await pythonEnv.installPackages();
-                if (!installed) {
+                packagesInstalled = await pythonEnv.installPackages();
+                if (!packagesInstalled) {
                     statusBar.setStatus('error', 'Zotero MCP: Package install failed');
+                    await vscode.commands.executeCommand('setContext', CONTEXT_PACKAGES_READY, false);
+                    showFirstTimeWalkthrough(context);
                     return;
                 }
             } else {
@@ -64,13 +72,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 );
                 if (choice === 'Install') {
                     statusBar.setStatus('installing', 'Zotero MCP: Installing packages...');
-                    await pythonEnv.installPackages();
-                } else {
+                    packagesInstalled = await pythonEnv.installPackages();
+                }
+                if (!packagesInstalled) {
                     statusBar.setStatus('warning', 'Zotero MCP: Packages not installed');
+                    await vscode.commands.executeCommand('setContext', CONTEXT_PACKAGES_READY, false);
+                    showFirstTimeWalkthrough(context);
                     return;
                 }
             }
         }
+        await vscode.commands.executeCommand('setContext', CONTEXT_PACKAGES_READY, true);
 
         // Step 3: Register MCP server provider
         mcpProvider = new ZoteroMcpServerProvider(pythonEnv);
@@ -81,11 +93,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         );
         context.subscriptions.push(providerDisposable);
 
-        // Step 4: Register commands
-        registerCommands(context);
+        // Step 4: Check Zotero connection (non-blocking)
+        checkAndUpdateZoteroStatus();
 
         // Step 5: Update status
         statusBar.setStatus('ready', 'Zotero MCP: Ready');
+        
+        // Show walkthrough on first activation
+        showFirstTimeWalkthrough(context);
         
         console.log('Zotero MCP extension activated successfully');
 
@@ -97,24 +112,60 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 }
 
 /**
+ * Show walkthrough on first activation
+ */
+function showFirstTimeWalkthrough(context: vscode.ExtensionContext): void {
+    const isFirstActivation = context.globalState.get<boolean>(FIRST_ACTIVATION_KEY, true);
+    
+    if (isFirstActivation) {
+        // Mark as not first time anymore
+        context.globalState.update(FIRST_ACTIVATION_KEY, false);
+        
+        // Open walkthrough
+        vscode.commands.executeCommand(
+            'workbench.action.openWalkthrough',
+            'u9401066.vscode-zotero-mcp#zoteroMcp.welcome',
+            false
+        );
+    }
+}
+
+/**
+ * Check Zotero connection and update context
+ */
+async function checkAndUpdateZoteroStatus(): Promise<boolean> {
+    const connected = await checkZoteroConnection();
+    await vscode.commands.executeCommand('setContext', CONTEXT_ZOTERO_CONNECTED, connected);
+    return connected;
+}
+
+/**
  * Register extension commands
  */
 function registerCommands(context: vscode.ExtensionContext): void {
+    // Setup Wizard - one-click setup
+    context.subscriptions.push(
+        vscode.commands.registerCommand('zoteroMcp.setupWizard', async () => {
+            await runSetupWizard();
+        })
+    );
+
     // Check Zotero connection
     context.subscriptions.push(
         vscode.commands.registerCommand('zoteroMcp.checkConnection', async () => {
-            const connected = await checkZoteroConnection();
+            const connected = await checkAndUpdateZoteroStatus();
             if (connected) {
                 vscode.window.showInformationMessage('✅ Zotero is running and accessible!');
             } else {
-                vscode.window.showWarningMessage(
+                const choice = await vscode.window.showWarningMessage(
                     '❌ Cannot connect to Zotero. Make sure Zotero 7 is running.',
-                    'Open Zotero Settings'
-                ).then(choice => {
-                    if (choice === 'Open Zotero Settings') {
-                        vscode.commands.executeCommand('workbench.action.openSettings', 'zoteroMcp.zotero');
-                    }
-                });
+                    'Download Zotero', 'Open Settings'
+                );
+                if (choice === 'Download Zotero') {
+                    vscode.env.openExternal(vscode.Uri.parse('https://www.zotero.org/download/'));
+                } else if (choice === 'Open Settings') {
+                    vscode.commands.executeCommand('workbench.action.openSettings', 'zoteroMcp.zotero');
+                }
             }
         })
     );
@@ -126,11 +177,13 @@ function registerCommands(context: vscode.ExtensionContext): void {
             const success = await pythonEnv.installPackages();
             if (success) {
                 statusBar.setStatus('ready', 'Zotero MCP: Ready');
+                await vscode.commands.executeCommand('setContext', CONTEXT_PACKAGES_READY, true);
                 vscode.window.showInformationMessage('✅ Python packages installed successfully!');
                 // Refresh MCP servers
-                mcpProvider.refresh();
+                mcpProvider?.refresh();
             } else {
                 statusBar.setStatus('error', 'Zotero MCP: Install failed');
+                await vscode.commands.executeCommand('setContext', CONTEXT_PACKAGES_READY, false);
                 vscode.window.showErrorMessage('❌ Failed to install packages. Check the output for details.');
             }
         })
@@ -156,6 +209,85 @@ function registerCommands(context: vscode.ExtensionContext): void {
             vscode.commands.executeCommand('workbench.action.openSettings', 'zoteroMcp');
         })
     );
+
+    // Open Zotero application
+    context.subscriptions.push(
+        vscode.commands.registerCommand('zoteroMcp.openZotero', async () => {
+            // Try to open Zotero via URL scheme (works on most platforms)
+            vscode.env.openExternal(vscode.Uri.parse('zotero://'));
+        })
+    );
+}
+
+/**
+ * Run setup wizard - handles all setup in one go
+ */
+async function runSetupWizard(): Promise<void> {
+    const progress = await vscode.window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            title: 'Zotero MCP Setup',
+            cancellable: false
+        },
+        async (progress) => {
+            // Step 1: Check Python
+            progress.report({ message: 'Checking Python...', increment: 0 });
+            const pythonPath = await pythonEnv.ensurePython();
+            if (!pythonPath) {
+                vscode.window.showErrorMessage(
+                    'Python 3.11+ not found. Please install Python first.',
+                    'Download Python'
+                ).then(choice => {
+                    if (choice === 'Download Python') {
+                        vscode.env.openExternal(vscode.Uri.parse('https://www.python.org/downloads/'));
+                    }
+                });
+                return false;
+            }
+            await vscode.commands.executeCommand('setContext', CONTEXT_PYTHON_READY, true);
+            progress.report({ message: 'Python OK ✓', increment: 25 });
+
+            // Step 2: Install packages
+            progress.report({ message: 'Installing Python packages...', increment: 25 });
+            const packagesOk = await pythonEnv.checkPackages() || await pythonEnv.installPackages();
+            if (!packagesOk) {
+                vscode.window.showErrorMessage('Failed to install Python packages. Check the output panel.');
+                return false;
+            }
+            await vscode.commands.executeCommand('setContext', CONTEXT_PACKAGES_READY, true);
+            progress.report({ message: 'Packages OK ✓', increment: 25 });
+
+            // Step 3: Check Zotero
+            progress.report({ message: 'Checking Zotero connection...', increment: 25 });
+            const zoteroOk = await checkAndUpdateZoteroStatus();
+            
+            if (!zoteroOk) {
+                const choice = await vscode.window.showWarningMessage(
+                    'Zotero is not running. Start Zotero to enable full functionality.',
+                    'Download Zotero', 'Continue Anyway'
+                );
+                if (choice === 'Download Zotero') {
+                    vscode.env.openExternal(vscode.Uri.parse('https://www.zotero.org/download/'));
+                }
+            }
+
+            return true;
+        }
+    );
+
+    if (progress) {
+        // Refresh MCP provider
+        mcpProvider?.refresh();
+        
+        vscode.window.showInformationMessage(
+            '🎉 Zotero MCP is ready! Try asking Copilot to search PubMed.',
+            'Open Copilot Chat'
+        ).then(choice => {
+            if (choice === 'Open Copilot Chat') {
+                vscode.commands.executeCommand('workbench.action.chat.open');
+            }
+        });
+    }
 }
 
 /**

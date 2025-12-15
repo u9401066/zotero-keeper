@@ -12,3 +12,5 @@ vsc-extension-quickstart.md
 **/*.ts
 !out/**/*.js
 docs/**
+# Keep walkthrough resources
+!resources/**

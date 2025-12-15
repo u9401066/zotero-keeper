@@ -2,7 +2,7 @@
     "name": "vscode-zotero-mcp",
     "displayName": "Zotero + PubMed MCP",
     "description": "AI-powered research assistant - integrates Zotero reference management and PubMed literature search with GitHub Copilot",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "publisher": "u9401066",
     "license": "Apache-2.0",
     "icon": "resources/icon.png",
@@ -85,6 +85,11 @@
         },
         "commands": [
             {
+                "command": "zoteroMcp.setupWizard",
+                "title": "Zotero MCP: Setup Wizard",
+                "icon": "$(wand)"
+            },
+            {
                 "command": "zoteroMcp.checkConnection",
                 "title": "Zotero MCP: Check Zotero Connection"
             },
@@ -99,6 +104,63 @@
             {
                 "command": "zoteroMcp.openSettings",
                 "title": "Zotero MCP: Open Settings"
+            },
+            {
+                "command": "zoteroMcp.openZotero",
+                "title": "Zotero MCP: Open Zotero Application"
+            }
+        ],
+        "walkthroughs": [
+            {
+                "id": "zoteroMcp.welcome",
+                "title": "Get Started with Zotero + PubMed MCP",
+                "description": "Set up your AI-powered research assistant in just a few steps.",
+                "steps": [
+                    {
+                        "id": "python",
+                        "title": "Python Environment",
+                        "description": "The extension automatically detects Python 3.11+. If not found, you'll be prompted to install it.\n\n[Check Python Status](command:zoteroMcp.showStatus)",
+                        "media": {
+                            "markdown": "resources/walkthrough/python.md"
+                        },
+                        "completionEvents": ["onContext:zoteroMcp.pythonReady"]
+                    },
+                    {
+                        "id": "packages",
+                        "title": "Install Python Packages",
+                        "description": "Required packages (zotero-keeper, pubmed-search-mcp) will be installed automatically.\n\n[Install Now](command:zoteroMcp.installPackages)",
+                        "media": {
+                            "markdown": "resources/walkthrough/packages.md"
+                        },
+                        "completionEvents": ["onContext:zoteroMcp.packagesReady"]
+                    },
+                    {
+                        "id": "zotero",
+                        "title": "Connect to Zotero",
+                        "description": "Make sure Zotero 7 is running on your computer.\n\n[Check Connection](command:zoteroMcp.checkConnection)\n\n[Download Zotero](https://www.zotero.org/download/)",
+                        "media": {
+                            "markdown": "resources/walkthrough/zotero.md"
+                        },
+                        "completionEvents": ["onContext:zoteroMcp.zoteroConnected"]
+                    },
+                    {
+                        "id": "ncbi",
+                        "title": "Configure PubMed (Optional)",
+                        "description": "For high-volume PubMed searches, provide your email address.\n\n[Open Settings](command:workbench.action.openSettings?%22zoteroMcp.ncbiEmail%22)",
+                        "media": {
+                            "markdown": "resources/walkthrough/ncbi.md"
+                        },
+                        "completionEvents": ["onSettingChanged:zoteroMcp.ncbiEmail"]
+                    },
+                    {
+                        "id": "ready",
+                        "title": "You're All Set! 🎉",
+                        "description": "Try asking GitHub Copilot:\n\n• \"Search PubMed for diabetes treatment\"\n• \"Show my recent Zotero references\"\n• \"Save this article to Zotero\"\n\n[Open Copilot Chat](command:workbench.action.chat.open)",
+                        "media": {
+                            "markdown": "resources/walkthrough/ready.md"
+                        }
+                    }
+                ]
             }
         ]
     },
