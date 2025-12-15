@@ -33,9 +33,10 @@ const PYTHON_DOWNLOADS: Record<string, { url: string; extractedName: string }> =
 };
 
 // Required packages to install
+// Note: zotero-keeper must be uploaded to PyPI first!
 const REQUIRED_PACKAGES = [
-    'zotero-keeper[all]>=1.7.0',
-    'pubmed-search-mcp[mcp]>=0.1.8',
+    'zotero-keeper>=1.7.0',
+    'pubmed-search-mcp>=0.1.8',
 ];
 
 export class EmbeddedPythonManager {
@@ -44,6 +45,7 @@ export class EmbeddedPythonManager {
     private pythonDir: string;
     private pythonBinary: string;
     private _isReady: boolean = false;
+    private _setupInProgress: boolean = false;  // Prevent concurrent setup
 
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
@@ -157,8 +159,24 @@ export class EmbeddedPythonManager {
             return this.pythonBinary;
         }
 
-        // Need to set up - show progress
-        return vscode.window.withProgress(
+        // Prevent concurrent setup attempts
+        if (this._setupInProgress) {
+            this.log('Setup already in progress, waiting...');
+            // Wait for existing setup to complete
+            while (this._setupInProgress) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            if (this._isReady) {
+                return this.pythonBinary;
+            }
+            throw new Error('Concurrent setup failed');
+        }
+
+        this._setupInProgress = true;
+
+        try {
+            // Need to set up - show progress
+            return await vscode.window.withProgress(
             {
                 location: vscode.ProgressLocation.Notification,
                 title: 'Setting up Python environment',
@@ -173,6 +191,9 @@ export class EmbeddedPythonManager {
                 throw new Error('Failed to set up embedded Python');
             }
         );
+        } finally {
+            this._setupInProgress = false;
+        }
     }
 
     /**
@@ -314,11 +335,33 @@ export class EmbeddedPythonManager {
         
         this.log(`Extracting ${tarPath} to ${destDir}`);
         
-        // tar is available on Windows 10+, macOS, and Linux
-        execSync(`tar -xzf "${tarPath}" -C "${destDir}"`, { 
-            encoding: 'utf-8',
-            stdio: 'pipe'
-        });
+        if (process.platform === 'win32') {
+            // On Windows, use PowerShell's tar which handles paths better
+            // Or use the built-in tar with proper escaping
+            try {
+                // Try PowerShell first (more reliable on Windows)
+                execSync(
+                    `powershell -Command "tar -xzf '${tarPath.replace(/'/g, "''")}' -C '${destDir.replace(/'/g, "''")}'"`,
+                    { encoding: 'utf-8', stdio: 'pipe', timeout: 120000 }
+                );
+            } catch (psError) {
+                this.log(`PowerShell tar failed, trying cmd: ${psError}`);
+                // Fallback: use cmd with short paths if available
+                execSync(`tar -xzf "${tarPath}" -C "${destDir}"`, {
+                    encoding: 'utf-8',
+                    stdio: 'pipe',
+                    timeout: 120000,
+                    shell: 'cmd.exe'
+                });
+            }
+        } else {
+            // macOS and Linux
+            execSync(`tar -xzf "${tarPath}" -C "${destDir}"`, { 
+                encoding: 'utf-8',
+                stdio: 'pipe',
+                timeout: 120000
+            });
+        }
         
         this.log('Extraction complete');
     }
@@ -332,22 +375,20 @@ export class EmbeddedPythonManager {
         // Ensure pip is available
         try {
             this.log('Ensuring pip is available...');
-            execSync(`"${this.pythonBinary}" -m ensurepip --upgrade`, {
+            execSync(`"${this.pythonBinary}" -m ensurepip --default-pip`, {
                 encoding: 'utf-8',
-                stdio: 'pipe'
+                stdio: 'pipe',
+                timeout: 60000
             });
         } catch (e) {
             // pip might already be installed
             this.log(`ensurepip note: ${e}`);
         }
 
-        // Upgrade pip
-        this.log('Upgrading pip...');
-        onProgress?.('Upgrading pip...');
-        execSync(`"${this.pythonBinary}" -m pip install --upgrade pip`, {
-            encoding: 'utf-8',
-            stdio: 'pipe'
-        });
+        // Skip pip upgrade - it can cause issues with the bundled pip
+        // The bundled pip is functional enough for our needs
+        this.log('Using bundled pip (skipping upgrade to avoid conflicts)...');
+        onProgress?.('Preparing pip...');
 
         // Install packages one by one for better progress feedback
         for (const pkg of REQUIRED_PACKAGES) {
