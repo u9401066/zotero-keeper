@@ -1,75 +1,75 @@
-# Zotero Keeper
 
-# Python
-__pycache__/
-*.py[cod]
+*~
 *$py.class
-*.so
-.Python
 build/
+# Build artifacts
+*.cache
+.coverage
+coverage/
+desktop.ini
 develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual environments
-.venv/
-venv/
-ENV/
-env/
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-
-# Testing
-.coverage
-.pytest_cache/
-htmlcov/
-.tox/
-.nox/
-
-# Type checking
-.mypy_cache/
 .dmypy.json
 dmypy.json
-
-# Jupyter
-.ipynb_checkpoints/
-
-# OS
+downloads/
 .DS_Store
-Thumbs.db
-
-# Logs
+*.egg
+*.egg-info/
+.eggs/
+eggs/
+.env
+env/
+ENV/
+.env.*.local
+.env.local
+# From template
+htmlcov/
+# IDE
+.idea/
+.installed.cfg
+.ipynb_checkpoints/
+# Jupyter
+*.key
+lib/
+lib64/
+# Local configuration
+*.local.json
 *.log
 logs/
-
-# Build artifacts
-*.xpi
-
-# Zotero plugin (deprecated)
-zotero-plugin/
-
-# Local configuration
-.env
-.env.local
-*.local.json
-
-# Secrets
-secrets/
+# Logs
+.mypy_cache/
+node_modules/
+.nox/
+# OS
+parts/
 *.pem
-*.key
+*.pyc
+__pycache__/
+*.py[cod]
+.pytest_cache/
+# Python
+.Python
+sdist/
+secrets/
+# Secrets
+*.so
+*.sublime-*
+*.swo
+*.swp
+*.temp
+# Testing
+Thumbs.db
+*.tmp
+.tox/
+# Type checking
+var/
+vendor/
+.venv/
+venv/
+# Virtual environments
+.vscode/
+wheels/
+*.xpi
+# Zotero Keeper
+zotero-plugin/
+# Zotero plugin (deprecated)
