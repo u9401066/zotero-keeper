@@ -21,6 +21,7 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 
 from ..zotero_client.client import ZoteroClient, ZoteroConfig, ZoteroConnectionError
+from .analytics_tools import register_analytics_tools
 from .basic_read_tools import register_basic_read_tools
 from .batch_tools import is_batch_import_available, register_batch_tools
 from .collection_tools import register_collection_tools
@@ -117,6 +118,11 @@ class ZoteroKeeperServer:
             logger.info("Batch import enabled (batch_import_from_pubmed)")
         else:
             logger.info("Batch import disabled (pubmed-search submodule not available)")
+
+        # Register Analytics tools (library stats, orphan detection)
+        register_analytics_tools(self._mcp, self._zotero)
+        logger.info("Analytics tools enabled (get_library_stats, find_orphan_items)")
+
 
     def _register_connection_tool(self):
         """Register connection check tool"""

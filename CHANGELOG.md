@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.10.1] - 2025-12-16
+
+### 🚀 One-Click Install & Library Analytics
+
+This release improves user experience with one-click installation and library analytics tools.
+
+### Added
+
+- **One-Click Install Button** ⭐:
+  - Added `vscode:mcp/install` URL to README
+  - VS Code users can now install with a single click
+  - Also supports VS Code Insiders
+
+- **Library Analytics Tools** (analytics_tools.py):
+  - `get_library_stats`: Library statistics (year/author/journal distribution)
+  - `find_orphan_items`: Find items without collection or tags
+
+- **Quick Import Tool** (pubmed_tools.py):
+  - `quick_import_pmids`: Simplest way to import from PubMed
+  - Just provide PMIDs, optional collection and tags
+  - Uses best available method automatically
+
+### Changed
+
+- **Code Refactoring**:
+  - Split `server.py` (586 → 202 lines)
+  - New `basic_read_tools.py` (207 lines)
+  - New `collection_tools.py` (226 lines)
+  - Better maintainability following bylaws
+
+### Tool Count
+
+- Total tools: **25** (was 22)
+  - +2 analytics tools (get_library_stats, find_orphan_items)
+  - +1 quick import tool (quick_import_pmids)
+
+---
+
 ## [1.10.0] - 2025-12-15
 
 ### 🚀 PyPI Release & VS Code Extension v0.3.1

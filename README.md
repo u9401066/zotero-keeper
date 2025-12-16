@@ -13,6 +13,17 @@ Let AI manage your references! A MCP Server connecting VS Code Copilot / Claude 
 
 ---
 
+## 🚀 One-Click Install (VS Code)
+
+> **Prerequisites**: [Zotero 7](https://www.zotero.org/download/) must be running
+
+<a href="vscode:mcp/install?%7B%22name%22%3A%22zotero-keeper%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22zotero-keeper%22%5D%7D"><img src="https://img.shields.io/badge/VS%20Code-Install%20MCP%20Server-007ACC?style=for-the-badge&logo=visualstudiocode" alt="Install in VS Code"></a>
+<a href="vscode-insiders:mcp/install?%7B%22name%22%3A%22zotero-keeper%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22zotero-keeper%22%5D%7D"><img src="https://img.shields.io/badge/VS%20Code%20Insiders-Install%20MCP%20Server-24bfa5?style=for-the-badge&logo=visualstudiocode" alt="Install in VS Code Insiders"></a>
+
+> 💡 **Requires [uv](https://docs.astral.sh/uv/getting-started/installation/)** - Click installs automatically via `uvx zotero-keeper`
+
+---
+
 ## ✨ What is this?
 
 **Zotero Keeper** is a [MCP Server](https://modelcontextprotocol.io/) that lets your AI assistant:
@@ -110,7 +121,7 @@ Add to `claude_desktop_config.json`:
 
 ---
 
-## 🔧 Available Tools (22 Total)
+## 🔧 Available Tools (25 Total)
 
 > 💡 **Tip**: Most read operations can also be done via [MCP Resources](#-mcp-resources-browsable-data) without calling tools.
 
@@ -162,15 +173,23 @@ Add to `claude_desktop_config.json`:
 | `search_pubmed_exclude_owned` | Search PubMed, exclude owned | "Find CRISPR papers I don't have" |
 | `check_articles_owned` | Check if PMIDs exist in Zotero | "Do I have these PMIDs?" |
 
-### 📥 Import Tools (pubmed_tools.py - 2 tools, batch_tools.py - 1 tool)
+### 📥 Import Tools (pubmed_tools.py - 3 tools, batch_tools.py - 1 tool)
 
 > 📊 **RCR Default ON**: All PubMed import tools automatically fetch RCR by default
 
 | Tool | Description | Example |
 |------|-------------|--------|
+| `quick_import_pmids` ⭐ | Simplest one-step import | "Import these PMIDs" |
 | `import_ris_to_zotero` | Import RIS citations | "Import this RIS text" |
 | `import_from_pmids` | Import by PMID + auto RCR | "Import PMID 12345678" |
-| `batch_import_from_pubmed` ⭐ | Batch import + auto RCR | "Import PMIDs to 'AI Research'" |
+| `batch_import_from_pubmed` | Batch import + validation + RCR | "Import PMIDs to 'AI Research'" |
+
+### 📊 Analytics Tools (analytics_tools.py - 2 tools) ⭐ NEW!
+
+| Tool | Description | Example |
+|------|-------------|--------|
+| `get_library_stats` | Library statistics (year/author/journal) | "Show my library statistics" |
+| `find_orphan_items` | Find unorganized items | "Which papers need organizing?" |
 
 #### batch_import_from_pubmed v1.8.0+ Features
 

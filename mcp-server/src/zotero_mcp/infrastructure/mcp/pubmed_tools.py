@@ -425,7 +425,144 @@ def register_pubmed_tools(mcp, zotero_client):
                 "error": str(e),
             }
 
-    logger.info("PubMed import tools registered (import_ris_to_zotero, import_from_pmids)")
+    logger.info("PubMed import tools registered (import_ris_to_zotero, import_from_pmids, quick_import_pmids)")
+
+    @mcp.tool()
+    async def quick_import_pmids(
+        pmids: str,
+        collection_name: str | None = None,
+        tags: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """
+        ⚡ Quick import PMIDs to Zotero (one-step convenience tool)
+
+        一鍵匯入 PMIDs 到 Zotero - 最簡單的匯入方式！
+
+        This is the EASIEST way to import from PubMed:
+        - Just provide PMIDs, that's it!
+        - Automatically fetches complete metadata
+        - Optional: specify collection and tags
+
+        Compared to other import tools:
+        - `batch_import_from_pubmed`: More options, collection validation, RCR metrics
+        - `import_from_pmids`: Requires pubmed package, returns detailed result
+        - `quick_import_pmids`: Simplest, just works! ⭐
+
+        Args:
+            pmids: Comma-separated PMIDs (e.g., "38353755,37864754")
+            collection_name: Optional collection name to add items to
+            tags: Optional tags to add to all imported items
+
+        Returns:
+            Simple result with success/failure and count
+
+        Example:
+            quick_import_pmids(pmids="38353755,37864754")
+            → {"success": true, "imported": 2, "message": "..."}
+
+            quick_import_pmids(
+                pmids="38353755",
+                collection_name="AI Research",
+                tags=["review"]
+            )
+        """
+        try:
+            # Parse PMIDs
+            pmid_list = [p.strip() for p in pmids.split(",") if p.strip().isdigit()]
+
+            if not pmid_list:
+                return {
+                    "success": False,
+                    "error": "No valid PMIDs provided",
+                    "hint": "Provide comma-separated PMIDs, e.g., '38353755,37864754'",
+                }
+
+            # Try to use batch_import if available (better metadata)
+            from .batch_tools import is_batch_import_available
+            if is_batch_import_available():
+                from ..pubmed import fetch_pubmed_articles
+                from ..mappers.pubmed_mapper import map_pubmed_to_zotero
+
+                # Resolve collection key if name provided
+                collection_key = None
+                if collection_name:
+                    collections = await zotero_client.list_collections()
+                    for col in collections:
+                        if col.get("name", "").lower() == collection_name.lower():
+                            collection_key = col.get("key")
+                            break
+
+                # Fetch articles
+                articles = fetch_pubmed_articles(pmid_list)
+                if not articles:
+                    return {
+                        "success": False,
+                        "error": "No articles found for provided PMIDs",
+                    }
+
+                # Convert to Zotero format
+                collection_keys = [collection_key] if collection_key else None
+                zotero_items = [
+                    map_pubmed_to_zotero(article, extra_tags=tags, collection_keys=collection_keys)
+                    for article in articles
+                ]
+
+                # Save to Zotero
+                await zotero_client.batch_save_items(
+                    items=zotero_items,
+                    uri="http://mcp-bridge.local/quick-import-pmids",
+                    title="Quick PubMed Import",
+                )
+
+                return {
+                    "success": True,
+                    "imported": len(zotero_items),
+                    "pmids": pmid_list,
+                    "collection": collection_name if collection_key else None,
+                    "message": f"Successfully imported {len(zotero_items)} articles",
+                }
+
+            # Fallback to import_from_pmids if pubmed package available
+            elif PUBMED_AVAILABLE:
+                import os
+                email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
+                client = PubMedClient(email=email)
+                articles = client.fetch_details(pmid_list)
+
+                if not articles:
+                    return {
+                        "success": False,
+                        "error": "No articles found",
+                    }
+
+                zotero_items = [_pmid_to_zotero_item(a) for a in articles]
+                if tags:
+                    for item in zotero_items:
+                        item["tags"] = item.get("tags", []) + [{"tag": t} for t in tags]
+
+                await zotero_client.save_items(zotero_items)
+
+                return {
+                    "success": True,
+                    "imported": len(zotero_items),
+                    "pmids": pmid_list,
+                    "message": f"Successfully imported {len(zotero_items)} articles",
+                }
+
+            else:
+                return {
+                    "success": False,
+                    "error": "PubMed integration not available",
+                    "hint": "Install with: pip install 'zotero-keeper[pubmed]'",
+                    "alternative": "Use import_ris_to_zotero with RIS text",
+                }
+
+        except Exception as e:
+            logger.error(f"Quick import failed: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+            }
 
 
 def is_pubmed_available() -> bool:
