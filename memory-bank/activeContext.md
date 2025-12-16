@@ -1,36 +1,62 @@
 # Active Context
 
-> 🎯 當前工作焦點和待辦事項
+> 🎯 目前工作焦點與下一步行動
 
-## 當前焦點
+## 當前狀態: 專案整理完成 ✅
 
-**P1: PMID 持久化機制** - 解決 Agent 記憶滿載問題
+已根據 CONSTITUTION.md 和 bylaws 完成以下工作：
 
-## 最近完成
+### 已完成 (2025-12-16)
+1. ✅ 更新 `systemPatterns.md` - 記錄 DDD 分層架構
+2. ✅ 更新 `architect.md` - 記錄架構狀態和待重構清單
+3. ✅ 更新 `progress.md` - 追蹤完成和待辦事項
+4. ✅ 更新 `decisionLog.md` - 記錄重要決策
+5. ✅ 分析程式碼行數 - 識別 6 個超過 400 行的檔案
 
-- ✅ P0: 修復搜尋數量回報問題 (discovery.py)
-- ✅ P1a: Session 工具實作
-  - `get_session_pmids`
-  - `list_search_history`
-  - `get_cached_article`
-  - `get_session_summary`
-- ✅ VS Code Extension v0.3.1 發布到 Marketplace
+### 識別的問題
+| 檔案 | 行數 | 違反 |
+|------|------|------|
+| `interactive_tools.py` | 816 | bylaws/ddd-architecture.md 第 3 條 |
+| `client.py` | 618 | bylaws/ddd-architecture.md 第 3 條 |
+| `search_tools.py` | 604 | bylaws/ddd-architecture.md 第 3 條 |
+| `server.py` | 586 | bylaws/ddd-architecture.md 第 3 條 |
+| `batch_tools.py` | 469 | bylaws/ddd-architecture.md 第 3 條 |
+| `pubmed_tools.py` | 433 | bylaws/ddd-architecture.md 第 3 條 |
 
-## 進行中
+---
 
-- 🔄 P1b: PubMed → Zotero 直送機制
-- 🔄 整合 template-is-all-you-need 結構
+## 下一步選項
 
-## 待處理
+### Option A: 繼續重構 (Nice-to-have)
+拆分超過 400 行的檔案，符合 bylaws 規範
 
-- P2: Collection 選擇流程
-- P2: 摘要優先從 Zotero 讀取
-- P3: 全文連結自動檢索
+### Option B: 實作 P1b (功能導向)
+實作 PubMed → Zotero RIS 直接匯入
 
-## 相關文件
+### Option C: 實作 P2 (使用者體驗)
+改進 Collection 選擇流程
 
-- [ARCHITECTURE_IMPROVEMENTS.md](../docs/ARCHITECTURE_IMPROVEMENTS.md) - 改進方案
-- [ROADMAP.md](../ROADMAP.md) - 功能規劃
+---
+
+## 待確認
+- [ ] 是否立即開始拆分大檔案？
+- [ ] 還是先處理功能需求 (P1b/P2)？
+
+---
+
+## 快速指令
+
+```bash
+# 查看超過 200 行的檔案
+find mcp-server/src -name "*.py" -exec wc -l {} \; | awk '$1>200'
+
+# 執行測試
+cd mcp-server && uv run pytest -v
+
+# 啟動 MCP Server
+cd mcp-server && uv run zotero-mcp
+```
 
 ---
 *Updated: 2025-12-16*
+*工作模式: Architect*
