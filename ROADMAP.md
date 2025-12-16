@@ -125,7 +125,24 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
   - ✅ Detailed technical limitations explanation
   - ✅ One-click installation roadmap section
 
-### v1.10.0 (December 2024) - Current ⭐
+### v1.10.1 (December 2024) - Current ⭐
+
+- ✅ **One-Click Installation**
+  - ✅ `vscode:mcp/install` URL button in README
+  - ✅ One-click install for VS Code and VS Code Insiders
+
+- ✅ **Library Analytics** ⭐
+  - ✅ `get_library_stats`: Year/author/journal distribution
+  - ✅ `find_orphan_items`: Find unorganized items
+
+- ✅ **Quick Import**
+  - ✅ `quick_import_pmids`: Simplest PubMed import method
+
+- ✅ **Code Refactoring**
+  - ✅ Split `server.py` (586 → 202 lines)
+  - ✅ New `basic_read_tools.py` and `collection_tools.py`
+
+### v1.10.0 (December 2024)
 
 - ✅ **PyPI Publication**
   - ✅ `zotero-keeper` available on PyPI
@@ -508,8 +525,9 @@ if (items?.length > 0) {
 | v1.6.0  | 27 | + PubMed + Saved Search |
 | v1.7.0 | 21 | Simplification |
 | v1.8.0 | 21 | Collection 防呆 + RCR |
-| **v1.10.0** | **22** | **PyPI + VS Code Extension v0.3.1 (current)** |
-| v1.9.0  | ~26 | + Library Analytics (stats, orphans, duplicates) |
+| v1.10.0 | 22 | PyPI + VS Code Extension v0.3.1 |
+| **v1.10.1** | **25** | **One-click install + Analytics tools (current)** |
+| v1.11.0  | ~28 | + More Analytics (duplicates, citations) |
 | v2.0.0  | ~32 | + Citation Analysis + Smart Suggestions |
 | v2.1.0  | ~36 | + Report Generation |
 
@@ -538,4 +556,4 @@ Priority considerations:
 
 ---
 
-*Last updated: December 15, 2024 (v1.10.0)*
+*Last updated: December 16, 2024 (v1.10.1)*
