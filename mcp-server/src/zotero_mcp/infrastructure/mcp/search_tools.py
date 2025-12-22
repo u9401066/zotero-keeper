@@ -149,8 +149,17 @@ def register_search_tools(mcp, zotero_client):
 
         搜尋 PubMed 並排除已存在於 Zotero 的文獻
 
+        ⭐ RECOMMENDED WORKFLOW:
+        1. Use this tool to find NEW articles
+        2. Review results with user
+        3. ❗ ASK user which Collection to save to (use list_collections first)
+        4. Use quick_import_pmids or batch_import_from_pubmed to import
+
+        💡 TIP: Use get_session_pmids from pubmed-search-mcp to retrieve
+        previously searched PMIDs instead of searching again!
+
         Args:
-            query: PubMed search query
+            query: PubMed search query (supports MeSH, Boolean)
             limit: Maximum NEW articles to return
             min_year/max_year: Publication year range
             date_from/date_to: Date range (YYYY/MM/DD)
@@ -161,6 +170,7 @@ def register_search_tools(mcp, zotero_client):
 
         Returns:
             New articles not in Zotero with PMIDs for easy import
+            - new_pmids: Ready for import with quick_import_pmids
         """
         try:
             email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")

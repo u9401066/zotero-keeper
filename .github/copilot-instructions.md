@@ -12,6 +12,7 @@
 你必須遵守以下法規層級：
 1. **憲法**：`CONSTITUTION.md` - 最高原則
 2. **子法**：`.github/bylaws/*.md` - 細則規範
+3. **技能**：`.claude/skills/*/SKILL.md` - 操作程序
 
 ## 架構原則
 - 採用 DDD (Domain-Driven Design)

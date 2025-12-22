@@ -2,26 +2,23 @@
 
 > 🎯 目前工作焦點與下一步行動
 
-## 當前狀態: 專案整理完成 ✅
+## 當前狀態: Template 整合 + Skills 強化完成 ✅
 
-已根據 CONSTITUTION.md 和 bylaws 完成以下工作：
-
-### 已完成 (2025-12-16)
-1. ✅ 更新 `systemPatterns.md` - 記錄 DDD 分層架構
-2. ✅ 更新 `architect.md` - 記錄架構狀態和待重構清單
-3. ✅ 更新 `progress.md` - 追蹤完成和待辦事項
-4. ✅ 更新 `decisionLog.md` - 記錄重要決策
-5. ✅ 分析程式碼行數 - 識別 6 個超過 400 行的檔案
-
-### 識別的問題
-| 檔案 | 行數 | 違反 |
-|------|------|------|
-| `interactive_tools.py` | 816 | bylaws/ddd-architecture.md 第 3 條 |
-| `client.py` | 618 | bylaws/ddd-architecture.md 第 3 條 |
-| `search_tools.py` | 604 | bylaws/ddd-architecture.md 第 3 條 |
-| `server.py` | 586 | bylaws/ddd-architecture.md 第 3 條 |
-| `batch_tools.py` | 469 | bylaws/ddd-architecture.md 第 3 條 |
-| `pubmed_tools.py` | 433 | bylaws/ddd-architecture.md 第 3 條 |
+### 已完成 (2025-12-22)
+1. ✅ 導入 template-is-all-you-need 的 13 個 Skills
+2. ✅ 強化 MCP tool descriptions（方案 1）
+   - `search_pubmed_exclude_owned`: 加入完整 workflow
+   - `quick_import_pmids`: 強調先問 Collection
+   - `list_collections`: 標註匯入前必須先用
+   - `get_session_pmids`: 避免重複搜尋指南
+3. ✅ Extension 打包 Skills（方案 3）
+   - `resources/skills/copilot-instructions.md`
+   - `resources/skills/research-workflow.md`
+   - 新命令 `zoteroMcp.installSkills`
+4. ✅ 合併上一層 memory-bank 和研究文件
+5. ✅ 更新子模組 pubmed-search-mcp (v0.1.16)
+   - Session Tools
+   - Multi-source Search (Semantic Scholar, OpenAlex)
 
 ---
 
@@ -33,14 +30,8 @@
 ### Option B: 實作 P1b (功能導向)
 實作 PubMed → Zotero RIS 直接匯入
 
-### Option C: 實作 P2 (使用者體驗)
-改進 Collection 選擇流程
-
----
-
-## 待確認
-- [ ] 是否立即開始拆分大檔案？
-- [ ] 還是先處理功能需求 (P1b/P2)？
+### Option C: Extension 發布
+發布 VS Code Extension v0.4.0 包含 Skills 功能
 
 ---
 
@@ -53,10 +44,10 @@ find mcp-server/src -name "*.py" -exec wc -l {} \; | awk '$1>200'
 # 執行測試
 cd mcp-server && uv run pytest -v
 
-# 啟動 MCP Server
-cd mcp-server && uv run zotero-mcp
+# 打包 Extension
+cd vscode-extension && npm run package
 ```
 
 ---
-*Updated: 2025-12-16*
-*工作模式: Architect*
+*Updated: 2025-12-22*
+*工作模式: Code*

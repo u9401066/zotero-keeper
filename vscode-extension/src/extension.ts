@@ -8,6 +8,8 @@
  */
 
 import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
 import { PythonEnvironment } from './pythonEnvironment';
 import { UvPythonManager } from './uvPythonManager';
 import { ZoteroMcpServerProvider } from './mcpProvider';
@@ -27,6 +29,7 @@ const CONTEXT_PYTHON_READY = 'zoteroMcp.pythonReady';
 const CONTEXT_PACKAGES_READY = 'zoteroMcp.packagesReady';
 const CONTEXT_ZOTERO_CONNECTED = 'zoteroMcp.zoteroConnected';
 const FIRST_ACTIVATION_KEY = 'zoteroMcp.firstActivation';
+const SKILLS_INSTALLED_KEY = 'zoteroMcp.skillsInstalled';
 
 /**
  * Extension activation
@@ -81,7 +84,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         // Step 4: Check Zotero connection (non-blocking)
         checkAndUpdateZoteroStatus();
 
-        // Step 5: Update status
+        // Step 5: Install Copilot skills/instructions if needed
+        await installCopilotInstructions(context);
+
+        // Step 6: Update status
         statusBar.setStatus('ready', 'Zotero MCP: Ready');
         
         // Show walkthrough on first activation
@@ -215,6 +221,73 @@ async function checkAndUpdateZoteroStatus(): Promise<boolean> {
 }
 
 /**
+ * Install Copilot instructions and skills to workspace (if not already installed)
+ */
+async function installCopilotInstructions(context: vscode.ExtensionContext): Promise<void> {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) {
+        return; // No workspace open
+    }
+    
+    const githubDir = path.join(workspaceFolder.uri.fsPath, '.github');
+    const instructionsPath = path.join(githubDir, 'copilot-instructions.md');
+    
+    // Check if instructions already exist
+    if (fs.existsSync(instructionsPath)) {
+        // Check if it's our instructions (look for our marker)
+        const content = fs.readFileSync(instructionsPath, 'utf-8');
+        if (content.includes('Zotero + PubMed MCP')) {
+            return; // Already installed
+        }
+        
+        // User has their own instructions, don't overwrite
+        // But offer to add our guide as a separate file
+        const choice = await vscode.window.showInformationMessage(
+            'Would you like to add Zotero+PubMed research workflow guide to help Copilot?',
+            'Yes', 'No'
+        );
+        
+        if (choice !== 'Yes') {
+            return;
+        }
+    }
+    
+    try {
+        // Create .github directory if it doesn't exist
+        if (!fs.existsSync(githubDir)) {
+            fs.mkdirSync(githubDir, { recursive: true });
+        }
+        
+        // Copy instructions from extension resources
+        const extensionPath = context.extensionPath;
+        const sourceInstructions = path.join(extensionPath, 'resources', 'skills', 'copilot-instructions.md');
+        const sourceWorkflow = path.join(extensionPath, 'resources', 'skills', 'research-workflow.md');
+        
+        // If our copilot-instructions.md exists in resources, copy it
+        if (fs.existsSync(sourceInstructions)) {
+            // If user has no instructions, create the main file
+            if (!fs.existsSync(instructionsPath)) {
+                fs.copyFileSync(sourceInstructions, instructionsPath);
+                console.log('Installed Copilot instructions');
+            }
+        }
+        
+        // Copy research workflow guide as additional reference
+        const workflowDest = path.join(githubDir, 'zotero-research-workflow.md');
+        if (fs.existsSync(sourceWorkflow) && !fs.existsSync(workflowDest)) {
+            fs.copyFileSync(sourceWorkflow, workflowDest);
+            console.log('Installed research workflow guide');
+        }
+        
+        // Mark as installed in global state
+        context.globalState.update(SKILLS_INSTALLED_KEY, true);
+        
+    } catch (error) {
+        console.error('Failed to install Copilot instructions:', error);
+    }
+}
+
+/**
  * Register extension commands
  */
 function registerCommands(context: vscode.ExtensionContext): void {
@@ -318,6 +391,64 @@ function registerCommands(context: vscode.ExtensionContext): void {
                     statusBar.setStatus('error', 'Zotero MCP: Reinstall failed');
                     vscode.window.showErrorMessage(`Failed to reinstall: ${error}`);
                 }
+            }
+        })
+    );
+
+    // Install/Update Copilot Skills
+    context.subscriptions.push(
+        vscode.commands.registerCommand('zoteroMcp.installSkills', async () => {
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+            if (!workspaceFolder) {
+                vscode.window.showWarningMessage('Please open a workspace folder first.');
+                return;
+            }
+            
+            const githubDir = path.join(workspaceFolder.uri.fsPath, '.github');
+            const instructionsPath = path.join(githubDir, 'copilot-instructions.md');
+            const workflowPath = path.join(githubDir, 'zotero-research-workflow.md');
+            
+            // Create .github directory
+            if (!fs.existsSync(githubDir)) {
+                fs.mkdirSync(githubDir, { recursive: true });
+            }
+            
+            const extensionPath = context.extensionPath;
+            const sourceInstructions = path.join(extensionPath, 'resources', 'skills', 'copilot-instructions.md');
+            const sourceWorkflow = path.join(extensionPath, 'resources', 'skills', 'research-workflow.md');
+            
+            let installed = 0;
+            
+            // Check if user wants to overwrite
+            if (fs.existsSync(instructionsPath)) {
+                const choice = await vscode.window.showWarningMessage(
+                    'copilot-instructions.md already exists. Overwrite?',
+                    'Overwrite', 'Skip', 'Cancel'
+                );
+                if (choice === 'Cancel') {
+                    return;
+                }
+                if (choice === 'Overwrite' && fs.existsSync(sourceInstructions)) {
+                    fs.copyFileSync(sourceInstructions, instructionsPath);
+                    installed++;
+                }
+            } else if (fs.existsSync(sourceInstructions)) {
+                fs.copyFileSync(sourceInstructions, instructionsPath);
+                installed++;
+            }
+            
+            // Install workflow guide
+            if (fs.existsSync(sourceWorkflow)) {
+                fs.copyFileSync(sourceWorkflow, workflowPath);
+                installed++;
+            }
+            
+            if (installed > 0) {
+                vscode.window.showInformationMessage(
+                    `✅ Installed ${installed} Copilot skill file(s). Copilot will now better understand how to use research tools!`
+                );
+            } else {
+                vscode.window.showInformationMessage('No files installed.');
             }
         })
     );

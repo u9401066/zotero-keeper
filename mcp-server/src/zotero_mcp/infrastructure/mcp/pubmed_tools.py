@@ -438,14 +438,24 @@ def register_pubmed_tools(mcp, zotero_client):
 
         一鍵匯入 PMIDs 到 Zotero - 最簡單的匯入方式！
 
-        This is the EASIEST way to import from PubMed:
-        - Just provide PMIDs, that's it!
+        ⭐ THIS IS THE EASIEST WAY TO IMPORT FROM PUBMED:
+        - Just provide PMIDs (from search results or get_session_pmids)
         - Automatically fetches complete metadata
         - Optional: specify collection and tags
 
+        ❗ IMPORTANT WORKFLOW:
+        1. BEFORE importing, ask user which Collection to save to
+        2. Use list_collections to show available collections
+        3. Then call this tool with collection_name parameter
+
+        💡 GET PMIDs FROM:
+        - search_pubmed_exclude_owned → new_pmids field
+        - pubmed-search-mcp's get_session_pmids tool
+        - Direct user input
+
         Compared to other import tools:
         - `batch_import_from_pubmed`: More options, collection validation, RCR metrics
-        - `import_from_pmids`: Requires pubmed package, returns detailed result
+        - `import_from_pmids`: Returns detailed result with citation metrics
         - `quick_import_pmids`: Simplest, just works! ⭐
 
         Args:

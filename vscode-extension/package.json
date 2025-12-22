@@ -117,6 +117,10 @@
                 "title": "Zotero MCP: Reinstall Embedded Python"
             },
             {
+                "command": "zoteroMcp.installSkills",
+                "title": "Zotero MCP: Install Copilot Research Skills"
+            },
+            {
                 "command": "zoteroMcp.showStatus",
                 "title": "Zotero MCP: Show Status"
             },

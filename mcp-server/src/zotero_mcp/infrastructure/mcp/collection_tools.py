@@ -29,9 +29,18 @@ def register_collection_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
     @mcp.tool()
     async def list_collections() -> dict[str, Any]:
         """
-        📁 List all collections
+        📁 List all collections in Zotero library
 
         列出所有收藏夾
+
+        ⭐ IMPORTANT: Use this tool BEFORE importing articles!
+        Show the user available collections so they can choose where to save.
+
+        💡 WORKFLOW:
+        1. Search articles (search_pubmed_exclude_owned)
+        2. Call list_collections to show options
+        3. Ask user: "Which collection should I save these to?"
+        4. Import with collection_name parameter
 
         Returns:
             List of collections with item counts

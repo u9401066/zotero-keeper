@@ -1,0 +1,1652 @@
+TY  - JOUR
+T1  - Artificial Intelligence in Operating Room Management.
+TI  - Artificial Intelligence in Operating Room Management.
+AU  - Bellini, Valentina
+A1  - Bellini, Valentina
+AU  - Russo, Michele
+A1  - Russo, Michele
+AU  - Domenichetti, Tania
+A1  - Domenichetti, Tania
+AU  - Panizzi, Matteo
+A1  - Panizzi, Matteo
+AU  - Allai, Simone
+A1  - Allai, Simone
+AU  - Bignami, Elena Giovanna
+A1  - Bignami, Elena Giovanna
+JO  - Journal of medical systems
+JF  - Journal of medical systems
+T2  - Journal of medical systems
+JA  - J Med Syst
+J2  - J Med Syst
+SN  - 1573-689X
+PY  - 2024
+Y1  - 2024
+DA  - 2024/Feb/14
+VL  - 48
+IS  - 1
+SP  - 19
+AN  - 38353755
+C1  - PMID: 38353755
+ID  - 38353755
+DO  - 10.1007/s10916-024-02038-2
+C2  - PMC10867065
+LA  - eng
+M3  - Journal Article
+M3  - Systematic Review
+AB  - This systematic review examines the recent use of artificial intelligence, particularly machine learning, in the management of operating rooms. A total of 22 selected studies from February 2019 to September 2023 are analyzed. The review emphasizes the significant impact of AI on predicting surgical case durations, optimizing post-anesthesia care unit resource allocation, and detecting surgical case cancellations. Machine learning algorithms such as XGBoost, random forest, and neural networks have demonstrated their effectiveness in improving prediction accuracy and resource utilization. However, challenges such as data access and privacy concerns are acknowledged. The review highlights the evolving nature of artificial intelligence in perioperative medicine research and the need for continued innovation to harness artificial intelligence's transformative potential for healthcare administrators, practitioners, and patients. Ultimately, artificial intelligence integration in operative room management promises to enhance healthcare efficiency and patient outcomes.
+N2  - This systematic review examines the recent use of artificial intelligence, particularly machine learning, in the management of operating rooms. A total of 22 selected studies from February 2019 to September 2023 are analyzed. The review emphasizes the significant impact of AI on predicting surgical case durations, optimizing post-anesthesia care unit resource allocation, and detecting surgical case cancellations. Machine learning algorithms such as XGBoost, random forest, and neural networks have demonstrated their effectiveness in improving prediction accuracy and resource utilization. However, challenges such as data access and privacy concerns are acknowledged. The review highlights the evolving nature of artificial intelligence in perioperative medicine research and the need for continued innovation to harness artificial intelligence's transformative potential for healthcare administrators, practitioners, and patients. Ultimately, artificial intelligence integration in operative room management promises to enhance healthcare efficiency and patient outcomes.
+KW  - Artificial intelligence
+KW  - Machine learning
+KW  - Management
+KW  - Operating room
+KW  - Perioperative
+KW  - Humans
+KW  - Efficiency, Organizational
+KW  - Machine Learning
+KW  - Operating Rooms
+UR  - https://pubmed.ncbi.nlm.nih.gov/38353755/
+L2  - https://doi.org/10.1007/s10916-024-02038-2
+L1  - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10867065/pdf/
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Artificial intelligence and its clinical application in Anesthesiology: a systematic review.
+TI  - Artificial intelligence and its clinical application in Anesthesiology: a systematic review.
+AU  - Lopes, Sara
+A1  - Lopes, Sara
+AU  - Rocha, Gonçalo
+A1  - Rocha, Gonçalo
+AU  - Guimarães-Pereira, Luís
+A1  - Guimarães-Pereira, Luís
+JO  - Journal of clinical monitoring and computing
+JF  - Journal of clinical monitoring and computing
+T2  - Journal of clinical monitoring and computing
+JA  - J Clin Monit Comput
+J2  - J Clin Monit Comput
+SN  - 1573-2614
+PY  - 2024
+Y1  - 2024
+DA  - 2024/Apr
+VL  - 38
+IS  - 2
+SP  - 247-259
+EP  - 259
+AN  - 37864754
+C1  - PMID: 37864754
+ID  - 37864754
+DO  - 10.1007/s10877-023-01088-0
+C2  - PMC10995017
+LA  - eng
+M3  - Systematic Review
+M3  - Journal Article
+AB  - Application of artificial intelligence (AI) in medicine is quickly expanding. Despite the amount of evidence and promising results, a thorough overview of the current state of AI in clinical practice of anesthesiology is needed. Therefore, our study aims to systematically review the application of AI in this context. A systematic review was conducted according to the Preferred Reporting Items for Systematic Reviews and Meta-Analyses (PRISMA) guidelines. We searched Medline and Web of Science for articles published up to November 2022 using terms related with AI and clinical practice of anesthesiology. Articles that involved animals, editorials, reviews and sample size lower than 10 patients were excluded. Characteristics and accuracy measures from each study were extracted. A total of 46 articles were included in this review. We have grouped them into 4 categories with regard to their clinical applicability: (1) Depth of Anesthesia Monitoring; (2) Image-guided techniques related to Anesthesia; (3) Prediction of events/risks related to Anesthesia; (4) Drug administration control. Each group was analyzed, and the main findings were summarized. Across all fields, the majority of AI methods tested showed superior performance results compared to traditional methods. AI systems are being integrated into anesthesiology clinical practice, enhancing medical professionals' skills of decision-making, diagnostic accuracy, and therapeutic response.
+N2  - Application of artificial intelligence (AI) in medicine is quickly expanding. Despite the amount of evidence and promising results, a thorough overview of the current state of AI in clinical practice of anesthesiology is needed. Therefore, our study aims to systematically review the application of AI in this context. A systematic review was conducted according to the Preferred Reporting Items for Systematic Reviews and Meta-Analyses (PRISMA) guidelines. We searched Medline and Web of Science for articles published up to November 2022 using terms related with AI and clinical practice of anesthesiology. Articles that involved animals, editorials, reviews and sample size lower than 10 patients were excluded. Characteristics and accuracy measures from each study were extracted. A total of 46 articles were included in this review. We have grouped them into 4 categories with regard to their clinical applicability: (1) Depth of Anesthesia Monitoring; (2) Image-guided techniques related to Anesthesia; (3) Prediction of events/risks related to Anesthesia; (4) Drug administration control. Each group was analyzed, and the main findings were summarized. Across all fields, the majority of AI methods tested showed superior performance results compared to traditional methods. AI systems are being integrated into anesthesiology clinical practice, enhancing medical professionals' skills of decision-making, diagnostic accuracy, and therapeutic response.
+KW  - Anesthesiology
+KW  - Artificial Intelligence
+KW  - Deep learning
+KW  - Neural networks
+KW  - Artificial Intelligence
+KW  - Humans
+KW  - Anesthesiology
+KW  - Anesthesia
+KW  - Monitoring, Intraoperative
+KW  - Machine Learning
+KW  - Algorithms
+UR  - https://pubmed.ncbi.nlm.nih.gov/37864754/
+L2  - https://doi.org/10.1007/s10877-023-01088-0
+L1  - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10995017/pdf/
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Mechanical Ventilation, Past, Present, and Future.
+TI  - Mechanical Ventilation, Past, Present, and Future.
+AU  - Rubulotta, Francesca
+A1  - Rubulotta, Francesca
+AU  - Blanch, Torra Lluis
+A1  - Blanch, Torra Lluis
+AU  - Naidoo, Kuban D
+A1  - Naidoo, Kuban D
+AU  - Aboumarie, Hatem Soliman
+A1  - Aboumarie, Hatem Soliman
+AU  - Mathivha, Lufuno R
+A1  - Mathivha, Lufuno R
+AU  - Asiri, Abdulrahman Y
+A1  - Asiri, Abdulrahman Y
+AU  - Sarlabous, Uranga Leonardo
+A1  - Sarlabous, Uranga Leonardo
+AU  - Soussi, Sabri
+A1  - Soussi, Sabri
+JO  - Anesthesia and analgesia
+JF  - Anesthesia and analgesia
+T2  - Anesthesia and analgesia
+JA  - Anesth Analg
+J2  - Anesth Analg
+SN  - 1526-7598
+PY  - 2024
+Y1  - 2024
+DA  - 2024/Feb/01
+VL  - 138
+IS  - 2
+SP  - 308-325
+EP  - 325
+AN  - 38215710
+C1  - PMID: 38215710
+ID  - 38215710
+DO  - 10.1213/ANE.0000000000006701
+LA  - eng
+M3  - Journal Article
+AB  - Mechanical ventilation (MV) has played a crucial role in the medical field, particularly in anesthesia and in critical care medicine (CCM) settings. MV has evolved significantly since its inception over 70 years ago and the future promises even more advanced technology. In the past, ventilation was provided manually, intermittently, and it was primarily used for resuscitation or as a last resort for patients with severe respiratory or cardiovascular failure. The earliest MV machines for prolonged ventilatory support and oxygenation were large and cumbersome. They required a significant amount of skills and expertise to operate. These early devices had limited capabilities, battery, power, safety features, alarms, and therefore these often caused harm to patients. Moreover, the physiology of MV was modified when mechanical ventilators moved from negative pressure to positive pressure mechanisms. Monitoring systems were also very limited and therefore the risks related to MV support were difficult to quantify, predict and timely detect for individual patients who were necessarily young with few comorbidities. Technology and devices designed to use tracheostomies versus endotracheal intubation evolved in the last century too and these are currently much more reliable. In the present, positive pressure MV is more sophisticated and widely used for extensive period of time. Modern ventilators use mostly positive pressure systems and are much smaller, more portable than their predecessors, and they are much easier to operate. They can also be programmed to provide different levels of support based on evolving physiological concepts allowing lung-protective ventilation. Monitoring systems are more sophisticated and knowledge related to the physiology of MV is improved. Patients are also more complex and elderly compared to the past. MV experts are informed about risks related to prolonged or aggressive ventilation modalities and settings. One of the most significant advances in MV has been protective lung ventilation, diaphragm protective ventilation including noninvasive ventilation (NIV). Health care professionals are familiar with the use of MV and in many countries, respiratory therapists have been trained for the exclusive purpose of providing safe and professional respiratory support to critically ill patients. Analgo-sedation drugs and techniques are improved, and more sedative drugs are available and this has an impact on recovery, weaning, and overall patients' outcome. Looking toward the future, MV is likely to continue to evolve and improve alongside monitoring techniques and sedatives. There is increasing precision in monitoring global "patient-ventilator" interactions: structure and analysis (asynchrony, desynchrony, etc). One area of development is the use of artificial intelligence (AI) in ventilator technology. AI can be used to monitor patients in real-time, and it can predict when a patient is likely to experience respiratory distress. This allows medical professionals to intervene before a crisis occurs, improving patient outcomes and reducing the need for emergency intervention. This specific area of development is intended as "personalized ventilation." It involves tailoring the ventilator settings to the individual patient, based on their physiology and the specific condition they are being treated for. This approach has the potential to improve patient outcomes by optimizing ventilation and reducing the risk of harm. In conclusion, MV has come a long way since its inception, and it continues to play a critical role in anesthesia and in CCM settings. Advances in technology have made MV safer, more effective, affordable, and more widely available. As technology continues to improve, more advanced and personalized MV will become available, leading to better patients' outcomes and quality of life for those in need.
+N2  - Mechanical ventilation (MV) has played a crucial role in the medical field, particularly in anesthesia and in critical care medicine (CCM) settings. MV has evolved significantly since its inception over 70 years ago and the future promises even more advanced technology. In the past, ventilation was provided manually, intermittently, and it was primarily used for resuscitation or as a last resort for patients with severe respiratory or cardiovascular failure. The earliest MV machines for prolonged ventilatory support and oxygenation were large and cumbersome. They required a significant amount of skills and expertise to operate. These early devices had limited capabilities, battery, power, safety features, alarms, and therefore these often caused harm to patients. Moreover, the physiology of MV was modified when mechanical ventilators moved from negative pressure to positive pressure mechanisms. Monitoring systems were also very limited and therefore the risks related to MV support were difficult to quantify, predict and timely detect for individual patients who were necessarily young with few comorbidities. Technology and devices designed to use tracheostomies versus endotracheal intubation evolved in the last century too and these are currently much more reliable. In the present, positive pressure MV is more sophisticated and widely used for extensive period of time. Modern ventilators use mostly positive pressure systems and are much smaller, more portable than their predecessors, and they are much easier to operate. They can also be programmed to provide different levels of support based on evolving physiological concepts allowing lung-protective ventilation. Monitoring systems are more sophisticated and knowledge related to the physiology of MV is improved. Patients are also more complex and elderly compared to the past. MV experts are informed about risks related to prolonged or aggressive ventilation modalities and settings. One of the most significant advances in MV has been protective lung ventilation, diaphragm protective ventilation including noninvasive ventilation (NIV). Health care professionals are familiar with the use of MV and in many countries, respiratory therapists have been trained for the exclusive purpose of providing safe and professional respiratory support to critically ill patients. Analgo-sedation drugs and techniques are improved, and more sedative drugs are available and this has an impact on recovery, weaning, and overall patients' outcome. Looking toward the future, MV is likely to continue to evolve and improve alongside monitoring techniques and sedatives. There is increasing precision in monitoring global "patient-ventilator" interactions: structure and analysis (asynchrony, desynchrony, etc). One area of development is the use of artificial intelligence (AI) in ventilator technology. AI can be used to monitor patients in real-time, and it can predict when a patient is likely to experience respiratory distress. This allows medical professionals to intervene before a crisis occurs, improving patient outcomes and reducing the need for emergency intervention. This specific area of development is intended as "personalized ventilation." It involves tailoring the ventilator settings to the individual patient, based on their physiology and the specific condition they are being treated for. This approach has the potential to improve patient outcomes by optimizing ventilation and reducing the risk of harm. In conclusion, MV has come a long way since its inception, and it continues to play a critical role in anesthesia and in CCM settings. Advances in technology have made MV safer, more effective, affordable, and more widely available. As technology continues to improve, more advanced and personalized MV will become available, leading to better patients' outcomes and quality of life for those in need.
+KW  - Humans
+KW  - Aged
+KW  - Respiration, Artificial
+KW  - Ventilator Weaning
+KW  - Artificial Intelligence
+KW  - Quality of Life
+KW  - Positive-Pressure Respiration
+UR  - https://pubmed.ncbi.nlm.nih.gov/38215710/
+L2  - https://doi.org/10.1213/ANE.0000000000006701
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - The Current Use of Artificial Intelligence in Anesthesiology.
+TI  - The Current Use of Artificial Intelligence in Anesthesiology.
+AU  - Feldheim, Timothy V
+A1  - Feldheim, Timothy V
+AU  - Brennan, Meghan
+A1  - Brennan, Meghan
+AU  - Tighe, Patrick
+A1  - Tighe, Patrick
+JO  - Advances in anesthesia
+JF  - Advances in anesthesia
+T2  - Advances in anesthesia
+JA  - Adv Anesth
+J2  - Adv Anesth
+SN  - 1878-0415
+PY  - 2025
+Y1  - 2025
+DA  - 2025/Dec
+VL  - 43
+IS  - 1
+SP  - 75-82
+EP  - 82
+AN  - 41224431
+C1  - PMID: 41224431
+ID  - 41224431
+DO  - 10.1016/j.aan.2025.07.006
+LA  - eng
+M3  - Journal Article
+M3  - Review
+AB  - Artificial intelligence (AI) applications are increasingly being used in areas of medicine such as radiology. However, within anesthesiology, there is not widespread use of AI applications at this time, though it has the potential to have a profound impact. Many applications of AI, including machine learning, deep learning, and natural language processing, are being used to create applications to enhance patient monitoring, optimize drug administration, improve decision-making, and predict postoperative complications.
+N2  - Artificial intelligence (AI) applications are increasingly being used in areas of medicine such as radiology. However, within anesthesiology, there is not widespread use of AI applications at this time, though it has the potential to have a profound impact. Many applications of AI, including machine learning, deep learning, and natural language processing, are being used to create applications to enhance patient monitoring, optimize drug administration, improve decision-making, and predict postoperative complications.
+KW  - Anesthesia
+KW  - Artificial intelligence
+KW  - Machine learning
+KW  - Predictive outcomes
+KW  - Safety
+KW  - Humans
+KW  - Artificial Intelligence
+KW  - Anesthesiology
+KW  - Deep Learning
+KW  - Machine Learning
+KW  - Natural Language Processing
+UR  - https://pubmed.ncbi.nlm.nih.gov/41224431/
+L2  - https://doi.org/10.1016/j.aan.2025.07.006
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Comparison of Conventional Anesthesia Nurse Education and an Artificial Intelligence Chatbot (ChatGPT) Intervention on Preoperative Anxiety: A Randomized Controlled Trial.
+TI  - Comparison of Conventional Anesthesia Nurse Education and an Artificial Intelligence Chatbot (ChatGPT) Intervention on Preoperative Anxiety: A Randomized Controlled Trial.
+AU  - Yahagi, Musashi
+A1  - Yahagi, Musashi
+AU  - Hiruta, Rie
+A1  - Hiruta, Rie
+AU  - Miyauchi, Chisato
+A1  - Miyauchi, Chisato
+AU  - Tanaka, Shoko
+A1  - Tanaka, Shoko
+AU  - Taguchi, Aya
+A1  - Taguchi, Aya
+AU  - Yaguchi, Yuichi
+A1  - Yaguchi, Yuichi
+JO  - Journal of perianesthesia nursing : official journal of the American Society of PeriAnesthesia Nurses
+JF  - Journal of perianesthesia nursing : official journal of the American Society of PeriAnesthesia Nurses
+T2  - Journal of perianesthesia nursing : official journal of the American Society of PeriAnesthesia Nurses
+JA  - J Perianesth Nurs
+J2  - J Perianesth Nurs
+SN  - 1532-8473
+PY  - 2024
+Y1  - 2024
+DA  - 2024/Oct
+VL  - 39
+IS  - 5
+SP  - 767-771
+EP  - 771
+AN  - 38520470
+C1  - PMID: 38520470
+ID  - 38520470
+DO  - 10.1016/j.jopan.2023.12.005
+LA  - eng
+M3  - Journal Article
+M3  - Randomized Controlled Trial
+M3  - Comparative Study
+AB  - This study aimed to evaluate the effects of an artificial intelligence (AI) chatbot (ChatGPT-3.5, OpenAI) on preoperative anxiety reduction and patient satisfaction in adult patients undergoing surgery under general anesthesia. The study used a single-blind, randomized controlled trial design. In this study, 100 adult patients were enrolled and divided into two groups: 50 in the control group, in which patients received standard preoperative information from anesthesia nurses, and 50 in the intervention group, in which patients interacted with ChatGPT. The primary outcome, preoperative anxiety reduction, was measured using the Japanese State-Trait Anxiety Inventory (STAI) self-report questionnaire. The secondary endpoints included participant satisfaction (Q1), comprehension of the treatment process (Q2), and the perception of the AI chatbot's responses as more relevant than those of the nurses (Q3). Of the 85 participants who completed the study, the STAI scores in the control group remained stable, whereas those in the intervention group decreased. The mixed-effects model showed significant effects of time and group-time interaction on the STAI scores; however, no main group effect was observed. The secondary endpoints revealed mixed results; some patients found that the chatbot's responses were more relevant, whereas others were dissatisfied or experienced difficulties. The ChatGPT intervention significantly reduced preoperative anxiety compared with the control group; however, no overall difference in the STAI scores was observed. The mixed secondary endpoint results highlight the need for refining chatbot algorithms and knowledge bases to improve performance and satisfaction. AI chatbots should complement, rather than replace, human health care providers. Seamless integration and effective communication among AI chatbots, patients, and health care providers are essential for optimizing patient outcomes.
+N2  - This study aimed to evaluate the effects of an artificial intelligence (AI) chatbot (ChatGPT-3.5, OpenAI) on preoperative anxiety reduction and patient satisfaction in adult patients undergoing surgery under general anesthesia. The study used a single-blind, randomized controlled trial design. In this study, 100 adult patients were enrolled and divided into two groups: 50 in the control group, in which patients received standard preoperative information from anesthesia nurses, and 50 in the intervention group, in which patients interacted with ChatGPT. The primary outcome, preoperative anxiety reduction, was measured using the Japanese State-Trait Anxiety Inventory (STAI) self-report questionnaire. The secondary endpoints included participant satisfaction (Q1), comprehension of the treatment process (Q2), and the perception of the AI chatbot's responses as more relevant than those of the nurses (Q3). Of the 85 participants who completed the study, the STAI scores in the control group remained stable, whereas those in the intervention group decreased. The mixed-effects model showed significant effects of time and group-time interaction on the STAI scores; however, no main group effect was observed. The secondary endpoints revealed mixed results; some patients found that the chatbot's responses were more relevant, whereas others were dissatisfied or experienced difficulties. The ChatGPT intervention significantly reduced preoperative anxiety compared with the control group; however, no overall difference in the STAI scores was observed. The mixed secondary endpoint results highlight the need for refining chatbot algorithms and knowledge bases to improve performance and satisfaction. AI chatbots should complement, rather than replace, human health care providers. Seamless integration and effective communication among AI chatbots, patients, and health care providers are essential for optimizing patient outcomes.
+KW  - AI Chatbot
+KW  - anesthesia
+KW  - perioperative anxiety
+KW  - preoperative
+KW  - Humans
+KW  - Artificial Intelligence
+KW  - Female
+KW  - Anxiety
+KW  - Male
+KW  - Middle Aged
+KW  - Adult
+KW  - Single-Blind Method
+KW  - Patient Satisfaction
+KW  - Preoperative Care
+KW  - Anesthesia, General
+KW  - Surveys and Questionnaires
+KW  - Aged
+UR  - https://pubmed.ncbi.nlm.nih.gov/38520470/
+L2  - https://doi.org/10.1016/j.jopan.2023.12.005
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Artificial intelligence and nonoperating room anesthesia.
+TI  - Artificial intelligence and nonoperating room anesthesia.
+AU  - Pardo, Emmanuel
+A1  - Pardo, Emmanuel
+AU  - Le, Cam Elena
+A1  - Le, Cam Elena
+AU  - Verdonk, Franck
+A1  - Verdonk, Franck
+JO  - Current opinion in anaesthesiology
+JF  - Current opinion in anaesthesiology
+T2  - Current opinion in anaesthesiology
+JA  - Curr Opin Anaesthesiol
+J2  - Curr Opin Anaesthesiol
+SN  - 1473-6500
+PY  - 2024
+Y1  - 2024
+DA  - 2024/Aug/01
+VL  - 37
+IS  - 4
+SP  - 413-420
+EP  - 420
+AN  - 38934202
+C1  - PMID: 38934202
+ID  - 38934202
+DO  - 10.1097/ACO.0000000000001388
+LA  - eng
+M3  - Journal Article
+M3  - Review
+AB  - The integration of artificial intelligence (AI) in nonoperating room anesthesia (NORA) represents a timely and significant advancement. As the demand for NORA services expands, the application of AI is poised to improve patient selection, perioperative care, and anesthesia delivery. This review examines AI's growing impact on NORA and how it can optimize our clinical practice in the near future. AI has already improved various aspects of anesthesia, including preoperative assessment, intraoperative management, and postoperative care. Studies highlight AI's role in patient risk stratification, real-time decision support, and predictive modeling for patient outcomes. Notably, AI applications can be used to target patients at risk of complications, alert clinicians to the upcoming occurrence of an intraoperative adverse event such as hypotension or hypoxemia, or predict their tolerance of anesthesia after the procedure. Despite these advances, challenges persist, including ethical considerations, algorithmic bias, data security, and the need for transparent decision-making processes within AI systems. The findings underscore the substantial benefits of AI in NORA, which include improved safety, efficiency, and personalized care. AI's predictive capabilities in assessing hypoxemia risk and other perioperative events, have demonstrated potential to exceed human prognostic accuracy. The implications of these findings advocate for a careful yet progressive adoption of AI in clinical practice, encouraging the development of robust ethical guidelines, continual professional training, and comprehensive data management strategies. Furthermore, AI's role in anesthesia underscores the need for multidisciplinary research to address the limitations and fully leverage AI's capabilities for patient-centered anesthesia care.
+N2  - The integration of artificial intelligence (AI) in nonoperating room anesthesia (NORA) represents a timely and significant advancement. As the demand for NORA services expands, the application of AI is poised to improve patient selection, perioperative care, and anesthesia delivery. This review examines AI's growing impact on NORA and how it can optimize our clinical practice in the near future. AI has already improved various aspects of anesthesia, including preoperative assessment, intraoperative management, and postoperative care. Studies highlight AI's role in patient risk stratification, real-time decision support, and predictive modeling for patient outcomes. Notably, AI applications can be used to target patients at risk of complications, alert clinicians to the upcoming occurrence of an intraoperative adverse event such as hypotension or hypoxemia, or predict their tolerance of anesthesia after the procedure. Despite these advances, challenges persist, including ethical considerations, algorithmic bias, data security, and the need for transparent decision-making processes within AI systems. The findings underscore the substantial benefits of AI in NORA, which include improved safety, efficiency, and personalized care. AI's predictive capabilities in assessing hypoxemia risk and other perioperative events, have demonstrated potential to exceed human prognostic accuracy. The implications of these findings advocate for a careful yet progressive adoption of AI in clinical practice, encouraging the development of robust ethical guidelines, continual professional training, and comprehensive data management strategies. Furthermore, AI's role in anesthesia underscores the need for multidisciplinary research to address the limitations and fully leverage AI's capabilities for patient-centered anesthesia care.
+KW  - Humans
+KW  - Artificial Intelligence
+KW  - Anesthesia
+KW  - Risk Assessment
+KW  - Perioperative Care
+KW  - Anesthesiology
+KW  - Patient Selection
+UR  - https://pubmed.ncbi.nlm.nih.gov/38934202/
+L2  - https://doi.org/10.1097/ACO.0000000000001388
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Artificial intelligence in regional anesthesia.
+TI  - Artificial intelligence in regional anesthesia.
+AU  - Harris, Joseph
+A1  - Harris, Joseph
+AU  - Kamming, Damon
+A1  - Kamming, Damon
+AU  - Bowness, James S
+A1  - Bowness, James S
+JO  - Current opinion in anaesthesiology
+JF  - Current opinion in anaesthesiology
+T2  - Current opinion in anaesthesiology
+JA  - Curr Opin Anaesthesiol
+J2  - Curr Opin Anaesthesiol
+SN  - 1473-6500
+PY  - 2025
+Y1  - 2025
+DA  - 2025/Oct/01
+VL  - 38
+IS  - 5
+SP  - 605-610
+EP  - 610
+AN  - 40260606
+C1  - PMID: 40260606
+ID  - 40260606
+DO  - 10.1097/ACO.0000000000001505
+LA  - eng
+M3  - Journal Article
+M3  - Review
+AB  - Artificial intelligence (AI) is having an increasing impact on healthcare. In ultrasound-guided regional anesthesia (UGRA), commercially available devices exist that augment traditional grayscale ultrasound imaging by highlighting key sono-anatomical structures in real-time. We review the latest evidence supporting this emerging technology and consider the opportunities and challenges to its widespread deployment. The existing literature is limited and heterogenous, which impedes full appraisal of systems, comparison between devices, and informed adoption. AI-based devices promise to improve clinical practice and training in UGRA, though their impact on patient outcomes and provision of UGRA techniques is unclear at this early stage. Calls for standardization across both UGRA and AI are increasing, with greater clinical leadership required. Emerging AI applications in UGRA warrant further study due to an opaque and fragmented evidence base. Robust and consistent evaluation and reporting of algorithm performance, in a representative clinical context, will expedite discovery and appropriate deployment of AI in UGRA. A clinician-focused approach to the development, evaluation, and implementation of this exciting branch of AI has huge potential to advance the human art of regional anesthesia.
+N2  - Artificial intelligence (AI) is having an increasing impact on healthcare. In ultrasound-guided regional anesthesia (UGRA), commercially available devices exist that augment traditional grayscale ultrasound imaging by highlighting key sono-anatomical structures in real-time. We review the latest evidence supporting this emerging technology and consider the opportunities and challenges to its widespread deployment. The existing literature is limited and heterogenous, which impedes full appraisal of systems, comparison between devices, and informed adoption. AI-based devices promise to improve clinical practice and training in UGRA, though their impact on patient outcomes and provision of UGRA techniques is unclear at this early stage. Calls for standardization across both UGRA and AI are increasing, with greater clinical leadership required. Emerging AI applications in UGRA warrant further study due to an opaque and fragmented evidence base. Robust and consistent evaluation and reporting of algorithm performance, in a representative clinical context, will expedite discovery and appropriate deployment of AI in UGRA. A clinician-focused approach to the development, evaluation, and implementation of this exciting branch of AI has huge potential to advance the human art of regional anesthesia.
+KW  - POCUS
+KW  - artificial intelligence
+KW  - medical devices
+KW  - regional anesthesia
+KW  - ultrasound
+KW  - Humans
+KW  - Artificial Intelligence
+KW  - Anesthesia, Conduction
+KW  - Ultrasonography, Interventional
+UR  - https://pubmed.ncbi.nlm.nih.gov/40260606/
+L2  - https://doi.org/10.1097/ACO.0000000000001505
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Artificial Intelligence in Pediatric Anesthesia.
+TI  - Artificial Intelligence in Pediatric Anesthesia.
+AU  - Madadi, Firoozeh
+A1  - Madadi, Firoozeh
+AU  - Dabbagh, Ali
+A1  - Dabbagh, Ali
+AU  - Sabouri, A Sassan
+A1  - Sabouri, A Sassan
+JO  - Anesthesiology clinics
+JF  - Anesthesiology clinics
+T2  - Anesthesiology clinics
+JA  - Anesthesiol Clin
+J2  - Anesthesiol Clin
+SN  - 1932-2275
+PY  - 2025
+Y1  - 2025
+DA  - 2025/Sep
+VL  - 43
+IS  - 3
+SP  - 453-469
+EP  - 469
+AN  - 40752947
+C1  - PMID: 40752947
+ID  - 40752947
+DO  - 10.1016/j.anclin.2025.06.003
+LA  - eng
+M3  - Journal Article
+M3  - Review
+AB  - This text explores the integration of artificial intelligence (AI) into pediatric anesthesiology, highlighting its potential to enhance safety, efficiency, and decision-making throughout the perioperative period. It addresses the unique challenges of pediatric anesthesia, including physiologic differences, limited communication, and congenital conditions. AI applications are being developed for operating room management, airway assessment, intraoperative monitoring, and postoperative care. These tools show promise in predicting surgical cancellations, difficult airways, hypoxia, and optimal intubation parameters. However, pediatric-specific data and tailored algorithms are essential, as adult models are often unsuitable. The study underscores the need for rigorous research and ethical application.
+N2  - This text explores the integration of artificial intelligence (AI) into pediatric anesthesiology, highlighting its potential to enhance safety, efficiency, and decision-making throughout the perioperative period. It addresses the unique challenges of pediatric anesthesia, including physiologic differences, limited communication, and congenital conditions. AI applications are being developed for operating room management, airway assessment, intraoperative monitoring, and postoperative care. These tools show promise in predicting surgical cancellations, difficult airways, hypoxia, and optimal intubation parameters. However, pediatric-specific data and tailored algorithms are essential, as adult models are often unsuitable. The study underscores the need for rigorous research and ethical application.
+KW  - Airway management
+KW  - Artificial intelligence (AI)
+KW  - Machine learning (ML)
+KW  - Pediatric anesthesiology
+KW  - Perioperative decision support
+KW  - Humans
+KW  - Artificial Intelligence
+KW  - Child
+KW  - Anesthesia
+KW  - Pediatrics
+KW  - Anesthesiology
+KW  - Pediatric Anesthesia
+UR  - https://pubmed.ncbi.nlm.nih.gov/40752947/
+L2  - https://doi.org/10.1016/j.anclin.2025.06.003
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Artificial Intelligence: Predicting Perioperative Problems.
+TI  - Artificial Intelligence: Predicting Perioperative Problems.
+AU  - Harris, Joseph
+A1  - Harris, Joseph
+AU  - Matthews, James
+A1  - Matthews, James
+JO  - British journal of hospital medicine (London, England : 2005)
+JF  - British journal of hospital medicine (London, England : 2005)
+T2  - British journal of hospital medicine (London, England : 2005)
+JA  - Br J Hosp Med (Lond)
+J2  - Br J Hosp Med (Lond)
+SN  - 1750-8460
+PY  - 2024
+Y1  - 2024
+DA  - 2024/Aug/30
+VL  - 85
+IS  - 8
+SP  - 1-4
+EP  - 4
+AN  - 39212575
+C1  - PMID: 39212575
+ID  - 39212575
+DO  - 10.12968/hmed.2024.0262
+LA  - eng
+M3  - Journal Article
+M3  - Review
+AB  - The rapidly developing field of artificial intelligence (AI) may soon equip clinicians with algorithms that model and predict perioperative problems with extreme accuracy. Here, we outline emerging AI applications in preoperative risk stratification and intraoperative event prediction, where algorithm performance has been shown to outstrip commonly used conventional risk prediction tools. While offering an enticing view of a novel perioperative practice with superhuman foresight, AI's limited scope and lack of transparency remain key challenges for widespread adoption. As yet it is unclear whether machine learning alone can influence human clinical practice to exert real-world effects on patient outcomes.
+N2  - The rapidly developing field of artificial intelligence (AI) may soon equip clinicians with algorithms that model and predict perioperative problems with extreme accuracy. Here, we outline emerging AI applications in preoperative risk stratification and intraoperative event prediction, where algorithm performance has been shown to outstrip commonly used conventional risk prediction tools. While offering an enticing view of a novel perioperative practice with superhuman foresight, AI's limited scope and lack of transparency remain key challenges for widespread adoption. As yet it is unclear whether machine learning alone can influence human clinical practice to exert real-world effects on patient outcomes.
+KW  - anaesthesia
+KW  - artificial intelligence
+KW  - data science
+KW  - machine learning
+KW  - perioperative medicine
+KW  - risk prediction
+KW  - Humans
+KW  - Algorithms
+KW  - Artificial Intelligence
+KW  - Machine Learning
+KW  - Perioperative Care
+KW  - Postoperative Complications
+KW  - Risk Assessment
+UR  - https://pubmed.ncbi.nlm.nih.gov/39212575/
+L2  - https://doi.org/10.12968/hmed.2024.0262
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Predicting high-risk factors for postoperative inadequate analgesia and adverse reactions in cesarean delivery surgery: a prospective study.
+TI  - Predicting high-risk factors for postoperative inadequate analgesia and adverse reactions in cesarean delivery surgery: a prospective study.
+AU  - Zhang, Kaiwen
+A1  - Zhang, Kaiwen
+AU  - Jiao, Bo
+A1  - Jiao, Bo
+AU  - Sun, Jiaoli
+A1  - Sun, Jiaoli
+AU  - Zhang, Xianwei
+A1  - Zhang, Xianwei
+AU  - Zhang, Guanglei
+A1  - Zhang, Guanglei
+AU  - Li, Ningbo
+A1  - Li, Ningbo
+AU  - Liu, Baowen
+A1  - Liu, Baowen
+AU  - Zhou, Zhiqiang
+A1  - Zhou, Zhiqiang
+JO  - International journal of surgery (London, England)
+JF  - International journal of surgery (London, England)
+T2  - International journal of surgery (London, England)
+JA  - Int J Surg
+J2  - Int J Surg
+SN  - 1743-9159
+PY  - 2025
+Y1  - 2025
+DA  - 2025/Jun/01
+VL  - 111
+IS  - 6
+SP  - 3859-3875
+EP  - 3875
+AN  - 40505037
+C1  - PMID: 40505037
+ID  - 40505037
+DO  - 10.1097/JS9.0000000000002354
+C2  - PMC12165530
+LA  - eng
+M3  - Journal Article
+AB  - Early identification of high-risk factors for inadequate analgesia and adverse reactions in obstetric patients is critical for improving outcomes. This study developed a machine learning model to predict these factors and optimize anesthesia management in obstetric surgery. This prospective study included 763 obstetric patients who underwent elective cesarean delivery between December 2023 and May 2024. A machine-learning model for postoperative analgesia and adverse reactions (MLPIAAR) was constructed using 42 variables categorized into preoperative (18), intraoperative (12), and postoperative (12) factors. Ten algorithms were applied for model development. Model performance was optimized through 10-fold cross-validation and GridSearchCV. Evaluation metrics included receiver operating characteristic, area under the curve, accuracy, and precision. Model interpretability was enhanced using SHapley Additive exPlanations (SHAP). Regression analysis explored PCA compression frequency, consumption, and satisfaction of PCA factors. Validation was performed using predicted values and scatter plots. Our study found 24.25% of patients experienced inadequate postoperative analgesia within 24 h. Postoperative nausea also occurred in 23.20% of patients. Simultaneously using dexamethasone and flurbiprofen axetil reduced both risks. However, pregnancy-induced hypertension and intraoperative shivering increased nausea risk. Postoperative vomiting occurred in 11.80% of patients, primarily associated with intravenous PCA type. Hydromorphone PCA showed a higher vomiting incidence than nalbuphine PCA. Intraoperative nausea and vomiting increased postoperative vomiting risk. Patients receiving diclofenac sodium and those with longer surgeries exhibited higher PCA compression frequencies and consumption. Higher preoperative Edinburgh Postnatal Depression Scale scores correlated with increased PCA consumption. The MLPIAAR model predicted high-risk factors for inadequate analgesia, nausea, and vomiting in obstetric patients. Dexamethasone and flurbiprofen axetil reduced these risks, while hydromorphone PCA increased vomiting risk compared to nalbuphine PCA. Machine learning and SHAP are valuable for optimizing anesthesia and analgesia management in obstetrics.
+N2  - Early identification of high-risk factors for inadequate analgesia and adverse reactions in obstetric patients is critical for improving outcomes. This study developed a machine learning model to predict these factors and optimize anesthesia management in obstetric surgery. This prospective study included 763 obstetric patients who underwent elective cesarean delivery between December 2023 and May 2024. A machine-learning model for postoperative analgesia and adverse reactions (MLPIAAR) was constructed using 42 variables categorized into preoperative (18), intraoperative (12), and postoperative (12) factors. Ten algorithms were applied for model development. Model performance was optimized through 10-fold cross-validation and GridSearchCV. Evaluation metrics included receiver operating characteristic, area under the curve, accuracy, and precision. Model interpretability was enhanced using SHapley Additive exPlanations (SHAP). Regression analysis explored PCA compression frequency, consumption, and satisfaction of PCA factors. Validation was performed using predicted values and scatter plots. Our study found 24.25% of patients experienced inadequate postoperative analgesia within 24 h. Postoperative nausea also occurred in 23.20% of patients. Simultaneously using dexamethasone and flurbiprofen axetil reduced both risks. However, pregnancy-induced hypertension and intraoperative shivering increased nausea risk. Postoperative vomiting occurred in 11.80% of patients, primarily associated with intravenous PCA type. Hydromorphone PCA showed a higher vomiting incidence than nalbuphine PCA. Intraoperative nausea and vomiting increased postoperative vomiting risk. Patients receiving diclofenac sodium and those with longer surgeries exhibited higher PCA compression frequencies and consumption. Higher preoperative Edinburgh Postnatal Depression Scale scores correlated with increased PCA consumption. The MLPIAAR model predicted high-risk factors for inadequate analgesia, nausea, and vomiting in obstetric patients. Dexamethasone and flurbiprofen axetil reduced these risks, while hydromorphone PCA increased vomiting risk compared to nalbuphine PCA. Machine learning and SHAP are valuable for optimizing anesthesia and analgesia management in obstetrics.
+KW  - cesarean delivery (CD) surgery
+KW  - machine learning
+KW  - postoperative inadequate analgesia
+KW  - postoperative nausea and vomiting (PONV)
+KW  - prediction model
+KW  - Humans
+KW  - Female
+KW  - Cesarean Section
+KW  - Prospective Studies
+KW  - Pregnancy
+KW  - Adult
+KW  - Pain, Postoperative
+KW  - Risk Factors
+KW  - Machine Learning
+KW  - Analgesia, Patient-Controlled
+KW  - Postoperative Nausea and Vomiting
+UR  - https://pubmed.ncbi.nlm.nih.gov/40505037/
+L2  - https://doi.org/10.1097/JS9.0000000000002354
+L1  - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12165530/pdf/
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Artificial Intelligence in Anesthesiology Drug Administration.
+TI  - Artificial Intelligence in Anesthesiology Drug Administration.
+AU  - Ye, Jiancheng
+A1  - Ye, Jiancheng
+AU  - Bronstein, Sophie
+A1  - Bronstein, Sophie
+JO  - Anesthesiology clinics
+JF  - Anesthesiology clinics
+T2  - Anesthesiology clinics
+JA  - Anesthesiol Clin
+J2  - Anesthesiol Clin
+SN  - 1932-2275
+PY  - 2025
+Y1  - 2025
+DA  - 2025/Sep
+VL  - 43
+IS  - 3
+SP  - 431-451
+EP  - 451
+AN  - 40752946
+C1  - PMID: 40752946
+ID  - 40752946
+DO  - 10.1016/j.anclin.2025.05.002
+LA  - eng
+M3  - Journal Article
+M3  - Review
+AB  - The integration of artificial intelligence (AI) into anesthetic drug administration represents a significant advancement in modern health care, offering enhanced precision, safety, and efficiency compared with traditional methods. This article reviews the insights gained from studies of AI systems, such as McSleepy and ENDOANGEL, highlighting the potential benefits and limitations of these technologies in clinical practice. The article compares traditional and AI-assisted anesthetic practices, showcasing how AI can improve decision-making, dosing accuracy, and real-time monitoring. Future directions for AI in anesthesiology include the development of advanced monitoring systems, optimized drug combinations, and fully autonomous anesthesia delivery systems.
+N2  - The integration of artificial intelligence (AI) into anesthetic drug administration represents a significant advancement in modern health care, offering enhanced precision, safety, and efficiency compared with traditional methods. This article reviews the insights gained from studies of AI systems, such as McSleepy and ENDOANGEL, highlighting the potential benefits and limitations of these technologies in clinical practice. The article compares traditional and AI-assisted anesthetic practices, showcasing how AI can improve decision-making, dosing accuracy, and real-time monitoring. Future directions for AI in anesthesiology include the development of advanced monitoring systems, optimized drug combinations, and fully autonomous anesthesia delivery systems.
+KW  - Anesthesia management
+KW  - Anesthetic drug administration
+KW  - Artificial intelligence
+KW  - Clinical practice
+KW  - Decision support systems
+KW  - Health care innovation
+KW  - Patient safety
+KW  - Artificial Intelligence
+KW  - Humans
+KW  - Anesthesiology
+KW  - Anesthetics
+UR  - https://pubmed.ncbi.nlm.nih.gov/40752946/
+L2  - https://doi.org/10.1016/j.anclin.2025.05.002
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Machine learning-augmented interventions in perioperative care: a systematic review and meta-analysis.
+TI  - Machine learning-augmented interventions in perioperative care: a systematic review and meta-analysis.
+AU  - Mehta, Divya
+A1  - Mehta, Divya
+AU  - Gonzalez, Xiomara T
+A1  - Gonzalez, Xiomara T
+AU  - Huang, Grace
+A1  - Huang, Grace
+AU  - Abraham, Joanna
+A1  - Abraham, Joanna
+JO  - British journal of anaesthesia
+JF  - British journal of anaesthesia
+T2  - British journal of anaesthesia
+JA  - Br J Anaesth
+J2  - Br J Anaesth
+SN  - 1471-6771
+PY  - 2024
+Y1  - 2024
+DA  - 2024/Dec
+VL  - 133
+IS  - 6
+SP  - 1159-1172
+EP  - 1172
+AN  - 39322472
+C1  - PMID: 39322472
+ID  - 39322472
+DO  - 10.1016/j.bja.2024.08.007
+C2  - PMC11589382
+LA  - eng
+M3  - Systematic Review
+M3  - Journal Article
+M3  - Meta-Analysis
+AB  - We lack evidence on the cumulative effectiveness of machine learning (ML)-driven interventions in perioperative settings. Therefore, we conducted a systematic review to appraise the evidence on the impact of ML-driven interventions on perioperative outcomes. Ovid MEDLINE, CINAHL, Embase, Scopus, PubMed, and ClinicalTrials.gov were searched to identify randomised controlled trials (RCTs) evaluating the effectiveness of ML-driven interventions in surgical inpatient populations. The review was registered with PROSPERO (CRD42023433163) and conducted according to the Preferred Reporting Items for Systematic Reviews and Meta-Analyses (PRISMA) guidelines. Meta-analysis was conducted for outcomes with two or more studies using a random-effects model, and vote counting was conducted for other outcomes. Among 13 included RCTs, three types of ML-driven interventions were evaluated: Hypotension Prediction Index (HPI) (n=5), Nociception Level Index (NoL) (n=7), and a scheduling system (n=1). Compared with the standard care, HPI led to a significant decrease in absolute hypotension (n=421, P=0.003, I<sup>2</sup>=75%) and relative hypotension (n=208, P<0.0001, I<sup>2</sup>=0%); NoL led to significantly lower mean pain scores in the post-anaesthesia care unit (PACU) (n=191, P=0.004, I<sup>2</sup>=19%). NoL showed no significant impact on intraoperative opioid consumption (n=339, P=0.31, I<sup>2</sup>=92%) or PACU opioid consumption (n=339, P=0.11, I<sup>2</sup>=0%). No significant difference in hospital length of stay (n=361, P=0.81, I<sup>2</sup>=0%) and PACU stay (n=267, P=0.44, I<sup>2</sup>=0) was found between HPI and NoL. HPI decreased the duration of intraoperative hypotension, and NoL decreased postoperative pain scores, but no significant impact on other clinical outcomes was found. We highlight the need to address both methodological and clinical practice gaps to ensure the successful future implementation of ML-driven interventions. CRD42023433163 (PROSPERO).
+N2  - We lack evidence on the cumulative effectiveness of machine learning (ML)-driven interventions in perioperative settings. Therefore, we conducted a systematic review to appraise the evidence on the impact of ML-driven interventions on perioperative outcomes. Ovid MEDLINE, CINAHL, Embase, Scopus, PubMed, and ClinicalTrials.gov were searched to identify randomised controlled trials (RCTs) evaluating the effectiveness of ML-driven interventions in surgical inpatient populations. The review was registered with PROSPERO (CRD42023433163) and conducted according to the Preferred Reporting Items for Systematic Reviews and Meta-Analyses (PRISMA) guidelines. Meta-analysis was conducted for outcomes with two or more studies using a random-effects model, and vote counting was conducted for other outcomes. Among 13 included RCTs, three types of ML-driven interventions were evaluated: Hypotension Prediction Index (HPI) (n=5), Nociception Level Index (NoL) (n=7), and a scheduling system (n=1). Compared with the standard care, HPI led to a significant decrease in absolute hypotension (n=421, P=0.003, I<sup>2</sup>=75%) and relative hypotension (n=208, P<0.0001, I<sup>2</sup>=0%); NoL led to significantly lower mean pain scores in the post-anaesthesia care unit (PACU) (n=191, P=0.004, I<sup>2</sup>=19%). NoL showed no significant impact on intraoperative opioid consumption (n=339, P=0.31, I<sup>2</sup>=92%) or PACU opioid consumption (n=339, P=0.11, I<sup>2</sup>=0%). No significant difference in hospital length of stay (n=361, P=0.81, I<sup>2</sup>=0%) and PACU stay (n=267, P=0.44, I<sup>2</sup>=0) was found between HPI and NoL. HPI decreased the duration of intraoperative hypotension, and NoL decreased postoperative pain scores, but no significant impact on other clinical outcomes was found. We highlight the need to address both methodological and clinical practice gaps to ensure the successful future implementation of ML-driven interventions. CRD42023433163 (PROSPERO).
+KW  - artificial intelligence
+KW  - evidence synthesis
+KW  - perioperative outcomes
+KW  - predictive modelling
+KW  - surgery
+KW  - Humans
+KW  - Machine Learning
+KW  - Perioperative Care
+KW  - Randomized Controlled Trials as Topic
+KW  - Pain, Postoperative
+KW  - Hypotension
+KW  - Length of Stay
+UR  - https://pubmed.ncbi.nlm.nih.gov/39322472/
+L2  - https://doi.org/10.1016/j.bja.2024.08.007
+L1  - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11589382/pdf/
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Machine learning: implications and applications for ambulatory anesthesia.
+TI  - Machine learning: implications and applications for ambulatory anesthesia.
+AU  - Anand, Karisa
+A1  - Anand, Karisa
+AU  - Hong, Suk
+A1  - Hong, Suk
+AU  - Anand, Kapil
+A1  - Anand, Kapil
+AU  - Hendrix, Joseph
+A1  - Hendrix, Joseph
+JO  - Current opinion in anaesthesiology
+JF  - Current opinion in anaesthesiology
+T2  - Current opinion in anaesthesiology
+JA  - Curr Opin Anaesthesiol
+J2  - Curr Opin Anaesthesiol
+SN  - 1473-6500
+PY  - 2024
+Y1  - 2024
+DA  - 2024/Dec/01
+VL  - 37
+IS  - 6
+SP  - 619-623
+EP  - 623
+AN  - 38979675
+C1  - PMID: 38979675
+ID  - 38979675
+DO  - 10.1097/ACO.0000000000001410
+C2  - PMC11556868
+LA  - eng
+M3  - Journal Article
+M3  - Review
+AB  - This review explores the timely and relevant applications of machine learning in ambulatory anesthesia, focusing on its potential to optimize operational efficiency, personalize risk assessment, and enhance patient care. Machine learning models have demonstrated the ability to accurately forecast case durations, Post-Anesthesia Care Unit (PACU) lengths of stay, and risk of hospital transfers based on preoperative patient and procedural factors. These models can inform case scheduling, resource allocation, and preoperative evaluation. Additionally, machine learning can standardize assessments, predict outcomes, improve handoff communication, and enrich patient education. Machine learning has the potential to revolutionize ambulatory anesthesia practice by optimizing efficiency, personalizing care, and improving quality and safety. However, limitations such as algorithmic opacity, data biases, reproducibility issues, and adoption barriers must be addressed through transparent, participatory design principles and ongoing validation to ensure responsible innovation and incremental adoption.
+N2  - This review explores the timely and relevant applications of machine learning in ambulatory anesthesia, focusing on its potential to optimize operational efficiency, personalize risk assessment, and enhance patient care. Machine learning models have demonstrated the ability to accurately forecast case durations, Post-Anesthesia Care Unit (PACU) lengths of stay, and risk of hospital transfers based on preoperative patient and procedural factors. These models can inform case scheduling, resource allocation, and preoperative evaluation. Additionally, machine learning can standardize assessments, predict outcomes, improve handoff communication, and enrich patient education. Machine learning has the potential to revolutionize ambulatory anesthesia practice by optimizing efficiency, personalizing care, and improving quality and safety. However, limitations such as algorithmic opacity, data biases, reproducibility issues, and adoption barriers must be addressed through transparent, participatory design principles and ongoing validation to ensure responsible innovation and incremental adoption.
+KW  - Humans
+KW  - Machine Learning
+KW  - Ambulatory Surgical Procedures
+KW  - Anesthesia
+KW  - Anesthesiology
+KW  - Length of Stay
+KW  - Risk Assessment
+UR  - https://pubmed.ncbi.nlm.nih.gov/38979675/
+L2  - https://doi.org/10.1097/ACO.0000000000001410
+L1  - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11556868/pdf/
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Accurate Machine Learning-based Monitoring of Anesthesia Depth with EEG Recording.
+TI  - Accurate Machine Learning-based Monitoring of Anesthesia Depth with EEG Recording.
+AU  - Tu, Zhiyi
+A1  - Tu, Zhiyi
+AU  - Zhang, Yuehan
+A1  - Zhang, Yuehan
+AU  - Lv, Xueyang
+A1  - Lv, Xueyang
+AU  - Wang, Yanyan
+A1  - Wang, Yanyan
+AU  - Zhang, Tingting
+A1  - Zhang, Tingting
+AU  - Wang, Juan
+A1  - Wang, Juan
+AU  - Yu, Xinren
+A1  - Yu, Xinren
+AU  - Chen, Pei
+A1  - Chen, Pei
+AU  - Pang, Suocheng
+A1  - Pang, Suocheng
+AU  - Li, Shengtian
+A1  - Li, Shengtian
+AU  - Yu, Xiongjie
+A1  - Yu, Xiongjie
+AU  - Zhao, Xuan
+A1  - Zhao, Xuan
+JO  - Neuroscience bulletin
+JF  - Neuroscience bulletin
+T2  - Neuroscience bulletin
+JA  - Neurosci Bull
+J2  - Neurosci Bull
+SN  - 1995-8218
+PY  - 2025
+Y1  - 2025
+DA  - 2025/Mar
+VL  - 41
+IS  - 3
+SP  - 449-460
+EP  - 460
+AN  - 39289330
+C1  - PMID: 39289330
+ID  - 39289330
+DO  - 10.1007/s12264-024-01297-w
+C2  - PMC11876477
+LA  - eng
+M3  - Journal Article
+AB  - General anesthesia, pivotal for surgical procedures, requires precise depth monitoring to mitigate risks ranging from intraoperative awareness to postoperative cognitive impairments. Traditional assessment methods, relying on physiological indicators or behavioral responses, fall short of accurately capturing the nuanced states of unconsciousness. This study introduces a machine learning-based approach to decode anesthesia depth, leveraging EEG data across different anesthesia states induced by propofol and esketamine in rats. Our findings demonstrate the model's robust predictive accuracy, underscored by a novel intra-subject dataset partitioning and a 5-fold cross-validation method. The research diverges from conventional monitoring by utilizing anesthetic infusion rates as objective indicators of anesthesia states, highlighting distinct EEG patterns and enhancing prediction accuracy. Moreover, the model's ability to generalize across individuals suggests its potential for broad clinical application, distinguishing between anesthetic agents and their depths. Despite relying on rat EEG data, which poses questions about real-world applicability, our approach marks a significant advance in anesthesia monitoring.
+N2  - General anesthesia, pivotal for surgical procedures, requires precise depth monitoring to mitigate risks ranging from intraoperative awareness to postoperative cognitive impairments. Traditional assessment methods, relying on physiological indicators or behavioral responses, fall short of accurately capturing the nuanced states of unconsciousness. This study introduces a machine learning-based approach to decode anesthesia depth, leveraging EEG data across different anesthesia states induced by propofol and esketamine in rats. Our findings demonstrate the model's robust predictive accuracy, underscored by a novel intra-subject dataset partitioning and a 5-fold cross-validation method. The research diverges from conventional monitoring by utilizing anesthetic infusion rates as objective indicators of anesthesia states, highlighting distinct EEG patterns and enhancing prediction accuracy. Moreover, the model's ability to generalize across individuals suggests its potential for broad clinical application, distinguishing between anesthetic agents and their depths. Despite relying on rat EEG data, which poses questions about real-world applicability, our approach marks a significant advance in anesthesia monitoring.
+KW  - Anesthesia monitoring
+KW  - Electroencephalogram
+KW  - Ketamine
+KW  - Machine learning
+KW  - Propofol
+KW  - Animals
+KW  - Machine Learning
+KW  - Electroencephalography
+KW  - Ketamine
+KW  - Rats
+KW  - Male
+KW  - Propofol
+KW  - Rats, Sprague-Dawley
+KW  - Anesthesia, General
+KW  - Brain
+KW  - Intraoperative Neurophysiological Monitoring
+UR  - https://pubmed.ncbi.nlm.nih.gov/39289330/
+L2  - https://doi.org/10.1007/s12264-024-01297-w
+L1  - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11876477/pdf/
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Artificial Intelligence in Medical Education.
+TI  - Artificial Intelligence in Medical Education.
+AU  - Proumen, Lt Adrian
+A1  - Proumen, Lt Adrian
+AU  - Uribe-Marquez, Santiago
+A1  - Uribe-Marquez, Santiago
+AU  - Booth, Lcdr Gregory J
+A1  - Booth, Lcdr Gregory J
+AU  - Mitchell, John D
+A1  - Mitchell, John D
+JO  - Anesthesiology clinics
+JF  - Anesthesiology clinics
+T2  - Anesthesiology clinics
+JA  - Anesthesiol Clin
+J2  - Anesthesiol Clin
+SN  - 1932-2275
+PY  - 2025
+Y1  - 2025
+DA  - 2025/Sep
+VL  - 43
+IS  - 3
+SP  - 563-576
+EP  - 576
+AN  - 40752953
+C1  - PMID: 40752953
+ID  - 40752953
+DO  - 10.1016/j.anclin.2025.05.008
+LA  - eng
+M3  - Journal Article
+M3  - Review
+AB  - Artificial intelligence (AI) provides tremendous opportunities for growth in medical education. With advances in technology, AI systems can now augment a variety of workflows critical to education. This article reviews the scope and some key use cases for AI in medical education. It first demonstrates the utility of AI in curating educational content. It then explores provision and coordination of feedback and competency assessment. It then explores educational use cases including ultrasound training and virtual reality teaching environments. Finally, it discusses areas for concern and opportunities for improvement in future AI systems.
+N2  - Artificial intelligence (AI) provides tremendous opportunities for growth in medical education. With advances in technology, AI systems can now augment a variety of workflows critical to education. This article reviews the scope and some key use cases for AI in medical education. It first demonstrates the utility of AI in curating educational content. It then explores provision and coordination of feedback and competency assessment. It then explores educational use cases including ultrasound training and virtual reality teaching environments. Finally, it discusses areas for concern and opportunities for improvement in future AI systems.
+KW  - Artificial intelligence (AI)
+KW  - Education
+KW  - Feedback
+KW  - Machine learning
+KW  - Precision medical education
+KW  - Technology
+KW  - Artificial Intelligence
+KW  - Humans
+KW  - Education, Medical
+KW  - Anesthesiology
+UR  - https://pubmed.ncbi.nlm.nih.gov/40752953/
+L2  - https://doi.org/10.1016/j.anclin.2025.05.008
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Artificial Intelligence in Cardiovascular and Thoracic Anesthesia.
+TI  - Artificial Intelligence in Cardiovascular and Thoracic Anesthesia.
+AU  - Dabbagh, Ali
+A1  - Dabbagh, Ali
+AU  - Sabouri, A Sassan
+A1  - Sabouri, A Sassan
+AU  - Madadi, Firoozeh
+A1  - Madadi, Firoozeh
+JO  - Anesthesiology clinics
+JF  - Anesthesiology clinics
+T2  - Anesthesiology clinics
+JA  - Anesthesiol Clin
+J2  - Anesthesiol Clin
+SN  - 1932-2275
+PY  - 2025
+Y1  - 2025
+DA  - 2025/Sep
+VL  - 43
+IS  - 3
+SP  - 471-489
+EP  - 489
+AN  - 40752948
+C1  - PMID: 40752948
+ID  - 40752948
+DO  - 10.1016/j.anclin.2025.05.003
+LA  - eng
+M3  - Journal Article
+M3  - Review
+AB  - Recent breakthroughs in artificial intelligence (AI) have particularly shone in cardiothoracic anesthesia, where its ability to efficiently analyze complex datasets and process vast amounts of information in mere moments has captured considerable attention. For cardiothoracic anesthesiologists, the challenge of swiftly evaluating myriad variables is paramount to minimizing complications and optimizing patient outcomes. This article explores the current state of AI in cardiac anesthesia, illuminating the compelling evidence supporting its use and charting potential future paths for researchers and clinicians alike. We will also delve into the challenges in this dynamic field and propose inventive concepts for seamlessly integrating AI into future research initiatives.
+N2  - Recent breakthroughs in artificial intelligence (AI) have particularly shone in cardiothoracic anesthesia, where its ability to efficiently analyze complex datasets and process vast amounts of information in mere moments has captured considerable attention. For cardiothoracic anesthesiologists, the challenge of swiftly evaluating myriad variables is paramount to minimizing complications and optimizing patient outcomes. This article explores the current state of AI in cardiac anesthesia, illuminating the compelling evidence supporting its use and charting potential future paths for researchers and clinicians alike. We will also delve into the challenges in this dynamic field and propose inventive concepts for seamlessly integrating AI into future research initiatives.
+KW  - Artificial intelligence
+KW  - Cardiac anesthesia
+KW  - Deep learning
+KW  - Machine learning
+KW  - Thoracic anesthesia
+KW  - Humans
+KW  - Artificial Intelligence
+KW  - Anesthesia, Cardiac Procedures
+KW  - Thoracic Surgical Procedures
+KW  - Cardiac Surgical Procedures
+KW  - Anesthesiology
+KW  - Anesthesia
+UR  - https://pubmed.ncbi.nlm.nih.gov/40752948/
+L2  - https://doi.org/10.1016/j.anclin.2025.05.003
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Artificial Intelligence-Driven Image and Data Analytics in Anesthesia.
+TI  - Artificial Intelligence-Driven Image and Data Analytics in Anesthesia.
+AU  - Madadi, Firoozeh
+A1  - Madadi, Firoozeh
+AU  - Kohzadi, Zeinab
+A1  - Kohzadi, Zeinab
+AU  - Rahmatizadeh, Shahabedin
+A1  - Rahmatizadeh, Shahabedin
+AU  - Sabouri, A Sassan
+A1  - Sabouri, A Sassan
+AU  - Dabbagh, Ali
+A1  - Dabbagh, Ali
+JO  - Anesthesiology clinics
+JF  - Anesthesiology clinics
+T2  - Anesthesiology clinics
+JA  - Anesthesiol Clin
+J2  - Anesthesiol Clin
+SN  - 1932-2275
+PY  - 2025
+Y1  - 2025
+DA  - 2025/Sep
+VL  - 43
+IS  - 3S
+SP  - e1-e15
+EP  - e15
+AN  - 40998491
+C1  - PMID: 40998491
+ID  - 40998491
+DO  - 10.1016/j.anclin.2025.07.001
+LA  - eng
+M3  - Journal Article
+M3  - Review
+AB  - Artificial intelligence (AI) is transforming medical image analysis by enhancing accuracy, efficiency, and diagnostic precision through technologies like deep learning, convolutional neural networks, and supporter vector machines. AI aids disease detection, image segmentation, and integrates imaging with clinical data to personalize treatment. In anesthesia, AI supports point-of-care ultrasound, improving regional block procedures and clinician training via tools like ScanNav and Accuro. Challenges include limited clinical validation, regulatory issues, and model generalizability. AI-driven systems show potential for standardizing practice, improving patient safety, and assisting novice practitioners, but it must be ethically integrated and guided by expert clinical judgment for successful adoption.
+N2  - Artificial intelligence (AI) is transforming medical image analysis by enhancing accuracy, efficiency, and diagnostic precision through technologies like deep learning, convolutional neural networks, and supporter vector machines. AI aids disease detection, image segmentation, and integrates imaging with clinical data to personalize treatment. In anesthesia, AI supports point-of-care ultrasound, improving regional block procedures and clinician training via tools like ScanNav and Accuro. Challenges include limited clinical validation, regulatory issues, and model generalizability. AI-driven systems show potential for standardizing practice, improving patient safety, and assisting novice practitioners, but it must be ethically integrated and guided by expert clinical judgment for successful adoption.
+KW  - Artificial intelligence (AI)
+KW  - Clinical decision support
+KW  - Deep learning (DL)
+KW  - Medical image analysis
+KW  - Ultrasound-guided regional anesthesia (UGRA)
+KW  - Humans
+KW  - Artificial Intelligence
+KW  - Anesthesia
+KW  - Anesthesiology
+KW  - Image Processing, Computer-Assisted
+KW  - Data Science
+KW  - Data Analysis
+KW  - Deep Learning
+KW  - Data Analytics
+UR  - https://pubmed.ncbi.nlm.nih.gov/40998491/
+L2  - https://doi.org/10.1016/j.anclin.2025.07.001
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Artificial intelligence-assisted interventions for perioperative anesthetic management: a systematic review and meta-analysis.
+TI  - Artificial intelligence-assisted interventions for perioperative anesthetic management: a systematic review and meta-analysis.
+AU  - Shimada, Kensuke
+A1  - Shimada, Kensuke
+AU  - Inokuchi, Ryota
+A1  - Inokuchi, Ryota
+AU  - Ohigashi, Tomohiro
+A1  - Ohigashi, Tomohiro
+AU  - Iwagami, Masao
+A1  - Iwagami, Masao
+AU  - Tanaka, Makoto
+A1  - Tanaka, Makoto
+AU  - Gosho, Masahiko
+A1  - Gosho, Masahiko
+AU  - Tamiya, Nanako
+A1  - Tamiya, Nanako
+JO  - BMC anesthesiology
+JF  - BMC anesthesiology
+T2  - BMC anesthesiology
+JA  - BMC Anesthesiol
+J2  - BMC Anesthesiol
+SN  - 1471-2253
+PY  - 2024
+Y1  - 2024
+DA  - 2024/Sep/04
+VL  - 24
+IS  - 1
+SP  - 306
+AN  - 39232648
+C1  - PMID: 39232648
+ID  - 39232648
+DO  - 10.1186/s12871-024-02699-z
+C2  - PMC11373311
+LA  - eng
+M3  - Journal Article
+M3  - Systematic Review
+M3  - Meta-Analysis
+AB  - Integration of artificial intelligence (AI) into medical practice has increased recently. Numerous AI models have been developed in the field of anesthesiology; however, their use in clinical settings remains limited. This study aimed to identify the gap between AI research and its implementation in anesthesiology via a systematic review of randomized controlled trials with meta-analysis (CRD42022353727). We searched the databases of Medical Literature Analysis and Retrieval System Online (MEDLINE), Excerpta Medica Database (Embase), Web of Science, Cochrane Central Register of Controlled Trials (CENTRAL), Institute of Electrical and Electronics Engineers Xplore (IEEE), and Google Scholar and retrieved randomized controlled trials comparing conventional and AI-assisted anesthetic management published between the date of inception of the database and August 31, 2023. Eight randomized controlled trials were included in this systematic review (n = 568 patients), including 286 and 282 patients who underwent anesthetic management with and without AI-assisted interventions, respectively. AI-assisted interventions used in the studies included fuzzy logic control for gas concentrations (one study) and the Hypotension Prediction Index (seven studies; adding only one indicator). Seven studies had small sample sizes (n = 30 to 68, except for the largest), and meta-analysis including the study with the largest sample size (n = 213) showed no difference in a hypotension-related outcome (mean difference of the time-weighted average of the area under the threshold 0.22, 95% confidence interval -0.03 to 0.48, P = 0.215, I<sup>2</sup> 93.8%). This systematic review and meta-analysis revealed that randomized controlled trials on AI-assisted interventions in anesthesiology are in their infancy, and approaches that take into account complex clinical practice should be investigated in the future. This study was registered with the International Prospective Register of Systematic Reviews (PROSPERO ID: CRD42022353727).
+N2  - Integration of artificial intelligence (AI) into medical practice has increased recently. Numerous AI models have been developed in the field of anesthesiology; however, their use in clinical settings remains limited. This study aimed to identify the gap between AI research and its implementation in anesthesiology via a systematic review of randomized controlled trials with meta-analysis (CRD42022353727). We searched the databases of Medical Literature Analysis and Retrieval System Online (MEDLINE), Excerpta Medica Database (Embase), Web of Science, Cochrane Central Register of Controlled Trials (CENTRAL), Institute of Electrical and Electronics Engineers Xplore (IEEE), and Google Scholar and retrieved randomized controlled trials comparing conventional and AI-assisted anesthetic management published between the date of inception of the database and August 31, 2023. Eight randomized controlled trials were included in this systematic review (n = 568 patients), including 286 and 282 patients who underwent anesthetic management with and without AI-assisted interventions, respectively. AI-assisted interventions used in the studies included fuzzy logic control for gas concentrations (one study) and the Hypotension Prediction Index (seven studies; adding only one indicator). Seven studies had small sample sizes (n = 30 to 68, except for the largest), and meta-analysis including the study with the largest sample size (n = 213) showed no difference in a hypotension-related outcome (mean difference of the time-weighted average of the area under the threshold 0.22, 95% confidence interval -0.03 to 0.48, P = 0.215, I<sup>2</sup> 93.8%). This systematic review and meta-analysis revealed that randomized controlled trials on AI-assisted interventions in anesthesiology are in their infancy, and approaches that take into account complex clinical practice should be investigated in the future. This study was registered with the International Prospective Register of Systematic Reviews (PROSPERO ID: CRD42022353727).
+KW  - Anesthesia
+KW  - Artificial intelligence
+KW  - Meta-analysis
+KW  - Rondomized controlled trial
+KW  - Systematic review
+KW  - Humans
+KW  - Anesthesia
+KW  - Artificial Intelligence
+KW  - Perioperative Care
+KW  - Randomized Controlled Trials as Topic
+UR  - https://pubmed.ncbi.nlm.nih.gov/39232648/
+L2  - https://doi.org/10.1186/s12871-024-02699-z
+L1  - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11373311/pdf/
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Artificial Intelligence in Regional Anesthesia and Pain Management.
+TI  - Artificial Intelligence in Regional Anesthesia and Pain Management.
+AU  - Medeiros, Heitor J S
+A1  - Medeiros, Heitor J S
+AU  - Dabbagh, Ali
+A1  - Dabbagh, Ali
+AU  - Vlassakov, Kamen
+A1  - Vlassakov, Kamen
+AU  - Sabouri, A Sassan
+A1  - Sabouri, A Sassan
+JO  - Anesthesiology clinics
+JF  - Anesthesiology clinics
+T2  - Anesthesiology clinics
+JA  - Anesthesiol Clin
+J2  - Anesthesiol Clin
+SN  - 1932-2275
+PY  - 2025
+Y1  - 2025
+DA  - 2025/Sep
+VL  - 43
+IS  - 3
+SP  - 491-505
+EP  - 505
+AN  - 40752949
+C1  - PMID: 40752949
+ID  - 40752949
+DO  - 10.1016/j.anclin.2025.05.004
+LA  - eng
+M3  - Journal Article
+M3  - Review
+AB  - Artificial intelligence (AI) is improving regional anesthesia by bringing unparalleled precision and efficiency to ultrasound-guided procedures. Using advanced machine learning algorithms like convolutional neural networks, AI can instantly interpret ultrasound images, accurately identifying nerves, blood vessels, and other critical anatomic structures. This real-time analysis dramatically shortens the learning curve for anesthesiologists, enhancing needle placement accuracy and reducing procedural errors. In labor anesthesia, AI-powered systems such as the spinal level identification device have demonstrated superior accuracy in locating spinal interspaces, especially in patients with high body mass index.
+N2  - Artificial intelligence (AI) is improving regional anesthesia by bringing unparalleled precision and efficiency to ultrasound-guided procedures. Using advanced machine learning algorithms like convolutional neural networks, AI can instantly interpret ultrasound images, accurately identifying nerves, blood vessels, and other critical anatomic structures. This real-time analysis dramatically shortens the learning curve for anesthesiologists, enhancing needle placement accuracy and reducing procedural errors. In labor anesthesia, AI-powered systems such as the spinal level identification device have demonstrated superior accuracy in locating spinal interspaces, especially in patients with high body mass index.
+KW  - Artificial intelligence
+KW  - Automation
+KW  - Education
+KW  - Machine learning
+KW  - Pain management
+KW  - Predictive analytics
+KW  - Regional anesthesia
+KW  - Ultrasound
+KW  - Humans
+KW  - Anesthesia, Conduction
+KW  - Artificial Intelligence
+KW  - Pain Management
+KW  - Ultrasonography, Interventional
+KW  - Nerve Block
+UR  - https://pubmed.ncbi.nlm.nih.gov/40752949/
+L2  - https://doi.org/10.1016/j.anclin.2025.05.004
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Artificial Intelligence in Anesthesiology: Field of Dreams or Fire Swamp? Preemptive Strategies for Optimizing Our Inevitable Future.
+TI  - Artificial Intelligence in Anesthesiology: Field of Dreams or Fire Swamp? Preemptive Strategies for Optimizing Our Inevitable Future.
+AU  - Salwei, Megan E
+A1  - Salwei, Megan E
+AU  - Weinger, Matthew B
+A1  - Weinger, Matthew B
+JO  - Anesthesiology
+JF  - Anesthesiology
+T2  - Anesthesiology
+JA  - Anesthesiology
+J2  - Anesthesiology
+SN  - 1528-1175
+PY  - 2024
+Y1  - 2024
+DA  - 2024/Aug/01
+VL  - 141
+IS  - 2
+SP  - 217-221
+EP  - 221
+AN  - 38980165
+C1  - PMID: 38980165
+ID  - 38980165
+DO  - 10.1097/ALN.0000000000005046
+C2  - PMC11831969
+LA  - eng
+M3  - Editorial
+KW  - Artificial Intelligence
+KW  - Humans
+KW  - Anesthesiology
+UR  - https://pubmed.ncbi.nlm.nih.gov/38980165/
+L2  - https://doi.org/10.1097/ALN.0000000000005046
+L1  - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11831969/pdf/
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Advancements in Neuroanesthesia Through Artificial Intelligence.
+TI  - Advancements in Neuroanesthesia Through Artificial Intelligence.
+AU  - Nozari, Ala
+A1  - Nozari, Ala
+AU  - Binda, Dhanesh D
+A1  - Binda, Dhanesh D
+AU  - Baker, Maxwell B
+A1  - Baker, Maxwell B
+JO  - Anesthesiology clinics
+JF  - Anesthesiology clinics
+T2  - Anesthesiology clinics
+JA  - Anesthesiol Clin
+J2  - Anesthesiol Clin
+SN  - 1932-2275
+PY  - 2025
+Y1  - 2025
+DA  - 2025/Sep
+VL  - 43
+IS  - 3
+SP  - 527-547
+EP  - 547
+AN  - 40752951
+C1  - PMID: 40752951
+ID  - 40752951
+DO  - 10.1016/j.anclin.2025.05.006
+LA  - eng
+M3  - Journal Article
+M3  - Review
+AB  - Artificial intelligence (AI) is transforming neuroanesthesia by enhancing precision and efficiency in managing patients during neurosurgical procedures. AI uses advanced algorithms and machine learning techniques to predict complications, optimize anesthesia depth, and provide real-time clinical support. Despite challenges, such as data privacy, AI offers substantial benefits. Key applications in neuroanesthesia include predictive analytics for forecasting neurologic complications, advanced neuroimaging for precise neural identification, intelligent devices for real-time anesthesia adjustments, and streamlined administrative operations for coordinating complex procedures. As AI continues to evolve, its integration into neuroanesthesia promises to further advance patient-care and surgical efficiency.
+N2  - Artificial intelligence (AI) is transforming neuroanesthesia by enhancing precision and efficiency in managing patients during neurosurgical procedures. AI uses advanced algorithms and machine learning techniques to predict complications, optimize anesthesia depth, and provide real-time clinical support. Despite challenges, such as data privacy, AI offers substantial benefits. Key applications in neuroanesthesia include predictive analytics for forecasting neurologic complications, advanced neuroimaging for precise neural identification, intelligent devices for real-time anesthesia adjustments, and streamlined administrative operations for coordinating complex procedures. As AI continues to evolve, its integration into neuroanesthesia promises to further advance patient-care and surgical efficiency.
+KW  - Artificial intelligence
+KW  - Data privacy
+KW  - Intra-operative monitoring
+KW  - Machine learning
+KW  - Neuroanesthesia
+KW  - Patient outcomes
+KW  - Precision medicine
+KW  - Predictive analytics
+KW  - Humans
+KW  - Artificial Intelligence
+KW  - Neurosurgical Procedures
+KW  - Anesthesia
+KW  - Machine Learning
+KW  - Neuroimaging
+KW  - Neuroanesthesia
+UR  - https://pubmed.ncbi.nlm.nih.gov/40752951/
+L2  - https://doi.org/10.1016/j.anclin.2025.05.006
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Overview and Clinical Applications of Artificial Intelligence and Machine Learning in Cardiac Anesthesiology.
+TI  - Overview and Clinical Applications of Artificial Intelligence and Machine Learning in Cardiac Anesthesiology.
+AU  - Mathis, Michael
+A1  - Mathis, Michael
+AU  - Steffner, Kirsten R
+A1  - Steffner, Kirsten R
+AU  - Subramanian, Harikesh
+A1  - Subramanian, Harikesh
+AU  - Gill, George P
+A1  - Gill, George P
+AU  - Girardi, Natalia I
+A1  - Girardi, Natalia I
+AU  - Bansal, Sagar
+A1  - Bansal, Sagar
+AU  - Bartels, Karsten
+A1  - Bartels, Karsten
+AU  - Khanna, Ashish K
+A1  - Khanna, Ashish K
+AU  - Huang, Jiapeng
+A1  - Huang, Jiapeng
+JO  - Journal of cardiothoracic and vascular anesthesia
+JF  - Journal of cardiothoracic and vascular anesthesia
+T2  - Journal of cardiothoracic and vascular anesthesia
+JA  - J Cardiothorac Vasc Anesth
+J2  - J Cardiothorac Vasc Anesth
+SN  - 1532-8422
+PY  - 2024
+Y1  - 2024
+DA  - 2024/May
+VL  - 38
+IS  - 5
+SP  - 1211-1220
+EP  - 1220
+AN  - 38453558
+C1  - PMID: 38453558
+ID  - 38453558
+DO  - 10.1053/j.jvca.2024.02.004
+C2  - PMC10999327
+LA  - eng
+M3  - Journal Article
+M3  - Review
+AB  - Artificial intelligence- (AI) and machine learning (ML)-based applications are becoming increasingly pervasive in the healthcare setting. This has in turn challenged clinicians, hospital administrators, and health policymakers to understand such technologies and develop frameworks for safe and sustained clinical implementation. Within cardiac anesthesiology, challenges and opportunities for AI/ML to support patient care are presented by the vast amounts of electronic health data, which are collected rapidly, interpreted, and acted upon within the periprocedural area. To address such challenges and opportunities, in this article, the authors review 3 recent applications relevant to cardiac anesthesiology, including depth of anesthesia monitoring, operating room resource optimization, and transthoracic/transesophageal echocardiography, as conceptual examples to explore strengths and limitations of AI/ML within healthcare, and characterize this evolving landscape. Through reviewing such applications, the authors introduce basic AI/ML concepts and methodologies, as well as practical considerations and ethical concerns for initiating and maintaining safe clinical implementation of AI/ML-based algorithms for cardiac anesthesia patient care.
+N2  - Artificial intelligence- (AI) and machine learning (ML)-based applications are becoming increasingly pervasive in the healthcare setting. This has in turn challenged clinicians, hospital administrators, and health policymakers to understand such technologies and develop frameworks for safe and sustained clinical implementation. Within cardiac anesthesiology, challenges and opportunities for AI/ML to support patient care are presented by the vast amounts of electronic health data, which are collected rapidly, interpreted, and acted upon within the periprocedural area. To address such challenges and opportunities, in this article, the authors review 3 recent applications relevant to cardiac anesthesiology, including depth of anesthesia monitoring, operating room resource optimization, and transthoracic/transesophageal echocardiography, as conceptual examples to explore strengths and limitations of AI/ML within healthcare, and characterize this evolving landscape. Through reviewing such applications, the authors introduce basic AI/ML concepts and methodologies, as well as practical considerations and ethical concerns for initiating and maintaining safe clinical implementation of AI/ML-based algorithms for cardiac anesthesia patient care.
+KW  - artificial intelligence
+KW  - cardiac anesthesia
+KW  - depth of anesthesia
+KW  - echocardiography
+KW  - ethics
+KW  - machine learning
+KW  - optimization
+KW  - Humans
+KW  - Artificial Intelligence
+KW  - Anesthesiology
+KW  - Machine Learning
+KW  - Algorithms
+KW  - Heart
+UR  - https://pubmed.ncbi.nlm.nih.gov/38453558/
+L2  - https://doi.org/10.1053/j.jvca.2024.02.004
+L1  - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10999327/pdf/
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Robotic Anesthesia: A Vision for 2050.
+TI  - Robotic Anesthesia: A Vision for 2050.
+AU  - Hemmerling, Thomas M
+A1  - Hemmerling, Thomas M
+AU  - Jeffries, Sean D
+A1  - Jeffries, Sean D
+JO  - Anesthesia and analgesia
+JF  - Anesthesia and analgesia
+T2  - Anesthesia and analgesia
+JA  - Anesth Analg
+J2  - Anesth Analg
+SN  - 1526-7598
+PY  - 2024
+Y1  - 2024
+DA  - 2024/Feb/01
+VL  - 138
+IS  - 2
+SP  - 239-251
+EP  - 251
+AN  - 38215704
+C1  - PMID: 38215704
+ID  - 38215704
+DO  - 10.1213/ANE.0000000000006835
+LA  - eng
+M3  - Journal Article
+AB  - The last 2 decades have brought important developments in anesthetic technology, including robotic anesthesia. Anesthesiologists titrate the administration of pharmacological agents to the patients' physiology and the needs of surgery, using a variety of sophisticated equipment (we use the term "pilots of the human biosphere"). In anesthesia, increased safety seems coupled with increased technology and innovation. This article gives an overview of the technological developments over the past decades, both in terms of pharmacological and mechanical robots, which have laid the groundwork for robotic anesthesia: target-controlled drug infusion systems, closed-loop administration of anesthesia and sedation, mechanical robots for intubation, and the latest development in the world of communication with the arrival of artificial intelligence (AI)-derived chatbots are presented.
+N2  - The last 2 decades have brought important developments in anesthetic technology, including robotic anesthesia. Anesthesiologists titrate the administration of pharmacological agents to the patients' physiology and the needs of surgery, using a variety of sophisticated equipment (we use the term "pilots of the human biosphere"). In anesthesia, increased safety seems coupled with increased technology and innovation. This article gives an overview of the technological developments over the past decades, both in terms of pharmacological and mechanical robots, which have laid the groundwork for robotic anesthesia: target-controlled drug infusion systems, closed-loop administration of anesthesia and sedation, mechanical robots for intubation, and the latest development in the world of communication with the arrival of artificial intelligence (AI)-derived chatbots are presented.
+KW  - Humans
+KW  - Robotics
+KW  - Artificial Intelligence
+KW  - Robotic Surgical Procedures
+KW  - Anesthesia
+KW  - Anesthetics
+UR  - https://pubmed.ncbi.nlm.nih.gov/38215704/
+L2  - https://doi.org/10.1213/ANE.0000000000006835
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Quantitative electroencephalogram and machine learning to predict expired sevoflurane concentration in infants.
+TI  - Quantitative electroencephalogram and machine learning to predict expired sevoflurane concentration in infants.
+AU  - Kumar, Rachit
+A1  - Kumar, Rachit
+AU  - Skowno, Justin
+A1  - Skowno, Justin
+AU  - von, Ungern-Sternberg Britta S
+A1  - von, Ungern-Sternberg Britta S
+AU  - Davidson, Andrew
+A1  - Davidson, Andrew
+AU  - Xu, Ting
+A1  - Xu, Ting
+AU  - Zhang, Jianmin
+A1  - Zhang, Jianmin
+AU  - Song, XingRong
+A1  - Song, XingRong
+AU  - Zhang, Mazhong
+A1  - Zhang, Mazhong
+AU  - Zhao, Ping
+A1  - Zhao, Ping
+AU  - Liu, Huacheng
+A1  - Liu, Huacheng
+AU  - Jiang, Yifei
+A1  - Jiang, Yifei
+AU  - Zuo, Yunxia
+A1  - Zuo, Yunxia
+AU  - de, Graaff Jurgen C
+A1  - de, Graaff Jurgen C
+AU  - Vutskits, Laszlo
+A1  - Vutskits, Laszlo
+AU  - Olbrecht, Vanessa A
+A1  - Olbrecht, Vanessa A
+AU  - Szmuk, Peter
+A1  - Szmuk, Peter
+AU  - Simpao, Allan F
+A1  - Simpao, Allan F
+AU  - Tsui, Fuchiang Rich
+A1  - Tsui, Fuchiang Rich
+AU  - Pratap, Jayant Nick
+A1  - Pratap, Jayant Nick
+AU  - Padiyath, Asif
+A1  - Padiyath, Asif
+AU  - Nelson, Olivia
+A1  - Nelson, Olivia
+AU  - Kurth, Charles D
+A1  - Kurth, Charles D
+AU  - Yuan, Ian
+A1  - Yuan, Ian
+AU  - BRAIN, Collaborative Investigators
+A1  - BRAIN, Collaborative Investigators
+JO  - Journal of clinical monitoring and computing
+JF  - Journal of clinical monitoring and computing
+T2  - Journal of clinical monitoring and computing
+JA  - J Clin Monit Comput
+J2  - J Clin Monit Comput
+SN  - 1573-2614
+PY  - 2025
+Y1  - 2025
+DA  - 2025/Oct
+VL  - 39
+IS  - 5
+SP  - 999-1014
+EP  - 1014
+AN  - 40381151
+C1  - PMID: 40381151
+ID  - 40381151
+DO  - 10.1007/s10877-025-01301-2
+C2  - PMC12474631
+LA  - eng
+M3  - Journal Article
+AB  - Processed electroencephalography (EEG) indices used to guide anesthetic dosing in adults are not validated in young infants. Raw EEG can be processed mathematically, yielding quantitative EEG parameters (qEEG). We hypothesized that machine learning combined with qEEG can accurately classify expired sevoflurane concentrations in young infants. Knowledge from this may contribute to development of future infant-specific EEG algorithms. Frontal EEG collected from infants ≤ 3 months were time-matched as one-minute epochs to expired sevoflurane (eSevo). Fifteen qEEG parameters were extracted from each epoch and eight machine learning models combined the qEEG to classify each epoch into one of four eSevo levels (%): 0.1-1.0, 1.0-2.1, 2.1-2.9, and > 2.9. 64 epochs formed the post hoc SHAP dataset to determine the qEEG that contributed most to the model. The remaining epochs were randomly split 50 times into 80/20 training/testing sets. Accuracy and F1-score determined model performance. 42 infants provided 4574 epochs. The top classifiers K-nearest neighbors, default multi-layer perceptron, and support vector machine achieved 67.5-68.7% accuracy. Burst suppression ratio and entropy β were the top contributors to the models. Post hoc analysis performed without burst suppression ratio yielded similar prediction performance. In young infants, machine learning applied to qEEG predicted eSevo levels with moderate success. Burst suppression ratio, the most important contributor, represented an efficient EEG feature that encapsulated underlying EEG changes seen on other qEEG features. These results provided insight into EEG parameter selection and optimal machine learning models used for future development of infant-specific EEG algorithms.
+N2  - Processed electroencephalography (EEG) indices used to guide anesthetic dosing in adults are not validated in young infants. Raw EEG can be processed mathematically, yielding quantitative EEG parameters (qEEG). We hypothesized that machine learning combined with qEEG can accurately classify expired sevoflurane concentrations in young infants. Knowledge from this may contribute to development of future infant-specific EEG algorithms. Frontal EEG collected from infants ≤ 3 months were time-matched as one-minute epochs to expired sevoflurane (eSevo). Fifteen qEEG parameters were extracted from each epoch and eight machine learning models combined the qEEG to classify each epoch into one of four eSevo levels (%): 0.1-1.0, 1.0-2.1, 2.1-2.9, and > 2.9. 64 epochs formed the post hoc SHAP dataset to determine the qEEG that contributed most to the model. The remaining epochs were randomly split 50 times into 80/20 training/testing sets. Accuracy and F1-score determined model performance. 42 infants provided 4574 epochs. The top classifiers K-nearest neighbors, default multi-layer perceptron, and support vector machine achieved 67.5-68.7% accuracy. Burst suppression ratio and entropy β were the top contributors to the models. Post hoc analysis performed without burst suppression ratio yielded similar prediction performance. In young infants, machine learning applied to qEEG predicted eSevo levels with moderate success. Burst suppression ratio, the most important contributor, represented an efficient EEG feature that encapsulated underlying EEG changes seen on other qEEG features. These results provided insight into EEG parameter selection and optimal machine learning models used for future development of infant-specific EEG algorithms.
+KW  - Infant electroencephalogram EEG
+KW  - Machine learning
+KW  - Pediatric EEG anesthesia
+KW  - Quantitative EEG anesthesia
+KW  - SHAP EEG analysis
+KW  - Humans
+KW  - Electroencephalography
+KW  - Sevoflurane
+KW  - Machine Learning
+KW  - Infant
+KW  - Algorithms
+KW  - Male
+KW  - Anesthetics, Inhalation
+KW  - Female
+KW  - Signal Processing, Computer-Assisted
+KW  - Infant, Newborn
+KW  - Support Vector Machine
+KW  - Reproducibility of Results
+KW  - Entropy
+UR  - https://pubmed.ncbi.nlm.nih.gov/40381151/
+L2  - https://doi.org/10.1007/s10877-025-01301-2
+L1  - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12474631/pdf/
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Artificial Intelligence for Anesthesiology Board-Style Examination Questions: Role of Large Language Models.
+TI  - Artificial Intelligence for Anesthesiology Board-Style Examination Questions: Role of Large Language Models.
+AU  - Khan, Adnan A
+A1  - Khan, Adnan A
+AU  - Yunus, Rayaan
+A1  - Yunus, Rayaan
+AU  - Sohail, Mahad
+A1  - Sohail, Mahad
+AU  - Rehman, Taha A
+A1  - Rehman, Taha A
+AU  - Saeed, Shirin
+A1  - Saeed, Shirin
+AU  - Bu, Yifan
+A1  - Bu, Yifan
+AU  - Jackson, Cullen D
+A1  - Jackson, Cullen D
+AU  - Sharkey, Aidan
+A1  - Sharkey, Aidan
+AU  - Mahmood, Feroze
+A1  - Mahmood, Feroze
+AU  - Matyal, Robina
+A1  - Matyal, Robina
+JO  - Journal of cardiothoracic and vascular anesthesia
+JF  - Journal of cardiothoracic and vascular anesthesia
+T2  - Journal of cardiothoracic and vascular anesthesia
+JA  - J Cardiothorac Vasc Anesth
+J2  - J Cardiothorac Vasc Anesth
+SN  - 1532-8422
+PY  - 2024
+Y1  - 2024
+DA  - 2024/May
+VL  - 38
+IS  - 5
+SP  - 1251-1259
+EP  - 1259
+AN  - 38423884
+C1  - PMID: 38423884
+ID  - 38423884
+DO  - 10.1053/j.jvca.2024.01.032
+LA  - eng
+M3  - Journal Article
+M3  - Review
+AB  - New artificial intelligence tools have been developed that have implications for medical usage. Large language models (LLMs), such as the widely used ChatGPT developed by OpenAI, have not been explored in the context of anesthesiology education. Understanding the reliability of various publicly available LLMs for medical specialties could offer insight into their understanding of the physiology, pharmacology, and practical applications of anesthesiology. An exploratory prospective review was conducted using 3 commercially available LLMs--OpenAI's ChatGPT GPT-3.5 version (GPT-3.5), OpenAI's ChatGPT GPT-4 (GPT-4), and Google's Bard--on questions from a widely used anesthesia board examination review book. Of the 884 eligible questions, the overall correct answer rates were 47.9% for GPT-3.5, 69.4% for GPT-4, and 45.2% for Bard. GPT-4 exhibited significantly higher performance than both GPT-3.5 and Bard (p = 0.001 and p < 0.001, respectively). None of the LLMs met the criteria required to secure American Board of Anesthesiology certification, according to the 70% passing score approximation. GPT-4 significantly outperformed GPT-3.5 and Bard in terms of overall performance, but lacked consistency in providing explanations that aligned with scientific and medical consensus. Although GPT-4 shows promise, current LLMs are not sufficiently advanced to answer anesthesiology board examination questions with passing success. Further iterations and domain-specific training may enhance their utility in medical education.
+N2  - New artificial intelligence tools have been developed that have implications for medical usage. Large language models (LLMs), such as the widely used ChatGPT developed by OpenAI, have not been explored in the context of anesthesiology education. Understanding the reliability of various publicly available LLMs for medical specialties could offer insight into their understanding of the physiology, pharmacology, and practical applications of anesthesiology. An exploratory prospective review was conducted using 3 commercially available LLMs--OpenAI's ChatGPT GPT-3.5 version (GPT-3.5), OpenAI's ChatGPT GPT-4 (GPT-4), and Google's Bard--on questions from a widely used anesthesia board examination review book. Of the 884 eligible questions, the overall correct answer rates were 47.9% for GPT-3.5, 69.4% for GPT-4, and 45.2% for Bard. GPT-4 exhibited significantly higher performance than both GPT-3.5 and Bard (p = 0.001 and p < 0.001, respectively). None of the LLMs met the criteria required to secure American Board of Anesthesiology certification, according to the 70% passing score approximation. GPT-4 significantly outperformed GPT-3.5 and Bard in terms of overall performance, but lacked consistency in providing explanations that aligned with scientific and medical consensus. Although GPT-4 shows promise, current LLMs are not sufficiently advanced to answer anesthesiology board examination questions with passing success. Further iterations and domain-specific training may enhance their utility in medical education.
+KW  - ABA
+KW  - LLMs
+KW  - anesthesia
+KW  - artificial intelligence
+KW  - education
+KW  - machine learning
+KW  - residency
+KW  - training
+KW  - Humans
+KW  - Anesthesiology
+KW  - Artificial Intelligence
+KW  - Prospective Studies
+KW  - Reproducibility of Results
+KW  - Language
+UR  - https://pubmed.ncbi.nlm.nih.gov/38423884/
+L2  - https://doi.org/10.1053/j.jvca.2024.01.032
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Construction and verification of a machine learning-based prediction model of deep vein thrombosis formation after spinal surgery.
+TI  - Construction and verification of a machine learning-based prediction model of deep vein thrombosis formation after spinal surgery.
+AU  - Wu, Xingyan
+A1  - Wu, Xingyan
+AU  - Wang, Zhao
+A1  - Wang, Zhao
+AU  - Zheng, Leilei
+A1  - Zheng, Leilei
+AU  - Yang, Yihui
+A1  - Yang, Yihui
+AU  - Shi, Wenyan
+A1  - Shi, Wenyan
+AU  - Wang, Jing
+A1  - Wang, Jing
+AU  - Liu, Dexing
+A1  - Liu, Dexing
+AU  - Zhang, Yi
+A1  - Zhang, Yi
+JO  - International journal of medical informatics
+JF  - International journal of medical informatics
+T2  - International journal of medical informatics
+JA  - Int J Med Inform
+J2  - Int J Med Inform
+SN  - 1872-8243
+PY  - 2024
+Y1  - 2024
+DA  - 2024/Dec
+VL  - 192
+SP  - 105609
+AN  - 39260049
+C1  - PMID: 39260049
+ID  - 39260049
+DO  - 10.1016/j.ijmedinf.2024.105609
+LA  - eng
+M3  - Journal Article
+AB  - Deep vein thromboembolism (DVT) is a common postoperative complication with high morbidity and mortality rates. However, the safety and effectiveness of using prophylactic anticoagulants for preventing DVT after spinal surgery remain controversial. Hence, it is crucial to predict whether DVT occurs in advance following spinal surgery. The present study aimed to establish a machine learning (ML)-based prediction model of DVT formation following spinal surgery. We reviewed the medical records of patients who underwent elective spinal surgery at the Third Affiliated Hospital of Zunyi Medical University (TAHZMU) from January 2020 to December 2022. We ultimately selected the clinical data of 500 patients who met the criteria for elective spinal surgery. The Boruta-SHAP algorithm was used for feature selection, and the SMOTE algorithm was used for data balance. The related risk factors for DVT after spinal surgery were screened and analyzed. Five ML algorithm models were established. The data of 150 patients treated at the Affiliated Hospital of Zunyi Medical University (AHZMU) from July 2023 to October 2023 were used for external verification of the model. The area under the curve (AUC), geometric mean (G-mean), sensitivity, accuracy, specificity, and F1 score were used to evaluate the performance of the models. The results revealed that activated partial thromboplastin time (APTT), age, body mass index (BMI), preoperative serum creatinine (Crea), anesthesia time, rocuronium dose, and propofol dose were the seven important characteristic variables for predicting DVT after spinal surgery. Among the five ML models established in this study, the random forest classifier (RF) showed superior performance to the other models in the internal validation set. Seven preoperative and intraoperative variables were included in our study to develop an ML-based predictive model for DVT formation following spinal surgery, and this model can be used to assist in clinical evaluation and decision-making.
+N2  - Deep vein thromboembolism (DVT) is a common postoperative complication with high morbidity and mortality rates. However, the safety and effectiveness of using prophylactic anticoagulants for preventing DVT after spinal surgery remain controversial. Hence, it is crucial to predict whether DVT occurs in advance following spinal surgery. The present study aimed to establish a machine learning (ML)-based prediction model of DVT formation following spinal surgery. We reviewed the medical records of patients who underwent elective spinal surgery at the Third Affiliated Hospital of Zunyi Medical University (TAHZMU) from January 2020 to December 2022. We ultimately selected the clinical data of 500 patients who met the criteria for elective spinal surgery. The Boruta-SHAP algorithm was used for feature selection, and the SMOTE algorithm was used for data balance. The related risk factors for DVT after spinal surgery were screened and analyzed. Five ML algorithm models were established. The data of 150 patients treated at the Affiliated Hospital of Zunyi Medical University (AHZMU) from July 2023 to October 2023 were used for external verification of the model. The area under the curve (AUC), geometric mean (G-mean), sensitivity, accuracy, specificity, and F1 score were used to evaluate the performance of the models. The results revealed that activated partial thromboplastin time (APTT), age, body mass index (BMI), preoperative serum creatinine (Crea), anesthesia time, rocuronium dose, and propofol dose were the seven important characteristic variables for predicting DVT after spinal surgery. Among the five ML models established in this study, the random forest classifier (RF) showed superior performance to the other models in the internal validation set. Seven preoperative and intraoperative variables were included in our study to develop an ML-based predictive model for DVT formation following spinal surgery, and this model can be used to assist in clinical evaluation and decision-making.
+KW  - Anesthesia
+KW  - Artificial intelligence
+KW  - Deep vein thrombosis
+KW  - Machine learning
+KW  - Perioperative period
+KW  - Predictive model
+KW  - Spinal surgery
+KW  - Humans
+KW  - Machine Learning
+KW  - Venous Thrombosis
+KW  - Male
+KW  - Female
+KW  - Middle Aged
+KW  - Postoperative Complications
+KW  - Risk Factors
+KW  - Algorithms
+KW  - Spine
+KW  - Aged
+KW  - Adult
+KW  - Retrospective Studies
+UR  - https://pubmed.ncbi.nlm.nih.gov/39260049/
+L2  - https://doi.org/10.1016/j.ijmedinf.2024.105609
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Artificial Intelligence for Regional Anesthesiology and Acute Pain Medicine in the 21st Century.
+TI  - Artificial Intelligence for Regional Anesthesiology and Acute Pain Medicine in the 21st Century.
+AU  - Schroeder, Kristopher Michael
+A1  - Schroeder, Kristopher Michael
+AU  - Nanda, Monika
+A1  - Nanda, Monika
+AU  - Mariano, Edward R
+A1  - Mariano, Edward R
+AU  - Gupta, Rajnish K
+A1  - Gupta, Rajnish K
+AU  - Maniker, Robert B
+A1  - Maniker, Robert B
+AU  - Elkassabany, Nabil M
+A1  - Elkassabany, Nabil M
+JO  - Anesthesiology clinics
+JF  - Anesthesiology clinics
+T2  - Anesthesiology clinics
+JA  - Anesthesiol Clin
+J2  - Anesthesiol Clin
+SN  - 1932-2275
+PY  - 2025
+Y1  - 2025
+DA  - 2025/Dec
+VL  - 43
+IS  - 4
+SP  - 831-842
+EP  - 842
+AN  - 41233111
+C1  - PMID: 41233111
+ID  - 41233111
+DO  - 10.1016/j.anclin.2025.02.009
+LA  - eng
+M3  - Journal Article
+M3  - Review
+AB  - Artificial intelligence (AI) is transforming regional anesthesiology and pain medicine through enhancements in clinical care and education. AI offers the ability to predict clinical outcomes, streamline care, and improve safety. The application of AI to image interpretation may enhance the accuracy and safety of regional anesthesiology procedures. AI concurrently offers personalized educational content and learner assessment tools. However, significant limitations exist, including data security concerns, accuracy, and biases from limited or even flawed training data. The future of AI in anesthesiology requires active involvement from anesthesiologists to guide its development and use, thus ensuring ethical and appropriate implementation.
+N2  - Artificial intelligence (AI) is transforming regional anesthesiology and pain medicine through enhancements in clinical care and education. AI offers the ability to predict clinical outcomes, streamline care, and improve safety. The application of AI to image interpretation may enhance the accuracy and safety of regional anesthesiology procedures. AI concurrently offers personalized educational content and learner assessment tools. However, significant limitations exist, including data security concerns, accuracy, and biases from limited or even flawed training data. The future of AI in anesthesiology requires active involvement from anesthesiologists to guide its development and use, thus ensuring ethical and appropriate implementation.
+KW  - Anesthesiology
+KW  - Artificial intelligence
+KW  - Education
+KW  - Large language models
+KW  - Pain medicine
+KW  - Regional anesthesia
+KW  - Technology
+KW  - Artificial Intelligence
+KW  - Humans
+KW  - Anesthesiology
+KW  - Anesthesia, Conduction
+KW  - Acute Pain
+UR  - https://pubmed.ncbi.nlm.nih.gov/41233111/
+L2  - https://doi.org/10.1016/j.anclin.2025.02.009
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Development and multicenter validation of machine learning models for predicting postoperative pulmonary complications after neurosurgery.
+TI  - Development and multicenter validation of machine learning models for predicting postoperative pulmonary complications after neurosurgery.
+AU  - Xu, Ming
+A1  - Xu, Ming
+AU  - Zhu, Wenhao
+A1  - Zhu, Wenhao
+AU  - Hou, Siyu
+A1  - Hou, Siyu
+AU  - Xu, Hongzhi
+A1  - Xu, Hongzhi
+AU  - Xia, Jingwen
+A1  - Xia, Jingwen
+AU  - Lin, Liyu
+A1  - Lin, Liyu
+AU  - Fu, Hao
+A1  - Fu, Hao
+AU  - You, Mingyu
+A1  - You, Mingyu
+AU  - Wang, Jiafeng
+A1  - Wang, Jiafeng
+AU  - Xie, Zhi
+A1  - Xie, Zhi
+AU  - Wen, Xiaohong
+A1  - Wen, Xiaohong
+AU  - Wang, Yingwei
+A1  - Wang, Yingwei
+JO  - Chinese medical journal
+JF  - Chinese medical journal
+T2  - Chinese medical journal
+JA  - Chin Med J (Engl)
+J2  - Chin Med J (Engl)
+SN  - 2542-5641
+PY  - 2025
+Y1  - 2025
+DA  - 2025/Sep/05
+VL  - 138
+IS  - 17
+SP  - 2170-2179
+EP  - 2179
+AN  - 39947880
+C1  - PMID: 39947880
+ID  - 39947880
+DO  - 10.1097/CM9.0000000000003433
+C2  - PMC12407168
+LA  - eng
+M3  - Journal Article
+M3  - Multicenter Study
+M3  - Validation Study
+AB  - Postoperative pulmonary complications (PPCs) are major adverse events in neurosurgical patients. This study aimed to develop and validate machine learning models predicting PPCs after neurosurgery. PPCs were defined according to the European Perioperative Clinical Outcome standards as occurring within 7 postoperative days. Data of cases meeting inclusion/exclusion criteria were extracted from the anesthesia information management system to create three datasets: The development (data of Huashan Hospital, Fudan University from 2018 to 2020), temporal validation (data of Huashan Hospital, Fudan University in 2021) and external validation (data of other three hospitals in 2023) datasets. Machine learning models of six algorithms were trained using either 35 retrievable and plausible features or the 11 features selected by Lasso regression. Temporal validation was conducted for all models and the 11-feature models were also externally validated. Independent risk factors were identified and feature importance in top models was analyzed. PPCs occurred in 712 of 7533 (9.5%), 258 of 2824 (9.1%), and 207 of 2300 (9.0%) patients in the development, temporal validation and external validation datasets, respectively. During cross-validation training, all models except Bayes demonstrated good discrimination with an area under the receiver operating characteristic curve (AUC) of 0.840. In temporal validation of full-feature models, deep neural network (DNN) performed the best with an AUC of 0.835 (95% confidence interval [CI]: 0.805-0.858) and a Brier score of 0.069, followed by Logistic regression (LR), random forest and XGBoost. The 11-feature models performed comparable to full-feature models with very close but statistically significantly lower AUCs, with the top models of DNN and LR in temporal and external validations. An 11-feature nomogram was drawn based on the LR algorithm and it outperformed the minimally modified Assess respiratory RIsk in Surgical patients in CATalonia (ARISCAT) and Laparoscopic Surgery Video Educational Guidelines (LAS VEGAS) scores with a higher AUC (LR: 0.824, ARISCAT: 0.672, LAS: 0.663). Independent risk factors based on multivariate LR mostly overlapped with Lasso-selected features, but lacked consistency with the important features using the Shapley additive explanation (SHAP) method of the LR model. The developed models, especially the DNN model and the nomogram, had good discrimination and calibration, and could be used for predicting PPCs in neurosurgical patients. The establishment of machine learning models and the ascertainment of risk factors might assist clinical decision support for improving surgical outcomes. ChiCTR 2100047474; https://www.chictr.org.cn/showproj.html?proj=128279 .
+N2  - Postoperative pulmonary complications (PPCs) are major adverse events in neurosurgical patients. This study aimed to develop and validate machine learning models predicting PPCs after neurosurgery. PPCs were defined according to the European Perioperative Clinical Outcome standards as occurring within 7 postoperative days. Data of cases meeting inclusion/exclusion criteria were extracted from the anesthesia information management system to create three datasets: The development (data of Huashan Hospital, Fudan University from 2018 to 2020), temporal validation (data of Huashan Hospital, Fudan University in 2021) and external validation (data of other three hospitals in 2023) datasets. Machine learning models of six algorithms were trained using either 35 retrievable and plausible features or the 11 features selected by Lasso regression. Temporal validation was conducted for all models and the 11-feature models were also externally validated. Independent risk factors were identified and feature importance in top models was analyzed. PPCs occurred in 712 of 7533 (9.5%), 258 of 2824 (9.1%), and 207 of 2300 (9.0%) patients in the development, temporal validation and external validation datasets, respectively. During cross-validation training, all models except Bayes demonstrated good discrimination with an area under the receiver operating characteristic curve (AUC) of 0.840. In temporal validation of full-feature models, deep neural network (DNN) performed the best with an AUC of 0.835 (95% confidence interval [CI]: 0.805-0.858) and a Brier score of 0.069, followed by Logistic regression (LR), random forest and XGBoost. The 11-feature models performed comparable to full-feature models with very close but statistically significantly lower AUCs, with the top models of DNN and LR in temporal and external validations. An 11-feature nomogram was drawn based on the LR algorithm and it outperformed the minimally modified Assess respiratory RIsk in Surgical patients in CATalonia (ARISCAT) and Laparoscopic Surgery Video Educational Guidelines (LAS VEGAS) scores with a higher AUC (LR: 0.824, ARISCAT: 0.672, LAS: 0.663). Independent risk factors based on multivariate LR mostly overlapped with Lasso-selected features, but lacked consistency with the important features using the Shapley additive explanation (SHAP) method of the LR model. The developed models, especially the DNN model and the nomogram, had good discrimination and calibration, and could be used for predicting PPCs in neurosurgical patients. The establishment of machine learning models and the ascertainment of risk factors might assist clinical decision support for improving surgical outcomes. ChiCTR 2100047474; https://www.chictr.org.cn/showproj.html?proj=128279 .
+KW  - Deep neural network
+KW  - Machine learning
+KW  - Neurosurgery
+KW  - Postoperative pulmonary complications
+KW  - Prediction model
+KW  - Adult
+KW  - Aged
+KW  - Female
+KW  - Humans
+KW  - Male
+KW  - Middle Aged
+KW  - Algorithms
+KW  - Lung Diseases
+KW  - Machine Learning
+KW  - Neurosurgical Procedures
+KW  - Postoperative Complications
+KW  - Risk Factors
+KW  - ROC Curve
+UR  - https://pubmed.ncbi.nlm.nih.gov/39947880/
+L2  - https://doi.org/10.1097/CM9.0000000000003433
+L1  - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12407168/pdf/
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Machine learning-based prediction of post-induction hypotension: identifying risk factors and enhancing anesthesia management.
+TI  - Machine learning-based prediction of post-induction hypotension: identifying risk factors and enhancing anesthesia management.
+AU  - Chen, Ming
+A1  - Chen, Ming
+AU  - Zhang, Dingyu
+A1  - Zhang, Dingyu
+JO  - BMC medical informatics and decision making
+JF  - BMC medical informatics and decision making
+T2  - BMC medical informatics and decision making
+JA  - BMC Med Inform Decis Mak
+J2  - BMC Med Inform Decis Mak
+SN  - 1472-6947
+PY  - 2025
+Y1  - 2025
+DA  - 2025/Feb/22
+VL  - 25
+IS  - 1
+SP  - 96
+AN  - 39987101
+C1  - PMID: 39987101
+ID  - 39987101
+DO  - 10.1186/s12911-025-02930-y
+C2  - PMC11846375
+LA  - eng
+M3  - Journal Article
+AB  - Post-induction hypotension (PIH) increases surgical complications including myocardial injury, acute kidney injury, delirium, stroke, prolonged hospitalization, and endangerment of the patient's life. Machine learning is an effective tool to analyze large amounts of data and identify perioperative complication factors. This study aims to identify risk factors for PIH and develop predictive models to support anesthesia management. A dataset of 5406 patients was analyzed using machine learning methods. Logistic regression, random forest, XGBoost, and neural network models were compared. Model performance was evaluated using the area under the receiver operating characteristic curve (AUROC), calibration curves, and decision curve analysis (DCA). The logistic regression model achieved an AUROC of 0.74 (95% CI: 0.71-0.77), outperforming the random forest (AUROC: 0.71), XGBoost (AUROC: 0.72), and neural network (AUROC: 0.72) models. In terms of calibration, logistic regression demonstrated superior performance, as reflected by Brier Scores and calibration curves, followed by XGBoost, random forest, and neural network. Decision curve analysis indicated that the logistic regression model provided the greatest clinical utility among all models. Baseline blood pressure, age, sex, type of surgery, platelet count, and certain anesthesia-inducing drugs were identified as important features. This study provides a valuable tool for personalized preoperative risk assessment and customized anesthesia management, allowing for early intervention and improved patient outcomes. Integration of machine learning models into electronic medical record systems can facilitate real-time risk assessment and prediction.
+N2  - Post-induction hypotension (PIH) increases surgical complications including myocardial injury, acute kidney injury, delirium, stroke, prolonged hospitalization, and endangerment of the patient's life. Machine learning is an effective tool to analyze large amounts of data and identify perioperative complication factors. This study aims to identify risk factors for PIH and develop predictive models to support anesthesia management. A dataset of 5406 patients was analyzed using machine learning methods. Logistic regression, random forest, XGBoost, and neural network models were compared. Model performance was evaluated using the area under the receiver operating characteristic curve (AUROC), calibration curves, and decision curve analysis (DCA). The logistic regression model achieved an AUROC of 0.74 (95% CI: 0.71-0.77), outperforming the random forest (AUROC: 0.71), XGBoost (AUROC: 0.72), and neural network (AUROC: 0.72) models. In terms of calibration, logistic regression demonstrated superior performance, as reflected by Brier Scores and calibration curves, followed by XGBoost, random forest, and neural network. Decision curve analysis indicated that the logistic regression model provided the greatest clinical utility among all models. Baseline blood pressure, age, sex, type of surgery, platelet count, and certain anesthesia-inducing drugs were identified as important features. This study provides a valuable tool for personalized preoperative risk assessment and customized anesthesia management, allowing for early intervention and improved patient outcomes. Integration of machine learning models into electronic medical record systems can facilitate real-time risk assessment and prediction.
+KW  - Logistic regression
+KW  - Machine learning
+KW  - Personalized medicine
+KW  - Post-induction hypotension
+KW  - Risk factors
+KW  - Humans
+KW  - Machine Learning
+KW  - Female
+KW  - Male
+KW  - Middle Aged
+KW  - Hypotension
+KW  - Aged
+KW  - Risk Factors
+KW  - Anesthesia
+KW  - Adult
+UR  - https://pubmed.ncbi.nlm.nih.gov/39987101/
+L2  - https://doi.org/10.1186/s12911-025-02930-y
+L1  - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11846375/pdf/
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+T1  - Deep learning model to identify and validate hypotension endotypes in surgical and critically ill patients.
+TI  - Deep learning model to identify and validate hypotension endotypes in surgical and critically ill patients.
+AU  - Jian, Zhongping
+A1  - Jian, Zhongping
+AU  - Liu, Xianfu
+A1  - Liu, Xianfu
+AU  - Kouz, Karim
+A1  - Kouz, Karim
+AU  - Settels, Jos J
+A1  - Settels, Jos J
+AU  - Davies, Simon
+A1  - Davies, Simon
+AU  - Scheeren, Thomas W L
+A1  - Scheeren, Thomas W L
+AU  - Fleming, Neal W
+A1  - Fleming, Neal W
+AU  - Veelo, Denise P
+A1  - Veelo, Denise P
+AU  - Vlaar, Alexander P J
+A1  - Vlaar, Alexander P J
+AU  - Sander, Michael
+A1  - Sander, Michael
+AU  - Cannesson, Maxime
+A1  - Cannesson, Maxime
+AU  - Berger, David
+A1  - Berger, David
+AU  - Pinsky, Michael R
+A1  - Pinsky, Michael R
+AU  - Sessler, Daniel I
+A1  - Sessler, Daniel I
+AU  - Hatib, Feras
+A1  - Hatib, Feras
+AU  - Saugel, Bernd
+A1  - Saugel, Bernd
+JO  - British journal of anaesthesia
+JF  - British journal of anaesthesia
+T2  - British journal of anaesthesia
+JA  - Br J Anaesth
+J2  - Br J Anaesth
+SN  - 1471-6771
+PY  - 2025
+Y1  - 2025
+DA  - 2025/Feb
+VL  - 134
+IS  - 2
+SP  - 308-316
+EP  - 316
+AN  - 39788817
+C1  - PMID: 39788817
+ID  - 39788817
+DO  - 10.1016/j.bja.2024.10.048
+C2  - PMC11775843
+LA  - eng
+M3  - Journal Article
+M3  - Validation Study
+AB  - Hypotension is associated with organ injury and death in surgical and critically ill patients. In clinical practice, treating hypotension remains challenging because it can be caused by various underlying haemodynamic alterations. We aimed to identify and independently validate endotypes of hypotension in big datasets of surgical and critically ill patients using unsupervised deep learning. We developed an unsupervised deep learning algorithm, specifically a deep learning autoencoder model combined with a Gaussian mixture model, to identify endotypes of hypotension based on stroke volume index, heart rate, systemic vascular resistance index, and stroke volume variation observed during episodes of hypotension. The algorithm was developed with data from 871 surgical patients who had 6962 hypotensive events and validated in two independent datasets, one including 1000 surgical patients who had 7904 hypotensive events and another including 1000 critically ill patients who had 53 821 hypotensive events. We defined hypotension as a mean arterial pressure <65 mm Hg for at least 1 min. In the development dataset, we identified four hypotension endotypes. Based on their physiological and clinical characteristics, we labelled them as: vasodilation, hypovolaemia, myocardial depression, and bradycardia. The same four hypotension endotypes were identified in the two independent validation datasets of surgical and critically ill patients. Unsupervised deep learning identified four endotypes of hypotension in surgical and critically ill patients: vasodilation, hypovolaemia, myocardial depression, and bradycardia. The algorithm provides the probability of each endotype for each hypotensive data point. Identifying hypotensive endotypes could guide clinicians to causal treatments for hypotension.
+N2  - Hypotension is associated with organ injury and death in surgical and critically ill patients. In clinical practice, treating hypotension remains challenging because it can be caused by various underlying haemodynamic alterations. We aimed to identify and independently validate endotypes of hypotension in big datasets of surgical and critically ill patients using unsupervised deep learning. We developed an unsupervised deep learning algorithm, specifically a deep learning autoencoder model combined with a Gaussian mixture model, to identify endotypes of hypotension based on stroke volume index, heart rate, systemic vascular resistance index, and stroke volume variation observed during episodes of hypotension. The algorithm was developed with data from 871 surgical patients who had 6962 hypotensive events and validated in two independent datasets, one including 1000 surgical patients who had 7904 hypotensive events and another including 1000 critically ill patients who had 53 821 hypotensive events. We defined hypotension as a mean arterial pressure <65 mm Hg for at least 1 min. In the development dataset, we identified four hypotension endotypes. Based on their physiological and clinical characteristics, we labelled them as: vasodilation, hypovolaemia, myocardial depression, and bradycardia. The same four hypotension endotypes were identified in the two independent validation datasets of surgical and critically ill patients. Unsupervised deep learning identified four endotypes of hypotension in surgical and critically ill patients: vasodilation, hypovolaemia, myocardial depression, and bradycardia. The algorithm provides the probability of each endotype for each hypotensive data point. Identifying hypotensive endotypes could guide clinicians to causal treatments for hypotension.
+KW  - anaesthesia
+KW  - blood pressure
+KW  - cardiac output
+KW  - haemodynamic monitoring
+KW  - hypotension
+KW  - machine learning
+KW  - Humans
+KW  - Hypotension
+KW  - Deep Learning
+KW  - Critical Illness
+KW  - Male
+KW  - Female
+KW  - Middle Aged
+KW  - Aged
+KW  - Algorithms
+KW  - Stroke Volume
+KW  - Heart Rate
+UR  - https://pubmed.ncbi.nlm.nih.gov/39788817/
+L2  - https://doi.org/10.1016/j.bja.2024.10.048
+L1  - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11775843/pdf/
+DB  - PubMed
+ER  - 
