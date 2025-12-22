@@ -2,6 +2,41 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.4.1] - 2025-12-22
+
+### Fixed
+- **Skills Installation Safety**: Never overwrite user's existing `copilot-instructions.md`
+- Automatic skill installation now checks for our marker before modifying
+- Manual `installSkills` command preserves user's custom configurations
+- Only updates files that were originally installed by this extension
+
+## [0.4.0] - 2025-12-22
+
+### Added
+- **🎯 Copilot Research Skills** ⭐
+  - Auto-installs workflow guides on first activation
+  - Teaches Copilot the correct research workflow
+  - `resources/skills/copilot-instructions.md` - Core instructions
+  - `resources/skills/research-workflow.md` - Detailed workflow guide
+- **New Command**: `Zotero MCP: Install Copilot Research Skills`
+  - Manually install/update workflow guides
+  - Creates `.github/copilot-instructions.md` in workspace
+  - Creates `.github/zotero-research-workflow.md`
+
+### Changed
+- **Enhanced MCP Tool Descriptions**:
+  - `search_pubmed_exclude_owned`: Added complete workflow guidance
+  - `quick_import_pmids`: Emphasizes asking Collection first
+  - `list_collections`: Marked as "must use before import"
+  - `get_session_pmids`: Added avoid-repeat-search guidance
+  - `get_cached_article`: Prioritize cache usage hint
+
+### Updated
+- PubMed Search MCP server to v0.1.16
+  - Session Tools for PMID persistence
+  - Multi-source search (Semantic Scholar, OpenAlex)
+- Zotero Keeper MCP server to v1.10.1
+
 ## [0.3.1] - 2025-12-15
 
 ### Changed

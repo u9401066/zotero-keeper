@@ -222,6 +222,7 @@ async function checkAndUpdateZoteroStatus(): Promise<boolean> {
 
 /**
  * Install Copilot instructions and skills to workspace (if not already installed)
+ * IMPORTANT: Never overwrite existing user files automatically!
  */
 async function installCopilotInstructions(context: vscode.ExtensionContext): Promise<void> {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
@@ -231,19 +232,23 @@ async function installCopilotInstructions(context: vscode.ExtensionContext): Pro
     
     const githubDir = path.join(workspaceFolder.uri.fsPath, '.github');
     const instructionsPath = path.join(githubDir, 'copilot-instructions.md');
+    const workflowDest = path.join(githubDir, 'zotero-research-workflow.md');
     
-    // Check if instructions already exist
-    if (fs.existsSync(instructionsPath)) {
-        // Check if it's our instructions (look for our marker)
-        const content = fs.readFileSync(instructionsPath, 'utf-8');
+    // Check if we already have our files installed (check workflow file, which is unique to us)
+    if (fs.existsSync(workflowDest)) {
+        // Check if it's our file (look for our marker)
+        const content = fs.readFileSync(workflowDest, 'utf-8');
         if (content.includes('Zotero + PubMed MCP')) {
-            return; // Already installed
+            return; // Already installed, don't touch anything
         }
-        
-        // User has their own instructions, don't overwrite
-        // But offer to add our guide as a separate file
+    }
+    
+    // Check if user has existing copilot-instructions.md
+    if (fs.existsSync(instructionsPath)) {
+        // User has their own instructions, don't overwrite!
+        // Only offer to add our separate workflow guide
         const choice = await vscode.window.showInformationMessage(
-            'Would you like to add Zotero+PubMed research workflow guide to help Copilot?',
+            'Would you like to add Zotero+PubMed research workflow guide? (Your existing files will not be modified)',
             'Yes', 'No'
         );
         
@@ -263,17 +268,13 @@ async function installCopilotInstructions(context: vscode.ExtensionContext): Pro
         const sourceInstructions = path.join(extensionPath, 'resources', 'skills', 'copilot-instructions.md');
         const sourceWorkflow = path.join(extensionPath, 'resources', 'skills', 'research-workflow.md');
         
-        // If our copilot-instructions.md exists in resources, copy it
-        if (fs.existsSync(sourceInstructions)) {
-            // If user has no instructions, create the main file
-            if (!fs.existsSync(instructionsPath)) {
-                fs.copyFileSync(sourceInstructions, instructionsPath);
-                console.log('Installed Copilot instructions');
-            }
+        // Only install copilot-instructions.md if user doesn't have one
+        if (fs.existsSync(sourceInstructions) && !fs.existsSync(instructionsPath)) {
+            fs.copyFileSync(sourceInstructions, instructionsPath);
+            console.log('Installed Copilot instructions');
         }
         
-        // Copy research workflow guide as additional reference
-        const workflowDest = path.join(githubDir, 'zotero-research-workflow.md');
+        // Only install workflow guide if it doesn't exist
         if (fs.existsSync(sourceWorkflow) && !fs.existsSync(workflowDest)) {
             fs.copyFileSync(sourceWorkflow, workflowDest);
             console.log('Installed research workflow guide');
@@ -418,37 +419,71 @@ function registerCommands(context: vscode.ExtensionContext): void {
             const sourceWorkflow = path.join(extensionPath, 'resources', 'skills', 'research-workflow.md');
             
             let installed = 0;
+            let skipped = 0;
             
-            // Check if user wants to overwrite
+            // Handle copilot-instructions.md - NEVER overwrite without explicit consent
             if (fs.existsSync(instructionsPath)) {
-                const choice = await vscode.window.showWarningMessage(
-                    'copilot-instructions.md already exists. Overwrite?',
-                    'Overwrite', 'Skip', 'Cancel'
-                );
-                if (choice === 'Cancel') {
-                    return;
-                }
-                if (choice === 'Overwrite' && fs.existsSync(sourceInstructions)) {
-                    fs.copyFileSync(sourceInstructions, instructionsPath);
-                    installed++;
+                // Check if it's our file or user's own
+                const content = fs.readFileSync(instructionsPath, 'utf-8');
+                if (content.includes('Zotero + PubMed MCP')) {
+                    // It's our file, safe to update
+                    if (fs.existsSync(sourceInstructions)) {
+                        fs.copyFileSync(sourceInstructions, instructionsPath);
+                        installed++;
+                    }
+                } else {
+                    // User's own file - DO NOT TOUCH
+                    vscode.window.showInformationMessage(
+                        'ℹ️ Your existing copilot-instructions.md was preserved (not modified).'
+                    );
+                    skipped++;
                 }
             } else if (fs.existsSync(sourceInstructions)) {
+                // No existing file, safe to create
                 fs.copyFileSync(sourceInstructions, instructionsPath);
                 installed++;
             }
             
-            // Install workflow guide
-            if (fs.existsSync(sourceWorkflow)) {
+            // Handle zotero-research-workflow.md - this is our unique file
+            if (fs.existsSync(workflowPath)) {
+                // Check if it's our file
+                const content = fs.readFileSync(workflowPath, 'utf-8');
+                if (content.includes('Zotero + PubMed MCP')) {
+                    // It's our file, safe to update
+                    if (fs.existsSync(sourceWorkflow)) {
+                        fs.copyFileSync(sourceWorkflow, workflowPath);
+                        installed++;
+                    }
+                } else {
+                    // User modified it - ask before overwriting
+                    const choice = await vscode.window.showWarningMessage(
+                        'zotero-research-workflow.md has been modified. Update to latest version?',
+                        'Update', 'Keep Mine'
+                    );
+                    if (choice === 'Update' && fs.existsSync(sourceWorkflow)) {
+                        fs.copyFileSync(sourceWorkflow, workflowPath);
+                        installed++;
+                    } else {
+                        skipped++;
+                    }
+                }
+            } else if (fs.existsSync(sourceWorkflow)) {
+                // No existing file, safe to create
                 fs.copyFileSync(sourceWorkflow, workflowPath);
                 installed++;
             }
             
+            // Show result
             if (installed > 0) {
                 vscode.window.showInformationMessage(
-                    `✅ Installed ${installed} Copilot skill file(s). Copilot will now better understand how to use research tools!`
+                    `✅ Installed/updated ${installed} Copilot skill file(s).${skipped > 0 ? ` ${skipped} file(s) preserved.` : ''}`
+                );
+            } else if (skipped > 0) {
+                vscode.window.showInformationMessage(
+                    `ℹ️ All ${skipped} file(s) preserved. Your custom configurations were not modified.`
                 );
             } else {
-                vscode.window.showInformationMessage('No files installed.');
+                vscode.window.showInformationMessage('No files to install.');
             }
         })
     );

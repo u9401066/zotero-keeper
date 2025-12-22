@@ -2,6 +2,12 @@
 
 🔬 **AI-powered research assistant** - Integrates Zotero reference management and PubMed literature search with GitHub Copilot.
 
+## ✨ What's New in v0.4.0
+
+- **🎯 Copilot Research Skills**: Auto-install workflow guides to help Copilot use MCP tools effectively
+- **📋 Enhanced Tool Descriptions**: MCP tools now include clear usage workflows
+- **🔄 Improved Import Flow**: Copilot now knows to ask which Collection before importing
+
 ## Features
 
 This extension provides two MCP (Model Context Protocol) servers that enable AI assistants like GitHub Copilot to:
@@ -12,12 +18,15 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 - Manage collections and tags
 - Smart duplicate detection
 - Batch import from PubMed searches
+- **Library analytics** (stats, orphan detection)
 
 ### 🔍 PubMed Search
 - Search PubMed literature with MeSH terms
+- **Multi-source search** (Semantic Scholar, OpenAlex)
 - Parse PICO clinical questions
 - Find related and citing articles
 - Get citation metrics (RCR)
+- **Session management** (retrieve previous search results)
 - Export in multiple formats (RIS, BibTeX, etc.)
 
 ## Requirements
@@ -35,6 +44,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
    - Create an isolated Python 3.11 environment
    - Install required packages (`zotero-keeper`, `pubmed-search-mcp`)
    - Register MCP servers with VS Code
+   - **Install Copilot research workflow guides**
 
 ## Usage
 
@@ -44,6 +54,18 @@ Once installed, the MCP tools will be available to GitHub Copilot. Try asking:
 - *"Find recent articles about CRISPR gene editing"*
 - *"Save this article to my Zotero library"*
 - *"Show my recent Zotero references"*
+- *"Get my last search results"* (uses session management)
+
+### 🎯 Copilot Research Skills
+
+The extension installs workflow guides that teach Copilot:
+
+1. **Search → Review → Ask Collection → Import** workflow
+2. Use `get_session_pmids` instead of re-searching
+3. Use cached articles to save API quota
+4. Check for duplicates before importing
+
+Run `Zotero MCP: Install Copilot Research Skills` to manually install/update.
 
 ## Extension Settings
 
@@ -59,7 +81,9 @@ Once installed, the MCP tools will be available to GitHub Copilot. Try asking:
 
 | Command | Description |
 |---------|-------------|
+| `Zotero MCP: Setup Wizard` | One-click setup |
 | `Zotero MCP: Check Zotero Connection` | Verify Zotero is accessible |
+| `Zotero MCP: Install Copilot Research Skills` | Install workflow guides |
 | `Zotero MCP: Reinstall Python Environment` | Reinstall uv and Python packages |
 | `Zotero MCP: Show Status` | Show extension status |
 | `Zotero MCP: Open Settings` | Open extension settings |
@@ -72,6 +96,7 @@ This extension uses [uv](https://github.com/astral-sh/uv) from Astral to manage 
 2. **Environment Setup**: Creates isolated venv with Python 3.11
 3. **Package Install**: Installs `zotero-keeper` and `pubmed-search-mcp` (10-100x faster than pip)
 4. **MCP Servers**: Starts both servers and registers with VS Code
+5. **Copilot Skills**: Installs research workflow guides to workspace
 
 The Python environment is completely isolated from your system Python.
 
@@ -86,6 +111,10 @@ The Python environment is completely isolated from your system Python.
 1. Check the "Zotero MCP" output channel for errors
 2. Try running `Zotero MCP: Reinstall Python Environment` command
 3. Restart VS Code
+
+### Copilot not using tools correctly
+1. Run `Zotero MCP: Install Copilot Research Skills` to update workflow guides
+2. The guides teach Copilot the correct order of operations
 
 ### uv download failed
 1. Check your internet connection
