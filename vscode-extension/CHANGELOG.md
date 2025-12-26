@@ -2,6 +2,21 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.4.2] - 2025-12-26
+
+### Fixed
+- **🐛 Critical: Python environment priority bug**
+  - Previously, extension always used system Python first, ignoring `useEmbeddedPython` setting
+  - Now correctly prioritizes uv-managed Python 3.11 when `useEmbeddedPython=true` (default)
+  - This ensures consistent behavior regardless of user's system Python version
+  - Users without Python installed can now use the extension out-of-box
+  - Users with incompatible Python versions (e.g., 3.9, 3.14) won't encounter errors
+
+### Changed
+- Improved error handling with fallback to system Python if uv fails
+- Better user feedback when Python environment setup fails
+- Added "Enable Embedded Python" option in error dialogs
+
 ## [0.4.1] - 2025-12-22
 
 ### Fixed

@@ -103,32 +103,46 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 }
 
 /**
- * Ensure Python is available - tries system Python first, then uv-managed
+ * Ensure Python is available - uses uv-managed Python by default for consistency
+ * 
+ * Priority (when useEmbeddedPython = true, the default):
+ *   1. Use uv-managed Python 3.11 (guaranteed compatible, self-contained)
+ *   2. Fall back to system Python only if uv fails
+ * 
+ * Priority (when useEmbeddedPython = false):
+ *   1. Use system Python (user's responsibility to ensure compatibility)
  */
 async function ensurePythonEnvironment(): Promise<string | undefined> {
     const config = vscode.workspace.getConfiguration('zoteroMcp');
     const useEmbedded = config.get<boolean>('useEmbeddedPython', true);
     
-    // First, try to find system Python
-    const systemPython = await pythonEnv.ensurePython();
-    
-    if (systemPython) {
-        console.log('Using system Python:', systemPython);
-        return systemPython;
-    }
-    
-    // No system Python found - use uv-managed Python if enabled
+    // When useEmbeddedPython is true (default), prioritize uv-managed Python
+    // This ensures consistent behavior regardless of user's system Python version
     if (useEmbedded) {
-        console.log('System Python not found, using uv to set up Python...');
+        console.log('Using uv-managed Python (useEmbeddedPython=true)...');
         statusBar.setStatus('installing', 'Zotero MCP: Setting up Python environment...');
         
         try {
-            // UvPythonManager.ensureReady() handles uv download + Python install + packages
+            // UvPythonManager.ensureReady() handles uv download + Python 3.11 install + packages
             const uvPythonPath = await uvPython.ensureReady();
             console.log('uv-managed Python ready:', uvPythonPath);
             return uvPythonPath;
         } catch (error) {
             console.error('Failed to set up Python with uv:', error);
+            
+            // Fall back to system Python if uv fails
+            console.log('Falling back to system Python...');
+            const systemPython = await pythonEnv.ensurePython();
+            if (systemPython) {
+                console.log('Using system Python as fallback:', systemPython);
+                vscode.window.showWarningMessage(
+                    'Using system Python as fallback. For best results, ensure Python 3.11+ is installed.',
+                    'OK'
+                );
+                return systemPython;
+            }
+            
+            // Both uv and system Python failed
             vscode.window.showErrorMessage(
                 `Failed to set up Python environment: ${error}`,
                 'Retry', 'Install Python Manually'
@@ -143,15 +157,25 @@ async function ensurePythonEnvironment(): Promise<string | undefined> {
         }
     }
     
-    // Neither system nor embedded Python available
+    // When useEmbeddedPython is false, use system Python only
+    console.log('Using system Python (useEmbeddedPython=false)...');
+    const systemPython = await pythonEnv.ensurePython();
+    
+    if (systemPython) {
+        console.log('Using system Python:', systemPython);
+        return systemPython;
+    }
+    
+    // No system Python found and embedded is disabled
     vscode.window.showErrorMessage(
-        'Python not found. Install Python or enable embedded Python in settings.',
-        'Download Python', 'Open Settings'
+        'Python not found. Install Python 3.11+ or enable embedded Python in settings.',
+        'Download Python', 'Enable Embedded Python'
     ).then(choice => {
         if (choice === 'Download Python') {
             vscode.env.openExternal(vscode.Uri.parse('https://www.python.org/downloads/'));
-        } else if (choice === 'Open Settings') {
-            vscode.commands.executeCommand('workbench.action.openSettings', 'zoteroMcp.useEmbeddedPython');
+        } else if (choice === 'Enable Embedded Python') {
+            config.update('useEmbeddedPython', true, vscode.ConfigurationTarget.Global);
+            vscode.commands.executeCommand('zoteroMcp.setupWizard');
         }
     });
     
