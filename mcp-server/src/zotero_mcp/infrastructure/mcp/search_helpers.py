@@ -10,7 +10,6 @@ Provides:
 
 import logging
 import re
-from typing import Any
 
 from rapidfuzz import fuzz
 
