@@ -3,7 +3,9 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      # Only trigger for MCP server releases (v1.x.x format)
+      # Extension releases use v*-ext tags and are published via VS Code Marketplace
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   release:
