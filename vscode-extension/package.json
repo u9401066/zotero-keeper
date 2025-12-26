@@ -105,10 +105,6 @@
                 "icon": "$(wand)"
             },
             {
-                "command": "zoteroMcp.showQuickStatus",
-                "title": "Zotero MCP: Refresh Status"
-            },
-            {
                 "command": "zoteroMcp.checkConnection",
                 "title": "Zotero MCP: Check Zotero Connection"
             },

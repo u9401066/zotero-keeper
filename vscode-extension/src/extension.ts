@@ -87,9 +87,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         // Step 5: Install Copilot skills/instructions if needed
         await installCopilotInstructions(context);
 
-        // Step 6: Update status bar with full details
+        // Step 6: Update status
         statusBar.setStatus('ready', 'Zotero MCP: Ready');
-        await updateStatusBarDetails();
         
         // Show walkthrough on first activation
         showFirstTimeWalkthrough(context);
@@ -237,45 +236,12 @@ function showFirstTimeWalkthrough(context: vscode.ExtensionContext): void {
 }
 
 /**
- * Check Zotero connection and update context + status bar
+ * Check Zotero connection and update context
  */
 async function checkAndUpdateZoteroStatus(): Promise<boolean> {
-    const config = vscode.workspace.getConfiguration('zoteroMcp');
     const connected = await checkZoteroConnection();
     await vscode.commands.executeCommand('setContext', CONTEXT_ZOTERO_CONNECTED, connected);
-    
-    // Update status bar with detailed info
-    statusBar.updateDetailedStatus({
-        zoteroConnected: connected,
-        zoteroHost: config.get<string>('zoteroHost', 'localhost'),
-        zoteroPort: config.get<number>('zoteroPort', 23119),
-    });
-    
     return connected;
-}
-
-/**
- * Update status bar with full environment status
- */
-async function updateStatusBarDetails(): Promise<void> {
-    const config = vscode.workspace.getConfiguration('zoteroMcp');
-    const isUvManaged = uvPython.isReady();
-    
-    statusBar.updateDetailedStatus({
-        pythonReady: !!resolvedPythonPath,
-        pythonPath: resolvedPythonPath,
-        pythonVersion: isUvManaged 
-            ? await uvPython.getPythonVersion() || undefined
-            : await pythonEnv.getPythonVersion() || undefined,
-        packagesReady: isUvManaged ? true : await pythonEnv.checkPackages(),
-        zoteroConnected: await checkZoteroConnection(),
-        zoteroHost: config.get<string>('zoteroHost', 'localhost'),
-        zoteroPort: config.get<number>('zoteroPort', 23119),
-        mcpServersEnabled: {
-            zoteroKeeper: config.get<boolean>('enableZoteroKeeper', true),
-            pubmedSearch: config.get<boolean>('enablePubmedSearch', true),
-        },
-    });
 }
 
 /**
@@ -357,25 +323,13 @@ function registerCommands(context: vscode.ExtensionContext): void {
         })
     );
 
-    // Quick status (no-op, just for tooltip link to work)
-    context.subscriptions.push(
-        vscode.commands.registerCommand('zoteroMcp.showQuickStatus', async () => {
-            // Status bar hover already shows info, clicking refreshes connection status
-            await updateStatusBarDetails();
-        })
-    );
-
-    // Check Zotero connection (silent update, no popup unless explicitly called)
+    // Check Zotero connection
     context.subscriptions.push(
         vscode.commands.registerCommand('zoteroMcp.checkConnection', async () => {
             const connected = await checkAndUpdateZoteroStatus();
-            await updateStatusBarDetails();
-            
-            // Show brief notification
             if (connected) {
-                vscode.window.setStatusBarMessage('$(check) Zotero connected', 3000);
+                vscode.window.showInformationMessage('✅ Zotero is running and accessible!');
             } else {
-                // Only show full dialog when explicitly checking
                 const choice = await vscode.window.showWarningMessage(
                     '❌ Cannot connect to Zotero. Make sure Zotero 7 is running.',
                     'Download Zotero', 'Open Settings'
@@ -408,7 +362,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
         })
     );
 
-    // Show full status page
+    // Show status
     context.subscriptions.push(
         vscode.commands.registerCommand('zoteroMcp.showStatus', async () => {
             const status = await getExtensionStatus();
