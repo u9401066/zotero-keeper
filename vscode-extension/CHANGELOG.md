@@ -2,6 +2,31 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.4.3] - 2025-12-26
+
+### Fixed
+- **🐛 Critical: Extension update breaks existing installation**
+  - Previously, `verifyReady()` only checked if packages could be imported, not their versions
+  - Extension updates requiring newer package versions would silently fail at runtime
+  - Now performs version verification against `MIN_VERSIONS` requirements
+  - Auto-upgrades packages when version requirements increase
+  
+- **🔒 Security: Improved Python script execution**
+  - Version check script now uses temp file instead of command-line string escaping
+  - Eliminates potential shell injection risks from malformed package versions
+
+### Added
+- **Linux ARM64 support** - Now supports Raspberry Pi and ARM-based Linux devices
+
+### Changed
+- Updated `pubmed-search-mcp` requirement from `>=0.1.15` to `>=0.1.18`
+  - New features: Europe PMC, CORE API, NCBI Extended (Gene/PubChem/ClinVar)
+  - Now provides 35+ MCP tools (up from ~20)
+- Package installation now uses `--upgrade` flag to ensure version requirements
+- Added `packaging` dependency for proper version comparison
+- `ensureReady()` now auto-upgrades packages instead of triggering full reinstall
+- Removed unused `exec` import from child_process
+
 ## [0.4.2] - 2025-12-26
 
 ### Fixed

@@ -15,7 +15,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as https from 'https';
 import * as http from 'http';
-import { execSync, exec } from 'child_process';
+import { execSync } from 'child_process';
 
 // UV download URLs from GitHub releases
 // Using latest stable version
@@ -27,6 +27,10 @@ const UV_DOWNLOADS: Record<string, { url: string; executable: string }> = {
     },
     'linux-x64': {
         url: `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz`,
+        executable: 'uv'
+    },
+    'linux-arm64': {
+        url: `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-aarch64-unknown-linux-gnu.tar.gz`,
         executable: 'uv'
     },
     'darwin-x64': {
@@ -42,11 +46,18 @@ const UV_DOWNLOADS: Record<string, { url: string; executable: string }> = {
 // Python version to install
 const PYTHON_VERSION = '3.11';
 
-// Required packages
+// Required packages with minimum versions
+// IMPORTANT: Update these when extension depends on new package features
 const REQUIRED_PACKAGES = [
     'zotero-keeper>=1.10.0',
-    'pubmed-search-mcp>=0.1.15',
+    'pubmed-search-mcp>=0.1.18',
 ];
+
+// Minimum versions for verification (extracted from REQUIRED_PACKAGES)
+const MIN_VERSIONS: Record<string, string> = {
+    'zotero_mcp': '1.10.0',
+    'pubmed_search': '0.1.18',
+};
 
 export class UvPythonManager {
     private context: vscode.ExtensionContext;
@@ -120,7 +131,7 @@ export class UvPythonManager {
     }
 
     /**
-     * Verify Python and packages are ready
+     * Verify Python and packages are ready (with version check)
      */
     async verifyReady(): Promise<boolean> {
         if (!fs.existsSync(this.pythonBinary)) {
@@ -130,26 +141,108 @@ export class UvPythonManager {
 
         try {
             execSync(`"${this.pythonBinary}" --version`, { encoding: 'utf-8', stdio: 'pipe' });
-            execSync(
-                `"${this.pythonBinary}" -c "import zotero_mcp; import pubmed_search"`,
-                { encoding: 'utf-8', stdio: 'pipe' }
-            );
-            this._isReady = true;
-            return true;
-        } catch {
+            
+            // Check if packages are installed AND meet minimum version requirements
+            // Write script to temp file to avoid shell escaping issues
+            const scriptPath = path.join(this.baseDir, 'version_check.py');
+            const versionCheckScript = `
+import sys
+try:
+    from packaging.version import Version
+except ImportError:
+    print("NEED_PACKAGING")
+    sys.exit(0)
+
+try:
+    import zotero_mcp
+    import pubmed_search
+except ImportError as e:
+    print(f"MISSING:{e}")
+    sys.exit(0)
+
+min_versions = ${JSON.stringify(MIN_VERSIONS)}
+actual = {
+    'zotero_mcp': getattr(zotero_mcp, '__version__', '0.0.0'),
+    'pubmed_search': getattr(pubmed_search, '__version__', '0.0.0'),
+}
+
+for pkg, min_ver in min_versions.items():
+    if Version(actual[pkg]) < Version(min_ver):
+        print(f"OUTDATED:{pkg}:{actual[pkg]}:<{min_ver}")
+        sys.exit(0)
+print("OK")
+`;
+            fs.writeFileSync(scriptPath, versionCheckScript, 'utf-8');
+            
+            try {
+                const result = execSync(
+                    `"${this.pythonBinary}" "${scriptPath}"`,
+                    { encoding: 'utf-8', stdio: 'pipe' }
+                );
+                
+                const output = result.trim();
+                if (output === 'OK') {
+                    this._isReady = true;
+                    return true;
+                }
+                
+                this.log(`Version check result: ${output}`);
+                this._isReady = false;
+                return false;
+            } finally {
+                // Clean up temp script
+                try { fs.unlinkSync(scriptPath); } catch { /* ignore */ }
+            }
+        } catch (error) {
+            this.log(`verifyReady failed: ${error}`);
             this._isReady = false;
             return false;
         }
     }
 
     /**
+     * Check if Python binary exists but packages need upgrade
+     */
+    private needsUpgradeOnly(): boolean {
+        return fs.existsSync(this.pythonBinary) && fs.existsSync(this.uvPath);
+    }
+
+    /**
      * Main entry point - ensure everything is ready
      */
     async ensureReady(): Promise<string> {
-        // Check if already set up
+        // Check if already set up with correct versions
         if (await this.verifyReady()) {
             this.log('Python environment is already ready');
             return this.pythonBinary;
+        }
+
+        // Check if we just need to upgrade packages (not full setup)
+        if (this.needsUpgradeOnly()) {
+            this.log('Python exists but packages need upgrade...');
+            
+            const upgraded = await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: 'Upgrading MCP packages',
+                    cancellable: false
+                },
+                async (progress) => {
+                    progress.report({ message: 'Checking package versions...' });
+                    const success = await this.upgradePackages();
+                    if (success) {
+                        progress.report({ message: 'Upgrade complete!' });
+                    }
+                    return success;
+                }
+            );
+
+            if (upgraded && await this.verifyReady()) {
+                this.log('Package upgrade successful');
+                return this.pythonBinary;
+            }
+            
+            this.log('Package upgrade failed, will try full setup');
         }
 
         // Prevent concurrent setup
@@ -314,14 +407,29 @@ export class UvPythonManager {
 
     /**
      * Install packages using uv (much faster than pip!)
+     * Uses --upgrade to ensure packages meet minimum version requirements
      */
     private async installPackages(onProgress?: (msg: string) => void): Promise<void> {
+        // First, install packaging for version checks
+        try {
+            const packagingCmd = `"${this.uvPath}" pip install --python "${this.pythonBinary}" packaging`;
+            execSync(packagingCmd, {
+                encoding: 'utf-8',
+                stdio: 'pipe',
+                timeout: 60000,
+                env: { ...process.env, VIRTUAL_ENV: this.venvDir }
+            });
+        } catch {
+            this.log('packaging already installed or install skipped');
+        }
+        
         for (const pkg of REQUIRED_PACKAGES) {
             const pkgName = pkg.split('>=')[0].split('[')[0];
-            this.log(`Installing: ${pkg}`);
+            this.log(`Installing/upgrading: ${pkg}`);
             onProgress?.(`Installing ${pkgName}...`);
             
-            const cmd = `"${this.uvPath}" pip install --python "${this.pythonBinary}" "${pkg}"`;
+            // Use --upgrade to ensure version requirements are met
+            const cmd = `"${this.uvPath}" pip install --upgrade --python "${this.pythonBinary}" "${pkg}"`;
             
             try {
                 execSync(cmd, {
@@ -341,6 +449,29 @@ export class UvPythonManager {
         }
         
         this.log('All packages installed successfully');
+    }
+
+    /**
+     * Upgrade packages to meet current version requirements
+     * Called when verifyReady() detects outdated packages
+     */
+    async upgradePackages(): Promise<boolean> {
+        if (!fs.existsSync(this.uvPath) || !fs.existsSync(this.pythonBinary)) {
+            return false;
+        }
+
+        this.log('Upgrading packages to meet version requirements...');
+
+        try {
+            await this.installPackages((msg) => {
+                this.log(msg);
+            });
+            return true;
+        } catch (error) {
+            this.log(`Package upgrade failed: ${error}`);
+            this.showOutput();  // Only show output on failure
+            return false;
+        }
     }
 
     /**
