@@ -286,7 +286,7 @@ class TestBatchImportResult:
         assert output["warnings"] == 0
         assert output["failed"] == 0
         assert len(output["added_items"]) == 1
-        assert output["collection_key"] == "COL001"
+        assert output["target"]["collection_key"] == "COL001"
         assert output["elapsed_time"] == 5.68  # Rounded to 2 decimals
     
     def test_batch_import_result_summary_basic(self):

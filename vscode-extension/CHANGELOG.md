@@ -17,6 +17,12 @@ All notable changes to the "Zotero + PubMed MCP" extension will be documented in
 
 ### Added
 - **Linux ARM64 support** - Now supports Raspberry Pi and ARM-based Linux devices
+- **Rich status bar tooltip** - Hover over status bar to see:
+  - Python environment status
+  - Package installation status
+  - Zotero connection status with host:port
+  - Quick action links (Settings, Check Connection, Full Status)
+- **New command**: `zoteroMcp.showQuickStatus` - Refresh status bar info
 
 ### Changed
 - Updated `pubmed-search-mcp` requirement from `>=0.1.15` to `>=0.1.18`
@@ -26,6 +32,8 @@ All notable changes to the "Zotero + PubMed MCP" extension will be documented in
 - Added `packaging` dependency for proper version comparison
 - `ensureReady()` now auto-upgrades packages instead of triggering full reinstall
 - Removed unused `exec` import from child_process
+- Check Connection now shows brief status bar message instead of popup when connected
+- Status bar click refreshes connection status (like Git extension)
 
 ## [0.4.2] - 2025-12-26
 
