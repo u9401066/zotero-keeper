@@ -1,6 +1,6 @@
 [project]
 name = "zotero-keeper"
-version = "1.10.2"
+version = "1.10.3"
 description = "MCP Server for managing local Zotero libraries - enables AI assistants to read and write bibliographic references"
 readme = "README.md"
 license = { text = "Apache-2.0" }

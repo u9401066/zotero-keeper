@@ -2,6 +2,52 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.0] - 2026-01-11
+
+### 🎉 Major Update: Simplified Tool Architecture
+
+**PubMed Search MCP v0.1.20** - True tool consolidation from 34 to **19 tools** (-44%)!
+
+#### Simplified for Better AI Experience
+
+Now there's just **one main entry point**: `unified_search`
+- 🔍 Auto-analyzes query complexity and intent
+- 🌐 Auto-searches multiple sources (PubMed, OpenAlex, Europe PMC, CORE)
+- 🔄 Auto-merges and deduplicates results
+- 📊 Smart ranking by relevance, impact, or recency
+
+#### Removed Redundant Tools (Merged into unified_search)
+
+- ~~search_literature~~ → Use `unified_search`
+- ~~search_europe_pmc~~ → Auto-integrated
+- ~~search_core~~ → Auto-integrated
+- ~~search_openalex~~ → Auto-integrated
+- ~~expand_search_queries~~ → Auto-executed when results < 10
+- ~~merge_search_results~~ → Auto-executed
+- ~~get_article_fulltext_links~~ → Merged into get_fulltext
+- ~~analyze_fulltext_access~~ → Auto-handled
+
+#### The New 19 Core Tools
+
+| Category | Tools |
+|----------|-------|
+| Search | `unified_search`, `parse_pico` |
+| Query | `generate_search_queries`, `analyze_search_query` |
+| Articles | `fetch_article_details`, `find_related/citing/references`, `get_citation_metrics` |
+| Export | `prepare_export` |
+| NCBI | `search_gene/compound`, `get_gene/compound_details`, `search_clinvar`, `get_*_literature` |
+| Citation | `build_citation_tree`, `suggest_citation_tree` |
+
+### Updated
+
+- **Zotero Keeper MCP v1.10.3** - Synced with simplified architecture
+
+### Benefits
+
+- 🤖 **Simpler for AI Agents** - Fewer decisions, one main entry point
+- ⚡ **Same Power** - All features preserved through integration
+- 📖 **Cleaner Docs** - Less confusion about which tool to use
+
 ## [0.4.4] - 2026-01-11
 
 ### Updated
