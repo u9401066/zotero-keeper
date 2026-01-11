@@ -61,10 +61,30 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
         // PubMed Search MCP Server
         if (config.get<boolean>('enablePubmedSearch', true)) {
             const ncbiEmail = config.get<string>('ncbiEmail', '');
+            const ncbiApiKey = config.get<string>('ncbiApiKey', '');
+            const coreApiKey = config.get<string>('coreApiKey', '');
+            const semanticScholarApiKey = config.get<string>('semanticScholarApiKey', '');
+            const httpProxy = config.get<string>('httpProxy', '');
+            const httpsProxy = config.get<string>('httpsProxy', '');
             
             const env: Record<string, string> = {};
             if (ncbiEmail) {
                 env['NCBI_EMAIL'] = ncbiEmail;
+            }
+            if (ncbiApiKey) {
+                env['NCBI_API_KEY'] = ncbiApiKey;
+            }
+            if (coreApiKey) {
+                env['CORE_API_KEY'] = coreApiKey;
+            }
+            if (semanticScholarApiKey) {
+                env['S2_API_KEY'] = semanticScholarApiKey;
+            }
+            if (httpProxy) {
+                env['HTTP_PROXY'] = httpProxy;
+            }
+            if (httpsProxy) {
+                env['HTTPS_PROXY'] = httpsProxy;
             }
 
             servers.push(
@@ -73,7 +93,7 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
                     this.pythonPath,
                     ['-m', 'pubmed_search.mcp'],
                     env,
-                    '0.1.15'
+                    '0.1.18'
                 )
             );
         }

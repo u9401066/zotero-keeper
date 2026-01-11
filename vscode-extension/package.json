@@ -75,8 +75,38 @@
                 "zoteroMcp.ncbiEmail": {
                     "type": "string",
                     "default": "",
-                    "description": "Email for NCBI/PubMed API (recommended for high-volume searches)",
+                    "description": "Email for NCBI/PubMed API (required by NCBI policy)",
                     "order": 20
+                },
+                "zoteroMcp.ncbiApiKey": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "NCBI API Key for higher rate limits (10 req/s instead of 3 req/s). [Get API Key](https://www.ncbi.nlm.nih.gov/account/settings/)",
+                    "order": 21
+                },
+                "zoteroMcp.coreApiKey": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "CORE API Key for open access search (5000 req/day). [Get API Key](https://core.ac.uk/services/api)",
+                    "order": 22
+                },
+                "zoteroMcp.semanticScholarApiKey": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "Semantic Scholar API Key for AI-powered search. [Get API Key](https://www.semanticscholar.org/product/api)",
+                    "order": 23
+                },
+                "zoteroMcp.httpProxy": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "HTTP proxy for API requests (e.g., `http://proxy:8080`)",
+                    "order": 24
+                },
+                "zoteroMcp.httpsProxy": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "HTTPS proxy for API requests (e.g., `https://proxy:8080`)",
+                    "order": 25
                 },
                 "zoteroMcp.enableZoteroKeeper": {
                     "type": "boolean",

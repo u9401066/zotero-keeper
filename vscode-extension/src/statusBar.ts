@@ -29,6 +29,52 @@ export class StatusBarManager {
         this.statusBarItem.backgroundColor = this.getBackgroundColor(type);
     }
 
+    /**
+     * Get detailed status including API configuration
+     */
+    getApiStatus(): { hasApiKeys: boolean; details: string[] } {
+        const config = vscode.workspace.getConfiguration('zoteroMcp');
+        const details: string[] = [];
+        let hasApiKeys = false;
+
+        // Check email (required)
+        const email = config.get<string>('ncbiEmail', '');
+        if (email) {
+            details.push('✅ NCBI Email configured');
+        } else {
+            details.push('⚠️ NCBI Email not set (recommended)');
+        }
+
+        // Check optional API keys
+        if (config.get<string>('ncbiApiKey', '')) {
+            details.push('✅ NCBI API Key (10 req/s)');
+            hasApiKeys = true;
+        } else {
+            details.push('ℹ️ NCBI API Key not set (3 req/s limit)');
+        }
+
+        if (config.get<string>('coreApiKey', '')) {
+            details.push('✅ CORE API Key (5000 req/day)');
+            hasApiKeys = true;
+        } else {
+            details.push('ℹ️ CORE API Key not set (100 req/day limit)');
+        }
+
+        if (config.get<string>('semanticScholarApiKey', '')) {
+            details.push('✅ Semantic Scholar API Key');
+            hasApiKeys = true;
+        }
+
+        // Check proxy
+        const httpProxy = config.get<string>('httpProxy', '');
+        const httpsProxy = config.get<string>('httpsProxy', '');
+        if (httpProxy || httpsProxy) {
+            details.push(`🌐 Proxy: ${httpProxy || httpsProxy}`);
+        }
+
+        return { hasApiKeys, details };
+    }
+
     private getIcon(type: StatusType): string {
         switch (type) {
             case 'initializing':
@@ -45,13 +91,16 @@ export class StatusBarManager {
     }
 
     private getTooltip(type: StatusType): string {
+        const { details } = this.getApiStatus();
+        const apiInfo = details.slice(0, 3).join(' | ');
+        
         switch (type) {
             case 'initializing':
                 return 'Zotero MCP is initializing...';
             case 'installing':
                 return 'Installing Python packages...';
             case 'ready':
-                return 'Zotero + PubMed MCP servers ready. Click for status.';
+                return `Zotero + PubMed MCP servers ready\n${apiInfo}\nClick for full status.`;
             case 'warning':
                 return 'Zotero MCP has warnings. Click for details.';
             case 'error':
