@@ -32,6 +32,7 @@ from .resources import register_resources
 from .saved_search_tools import register_saved_search_tools
 from .search_tools import is_search_tools_available, register_search_tools
 from .smart_tools import register_smart_tools
+from .unified_import_tools import register_unified_import_tools
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +123,10 @@ class ZoteroKeeperServer:
         # Register Analytics tools (library stats, orphan detection)
         register_analytics_tools(self._mcp, self._zotero)
         logger.info("Analytics tools enabled (get_library_stats, find_orphan_items)")
+
+        # Register Unified Import tool (single entry point for all imports)
+        register_unified_import_tools(self._mcp, self._zotero)
+        logger.info("Unified import enabled (import_articles) ⭐ One tool for all sources!")
 
 
     def _register_connection_tool(self):

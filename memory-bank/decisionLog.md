@@ -2,6 +2,32 @@
 
 > 📝 重要架構和實作決策記錄
 
+## 2026-01-12
+
+### DEC-014: 統一匯入工具 import_articles
+- **決策**: 建立單一 `import_articles` 工具處理所有來源的匯入
+- **理由**:
+  1. 原有多個 import 工具 (import_ris_to_zotero, import_from_pmids, quick_import_pmids) 功能重疊
+  2. pubmed-search-mcp 已有 `UnifiedArticle` 標準格式，支援 PubMed/Europe PMC/CORE/CrossRef/OpenAlex/Semantic Scholar
+  3. 統一接口讓 Agent 更容易使用
+  4. 兩個 MCP 間透過標準化格式通訊
+- **實作**:
+  - 新增 `unified_import_tools.py`
+  - 接受 `UnifiedArticle.to_dict()` 格式或 RIS 文字
+  - 自動轉換為 Zotero 格式
+  - 保留 collection 防呆機制
+- **工作流**: `pubmed-search-mcp (search) → articles → zotero-keeper (import_articles)`
+
+### DEC-015: Collection 防呆機制完善
+- **決策**: 所有 import 工具必須有 collection 驗證
+- **實作**: 
+  - 如果 `collection_name` 找不到 → 回傳錯誤 + 可用 collections 清單
+  - 如果沒指定 collection → 存到 root 但加 warning
+  - 成功時回傳 `saved_to` 資訊確認
+- **修改工具**: import_ris_to_zotero, import_from_pmids, quick_import_pmids, import_articles
+
+---
+
 ## 2025-12-16
 
 ### DEC-001: 專案整理優先順序

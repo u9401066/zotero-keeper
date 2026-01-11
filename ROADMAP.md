@@ -589,7 +589,152 @@ v3.0: Chat Participant (最佳體驗)
   - 💡 方案 B: 透過 Zotero 的 `Run JavaScript` 功能
   - 💡 方案 C: 等待 Zotero 官方開放 Local API 寫入
 
-### 相關外掛資源
+---
+
+## Phase 5.5: Zotero Plugin Development 📋 **NEW!**
+
+> 🎯 **核心價值**：開發獨立的 Zotero 7 插件，擴展 Local API 支援完整 CRUD
+>
+> 📚 **參考資源**：
+> - [Zotero 7 for Developers](https://www.zotero.org/support/dev/zotero_7_for_developers)
+> - [zotero-plugin-template](https://github.com/windingwind/zotero-plugin-template) (747⭐)
+> - [Make It Red](https://github.com/zotero/make-it-red) - 官方示例插件
+
+### 研究發現 (2026-01-12)
+
+**Local API 設計限制**：
+```javascript
+// server_localAPI.js 第 28-43 行
+// "Write access is not yet supported."
+// 所有 LocalAPIEndpoint 的 supportedMethods 都只有 ['GET']
+```
+
+**但可以透過插件擴展！**：
+```javascript
+// 在 Zotero 插件中註冊自定義端點
+Zotero.Server.Endpoints["/mcp/items/:itemKey/collections"] = class {
+    supportedMethods = ['POST', 'DELETE'];
+    async init({ method, pathParams, data }) {
+        // 完整的 CRUD 操作！
+    }
+};
+```
+
+### 插件規格設計
+
+| 項目 | 值 |
+|------|-----|
+| 插件名稱 | `zotero-mcp-bridge` |
+| 目標 Zotero 版本 | 7.x |
+| 技術棧 | Bootstrap plugin + manifest.json |
+| 授權 | AGPL-3.0 (與 Zotero 相同) |
+
+### 預計端點
+
+```text
+POST   /mcp/items/:itemKey/collections     # 加入 Collection
+DELETE /mcp/items/:itemKey/collections     # 從 Collection 移除
+PATCH  /mcp/items/:itemKey                 # 更新 Item 欄位
+DELETE /mcp/items/:itemKey                 # 刪除 Item
+POST   /mcp/items                          # 新增 Item (繞過 Connector 限制)
+POST   /mcp/batch/add-to-collection        # 批次加入 Collection
+POST   /mcp/batch/remove-duplicates        # 批次移除重複
+```
+
+### 開發階段
+
+#### Phase 5.5.1: 環境設置 (4h) 📋
+
+- 📋 Fork zotero-plugin-template
+- 📋 設置開發環境 (Node.js, Zotero Beta)
+- 📋 理解 bootstrap.js 生命週期
+- 📋 測試 "Make It Red" 示例插件
+
+#### Phase 5.5.2: 核心功能 (8h) 📋
+
+- 📋 註冊 `/mcp/` 端點到 `Zotero.Server.Endpoints`
+- 📋 實作 `addToCollection` 端點
+- 📋 實作 `removeFromCollection` 端點
+- 📋 實作 `updateItem` 端點
+- 📋 實作 `deleteItem` 端點
+
+#### Phase 5.5.3: 整合測試 (4h) 📋
+
+- 📋 從 zotero-keeper 呼叫新端點
+- 📋 錯誤處理和 edge cases
+- 📋 權限驗證機制
+
+#### Phase 5.5.4: 發布 (4h) 📋
+
+- 📋 打包 XPI
+- 📋 建立 update.json
+- 📋 在 GitHub Releases 發布
+- 📋 提交到 Zotero Plugin Registry (可選)
+
+### 程式碼範例
+
+```javascript
+// bootstrap.js
+function startup({ rootURI }) {
+    // 載入自定義端點
+    Services.scriptloader.loadSubScript(rootURI + "chrome/content/server_mcp.js");
+    Zotero.debug("MCP Bridge endpoints registered!");
+}
+
+function shutdown() {
+    // 清理端點
+    delete Zotero.Server.Endpoints["/mcp/items/:itemKey/collections"];
+    delete Zotero.Server.Endpoints["/mcp/items/:itemKey"];
+}
+
+// server_mcp.js - 加入 Collection 範例
+Zotero.Server.Endpoints["/mcp/items/:itemKey/collections"] = class {
+    supportedMethods = ['POST', 'DELETE'];
+    
+    async init({ method, pathParams, data }) {
+        let item = await Zotero.Items.getByLibraryAndKeyAsync(
+            Zotero.Libraries.userLibraryID, 
+            pathParams.itemKey
+        );
+        
+        if (!item) return 404;
+        
+        if (method === 'POST') {
+            let collection = Zotero.Collections.getByLibraryAndKey(
+                Zotero.Libraries.userLibraryID, 
+                data.collectionKey
+            );
+            if (!collection) return [400, 'text/plain', 'Collection not found'];
+            
+            item.addToCollection(collection.id);
+            await item.saveTx();
+            return [200, 'application/json', JSON.stringify({ 
+                success: true,
+                item: pathParams.itemKey,
+                collection: data.collectionKey
+            })];
+        }
+        
+        if (method === 'DELETE') {
+            item.removeFromCollection(data.collectionKey);
+            await item.saveTx();
+            return [200, 'application/json', JSON.stringify({ success: true })];
+        }
+    }
+};
+```
+
+### 優先順序
+
+```
+v2.0.0 (短期): pyzotero + Web API ← 目前推薦方案
+       ↓
+v2.5.0 (中期): zotero-mcp-bridge 插件 ← 本階段目標
+       ↓
+v3.0.0 (長期): 等待 Zotero 官方開放 Local API 寫入
+```
+
+### 相關資源
 
 | 外掛 | Stars | 功能 | 連結 |
 |------|-------|------|------|

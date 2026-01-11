@@ -41,6 +41,27 @@ ZOTERO_PORT=23119
 
 ## MCP Tools
 
+### 🌟 Unified Import (NEW in v1.11.0)
+
+| Tool | Description |
+|------|-------------|
+| `import_articles` | **⭐ One tool for ALL imports** - accepts articles from any pubmed-search-mcp tool |
+
+**Workflow:**
+```python
+# Step 1: Search with pubmed-search-mcp
+results = search_literature("CRISPR gene therapy", limit=10)
+
+# Step 2: Import to Zotero (ANY source works!)
+import_articles(
+    articles=results["articles"],
+    collection_name="CRISPR Research",
+    tags=["2024", "review"]
+)
+```
+
+**Supported sources:** PubMed, Europe PMC, CORE, CrossRef, OpenAlex, Semantic Scholar, RIS
+
 ### Core Tools
 | Tool | Description |
 |------|-------------|

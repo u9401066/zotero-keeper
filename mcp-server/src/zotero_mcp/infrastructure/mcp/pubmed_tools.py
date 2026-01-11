@@ -243,20 +243,35 @@ def register_pubmed_tools(mcp, zotero_client):
     @mcp.tool()
     async def import_ris_to_zotero(
         ris_text: str,
+        collection_name: str | None = None,
+        collection_key: str | None = None,
         tags: list[str] | None = None,
     ) -> dict[str, Any]:
         """
         📥 Import RIS format citations to Zotero
 
+        ⚠️ DEPRECATED: Use `import_articles` instead for unified import!
+        This tool is kept for backward compatibility.
+
         將 RIS 格式的引用文獻匯入 Zotero
 
-        Recommended workflow with pubmed-search-mcp:
+        🔄 NEW RECOMMENDED WORKFLOW:
+        1. pubmed: search_literature("query") → articles
+        2. keeper: import_articles(articles=articles, collection_name="...")
+
+        LEGACY workflow with pubmed-search-mcp:
         1. pubmed: search_literature("query") → PMIDs
         2. pubmed: prepare_export(pmids, format="ris") → RIS text
-        3. keeper: import_ris_to_zotero(ris_text) → Zotero
+        3. keeper: import_ris_to_zotero(ris_text, collection_name="My Collection")
+
+        ⚠️ COLLECTION 防呆:
+        - 若指定 collection_name/collection_key 但找不到，會回傳錯誤
+        - 不會靜默存到 library root
 
         Args:
             ris_text: RIS format citation text (from prepare_export or other sources)
+            collection_name: Target collection name (recommended - human readable)
+            collection_key: Target collection key (alternative)
             tags: Optional tags to add to all imported items
 
         Returns:
@@ -273,6 +288,7 @@ def register_pubmed_tools(mcp, zotero_client):
                 DO  - 10.1126/science.example
                 ER  -
                 \"\"\",
+                collection_name="Gene Editing Research",
                 tags=["gene-editing", "review"]
             )
         """
@@ -286,6 +302,53 @@ def register_pubmed_tools(mcp, zotero_client):
                     "message": "No valid items found in RIS text",
                     "imported": 0,
                 }
+
+            # === 防呆機制: Collection 驗證 ===
+            target_key = None
+            target_name = None
+
+            if collection_key:
+                try:
+                    col = await zotero_client.get_collection(collection_key)
+                    target_key = collection_key
+                    target_name = col.get("data", {}).get("name", collection_key)
+                except Exception:
+                    # 取得可用 collections 列表
+                    collections = await zotero_client.list_collections()
+                    available = [
+                        {"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")}
+                        for c in collections[:20]
+                    ]
+                    return {
+                        "success": False,
+                        "error": f"Collection key '{collection_key}' not found",
+                        "available_collections": available,
+                        "hint": "Use collection_name instead for human-readable names",
+                    }
+
+            elif collection_name:
+                found = await zotero_client.find_collection_by_name(collection_name)
+                if found:
+                    target_key = found.get("key")
+                    target_name = found.get("data", {}).get("name", collection_name)
+                else:
+                    # 取得可用 collections 列表
+                    collections = await zotero_client.list_collections()
+                    available = [
+                        {"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")}
+                        for c in collections[:20]
+                    ]
+                    return {
+                        "success": False,
+                        "error": f"Collection '{collection_name}' not found",
+                        "available_collections": available,
+                        "hint": "Check spelling or use list_collections to see all collections",
+                    }
+
+            # 設定 collection（如果有指定）
+            if target_key:
+                for item in items:
+                    item["collections"] = [target_key]
 
             # Add custom tags
             if tags:
@@ -301,12 +364,21 @@ def register_pubmed_tools(mcp, zotero_client):
             # Build response
             imported_titles = [item.get("title", "Untitled")[:50] for item in items]
 
-            return {
+            result = {
                 "success": True,
                 "imported": len(items),
                 "items": imported_titles,
                 "message": f"Successfully imported {len(items)} items to Zotero",
             }
+
+            # 加入 collection 資訊
+            if target_key:
+                result["saved_to"] = {"key": target_key, "name": target_name}
+            else:
+                result["saved_to"] = "My Library (root)"
+                result["warning"] = "No collection specified - items saved to library root. Consider specifying collection_name."
+
+            return result
 
         except Exception as e:
             logger.error(f"RIS import failed: {e}")
@@ -318,26 +390,41 @@ def register_pubmed_tools(mcp, zotero_client):
     @mcp.tool()
     async def import_from_pmids(
         pmids: list[str],
+        collection_name: str | None = None,
+        collection_key: str | None = None,
         tags: list[str] | None = None,
         include_citation_metrics: bool = True,
     ) -> dict[str, Any]:
         """
         📥 Import PubMed articles directly by PMID
 
+        ⚠️ DEPRECATED: Use `import_articles` instead for unified import!
+        This tool is kept for backward compatibility.
+
         直接透過 PMID 匯入 PubMed 文獻到 Zotero
 
         Requires: pip install "zotero-keeper[pubmed]"
+
+        🔄 NEW RECOMMENDED WORKFLOW:
+        1. pubmed: search_literature("query") → articles
+        2. keeper: import_articles(articles=articles, collection_name="...")
 
         📊 CITATION METRICS (RCR):
         When include_citation_metrics=True (default), automatically fetches
         Relative Citation Ratio from iCite and stores in Zotero's extra field.
 
+        ⚠️ COLLECTION 防呆:
+        - 若指定 collection_name/collection_key 但找不到，會回傳錯誤
+        - 不會靜默存到 library root
+
         Alternative workflow (without pubmed extra):
         1. pubmed: search_literature("query") → PMIDs
-        2. keeper: import_from_pmids(pmids) → Zotero
+        2. keeper: import_from_pmids(pmids, collection_name="My Collection")
 
         Args:
             pmids: List of PubMed IDs ["12345678", "87654321"]
+            collection_name: Target collection name (recommended - human readable)
+            collection_key: Target collection key (alternative)
             tags: Optional tags to add to all items
             include_citation_metrics: If True (default), fetch RCR from iCite
 
@@ -347,6 +434,7 @@ def register_pubmed_tools(mcp, zotero_client):
         Example:
             import_from_pmids(
                 pmids=["28968381", "28324054"],
+                collection_name="ML Research",
                 tags=["ML", "review"]
             )
         """
@@ -359,6 +447,46 @@ def register_pubmed_tools(mcp, zotero_client):
             }
 
         try:
+            # === 防呆機制: Collection 驗證 ===
+            target_key = None
+            target_name = None
+
+            if collection_key:
+                try:
+                    col = await zotero_client.get_collection(collection_key)
+                    target_key = collection_key
+                    target_name = col.get("data", {}).get("name", collection_key)
+                except Exception:
+                    collections = await zotero_client.list_collections()
+                    available = [
+                        {"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")}
+                        for c in collections[:20]
+                    ]
+                    return {
+                        "success": False,
+                        "error": f"Collection key '{collection_key}' not found",
+                        "available_collections": available,
+                        "hint": "Use collection_name instead for human-readable names",
+                    }
+
+            elif collection_name:
+                found = await zotero_client.find_collection_by_name(collection_name)
+                if found:
+                    target_key = found.get("key")
+                    target_name = found.get("data", {}).get("name", collection_name)
+                else:
+                    collections = await zotero_client.list_collections()
+                    available = [
+                        {"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")}
+                        for c in collections[:20]
+                    ]
+                    return {
+                        "success": False,
+                        "error": f"Collection '{collection_name}' not found",
+                        "available_collections": available,
+                        "hint": "Check spelling or use list_collections to see all collections",
+                    }
+
             import os
             email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
             client = PubMedClient(email=email)
@@ -390,6 +518,9 @@ def register_pubmed_tools(mcp, zotero_client):
             zotero_items = []
             for article in articles:
                 item = _pmid_to_zotero_item(article)
+                # 設定 collection
+                if target_key:
+                    item["collections"] = [target_key]
                 if tags:
                     existing_tags = item.get("tags", [])
                     for tag in tags:
@@ -415,6 +546,13 @@ def register_pubmed_tools(mcp, zotero_client):
 
             if include_citation_metrics:
                 result["citation_metrics_fetched"] = citation_metrics_count
+
+            # 加入 collection 資訊
+            if target_key:
+                result["saved_to"] = {"key": target_key, "name": target_name}
+            else:
+                result["saved_to"] = "My Library (root)"
+                result["warning"] = "No collection specified - items saved to library root. Consider specifying collection_name."
 
             return result
 
@@ -448,6 +586,11 @@ def register_pubmed_tools(mcp, zotero_client):
         2. Use list_collections to show available collections
         3. Then call this tool with collection_name parameter
 
+        ⚠️ COLLECTION 防呆機制:
+        - 如果指定 collection_name 但找不到，會回傳錯誤和可用清單
+        - 避免意外存到 Library root！
+        - 不指定 collection_name 則存到 root（需明確知道）
+
         💡 GET PMIDs FROM:
         - search_pubmed_exclude_owned → new_pmids field
         - pubmed-search-mcp's get_session_pmids tool
@@ -460,7 +603,7 @@ def register_pubmed_tools(mcp, zotero_client):
 
         Args:
             pmids: Comma-separated PMIDs (e.g., "38353755,37864754")
-            collection_name: Optional collection name to add items to
+            collection_name: Optional collection name to add items to (防呆: 找不到會報錯!)
             tags: Optional tags to add to all imported items
 
         Returns:
@@ -493,14 +636,36 @@ def register_pubmed_tools(mcp, zotero_client):
                 from ..pubmed import fetch_pubmed_articles
                 from ..mappers.pubmed_mapper import map_pubmed_to_zotero
 
-                # Resolve collection key if name provided
+                # === 防呆機制: Collection 驗證 ===
                 collection_key = None
+                collection_info = None
                 if collection_name:
                     collections = await zotero_client.list_collections()
+                    found = None
                     for col in collections:
                         if col.get("name", "").lower() == collection_name.lower():
+                            found = col
                             collection_key = col.get("key")
                             break
+
+                    # 如果找不到 collection，回傳錯誤！不是靜默存到 root！
+                    if not found:
+                        similar = [
+                            c.get("name") for c in collections
+                            if collection_name.lower() in c.get("name", "").lower()
+                        ][:5]
+                        return {
+                            "success": False,
+                            "error": f"Collection '{collection_name}' not found",
+                            "hint": f"Similar: {similar}" if similar else "Use list_collections() first",
+                            "available_collections": [
+                                {"key": c.get("key"), "name": c.get("name")}
+                                for c in collections[:10]
+                            ],
+                        }
+
+                    collection_info = {"key": collection_key, "name": found.get("name")}
+                    logger.info(f"Resolved collection '{collection_name}' → key: {collection_key}")
 
                 # Fetch articles
                 articles = fetch_pubmed_articles(pmid_list)
@@ -524,13 +689,18 @@ def register_pubmed_tools(mcp, zotero_client):
                     title="Quick PubMed Import",
                 )
 
-                return {
+                result = {
                     "success": True,
                     "imported": len(zotero_items),
                     "pmids": pmid_list,
-                    "collection": collection_name if collection_key else None,
                     "message": f"Successfully imported {len(zotero_items)} articles",
                 }
+                # 加入 collection_info 讓使用者確認
+                if collection_info:
+                    result["collection_info"] = collection_info
+                else:
+                    result["warning"] = "No collection specified - items saved to library root"
+                return result
 
             # Fallback to import_from_pmids if pubmed package available
             elif PUBMED_AVAILABLE:

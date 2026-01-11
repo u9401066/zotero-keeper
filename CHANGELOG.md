@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.11.0] - 2026-01-12
+
+### 🚀 Unified Import & Multi-Source Support
+
+This release introduces a unified import architecture supporting articles from ANY source.
+
+### Added
+
+- **Unified Import Tool** ⭐ (`import_articles`):
+  - Single entry point for ALL article imports
+  - Accepts articles from pubmed-search-mcp (any search tool)
+  - Supports: PubMed, Europe PMC, CORE, CrossRef, OpenAlex, Semantic Scholar
+  - Also accepts RIS text for legacy compatibility
+  - Full collection validation (防呆機制)
+  - Optional duplicate detection
+
+- **Collection Validation** for all import tools:
+  - If collection not found → returns error + available collections
+  - If no collection specified → saves to root with warning
+  - Success response includes `saved_to` confirmation
+
+- **New file**: `unified_import_tools.py`
+
+### Changed
+
+- **Deprecated** (but still functional):
+  - `import_ris_to_zotero` → use `import_articles` instead
+  - `import_from_pmids` → use `import_articles` instead
+  - `quick_import_pmids` still recommended for simple PMID imports
+
+- **Enhanced existing tools** with collection parameters:
+  - `import_ris_to_zotero`: added `collection_name`, `collection_key`
+  - `import_from_pmids`: added `collection_name`, `collection_key`
+
+### Architecture
+
+- Two-MCP communication via standardized `UnifiedArticle` format
+- pubmed-search-mcp (search) → articles → zotero-keeper (import)
+
+### Tool Count
+
+- Total tools: **26** (was 25)
+  - +1 unified import tool (import_articles)
+
+---
+
 ## [1.10.1] - 2025-12-16
 
 ### 🚀 One-Click Install & Library Analytics
