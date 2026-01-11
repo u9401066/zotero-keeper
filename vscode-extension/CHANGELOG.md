@@ -2,6 +2,45 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.1] - 2026-01-11
+
+### 🚀 Python 3.12+ Performance Upgrade
+
+**Now requires Python 3.12+** for modern async features and better performance.
+
+#### Updated Dependencies
+
+- **PubMed Search MCP v0.1.22**
+  - New core module with unified exception handling
+  - Token bucket rate limiting for API compliance
+  - Exponential backoff retry with circuit breaker
+  - Python 3.12+ type parameter syntax (PEP 695)
+  - asyncio.TaskGroup for structured concurrency
+
+- **Zotero Keeper MCP v1.10.4**
+  - Updated to Python 3.12+ requirement
+
+#### Python 3.12+ Features Used
+
+```python
+# Type parameter syntax (PEP 695)
+async def gather_with_errors[T](*coros: Awaitable[T]) -> list[T]: ...
+
+# Frozen dataclass with slots
+@dataclass(frozen=True, slots=True)
+class ErrorContext:
+    tool_name: str | None = None
+```
+
+#### Why Python 3.12?
+
+- ⚡ **Performance**: Improved interpreter and async performance
+- 🔧 **Modern Syntax**: Type parameter syntax reduces boilerplate
+- 🛡️ **Error Handling**: ExceptionGroup for multi-error scenarios
+- 🔄 **Structured Concurrency**: asyncio.TaskGroup for reliable cleanup
+
+---
+
 ## [0.5.0] - 2026-01-11
 
 ### 🎉 Major Update: Simplified Tool Architecture

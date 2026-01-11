@@ -44,19 +44,21 @@ const UV_DOWNLOADS: Record<string, { url: string; executable: string }> = {
 };
 
 // Python version to install
-const PYTHON_VERSION = '3.11';
+// Python 3.12+ required for type parameter syntax (PEP 695), TaskGroup, etc.
+const PYTHON_VERSION = '3.12';
 
 // Required packages with minimum versions
 // IMPORTANT: Update these when extension depends on new package features
+// Python 3.12+ required for new core module features
 const REQUIRED_PACKAGES = [
-    'zotero-keeper>=1.10.0',
-    'pubmed-search-mcp>=0.1.18',
+    'zotero-keeper>=1.10.4',
+    'pubmed-search-mcp>=0.1.22',
 ];
 
 // Minimum versions for verification (extracted from REQUIRED_PACKAGES)
 const MIN_VERSIONS: Record<string, string> = {
-    'zotero_mcp': '1.10.0',
-    'pubmed_search': '0.1.18',
+    'zotero_mcp': '1.10.4',
+    'pubmed_search': '0.1.22',
 };
 
 export class UvPythonManager {

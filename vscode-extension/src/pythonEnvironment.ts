@@ -14,7 +14,11 @@ const REQUIRED_PACKAGES = [
     { name: 'pubmed-search-mcp', importName: 'pubmed_search', pipName: 'pubmed-search-mcp' },
 ];
 
-const MIN_PYTHON_VERSION = [3, 11];
+// Python 3.12+ required for:
+// - Type parameter syntax (PEP 695)
+// - ExceptionGroup (PEP 654)
+// - asyncio.TaskGroup for structured concurrency
+const MIN_PYTHON_VERSION = [3, 12];
 
 export class PythonEnvironment {
     private pythonPath: string | null = null;

@@ -706,4 +706,172 @@ Priority considerations:
 
 ---
 
-*Last updated: December 16, 2024 (v1.10.1)*
+## Phase 8: Reference Repositories & Learning Plan 📚
+
+> 🎯 **核心價值**：從優秀開源專案學習，提升工具品質和功能完整度
+
+### 重要參考 Repos
+
+以下是 5 個重要的學術文獻搜尋相關開源專案，我們應該研究學習其設計模式和功能：
+
+| Repo | Stars | 核心功能 | 學習重點 |
+|------|-------|----------|----------|
+| **[scholarly](https://github.com/scholarly-python-package/scholarly)** | 1.8k | Google Scholar 爬蟲 | 代理輪換、反爬蟲策略 |
+| **[habanero](https://github.com/sckott/habanero)** | 238 | CrossRef API 客戶端 | Content negotiation 引用格式 |
+| **[pyalex](https://github.com/J535D165/pyalex)** | 325 | OpenAlex API 封裝 | Pipe 操作、N-grams 支援 |
+| **[metapub](https://github.com/metapub/metapub)** | 140 | NCBI/PubMed 工具包 | FindIt PDF 發現、UrlReverse |
+| **[bioservices](https://github.com/cokelaer/bioservices)** | 325 | 40+ 生物服務整合 | 多服務框架設計 |
+| **[wos-starter](https://github.com/clarivate/wosstarter_python_client)** | 29 | Web of Science API | Times Cited、JCR 連結 |
+
+### 各 Repo 詳細學習計畫
+
+#### 1. scholarly (Google Scholar 爬蟲) ⭐
+
+**主要功能**：
+- 論文搜尋與引用網路
+- 作者資料和 h-index
+- 代理輪換避免封鎖
+
+**學習重點**：
+- `ProxyGenerator` - 代理池管理 (ScraperAPI, Tor, Free Proxies)
+- `fill()` 方法 - 延遲載入完整元數據
+- `scholarly.citedby()` - 引用網路遍歷
+
+**整合可能**：
+- 📋 作為 unified_search 的補充來源
+- 📋 取得 Google Scholar 引用數 (比 iCite 更全面)
+- 📋 h-index 和作者影響力分析
+
+#### 2. habanero (CrossRef API) ⭐
+
+**主要功能**：
+- DOI 解析和元數據
+- 引用連結追蹤
+- Content negotiation (多格式引用)
+
+**學習重點**：
+- `cn.content_negotiation()` - 一個 DOI 輸出多種格式 (RDF, BibTeX, Citeproc)
+- `polite pool` - 使用 email 識別獲得更高速率限制
+- 引用連結解析
+
+**整合可能**：
+- ✅ 已整合: `sources/crossref.py`
+- 📋 強化 content negotiation 功能
+- 📋 加入引用連結追蹤
+
+#### 3. pyalex (OpenAlex API) ⭐
+
+**主要功能**：
+- 搜尋論文、作者、機構、來源
+- N-grams 支援 (概念分析)
+- 反向索引摘要轉純文字
+
+**學習重點**：
+- Pipe 操作鏈: `Works().filter().sort().get()`
+- `abstract_inverted_index` → 純文字轉換
+- Cursor-based pagination
+
+**整合可能**：
+- ✅ 部分整合: `sources/openalex.py`
+- 📋 N-grams 主題趨勢分析
+- 📋 Concepts API 主題探索
+
+#### 4. metapub (NCBI 工具包) ⭐⭐ 高度相關
+
+**主要功能**：
+- PubMed 文獻搜尋
+- **FindIt** - PDF 發現 (68+ 出版商)
+- UrlReverse - URL → DOI/PMID
+
+**學習重點**：
+- `FindIt` 架構 - 15,000+ 期刊的 PDF URL 規則
+- `CrossRef` 和 `PubMedArticle` 統一介面
+- `MedGen`, `ClinVar` 整合
+
+**整合可能**：
+- 📋 **採用 FindIt 邏輯增強全文取得**
+- 📋 UrlReverse 功能 (用戶給 URL，辨識論文)
+- 📋 參考其 `PubMedArticle` 資料模型
+
+#### 5. bioservices (多服務框架) ⭐
+
+**主要功能**：
+- 40+ 生物資訊服務的統一 Python 接口
+- UniProt, KEGG, ChEMBL, PubChem...
+- WSDL/SOAP + REST 支援
+
+**學習重點**：
+- 多服務統一框架設計
+- 錯誤處理和重試機制
+- 命令列工具設計
+
+**整合可能**：
+- 📋 學習其服務抽象層設計
+- 📋 參考 CLI 設計模式
+- 📋 整合 PubChem 化合物查詢
+
+### 關於論文圖片 API 📷
+
+> 🔍 **問題**：PubMed 官方 API 是否提供論文圖片連結？
+
+**答案**：**PubMed E-utilities 是純文字 API，不提供圖片連結**
+
+**替代方案**：
+
+| 來源 | 圖片支援 | 說明 |
+|------|----------|------|
+| **PMC Open Access** | ✅ | 解析 JATS XML 中的 `<fig>` 元素 |
+| **Europe PMC** | ✅ | text-mining API 有 FIGURE 類型標註 |
+| **bioRxiv/medRxiv** | ✅ | 預印本直接提供圖片 URL |
+| **OpenAlex** | ❌ | 無圖片連結 |
+| **CrossRef** | ❌ | 無圖片連結 |
+
+**技術實作建議**：
+1. 取得 PMC 全文 XML (`get_fulltext_xml`)
+2. 解析 `<fig>` 元素取得圖片路徑
+3. 組合 PMC 圖片基礎 URL
+
+**範例 PMC 圖片 URL 格式**：
+```
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7096777/bin/figure1.jpg
+```
+
+### 學習優先順序
+
+```
+立即學習 (v1.12.0):
+├── metapub.FindIt        → PDF 全文發現
+├── habanero.cn          → 引用格式轉換
+└── pyalex.pipe          → 流暢 API 設計
+
+中期學習 (v1.13.0):
+├── scholarly.proxy      → Google Scholar 整合
+├── bioservices.框架     → 多服務抽象
+└── PMC XML 圖片解析     → 論文圖片取得
+
+長期考慮:
+└── metapub 完整整合或 fork
+```
+
+### 長期持續學習
+
+這些 repos 都是長期多人維護的成熟專案，值得持續追蹤：
+
+| Repo | 維護狀態 | 持續學習重點 |
+|------|----------|-------------|
+| scholarly | 活躍 | 反爬蟲技術演進、新功能 |
+| habanero | 活躍 | CrossRef API 更新 |
+| pyalex | 活躍 | OpenAlex 新端點、N-grams |
+| metapub | 活躍 | FindIt 出版商規則更新 |
+| bioservices | 活躍 | 新服務整合 |
+| wos-starter | 官方 | Web of Science API v2 特性 |
+
+**建議**：每季度 Review 一次這些 repos 的 Release Notes 和新功能。
+
+### 詳細文檔
+
+📄 完整學習筆記請參考：`docs/research/REFERENCE_REPOSITORIES.md`
+
+---
+
+*Last updated: January 2025 (v1.10.4)*
