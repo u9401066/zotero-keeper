@@ -142,6 +142,156 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
   - ✅ Split `server.py` (586 → 202 lines)
   - ✅ New `basic_read_tools.py` and `collection_tools.py`
 
+---
+
+## Phase 4.6: Unified Search Gateway 🔄
+
+> 🎯 **核心理念**：單一入口 + 後端自動分流（像 Google 一樣）
+> 
+> 📄 **詳細設計**：
+> - `docs/research/UNIFIED_SEARCH_RESEARCH.md` - 總體規格
+> - `docs/research/AGENT_MCP_COLLABORATION.md` - Agent-MCP 協作設計
+
+### Phase 1.0 - 基礎建設 (8h) ✅ **COMPLETED**
+
+> 📅 完成時間：2026-01-11
+
+- ✅ **UnifiedArticle 統一資料模型** ⭐
+  - ✅ `models/unified_article.py` - 統一文章物件
+  - ✅ 支援所有來源的標準化欄位
+  - ✅ OA 連結、引用指標欄位
+  - ✅ `cite_vancouver()` / `cite_apa()` 引用格式輸出
+
+- ✅ **新增資料源 Client**
+  - ✅ `sources/crossref.py` - CrossRef Client
+  - ✅ `sources/unpaywall.py` - Unpaywall Client
+  - ✅ Rate limiting、重試機制
+
+### Phase 1.5 - 查詢分析與結果彙整 (10h) ✅ **COMPLETED**
+
+> 📅 完成時間：2026-01-11
+
+- ✅ **QueryAnalyzer** ⭐
+  - ✅ `unified/query_analyzer.py` - 查詢意圖分析
+  - ✅ QueryComplexity 評估 (SIMPLE/MODERATE/COMPLEX/AMBIGUOUS)
+  - ✅ QueryIntent 偵測 (LOOKUP/EXPLORATION/COMPARISON/SYSTEMATIC)
+  - ✅ PICO 元素自動偵測
+  - ✅ 年份約束解析、識別碼擷取 (PMID/DOI/PMC)
+
+- ✅ **ResultAggregator** ⭐
+  - ✅ `unified/result_aggregator.py` - 多維度排序
+  - ✅ 5 維度評分：relevance, quality, recency, impact, source_trust
+  - ✅ 去重邏輯（DOI > PMID > Title normalized）
+  - ✅ RankingConfig 預設（default/impact/recency/quality focused）
+  - ✅ 多來源合併與 merge_from() 整合
+
+### Phase 2.0 - MVP 統一搜尋 (6h) ✅ **COMPLETED**
+
+- ✅ **unified_search MCP Tool** ⭐ **MVP 里程碑**
+  - ✅ `mcp/tools/unified.py` - 550+ 行 MCP 工具
+  - ✅ 單一入口、後端自動分流
+  - ✅ DispatchStrategy 矩陣實作
+  - ✅ `analyze_search_query()` 查詢分析輔助工具
+  - ✅ 16 項單元測試通過
+
+### Phase 2.1 - Agent 友善工具重構 (4h) 🔄 **IN PROGRESS**
+
+- ✅ **InputNormalizer** ⭐ 輸入規範化
+  - ✅ `normalize_pmids()` - 多格式 PMID 支援
+  - ✅ `normalize_pmcid()` - PMC ID 規範化
+  - ✅ `normalize_year()` - 年份格式化
+  - ✅ `normalize_limit()` - 限制數量規範
+  - ✅ `normalize_bool()` - 布林值規範
+  - ✅ `normalize_query()` - 查詢字串規範
+  - ✅ 47 項單元測試通過
+
+- ✅ **ResponseFormatter** ⭐ 回應格式化
+  - ✅ `success()` - 成功回應 (markdown/json)
+  - ✅ `error()` - 友善錯誤訊息 + 建議
+  - ✅ `no_results()` - 無結果建議
+  - ✅ `partial_success()` - 部分成功
+
+- ✅ **KEY_ALIASES** ⭐ 參數別名
+  - ✅ `year_from` → `min_year`
+  - ✅ `max_results` → `limit`
+  - ✅ `format` → `output_format`
+
+- 📋 **現有工具改造**
+  - 📋 套用 InputNormalizer 到所有工具
+  - 📋 套用 ResponseFormatter 到所有工具
+  - 📋 Integration tests
+
+### Phase 2.5 - Agent 協作 (4h) 📋
+
+- 📋 **NeedsDecisionResponse**
+  - 📋 Agent 決策請求格式
+  - 📋 Session 狀態管理
+  - 📋 Suggest/Delegate 模式
+
+### Phase 3.0 - 測試與監控 (4h) 📋
+
+- 📋 **測試覆蓋**
+  - 📋 Unit tests for each client
+  - 📋 Integration tests for unified_search
+
+- 📋 **監控指標**
+  - 📋 Source response times
+  - 📋 Fallback trigger rates
+
+---
+
+### v1.11.0 (2026 Q1) - Unified Search Framework
+
+> ✅ Phase 1.0 + 1.5 + 2.0 = **MVP Complete!**
+
+- ✅ **統一搜尋入口** ⭐ 最高優先
+  - ✅ `unified_search()` - 取代分散的多個搜尋工具
+  - ✅ QueryAnalyzer - 自動分析查詢意圖
+  - ✅ ResultAggregator - 合併、去重、排序
+
+- ✅ **新增資料源整合**
+  - ✅ CrossRef Client - DOI 元數據、引用連結
+  - ✅ Unpaywall Client - 自動 OA 連結附加
+
+- ✅ **結果自動增強**
+  - ✅ 每篇文章自動附加 OA 連結
+  - ✅ 自動附加引用指標（iCite）
+  - ✅ 統一 Article 物件格式
+
+### v1.12.0 (2026 Q2) - Extended Sources
+
+- 📋 **臨床試驗整合**
+  - 📋 ClinicalTrials.gov Client
+  - 📋 自動關聯文獻與試驗
+
+- 📋 **預印本整合**
+  - 📋 bioRxiv/medRxiv Client
+  - 📋 追蹤預印本正式發表狀態
+
+### 設計原則
+
+```
+❌ 舊設計（分散式）- Agent 需要自己選擇工具
+   search_literature() / search_europe_pmc() / search_core() / ...
+
+✅ 新設計（統一式）- 單一入口，後端自動分流
+   unified_search(query, options)
+   └── 自動選擇 PubMed/CrossRef/OpenAlex/CORE/...
+   └── 自動合併去重
+   └── 自動附加 OA 連結
+```
+
+### 競爭定位
+
+| 維度 | 商用工具 (Elicit/SciSpace) | Zotero-Keeper |
+|------|---------------------------|---------------|
+| 目標用戶 | 一般研究者 | Zotero 用戶、醫學研究者 |
+| 資料控制 | 雲端託管 | 100% 本地 |
+| 成本 | $96-240/年 | **免費開源** |
+| 整合性 | 獨立封閉 | 深度整合 Zotero |
+
+---
+
 ### v1.10.0 (December 2024)
 
 - ✅ **PyPI Publication**

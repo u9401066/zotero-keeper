@@ -1,16 +1,26 @@
-# Progress (Updated: 2025-12-26)
+# Progress (Updated: 2026-01-11)
 
 ## Done
 
-- 修復 VS Code Extension 更新時 package 版本檢查問題 (v0.4.3)
-- 子模組 pubmed-search-mcp 更新到 v0.1.18
-- Code Review 修復：移除未使用 import、添加 linux-arm64 支援、改進安全性
+- Phase 2.1.1 InputNormalizer 基礎設施 (commit 98f0b52)
+- Phase 2.1.3 discovery.py 6 tools (commit deef9bb)
+- Phase 2.1.3 export.py 3 tools (commit deef9bb)
+- Phase 2.1.3 europe_pmc.py 5 tools (commit deef9bb)
+- Phase 2.1.3 core.py 5 tools (commit d5ef678)
+- Phase 2.1.3 ncbi_extended.py 7 tools (commit d5ef678)
+- Phase 2.1.3 citation_tree.py 2 tools (commit d5ef678)
+- Phase 2.1.3 strategy.py 2 tools (commit d5ef678)
+- Phase 2.1.3 pico.py 1 tool (commit d5ef678)
+- Phase 2.1.3 merge.py 1 tool (commit d5ef678)
+- Phase 2.1.3 unified.py 2 tools (commit d5ef678)
+- Phase 2.1.3 完成！全部 34/34 工具已套用 InputNormalizer
 
 ## Doing
 
-- 準備提交 v0.4.3 修復
+- Phase 2.1 文件更新 - 更新 PHASE_2.1_TOOL_REFACTOR.md 進度
 
 ## Next
 
-- 修復 mcp-server 過時的測試檔案
-- 考慮整合子模組的 Claude Skills 到 VS Code Extension
+- Phase 2.1.4 Smart Router (smart_route tool)
+- Phase 2.5 Agent collaboration improvements
+- 整合測試 - 驗證所有工具的輸入規範化
