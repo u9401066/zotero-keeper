@@ -2,11 +2,12 @@
 
 🔬 **AI-powered research assistant** - Integrates Zotero reference management and PubMed literature search with GitHub Copilot.
 
-## ✨ What's New in v0.4.0
+## ✨ What's New in v0.5.2
 
-- **🎯 Copilot Research Skills**: Auto-install workflow guides to help Copilot use MCP tools effectively
-- **📋 Enhanced Tool Descriptions**: MCP tools now include clear usage workflows
-- **🔄 Improved Import Flow**: Copilot now knows to ask which Collection before importing
+- **📊 Usage Statistics**: Track searches, imports, and full-text accesses
+- **🌐 API Status Dashboard**: View and manage 8 connected APIs at a glance
+- **📋 Quick Menu**: Click status bar for instant access to all features
+- **🔢 Version Display**: Status bar shows current version
 
 ## Features
 
@@ -22,12 +23,26 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 
 ### 🔍 PubMed Search
 - Search PubMed literature with MeSH terms
-- **Multi-source search** (Semantic Scholar, OpenAlex)
+- **Multi-source search** (Europe PMC, CORE, Semantic Scholar)
 - Parse PICO clinical questions
 - Find related and citing articles
 - Get citation metrics (RCR)
+- **Full-text access** (Europe PMC, CORE)
 - **Session management** (retrieve previous search results)
 - Export in multiple formats (RIS, BibTeX, etc.)
+
+### 🌐 Connected APIs
+
+| API | Description |
+|-----|-------------|
+| PubMed / NCBI | 36M+ biomedical articles |
+| Europe PMC | 33M+ articles, full-text, text mining |
+| CORE | 200M+ open access papers |
+| Semantic Scholar | AI-powered recommendations |
+| PubChem | Chemical compound database |
+| NCBI Gene | Gene information |
+| ClinVar | Clinical variants |
+| Zotero Local | Reference management |
 
 ## Requirements
 
@@ -56,6 +71,15 @@ Once installed, the MCP tools will be available to GitHub Copilot. Try asking:
 - *"Show my recent Zotero references"*
 - *"Get my last search results"* (uses session management)
 
+### 📊 Status Bar
+
+Click the status bar item to access:
+
+- **📊 Usage Statistics** - Track your research activity
+- **🌐 API Status** - View/configure connected APIs
+- **⚙️ Settings** - Quick access to configuration
+- **🧙 Setup Wizard** - One-click setup
+
 ### 🎯 Copilot Research Skills
 
 The extension installs workflow guides that teach Copilot:
@@ -82,10 +106,13 @@ Run `Zotero MCP: Install Copilot Research Skills` to manually install/update.
 | Command | Description |
 |---------|-------------|
 | `Zotero MCP: Setup Wizard` | One-click setup |
+| `Zotero MCP: Quick Menu` | Show quick access menu |
+| `Zotero MCP: Show Statistics` | View usage statistics |
+| `Zotero MCP: Show API Status` | View connected APIs |
 | `Zotero MCP: Check Zotero Connection` | Verify Zotero is accessible |
 | `Zotero MCP: Install Copilot Research Skills` | Install workflow guides |
 | `Zotero MCP: Reinstall Python Environment` | Reinstall uv and Python packages |
-| `Zotero MCP: Show Status` | Show extension status |
+| `Zotero MCP: Show Status` | Show full extension status |
 | `Zotero MCP: Open Settings` | Open extension settings |
 
 ## How It Works

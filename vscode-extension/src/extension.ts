@@ -43,6 +43,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     uvPython = new UvPythonManager(context);
     statusBar = new StatusBarManager();
     
+    // Initialize status bar with context for statistics
+    statusBar.initialize(context);
+    
     // Register commands first (so they're available even if setup fails)
     registerCommands(context);
     

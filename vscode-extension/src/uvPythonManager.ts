@@ -52,7 +52,7 @@ const PYTHON_VERSION = '3.12';
 // Python 3.12+ required for new core module features
 const REQUIRED_PACKAGES = [
     'zotero-keeper>=1.10.4',
-    'pubmed-search-mcp>=0.1.22',
+    'pubmed-search-mcp>=0.1.24',
 ];
 
 // Minimum versions for verification (extracted from REQUIRED_PACKAGES)

@@ -2,7 +2,7 @@
     "name": "vscode-zotero-mcp",
     "displayName": "Zotero + PubMed MCP",
     "description": "AI-powered research assistant - integrates Zotero reference management and PubMed literature search with GitHub Copilot. One-click setup for researchers!",
-    "version": "0.5.1",
+    "version": "0.5.2",
     "publisher": "u9401066",
     "license": "Apache-2.0",
     "icon": "resources/icon.png",
@@ -133,6 +133,22 @@
                 "command": "zoteroMcp.setupWizard",
                 "title": "Zotero MCP: Setup Wizard (One-Click Setup)",
                 "icon": "$(wand)"
+            },
+            {
+                "command": "zoteroMcp.showQuickMenu",
+                "title": "Zotero MCP: Quick Menu"
+            },
+            {
+                "command": "zoteroMcp.showStatistics",
+                "title": "Zotero MCP: Show Usage Statistics"
+            },
+            {
+                "command": "zoteroMcp.showApiStatus",
+                "title": "Zotero MCP: Show API Status"
+            },
+            {
+                "command": "zoteroMcp.resetStatistics",
+                "title": "Zotero MCP: Reset Statistics"
             },
             {
                 "command": "zoteroMcp.checkConnection",

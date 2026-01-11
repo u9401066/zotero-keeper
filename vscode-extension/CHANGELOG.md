@@ -2,6 +2,51 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.2] - 2026-01-12
+
+### ✨ New Features
+
+**Enhanced Status Bar with Quick Menu**
+
+- **Version display** in status bar when ready (e.g., "Zotero MCP: Ready v0.5.2")
+- **Click for Quick Menu** - Access all features from status bar:
+  - 📊 Usage Statistics
+  - 🌐 API Status & Management
+  - ⚙️ Settings
+  - 🧙 Setup Wizard
+  - And more...
+
+**Usage Statistics Tracking**
+
+- Track searches performed, articles imported, full-texts accessed
+- Session counter
+- Beautiful statistics panel with dashboard view
+- Data stored locally, never shared
+
+**API Status Dashboard**
+
+- View all 8 connected APIs at a glance:
+  - PubMed / NCBI E-utilities
+  - Europe PMC
+  - CORE (Open Access)
+  - Semantic Scholar
+  - PubChem
+  - NCBI Gene
+  - ClinVar
+  - Zotero Local API
+- Quick access to configure API keys
+- Shows rate limits and configuration status
+
+### 📚 Enhanced Tool Documentation
+
+**PubMed Search MCP v0.1.24** - Better documentation for AI agents.
+
+- **Citation Network Tools** with complete workflow guides
+- **Vision Search Tools** with 5-step workflow
+- Added Reference Repositories learning guide (6 key Python libraries)
+
+---
+
 ## [0.5.1] - 2026-01-11
 
 ### 🚀 Python 3.12+ Performance Upgrade
