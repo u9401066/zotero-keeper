@@ -2,6 +2,27 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.4.4] - 2026-01-11
+
+### Updated
+
+- **PubMed Search MCP v0.1.19** 🎉
+  - All 34 tools now use InputNormalizer for agent-friendly parameter handling
+  - Accepts flexible parameter types: Union[int, str], Union[bool, str]
+  - Fixed all mypy type annotation errors (77 errors resolved)
+  - Fixed all ruff linting errors (12 errors resolved)
+  - Stable release ready for production use
+- **Zotero Keeper MCP v1.10.2**
+  - Synced with latest PubMed Search MCP improvements
+  - Added research documentation on Agent-MCP collaboration patterns
+
+### Technical Improvements
+
+- Type-safe with strict mypy checking
+- Consistent parameter normalization across all tools
+- Better error handling and validation
+- Improved code quality and maintainability
+
 ## [0.4.3] - 2025-12-26
 
 ### Fixed

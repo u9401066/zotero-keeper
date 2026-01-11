@@ -1,0 +1,51 @@
+name: Publish VS Code Extension
+
+on:
+  push:
+    tags:
+      # Trigger for extension releases (v0.x.x-ext format)
+      - 'v0.*.*-ext'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true  # Include pubmed-search-mcp submodule
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      working-directory: ./vscode-extension
+      run: npm ci
+
+    - name: Lint
+      working-directory: ./vscode-extension
+      run: npm run lint
+
+    - name: Compile
+      working-directory: ./vscode-extension
+      run: npm run compile
+
+    - name: Package extension
+      working-directory: ./vscode-extension
+      run: npx @vscode/vsce package
+
+    - name: Publish to VS Code Marketplace
+      working-directory: ./vscode-extension
+      run: npx @vscode/vsce publish -p ${{ secrets.VSCE_PAT }}
+      env:
+        VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: vscode-extension/*.vsix
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
