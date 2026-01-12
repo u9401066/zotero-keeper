@@ -4,6 +4,20 @@
 
 ## 2026-01-12
 
+### DEC-016: OpenURL 機構訂閱整合
+- **決策**: 新增 OpenURL Link Resolver 整合，讓使用者透過機構訂閱存取全文
+- **理由**:
+  1. 現有全文來源 (Europe PMC, Unpaywall, CORE) 只提供 OA 版本
+  2. 許多使用者有機構訂閱但無法利用
+  3. OpenURL 是 NISO 標準 (Z39.88)，廣泛支援
+- **實作**:
+  - 新增 `sources/openurl.py` - OpenURLBuilder 類別
+  - 新增 `mcp/tools/openurl.py` - 4 個 MCP 工具
+  - 整合到 `unified_search` 輸出
+  - VS Code Extension 設定 UI
+- **預設機構**: 16 個 (台大、成大、Harvard、MIT...)
+- **環境變數**: `OPENURL_PRESET`, `OPENURL_RESOLVER`
+
 ### DEC-014: 統一匯入工具 import_articles
 - **決策**: 建立單一 `import_articles` 工具處理所有來源的匯入
 - **理由**:

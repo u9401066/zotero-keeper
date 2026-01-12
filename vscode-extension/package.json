@@ -108,6 +108,32 @@
                     "markdownDescription": "HTTPS proxy for API requests (e.g., `https://proxy:8080`)",
                     "order": 25
                 },
+                "zoteroMcp.openUrlResolver": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "Your institution's OpenURL link resolver URL for full-text access. Example: `https://resolver.library.edu/openurl`. Leave empty if you don't have institutional access.",
+                    "order": 26
+                },
+                "zoteroMcp.openUrlPreset": {
+                    "type": "string",
+                    "default": "",
+                    "enum": ["", "ntu", "ncku", "nthu", "nycu", "harvard", "stanford", "mit", "yale", "oxford", "cambridge"],
+                    "enumDescriptions": [
+                        "None (use custom URL)",
+                        "National Taiwan University (台大)",
+                        "National Cheng Kung University (成大)",
+                        "National Tsing Hua University (清大)",
+                        "National Yang Ming Chiao Tung University (陽明交大)",
+                        "Harvard University",
+                        "Stanford University",
+                        "MIT",
+                        "Yale University",
+                        "Oxford University",
+                        "Cambridge University"
+                    ],
+                    "markdownDescription": "Select your institution from presets. This will override the custom URL above.",
+                    "order": 27
+                },
                 "zoteroMcp.enableZoteroKeeper": {
                     "type": "boolean",
                     "default": true,

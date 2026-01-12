@@ -66,6 +66,8 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
             const semanticScholarApiKey = config.get<string>('semanticScholarApiKey', '');
             const httpProxy = config.get<string>('httpProxy', '');
             const httpsProxy = config.get<string>('httpsProxy', '');
+            const openUrlResolver = config.get<string>('openUrlResolver', '');
+            const openUrlPreset = config.get<string>('openUrlPreset', '');
             
             const env: Record<string, string> = {};
             if (ncbiEmail) {
@@ -86,6 +88,13 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
             if (httpsProxy) {
                 env['HTTPS_PROXY'] = httpsProxy;
             }
+            // OpenURL / Institutional Access
+            if (openUrlPreset) {
+                env['OPENURL_PRESET'] = openUrlPreset;
+            }
+            if (openUrlResolver) {
+                env['OPENURL_RESOLVER'] = openUrlResolver;
+            }
 
             servers.push(
                 new vscode.McpStdioServerDefinition(
@@ -93,7 +102,7 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
                     this.pythonPath,
                     ['-m', 'pubmed_search.mcp'],
                     env,
-                    '0.1.18'
+                    '0.1.25'
                 )
             );
         }

@@ -1,17 +1,40 @@
-# Progress (Updated: 2026-01-11)
+# Progress (Updated: 2026-01-12)
 
 ## Done
 
-- DEC-015: 所有 import 工具加入 Collection 防呆機制
-- DEC-014: 建立統一匯入工具 import_articles (unified_import_tools.py)
-- 完善 import_ris_to_zotero 和 import_from_pmids 的 collection 參數
+### v0.1.25 - OpenURL / 機構訂閱整合 (2026-01-12)
+- ✅ 實作 OpenURL/機構訂閱整合功能
+- ✅ 新增 `sources/openurl.py` 模組 - OpenURL 建構器
+- ✅ 新增 `mcp/tools/openurl.py` - 4 個 MCP 工具
+  - `configure_institutional_access` - 設定機構 resolver
+  - `get_institutional_link` - 產生 OpenURL 連結
+  - `list_resolver_presets` - 列出 16 個預設機構
+  - `test_institutional_access` - 測試連線
+- ✅ 整合 OpenURL 到 `unified_search` 輸出（自動顯示 🏛️ Library 連結）
+- ✅ VS Code Extension 設定 UI
+  - `zoteroMcp.openUrlResolver` - 自訂 URL
+  - `zoteroMcp.openUrlPreset` - 下拉選單選機構
+- ✅ 支援 16 個預設機構：
+  - 🇹🇼 台灣：ntu, ncku, nthu, nycu
+  - 🇺🇸 美國：harvard, stanford, mit, yale
+  - 🇬🇧 英國：oxford, cambridge
+  - 🔧 通用：sfx, 360link, primo
+  - 🆓 測試：test_free, worldcat, pubmed_linkout
+- ✅ 新增 `tests/test_openurl.py` - 12 個單元測試全部通過
+- ✅ 網路連線測試：Harvard resolver 公開可用 (HTTP 200)
+
+### 之前完成
+- ✅ v0.1.24 - Tool documentation 增強
+- ✅ v0.1.23 - Vision-to-Literature Search 圖片搜尋
+- ✅ VS Code Extension v0.5.2 發布
 
 ## Doing
 
-- 測試 import_articles 工具與 pubmed-search-mcp 的整合
+（無進行中任務）
 
 ## Next
 
-- 整合/標記舊的 import 工具為 deprecated
-- 更新文檔說明新的統一匯入工作流
-- 發布 v1.10.5 到 PyPI
+- 發布 pubmed-search-mcp v0.1.25 到 PyPI
+- 發布 VS Code Extension v0.5.3
+- 撰寫 OpenURL 使用文檔
+- 測試更多機構 URL 是否正確
