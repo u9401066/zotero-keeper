@@ -13,6 +13,19 @@ dist/
 .vscode-test/
 .idea/
 
+# AI agents
+.agent/
+.claude/
+.codex/
+.cursor/
+.gemini/
+.github/skills/
+.opencode/
+.roo/
+.skillsrc
+.trae/
+.windsurf/
+
 # OS
 .DS_Store
 Thumbs.db

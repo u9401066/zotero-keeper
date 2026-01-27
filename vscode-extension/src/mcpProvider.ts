@@ -53,7 +53,7 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
                         ZOTERO_HOST: zoteroHost,
                         ZOTERO_PORT: String(zoteroPort),
                     },
-                    '1.10.0'
+                    '1.11.0'
                 )
             );
         }
@@ -102,7 +102,7 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
                     this.pythonPath,
                     ['-m', 'pubmed_search.mcp'],
                     env,
-                    '0.1.25'
+                    '0.2.4'
                 )
             );
         }

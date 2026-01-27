@@ -2,6 +2,33 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.3] - 2026-01-27
+
+### 🔒 Security Fixes
+
+- Fixed 4 npm security vulnerabilities:
+  - `diff` DoS vulnerability in parsePatch/applyPatch (GHSA-73rr-hh4g-fpgx)
+  - `lodash` Prototype Pollution in _.unset/_.omit (GHSA-xxjr-mmjv-4gpg)
+  - `qs` arrayLimit bypass DoS (GHSA-6rw7-vpxm-498p) - **High severity**
+  - `undici` unbounded decompression chain DoS (GHSA-g9mf-h72j-4rw9)
+
+### Updated
+
+- **PubMed Search MCP v0.2.3** (from v0.1.24)
+  - Major version bump with improved search capabilities
+- **Zotero Keeper MCP v1.11.0** (from v1.10.4)
+  - New unified import tools
+  - Enhanced PubMed integration
+
+### Added
+
+- **32-bit Windows support** (win32-ia32) - Added uv download for i686-pc-windows-msvc
+
+### Fixed
+
+- Synced MIN_VERSIONS with REQUIRED_PACKAGES to ensure proper version verification
+- Updated MCP server version strings in mcpProvider.ts
+
 ## [0.5.2] - 2026-01-12
 
 ### ✨ New Features

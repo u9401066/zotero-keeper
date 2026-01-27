@@ -606,6 +606,7 @@ async function checkZoteroConnection(): Promise<boolean> {
         const text = await response.text();
         return text.includes('Zotero is running');
     } catch {
+        // Connection failed - Zotero is not running or not accessible
         return false;
     }
 }

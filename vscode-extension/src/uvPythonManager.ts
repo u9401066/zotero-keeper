@@ -21,10 +21,16 @@ import { execSync } from 'child_process';
 // Using latest stable version
 const UV_VERSION = '0.5.14';
 const UV_DOWNLOADS: Record<string, { url: string; executable: string }> = {
+    // Windows
     'win32-x64': {
         url: `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-pc-windows-msvc.zip`,
         executable: 'uv.exe'
     },
+    'win32-ia32': {
+        url: `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-i686-pc-windows-msvc.zip`,
+        executable: 'uv.exe'
+    },
+    // Linux
     'linux-x64': {
         url: `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz`,
         executable: 'uv'
@@ -33,6 +39,7 @@ const UV_DOWNLOADS: Record<string, { url: string; executable: string }> = {
         url: `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-aarch64-unknown-linux-gnu.tar.gz`,
         executable: 'uv'
     },
+    // macOS
     'darwin-x64': {
         url: `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-apple-darwin.tar.gz`,
         executable: 'uv'
@@ -51,15 +58,22 @@ const PYTHON_VERSION = '3.12';
 // IMPORTANT: Update these when extension depends on new package features
 // Python 3.12+ required for new core module features
 const REQUIRED_PACKAGES = [
-    'zotero-keeper>=1.10.4',
-    'pubmed-search-mcp>=0.1.24',
+    'zotero-keeper>=1.11.0',
+    'pubmed-search-mcp>=0.2.4',
 ];
 
 // Minimum versions for verification (extracted from REQUIRED_PACKAGES)
+// IMPORTANT: Keep in sync with REQUIRED_PACKAGES above!
 const MIN_VERSIONS: Record<string, string> = {
-    'zotero_mcp': '1.10.4',
-    'pubmed_search': '0.1.22',
+    'zotero_mcp': '1.11.0',
+    'pubmed_search': '0.2.4',
 };
+
+// Timeout constants (in milliseconds)
+const SETUP_POLL_INTERVAL_MS = 1000;
+const DOWNLOAD_TIMEOUT_MS = 60000;
+const VENV_CREATION_TIMEOUT_MS = 300000;  // 5 minutes for Python download
+const PACKAGE_INSTALL_TIMEOUT_MS = 300000;
 
 export class UvPythonManager {
     private context: vscode.ExtensionContext;
@@ -128,6 +142,7 @@ export class UvPythonManager {
             });
             return output.trim().replace('Python ', '');
         } catch {
+            // Python binary may not exist or be executable
             return undefined;
         }
     }
@@ -192,8 +207,8 @@ print("OK")
                 this._isReady = false;
                 return false;
             } finally {
-                // Clean up temp script
-                try { fs.unlinkSync(scriptPath); } catch { /* ignore */ }
+                // Clean up temp script - ignore errors as file may not exist
+                try { fs.unlinkSync(scriptPath); } catch { /* intentionally empty */ }
             }
         } catch (error) {
             this.log(`verifyReady failed: ${error}`);
@@ -251,7 +266,7 @@ print("OK")
         if (this._setupInProgress) {
             this.log('Setup already in progress, waiting...');
             while (this._setupInProgress) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, SETUP_POLL_INTERVAL_MS));
             }
             if (this._isReady) {
                 return this.pythonBinary;
@@ -392,7 +407,7 @@ print("OK")
             execSync(cmd, {
                 encoding: 'utf-8',
                 stdio: 'pipe',
-                timeout: 300000,  // 5 minutes for Python download
+                timeout: VENV_CREATION_TIMEOUT_MS,
                 env: {
                     ...process.env,
                     // Allow uv to download Python
@@ -418,10 +433,11 @@ print("OK")
             execSync(packagingCmd, {
                 encoding: 'utf-8',
                 stdio: 'pipe',
-                timeout: 60000,
+                timeout: DOWNLOAD_TIMEOUT_MS,
                 env: { ...process.env, VIRTUAL_ENV: this.venvDir }
             });
         } catch {
+            // packaging may already be installed - safe to continue
             this.log('packaging already installed or install skipped');
         }
         
@@ -437,7 +453,7 @@ print("OK")
                 execSync(cmd, {
                     encoding: 'utf-8',
                     stdio: 'pipe',
-                    timeout: 300000,
+                    timeout: PACKAGE_INSTALL_TIMEOUT_MS,
                     env: {
                         ...process.env,
                         VIRTUAL_ENV: this.venvDir,
@@ -539,7 +555,7 @@ print("OK")
                     reject(err);
                 });
 
-                request.setTimeout(60000, () => {
+                request.setTimeout(DOWNLOAD_TIMEOUT_MS, () => {
                     request.destroy();
                     reject(new Error('Download timeout'));
                 });
