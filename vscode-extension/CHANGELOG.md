@@ -2,6 +2,14 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.8] - 2026-01-27
+
+### Updated
+
+- PubMed Search MCP 更新至 v0.2.5
+  - 修復 server 啟動 bug (session manager 變數名稱)
+- 重試修復 Marketplace Repository signing 錯誤
+
 ## [0.5.7] - 2026-01-27
 
 ### Fixed
