@@ -73,22 +73,32 @@ git push && git push origin vX.Y.Z-ext
 
 **GitHub Actions（最即時）**
 ```bash
-# 檢查 workflow 狀態
-curl -s "https://api.github.com/repos/u9401066/zotero-keeper/actions/runs?per_page=5" | \
-  grep -E '"(name|status|conclusion|head_branch)"' | head -20
+# 檢查 workflow 狀態（推薦用 Python 解析）
+curl -s "https://api.github.com/repos/u9401066/zotero-keeper/actions/runs?per_page=10" | \
+  python3 -c "import sys,json; d=json.load(sys.stdin); print('\n'.join([f\"{r['name']:30} | {r['head_branch']:15} | {r['conclusion']}\" for r in d['workflow_runs'][:8]]))"
 ```
-- `Publish VS Code Extension` - `conclusion: success` 表示成功
+- `Publish VS Code Extension | v0.5.x-ext | success` 表示成功
 
-**VS Marketplace（1-5 分鐘後更新）**
+**VS Marketplace（5-10 分鐘後更新）**
 - URL: https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp
 ```bash
-npx @vscode/vsce show u9401066.vscode-zotero-mcp --json | grep version
+# curl 方式（推薦，不會卡住）
+curl -s "https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp" | \
+  grep -o '"version":"[^"]*"' | head -1
+
+# npx 方式（可能會卡住，需要下載套件）
+# npx @vscode/vsce show u9401066.vscode-zotero-mcp --json | grep version
 ```
 
 **Open VSX（可能需要更長時間）**
 - URL: https://open-vsx.org/extension/u9401066/vscode-zotero-mcp
 ```bash
-npx ovsx get u9401066.vscode-zotero-mcp --json | grep version
+# curl 方式
+curl -s "https://open-vsx.org/api/u9401066/vscode-zotero-mcp" | \
+  python3 -c "import sys,json; print(json.load(sys.stdin).get('version', 'Not Found'))"
+
+# npx 方式（可能會卡住）
+# npx ovsx get u9401066.vscode-zotero-mcp --json | grep version
 ```
 
 #### 5. 常見問題排除
