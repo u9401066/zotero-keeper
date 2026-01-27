@@ -250,6 +250,17 @@ export class PythonEnvironment {
     }
 
     /**
+     * Get the path to uv executable in extension storage
+     */
+    private getUvPath(): string | null {
+        const storagePath = this.context.globalStorageUri.fsPath;
+        const uvDir = path.join(storagePath, 'uv');
+        const uvExe = process.platform === 'win32' ? 'uv.exe' : 'uv';
+        const uvPath = path.join(uvDir, uvExe);
+        return fs.existsSync(uvPath) ? uvPath : null;
+    }
+
+    /**
      * Install required packages
      */
     async installPackages(): Promise<boolean> {
@@ -261,7 +272,20 @@ export class PythonEnvironment {
         this.log('Installing required packages...');
 
         const packages = REQUIRED_PACKAGES.map(p => p.pipName).join(' ');
-        const cmd = `"${this.pythonPath}" -m pip install --upgrade ${packages}`;
+        
+        // Try to use uv if available (handles uv-created venvs without pip)
+        const uvPath = this.getUvPath();
+        let cmd: string;
+        
+        if (uvPath) {
+            // Use uv pip install
+            cmd = `"${uvPath}" pip install --upgrade --python "${this.pythonPath}" ${packages}`;
+            this.log('Using uv for package installation');
+        } else {
+            // Fallback to system pip
+            cmd = `"${this.pythonPath}" -m pip install --upgrade ${packages}`;
+            this.log('Using system pip for package installation');
+        }
 
         return new Promise((resolve) => {
             this.log(`Running: ${cmd}`);

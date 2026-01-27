@@ -2,6 +2,14 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.9] - 2026-01-27
+
+### Fixed
+
+- 修復 uv 建立的 venv 沒有 pip 的問題
+- 現在 installPackages() 會自動使用 uv pip 安裝套件
+- 提升跨平台相容性
+
 ## [0.5.8] - 2026-01-27
 
 ### Updated
