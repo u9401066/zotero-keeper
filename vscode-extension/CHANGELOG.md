@@ -2,6 +2,13 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.10] - 2026-01-27
+
+### Fixed
+
+- 修復 PubMed Search MCP 無法啟動的問題
+- 修正啟動模組路徑：`pubmed_search.mcp` → `pubmed_search.presentation.mcp_server`
+
 ## [0.5.9] - 2026-01-27
 
 ### Fixed

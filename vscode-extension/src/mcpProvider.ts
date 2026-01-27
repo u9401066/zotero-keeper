@@ -100,7 +100,7 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
                 new vscode.McpStdioServerDefinition(
                     'PubMed Search',
                     this.pythonPath,
-                    ['-m', 'pubmed_search.mcp'],
+                    ['-m', 'pubmed_search.presentation.mcp_server'],
                     env,
                     '0.2.5'
                 )
