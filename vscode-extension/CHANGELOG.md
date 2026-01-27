@@ -2,6 +2,13 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.5] - 2026-01-27
+
+### Fixed
+
+- 修復 Open VSX 發布問題（Repository signing failed）
+- 手動重新發布到 Open VSX
+
 ## [0.5.4] - 2026-01-27
 
 ### 🔧 Compatibility Update
