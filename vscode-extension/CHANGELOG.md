@@ -2,6 +2,26 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.4] - 2026-01-27
+
+### 🔧 Compatibility Update
+
+- **PubMed Search MCP v0.2.4** - Updated to latest release with tool registry refactoring
+  - Now provides 26 integrated tools (up from 20)
+  - Improved API compatibility
+
+### ✨ Features
+
+- **Full PubMed Integration** - All search and import tools now available:
+  - `search_pubmed_exclude_owned` - Search PubMed excluding articles already in Zotero
+  - `batch_import_from_pubmed` - Batch import with RCR citation metrics
+  - `quick_import_pmids` - Fast PMID import
+  - `import_articles` - Unified import from multiple sources
+
+### 🔒 Security
+
+- All npm dependencies updated and audited (0 vulnerabilities)
+
 ## [0.5.3] - 2026-01-27
 
 ### 🔒 Security Fixes
