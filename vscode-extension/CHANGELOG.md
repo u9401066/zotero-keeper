@@ -2,6 +2,12 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.7] - 2026-01-27
+
+### Fixed
+
+- 重試修復 Marketplace Repository signing 錯誤
+
 ## [0.5.6] - 2026-01-27
 
 ### Fixed
