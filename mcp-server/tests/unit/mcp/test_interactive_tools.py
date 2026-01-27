@@ -7,14 +7,21 @@ Tests the interactive save tools including metadata fetching and elicitation.
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+# Functions moved to separate modules after refactoring
+from zotero_mcp.infrastructure.mcp.metadata_fetcher import (
+    fetch_metadata_from_doi as _fetch_metadata_from_doi,
+    merge_metadata as _merge_metadata,
+)
+from zotero_mcp.infrastructure.mcp.collection_utils import (
+    format_collection_options as _format_collection_options,
+    num_to_collection_key as _num_to_collection_key,
+)
+from zotero_mcp.infrastructure.mcp.validation import (
+    normalize_title as _normalize_title,
+    get_required_fields as _get_required_fields,
+    validate_item as _validate_item,
+)
 from zotero_mcp.infrastructure.mcp.interactive_tools import (
-    _fetch_metadata_from_doi,
-    _merge_metadata,
-    _format_collection_options,
-    _num_to_collection_key,
-    _normalize_title,
-    _get_required_fields,
-    _validate_item,
     CollectionChoiceSchema,
     DuplicateConfirmSchema,
 )

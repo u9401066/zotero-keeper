@@ -270,7 +270,7 @@ def register_batch_tools(mcp, zotero_client):
                     client = get_pubmed_client()
                     # Import LiteratureSearcher from pubmed_search
                     # Note: pubmed_search is configured via ../pubmed/__init__.py
-                    from pubmed_search.entrez import LiteratureSearcher  # type: ignore
+                    from pubmed_search import LiteratureSearcher  # type: ignore
                     searcher = LiteratureSearcher(
                         email=getattr(client, 'email', 'zotero@example.com'),
                         api_key=getattr(client, 'api_key', None)

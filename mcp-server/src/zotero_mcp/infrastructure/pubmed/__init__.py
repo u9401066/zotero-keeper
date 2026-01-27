@@ -142,7 +142,7 @@ def get_pubmed_client():
             "clone submodule via 'git submodule update --init --recursive'"
         )
 
-    from pubmed_search.client import PubMedClient
+    from pubmed_search import PubMedClient
 
     # Get API key from environment if available
     email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
@@ -202,7 +202,7 @@ def fetch_citation_metrics(pmids: list[str]) -> dict[str, dict]:
 
     try:
         client = get_pubmed_client()
-        from pubmed_search.entrez import LiteratureSearcher  # type: ignore
+        from pubmed_search import LiteratureSearcher  # type: ignore
 
         searcher = LiteratureSearcher(
             email=getattr(client, 'email', 'zotero@example.com'),
@@ -265,4 +265,4 @@ def enrich_articles_with_metrics(articles: list[dict], pmids: list[str] | None =
 
 # Type checking support
 if TYPE_CHECKING:
-    from pubmed_search.client import PubMedClient, SearchResult  # noqa: F401
+    from pubmed_search import PubMedClient, SearchResult  # noqa: F401
