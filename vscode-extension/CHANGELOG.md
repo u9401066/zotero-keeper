@@ -2,6 +2,14 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.6] - 2026-01-27
+
+### Fixed
+
+- 修復 Marketplace 驗證失敗問題
+- 從 VSIX 移除不必要的 AI 技能資料夾（.agent/, .claude/ 等）
+- 套件大小從 601 個檔案減少至約 20 個
+
 ## [0.5.5] - 2026-01-27
 
 ### Fixed

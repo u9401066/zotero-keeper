@@ -12,5 +12,19 @@ vsc-extension-quickstart.md
 **/*.ts
 !out/**/*.js
 docs/**
+
+# Exclude AI agent skill folders (not needed in extension)
+.agent/**
+.claude/**
+.codex/**
+.cursor/**
+.gemini/**
+.github/**
+.opencode/**
+.roo/**
+.trae/**
+.windsurf/**
+.skillsrc
+
 # Keep walkthrough resources
 !resources/**
