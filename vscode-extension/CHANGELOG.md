@@ -2,6 +2,13 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.11] - 2026-01-28
+
+### Updated
+
+- **PubMed Search MCP v0.2.7** - Version sync and stability improvements
+- 版本同步更新，準備上傳 Marketplace
+
 ## [0.5.10] - 2026-01-27
 
 ### Fixed
