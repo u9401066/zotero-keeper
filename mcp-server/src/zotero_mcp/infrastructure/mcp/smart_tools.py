@@ -33,9 +33,10 @@ def _normalize_title(title: str) -> str:
     if not title:
         return ""
     import re
+
     title = title.lower()
-    title = re.sub(r'[^\w\s]', ' ', title)
-    title = re.sub(r'\s+', ' ', title)
+    title = re.sub(r"[^\w\s]", " ", title)
+    title = re.sub(r"\s+", " ", title)
     return title.strip()
 
 
@@ -47,7 +48,8 @@ def _extract_identifier(item: dict, field: str) -> str | None:
     extra = item.get("extra", "")
     if extra and field in extra.upper():
         import re
-        pattern = rf'{field}:\s*(\S+)'
+
+        pattern = rf"{field}:\s*(\S+)"
         match = re.search(pattern, extra, re.IGNORECASE)
         if match:
             return match.group(1).strip().lower()
@@ -94,12 +96,14 @@ async def _suggest_collections(
 
         # Method 1: Direct keyword match in title
         if col_name_lower in title:
-            suggestions.append({
-                "key": col_key,
-                "name": col_name,
-                "score": 90,
-                "reason": f"Collection name '{col_name}' found in title",
-            })
+            suggestions.append(
+                {
+                    "key": col_key,
+                    "name": col_name,
+                    "score": 90,
+                    "reason": f"Collection name '{col_name}' found in title",
+                }
+            )
             continue
 
         # Method 2: Fuzzy match collection name with title keywords
@@ -107,12 +111,14 @@ async def _suggest_collections(
         for word in title_words:
             score = fuzz.partial_ratio(col_name_lower, word)
             if score >= COLLECTION_MATCH_THRESHOLD:
-                suggestions.append({
-                    "key": col_key,
-                    "name": col_name,
-                    "score": score,
-                    "reason": f"Keyword '{word}' matches collection",
-                })
+                suggestions.append(
+                    {
+                        "key": col_key,
+                        "name": col_name,
+                        "score": score,
+                        "reason": f"Keyword '{word}' matches collection",
+                    }
+                )
                 break
 
         # Method 3: Check tags match collection name
@@ -120,12 +126,14 @@ async def _suggest_collections(
             tag_lower = tag.lower()
             score = fuzz.ratio(col_name_lower, tag_lower)
             if score >= 70:
-                suggestions.append({
-                    "key": col_key,
-                    "name": col_name,
-                    "score": score,
-                    "reason": f"Tag '{tag}' matches collection",
-                })
+                suggestions.append(
+                    {
+                        "key": col_key,
+                        "name": col_name,
+                        "score": score,
+                        "reason": f"Tag '{tag}' matches collection",
+                    }
+                )
                 break
 
     # Sort by score descending and deduplicate
@@ -164,13 +172,15 @@ async def _find_duplicates(
             for existing in results:
                 existing_id = _extract_identifier(existing, field)
                 if existing_id and existing_id == identifier:
-                    duplicates.append({
-                        "key": existing.get("key"),
-                        "title": existing.get("data", {}).get("title", existing.get("title", "")),
-                        "match_type": f"exact_{field}",
-                        "score": 100,
-                        "identifier": identifier,
-                    })
+                    duplicates.append(
+                        {
+                            "key": existing.get("key"),
+                            "title": existing.get("data", {}).get("title", existing.get("title", "")),
+                            "match_type": f"exact_{field}",
+                            "score": 100,
+                            "identifier": identifier,
+                        }
+                    )
 
     if duplicates:
         return duplicates
@@ -205,12 +215,14 @@ async def _find_duplicates(
         for match_title, score, _ in matches:
             if score >= TITLE_MATCH_THRESHOLD:
                 matched_item = title_to_item.get(match_title, {})
-                duplicates.append({
-                    "key": matched_item.get("key"),
-                    "title": matched_item.get("title"),
-                    "match_type": "fuzzy_title",
-                    "score": score,
-                })
+                duplicates.append(
+                    {
+                        "key": matched_item.get("key"),
+                        "title": matched_item.get("title"),
+                        "match_type": "fuzzy_title",
+                        "score": score,
+                    }
+                )
 
     return duplicates
 

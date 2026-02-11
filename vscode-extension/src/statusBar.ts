@@ -1,6 +1,6 @@
 /**
  * Status Bar Manager
- * 
+ *
  * Shows extension status in VS Code status bar with:
  * - Version number
  * - Quick menu access
@@ -38,7 +38,7 @@ export interface ApiInfo {
 export class StatusBarManager {
     private statusBarItem: vscode.StatusBarItem;
     private context: vscode.ExtensionContext | undefined;
-    private version: string = '0.5.12';
+    private version: string = '0.5.13';
 
     constructor() {
         this.statusBarItem = vscode.window.createStatusBarItem(
@@ -54,31 +54,31 @@ export class StatusBarManager {
      */
     initialize(context: vscode.ExtensionContext): void {
         this.context = context;
-        
+
         // Get version from package.json
         const packageJson = context.extension.packageJSON;
         this.version = packageJson.version || '0.5.2';
-        
+
         // Register quick menu command
         context.subscriptions.push(
             vscode.commands.registerCommand('zoteroMcp.showQuickMenu', () => {
                 this.showQuickMenu();
             })
         );
-        
+
         // Register statistics commands
         context.subscriptions.push(
             vscode.commands.registerCommand('zoteroMcp.showStatistics', () => {
                 this.showStatisticsPanel();
             })
         );
-        
+
         context.subscriptions.push(
             vscode.commands.registerCommand('zoteroMcp.showApiStatus', () => {
                 this.showApiStatusPanel();
             })
         );
-        
+
         context.subscriptions.push(
             vscode.commands.registerCommand('zoteroMcp.resetStatistics', async () => {
                 const confirm = await vscode.window.showWarningMessage(
@@ -91,7 +91,7 @@ export class StatusBarManager {
                 }
             })
         );
-        
+
         // Increment session count
         this.incrementStat('sessionsCount');
     }
@@ -114,7 +114,7 @@ export class StatusBarManager {
         const stats = this.getStatistics();
         const apis = this.getSupportedApis();
         const enabledApis = apis.filter(a => a.enabled && a.configured).length;
-        
+
         const items: vscode.QuickPickItem[] = [
             {
                 label: '$(dashboard) Show Full Status',
@@ -154,12 +154,12 @@ export class StatusBarManager {
                 description: 'Fix Python environment issues'
             }
         ];
-        
+
         const selection = await vscode.window.showQuickPick(items, {
             title: `Zotero + PubMed MCP v${this.version}`,
             placeHolder: 'Select an action...'
         });
-        
+
         if (selection) {
             switch (selection.label) {
                 case '$(dashboard) Show Full Status':
@@ -195,7 +195,7 @@ export class StatusBarManager {
      */
     getSupportedApis(): ApiInfo[] {
         const config = vscode.workspace.getConfiguration('zoteroMcp');
-        
+
         return [
             {
                 name: 'PubMed / NCBI E-utilities',
@@ -264,13 +264,13 @@ export class StatusBarManager {
      */
     async showApiStatusPanel(): Promise<void> {
         const apis = this.getSupportedApis();
-        
+
         const items: vscode.QuickPickItem[] = apis.map(api => ({
             label: `${api.configured ? '$(check)' : '$(circle-outline)'} ${api.name}`,
             description: api.rateLimit,
             detail: `${api.description}${!api.configured && api.settingsKey ? ' - Click to configure' : ''}`
         }));
-        
+
         items.push(
             { label: '', kind: vscode.QuickPickItemKind.Separator },
             {
@@ -278,12 +278,12 @@ export class StatusBarManager {
                 description: 'Configure all API keys'
             }
         );
-        
+
         const selection = await vscode.window.showQuickPick(items, {
             title: 'Connected APIs',
             placeHolder: 'Select an API to configure...'
         });
-        
+
         if (selection) {
             if (selection.label === '$(gear) Open API Settings') {
                 vscode.commands.executeCommand('workbench.action.openSettings', 'zoteroMcp.ncbi');
@@ -292,7 +292,7 @@ export class StatusBarManager {
                 const api = apis.find(a => selection.label.includes(a.name));
                 if (api?.settingsKey) {
                     vscode.commands.executeCommand(
-                        'workbench.action.openSettings', 
+                        'workbench.action.openSettings',
                         `zoteroMcp.${api.settingsKey}`
                     );
                 } else {
@@ -320,10 +320,10 @@ export class StatusBarManager {
      * Get statistics HTML content
      */
     private getStatisticsHtml(stats: UsageStatistics): string {
-        const lastUsed = stats.lastUsed 
-            ? new Date(stats.lastUsed).toLocaleDateString() 
+        const lastUsed = stats.lastUsed
+            ? new Date(stats.lastUsed).toLocaleDateString()
             : 'Never';
-        
+
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -337,7 +337,7 @@ export class StatusBarManager {
             color: var(--vscode-foreground);
             background: var(--vscode-editor-background);
         }
-        h1 { 
+        h1 {
             color: var(--vscode-titleBar-activeForeground);
             display: flex;
             align-items: center;
@@ -379,7 +379,7 @@ export class StatusBarManager {
 </head>
 <body>
     <h1>📊 Usage Statistics <span class="version">v${this.version}</span></h1>
-    
+
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-number">${stats.articlesSearched}</div>
@@ -398,7 +398,7 @@ export class StatusBarManager {
             <div class="stat-label">🚀 Sessions</div>
         </div>
     </div>
-    
+
     <div class="info">
         <strong>Last Activity:</strong> ${lastUsed}<br>
         <small>Statistics are stored locally and never shared.</small>
@@ -420,7 +420,7 @@ export class StatusBarManager {
                 lastUsed: ''
             };
         }
-        
+
         return this.context.globalState.get<UsageStatistics>(STATS_KEY, {
             articlesSearched: 0,
             articlesImported: 0,
@@ -435,11 +435,11 @@ export class StatusBarManager {
      */
     async incrementStat(key: keyof Omit<UsageStatistics, 'lastUsed'>, amount: number = 1): Promise<void> {
         if (!this.context) return;
-        
+
         const stats = this.getStatistics();
         stats[key] = (stats[key] || 0) + amount;
         stats.lastUsed = new Date().toISOString();
-        
+
         await this.context.globalState.update(STATS_KEY, stats);
     }
 
@@ -448,7 +448,7 @@ export class StatusBarManager {
      */
     async resetStatistics(): Promise<void> {
         if (!this.context) return;
-        
+
         await this.context.globalState.update(STATS_KEY, {
             articlesSearched: 0,
             articlesImported: 0,
@@ -524,7 +524,7 @@ export class StatusBarManager {
         const stats = this.getStatistics();
         const apiInfo = details.slice(0, 3).join(' | ');
         const statsInfo = `📊 ${stats.articlesSearched} searches | ${stats.articlesImported} imports`;
-        
+
         switch (type) {
             case 'initializing':
                 return 'Zotero MCP is initializing...';

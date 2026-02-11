@@ -54,25 +54,15 @@ VS Code Copilot Configuration:
       }
     }
   }
-        """
+        """,
     )
 
+    parser.add_argument("--transport", "-t", choices=["stdio", "sse"], default="stdio", help="Transport mode (default: stdio)")
     parser.add_argument(
-        "--transport", "-t",
-        choices=["stdio", "sse"],
-        default="stdio",
-        help="Transport mode (default: stdio)"
+        "--host", default=os.environ.get("ZOTERO_HOST", "localhost"), help="Zotero host (default: localhost or ZOTERO_HOST env)"
     )
     parser.add_argument(
-        "--host",
-        default=os.environ.get("ZOTERO_HOST", "localhost"),
-        help="Zotero host (default: localhost or ZOTERO_HOST env)"
-    )
-    parser.add_argument(
-        "--port",
-        type=int,
-        default=int(os.environ.get("ZOTERO_PORT", "23119")),
-        help="Zotero port (default: 23119 or ZOTERO_PORT env)"
+        "--port", type=int, default=int(os.environ.get("ZOTERO_PORT", "23119")), help="Zotero port (default: 23119 or ZOTERO_PORT env)"
     )
 
     args = parser.parse_args()

@@ -23,11 +23,12 @@ logger = logging.getLogger(__name__)
 # Check if pubmed-search-mcp is available (for direct PMID import)
 try:
     from pubmed_search import PubMedClient
+
     PUBMED_AVAILABLE = True
 except ImportError:
     PUBMED_AVAILABLE = False
     logger.info("pubmed-search-mcp not installed. Direct PMID import disabled.")
-    logger.info("Install with: pip install 'zotero-keeper[pubmed]'")
+    logger.info("Install with: uv pip install 'zotero-keeper[pubmed]'")
 
 
 def _parse_ris_to_zotero_items(ris_text: str) -> list[dict[str, Any]]:
@@ -65,13 +66,13 @@ def _parse_ris_to_zotero_items(ris_text: str) -> list[dict[str, Any]]:
         "GEN": "document",
     }
 
-    for line in ris_text.strip().split('\n'):
+    for line in ris_text.strip().split("\n"):
         line = line.strip()
         if not line or len(line) < 6:
             continue
 
         # Parse RIS tag format: "XX  - value"
-        match = re.match(r'^([A-Z][A-Z0-9])\s+-\s+(.*)$', line)
+        match = re.match(r"^([A-Z][A-Z0-9])\s+-\s+(.*)$", line)
         if not match:
             continue
 
@@ -106,17 +107,11 @@ def _parse_ris_to_zotero_items(ris_text: str) -> list[dict[str, Any]]:
             # Author format: "LastName, FirstName" or "LastName"
             if "," in value:
                 parts = value.split(",", 1)
-                current_authors.append({
-                    "lastName": parts[0].strip(),
-                    "firstName": parts[1].strip() if len(parts) > 1 else "",
-                    "creatorType": "author"
-                })
+                current_authors.append(
+                    {"lastName": parts[0].strip(), "firstName": parts[1].strip() if len(parts) > 1 else "", "creatorType": "author"}
+                )
             else:
-                current_authors.append({
-                    "lastName": value,
-                    "firstName": "",
-                    "creatorType": "author"
-                })
+                current_authors.append({"lastName": value, "firstName": "", "creatorType": "author"})
         elif tag in ("PY", "Y1"):
             # Year: might be "2024" or "2024/01/15"
             current_item["date"] = value.split("/")[0]
@@ -146,7 +141,7 @@ def _parse_ris_to_zotero_items(ris_text: str) -> list[dict[str, Any]]:
         elif tag == "N1":
             # Notes - often contains PMID
             if "PMID:" in value or value.isdigit():
-                pmid = re.search(r'(\d+)', value)
+                pmid = re.search(r"(\d+)", value)
                 if pmid:
                     current_item["extra"] = f"PMID: {pmid.group(1)}"
             else:
@@ -170,23 +165,29 @@ def _pmid_to_zotero_item(article: dict) -> dict[str, Any]:
         if isinstance(author, str):
             parts = author.split()
             if len(parts) >= 2:
-                creators.append({
-                    "firstName": parts[0],
-                    "lastName": " ".join(parts[1:]),
-                    "creatorType": "author",
-                })
+                creators.append(
+                    {
+                        "firstName": parts[0],
+                        "lastName": " ".join(parts[1:]),
+                        "creatorType": "author",
+                    }
+                )
             else:
-                creators.append({
-                    "lastName": author,
-                    "firstName": "",
-                    "creatorType": "author",
-                })
+                creators.append(
+                    {
+                        "lastName": author,
+                        "firstName": "",
+                        "creatorType": "author",
+                    }
+                )
         elif isinstance(author, dict):
-            creators.append({
-                "firstName": author.get("firstName", author.get("first_name", "")),
-                "lastName": author.get("lastName", author.get("last_name", "")),
-                "creatorType": "author",
-            })
+            creators.append(
+                {
+                    "firstName": author.get("firstName", author.get("first_name", "")),
+                    "lastName": author.get("lastName", author.get("last_name", "")),
+                    "creatorType": "author",
+                }
+            )
 
     item: dict[str, Any] = {
         "itemType": "journalArticle",
@@ -315,10 +316,7 @@ def register_pubmed_tools(mcp, zotero_client):
                 except Exception:
                     # 取得可用 collections 列表
                     collections = await zotero_client.list_collections()
-                    available = [
-                        {"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")}
-                        for c in collections[:20]
-                    ]
+                    available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:20]]
                     return {
                         "success": False,
                         "error": f"Collection key '{collection_key}' not found",
@@ -334,10 +332,7 @@ def register_pubmed_tools(mcp, zotero_client):
                 else:
                     # 取得可用 collections 列表
                     collections = await zotero_client.list_collections()
-                    available = [
-                        {"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")}
-                        for c in collections[:20]
-                    ]
+                    available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:20]]
                     return {
                         "success": False,
                         "error": f"Collection '{collection_name}' not found",
@@ -403,7 +398,7 @@ def register_pubmed_tools(mcp, zotero_client):
 
         直接透過 PMID 匯入 PubMed 文獻到 Zotero
 
-        Requires: pip install "zotero-keeper[pubmed]"
+        Requires: uv pip install "zotero-keeper[pubmed]"
 
         🔄 NEW RECOMMENDED WORKFLOW:
         1. pubmed: search_literature("query") → articles
@@ -442,7 +437,7 @@ def register_pubmed_tools(mcp, zotero_client):
             return {
                 "success": False,
                 "error": "pubmed-search-mcp not installed",
-                "hint": "Install with: pip install 'zotero-keeper[pubmed]'",
+                "hint": "Install with: uv pip install 'zotero-keeper[pubmed]'",
                 "alternative": "Use import_ris_to_zotero with RIS text from pubmed-search-mcp's prepare_export tool",
             }
 
@@ -458,10 +453,7 @@ def register_pubmed_tools(mcp, zotero_client):
                     target_name = col.get("data", {}).get("name", collection_key)
                 except Exception:
                     collections = await zotero_client.list_collections()
-                    available = [
-                        {"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")}
-                        for c in collections[:20]
-                    ]
+                    available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:20]]
                     return {
                         "success": False,
                         "error": f"Collection key '{collection_key}' not found",
@@ -476,10 +468,7 @@ def register_pubmed_tools(mcp, zotero_client):
                     target_name = found.get("data", {}).get("name", collection_name)
                 else:
                     collections = await zotero_client.list_collections()
-                    available = [
-                        {"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")}
-                        for c in collections[:20]
-                    ]
+                    available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:20]]
                     return {
                         "success": False,
                         "error": f"Collection '{collection_name}' not found",
@@ -488,6 +477,7 @@ def register_pubmed_tools(mcp, zotero_client):
                     }
 
             import os
+
             email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
             client = PubMedClient(email=email)
 
@@ -506,10 +496,9 @@ def register_pubmed_tools(mcp, zotero_client):
             if include_citation_metrics:
                 try:
                     from ..pubmed import enrich_articles_with_metrics
+
                     enrich_articles_with_metrics(articles, pmids)
-                    citation_metrics_count = sum(
-                        1 for a in articles if a.get("relative_citation_ratio")
-                    )
+                    citation_metrics_count = sum(1 for a in articles if a.get("relative_citation_ratio"))
                     logger.info(f"Enriched {citation_metrics_count} articles with RCR")
                 except Exception as e:
                     logger.warning(f"Failed to fetch citation metrics: {e}")
@@ -532,10 +521,7 @@ def register_pubmed_tools(mcp, zotero_client):
             await zotero_client.save_items(zotero_items)
 
             # Build response
-            imported_info = [
-                {"pmid": a.get("pmid"), "title": a.get("title", "")[:50]}
-                for a in articles
-            ]
+            imported_info = [{"pmid": a.get("pmid"), "title": a.get("title", "")[:50]} for a in articles]
 
             result = {
                 "success": True,
@@ -632,6 +618,7 @@ def register_pubmed_tools(mcp, zotero_client):
 
             # Try to use batch_import if available (better metadata)
             from .batch_tools import is_batch_import_available
+
             if is_batch_import_available():
                 from ..pubmed import fetch_pubmed_articles
                 from ..mappers.pubmed_mapper import map_pubmed_to_zotero
@@ -650,18 +637,12 @@ def register_pubmed_tools(mcp, zotero_client):
 
                     # 如果找不到 collection，回傳錯誤！不是靜默存到 root！
                     if not found:
-                        similar = [
-                            c.get("name") for c in collections
-                            if collection_name.lower() in c.get("name", "").lower()
-                        ][:5]
+                        similar = [c.get("name") for c in collections if collection_name.lower() in c.get("name", "").lower()][:5]
                         return {
                             "success": False,
                             "error": f"Collection '{collection_name}' not found",
                             "hint": f"Similar: {similar}" if similar else "Use list_collections() first",
-                            "available_collections": [
-                                {"key": c.get("key"), "name": c.get("name")}
-                                for c in collections[:10]
-                            ],
+                            "available_collections": [{"key": c.get("key"), "name": c.get("name")} for c in collections[:10]],
                         }
 
                     collection_info = {"key": collection_key, "name": found.get("name")}
@@ -677,10 +658,7 @@ def register_pubmed_tools(mcp, zotero_client):
 
                 # Convert to Zotero format
                 collection_keys = [collection_key] if collection_key else None
-                zotero_items = [
-                    map_pubmed_to_zotero(article, extra_tags=tags, collection_keys=collection_keys)
-                    for article in articles
-                ]
+                zotero_items = [map_pubmed_to_zotero(article, extra_tags=tags, collection_keys=collection_keys) for article in articles]
 
                 # Save to Zotero
                 await zotero_client.batch_save_items(
@@ -705,6 +683,7 @@ def register_pubmed_tools(mcp, zotero_client):
             # Fallback to import_from_pmids if pubmed package available
             elif PUBMED_AVAILABLE:
                 import os
+
                 email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
                 client = PubMedClient(email=email)
                 articles = client.fetch_details(pmid_list)
@@ -733,7 +712,7 @@ def register_pubmed_tools(mcp, zotero_client):
                 return {
                     "success": False,
                     "error": "PubMed integration not available",
-                    "hint": "Install with: pip install 'zotero-keeper[pubmed]'",
+                    "hint": "Install with: uv pip install 'zotero-keeper[pubmed]'",
                     "alternative": "Use import_ris_to_zotero with RIS text",
                 }
 

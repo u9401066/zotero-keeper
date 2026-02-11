@@ -41,9 +41,7 @@ logger = logging.getLogger(__name__)
 class CollectionChoiceSchema(BaseModel):
     """Schema for collection selection elicitation"""
 
-    choice: str = Field(
-        description="Enter the number of your choice (e.g., '1' for first option, '0' for no collection)"
-    )
+    choice: str = Field(description="Enter the number of your choice (e.g., '1' for first option, '0' for no collection)")
 
 
 class DuplicateConfirmSchema(BaseModel):
@@ -99,9 +97,7 @@ def _build_user_input(
     return user_input
 
 
-async def _handle_duplicate_check(
-    item: dict, zotero_client, ctx: Context | None, result: dict
-) -> bool:
+async def _handle_duplicate_check(item: dict, zotero_client, ctx: Context | None, result: dict) -> bool:
     """
     Handle duplicate check with optional elicitation.
 
@@ -140,16 +136,12 @@ async def _handle_duplicate_check(
                 return False
         except Exception as e:
             logger.warning(f"Elicitation failed (duplicate check): {e}")
-            result["duplicate_warning"] = (
-                f"Duplicate found: {best['title']} ({best['score']}%)"
-            )
+            result["duplicate_warning"] = f"Duplicate found: {best['title']} ({best['score']}%)"
 
     return True
 
 
-async def _handle_collection_selection(
-    item: dict, zotero_client, ctx: Context | None, skip_prompt: bool
-) -> tuple[str | None, str | None]:
+async def _handle_collection_selection(item: dict, zotero_client, ctx: Context | None, skip_prompt: bool) -> tuple[str | None, str | None]:
     """
     Handle collection selection with optional elicitation.
 
@@ -177,17 +169,11 @@ async def _handle_collection_selection(
         suggestions = await _suggest_collections(item, zotero_client)
 
         # Format options
-        options_text, key_to_num = format_collection_options(
-            all_collections, suggestions
-        )
+        options_text, key_to_num = format_collection_options(all_collections, suggestions)
 
         # Build elicitation message
         title = item.get("title", "Unknown")
-        elicit_msg = (
-            f"📚 **Saving:** {title}\n"
-            f"{options_text}\n"
-            f"Enter the number of your choice:"
-        )
+        elicit_msg = f"📚 **Saving:** {title}\n" f"{options_text}\n" f"Enter the number of your choice:"
 
         # Ask user
         choice_result = await ctx.elicit(
@@ -319,9 +305,7 @@ def register_interactive_save_tools(mcp, zotero_client):
                 return result
 
             # Step 3: Collection Selection
-            target_key, target_name = await _handle_collection_selection(
-                item, zotero_client, ctx, skip_collection_prompt
-            )
+            target_key, target_name = await _handle_collection_selection(item, zotero_client, ctx, skip_collection_prompt)
 
             if target_key == "CANCELLED":
                 result["message"] = "❌ Cancelled by user"
@@ -447,8 +431,7 @@ def register_interactive_save_tools(mcp, zotero_client):
                 if duplicates:
                     best = duplicates[0]
                     result["message"] = (
-                        f"⚠️ Duplicate found: '{best['title']}' ({best['score']}% match). "
-                        f"Use force_add=True to add anyway."
+                        f"⚠️ Duplicate found: '{best['title']}' ({best['score']}% match). " f"Use force_add=True to add anyway."
                     )
                     result["duplicate"] = best
                     return result

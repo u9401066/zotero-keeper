@@ -287,10 +287,10 @@ async def get_semantic_scholar_citations(doi: str):
 # 新增工具
 def copy_tags_between_items(source_key: str, target_keys: list[str]):
     """從來源項目複製標籤到目標項目"""
-    
+
 def relate_items(item_keys: list[str]):
     """建立多個項目之間的關聯"""
-    
+
 def copy_item_as(item_key: str, format: str):
     """以指定格式複製項目 (citation, bibtex, ris, etc.)"""
 ```
@@ -349,7 +349,7 @@ def clean_item_metadata(
     operations: list[str]  # ["fix_title_case", "remove_extra_spaces", "set_language"]
 ):
     """批次清理項目 metadata"""
-    
+
 def normalize_journal_names(item_keys: list[str]):
     """標準化期刊名稱"""
 ```
@@ -420,7 +420,7 @@ zotcli edit-note F5R83K6P        # 編輯筆記
 ```python
 def find_duplicates(collection_key: str = None):
     """找出庫中的重複項目"""
-    
+
 def suggest_merge(item_key1: str, item_key2: str):
     """比較兩個項目，建議合併策略"""
 ```

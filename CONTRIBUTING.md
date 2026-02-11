@@ -166,15 +166,15 @@ def add_reference(
 ) -> dict[str, Any]:
     """
     Add a new reference to Zotero.
-    
+
     Args:
         title: The reference title
         authors: List of author names
         doi: Optional DOI identifier
-        
+
     Returns:
         Dictionary with success status and item key
-        
+
     Raises:
         ZoteroConnectionError: If cannot connect to Zotero
     """

@@ -2,12 +2,12 @@
 
 🔬 **AI-powered research assistant** - Integrates Zotero reference management and PubMed literature search with GitHub Copilot.
 
-## ✨ What's New in v0.5.2
+## ✨ What's New in v0.5.13
 
-- **📊 Usage Statistics**: Track searches, imports, and full-text accesses
-- **🌐 API Status Dashboard**: View and manage 8 connected APIs at a glance
-- **📋 Quick Menu**: Click status bar for instant access to all features
-- **🔢 Version Display**: Status bar shows current version
+- **🔧 NCBI Email 自動偵測**: 不再需要手動設定 email，自動讀取 `git config user.email`
+- **🛡️ EPERM 修復**: 重新安裝時自動終止佔用的 Python 程序，避免 `EPERM: unlink python.exe` 錯誤
+- **🐍 Python 3.12**: 環境升級至 Python 3.12，更好的效能和語法支持
+- **📦 PubMed Search MCP v0.3.8**: 統一搜尋入口 `unified_search`，支援預印本、同行審查篩選
 
 ## Features
 
@@ -21,14 +21,21 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 - Batch import from PubMed searches
 - **Library analytics** (stats, orphan detection)
 
-### 🔍 PubMed Search
-- Search PubMed literature with MeSH terms
-- **Multi-source search** (Europe PMC, CORE, Semantic Scholar)
+### 🔍 PubMed Search (v0.3.8)
+
+- **`unified_search`** - 統一搜尋入口，自動合併去重多來源結果
+- **Multi-source search** (PubMed, Europe PMC, CORE)
+- **預印本搜尋** - 支援 arXiv、medRxiv、bioRxiv（`include_preprints`）
+- **同行審查篩選** - 只顯示同行審查文章（`peer_reviewed_only`）
 - Parse PICO clinical questions
 - Find related and citing articles
 - Get citation metrics (RCR)
+- **ICD ↔ MeSH 轉換** - 自動轉換 ICD 代碼和 MeSH 術語
+- **研究時間軸** - 建構與比較研究領域的歷史演進
+- **生物醫學圖片搜尋** - 搜尋 Open-i 和 Europe PMC 圖片
 - **Full-text access** (Europe PMC, CORE)
 - **Session management** (retrieve previous search results)
+- **NCBI 延伸** (Gene, PubChem, ClinVar)
 - Export in multiple formats (RIS, BibTeX, etc.)
 
 ### 🌐 Connected APIs
@@ -56,7 +63,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 1. Install this extension from the VS Code Marketplace
 2. The extension will automatically:
    - Download [uv](https://github.com/astral-sh/uv) (fast Python package manager, ~10MB)
-   - Create an isolated Python 3.11 environment
+   - Create an isolated Python 3.12 environment
    - Install required packages (`zotero-keeper`, `pubmed-search-mcp`)
    - Register MCP servers with VS Code
    - **Install Copilot research workflow guides**
@@ -97,7 +104,7 @@ Run `Zotero MCP: Install Copilot Research Skills` to manually install/update.
 |---------|---------|-------------|
 | `zoteroMcp.zoteroHost` | `localhost` | Zotero host address |
 | `zoteroMcp.zoteroPort` | `23119` | Zotero API port |
-| `zoteroMcp.ncbiEmail` | | Email for NCBI API (recommended) |
+| `zoteroMcp.ncbiEmail` | | Email for NCBI API (自動偵測 git email，通常不需手動設定) |
 | `zoteroMcp.enableZoteroKeeper` | `true` | Enable Zotero Keeper server |
 | `zoteroMcp.enablePubmedSearch` | `true` | Enable PubMed Search server |
 
@@ -120,7 +127,7 @@ Run `Zotero MCP: Install Copilot Research Skills` to manually install/update.
 This extension uses [uv](https://github.com/astral-sh/uv) from Astral to manage Python:
 
 1. **First Run**: Downloads uv binary (~10MB) to extension storage
-2. **Environment Setup**: Creates isolated venv with Python 3.11
+2. **Environment Setup**: Creates isolated venv with Python 3.12
 3. **Package Install**: Installs `zotero-keeper` and `pubmed-search-mcp` (10-100x faster than pip)
 4. **MCP Servers**: Starts both servers and registers with VS Code
 5. **Copilot Skills**: Installs research workflow guides to workspace

@@ -91,9 +91,11 @@ def _configure_pubmed_search() -> bool:
         # Verify import works
         try:
             import pubmed_search
+
             # Reload if already imported from installed package
-            if hasattr(pubmed_search, '__file__') and submodule_path not in Path(pubmed_search.__file__).parents:
+            if hasattr(pubmed_search, "__file__") and submodule_path not in Path(pubmed_search.__file__).parents:
                 import importlib
+
                 importlib.reload(pubmed_search)
 
             logger.info(f"Using pubmed-search from submodule: {submodule_path}")
@@ -108,6 +110,7 @@ def _configure_pubmed_search() -> bool:
     # Priority 2: Try installed package (production mode)
     try:
         import pubmed_search
+
         logger.info(f"Using installed pubmed-search package: {pubmed_search.__file__}")
         _configured = True
         _use_submodule = False
@@ -118,7 +121,7 @@ def _configure_pubmed_search() -> bool:
     logger.warning(
         "pubmed-search not available. Options:\n"
         "  1. Development: git submodule update --init --recursive\n"
-        "  2. Production: pip install pubmed-search-mcp"
+        "  2. Production: uv pip install pubmed-search-mcp"
     )
     return False
 
@@ -138,7 +141,7 @@ def get_pubmed_client():
     if not _configure_pubmed_search():
         raise ImportError(
             "Cannot import pubmed_search. "
-            "Install via 'pip install pubmed-search-mcp' or "
+            "Install via 'uv pip install pubmed-search-mcp' or "
             "clone submodule via 'git submodule update --init --recursive'"
         )
 
@@ -204,10 +207,7 @@ def fetch_citation_metrics(pmids: list[str]) -> dict[str, dict]:
         client = get_pubmed_client()
         from pubmed_search import LiteratureSearcher  # type: ignore
 
-        searcher = LiteratureSearcher(
-            email=getattr(client, 'email', 'zotero@example.com'),
-            api_key=getattr(client, 'api_key', None)
-        )
+        searcher = LiteratureSearcher(email=getattr(client, "email", "zotero@example.com"), api_key=getattr(client, "api_key", None))
         metrics = searcher.get_citation_metrics(pmids)
         logger.info(f"Fetched citation metrics for {len(metrics)} articles")
         return metrics

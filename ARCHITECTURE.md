@@ -233,7 +233,7 @@ if auto_fetch_metadata:
         fetched_metadata = await _fetch_metadata_from_pmid(pmid)
     elif doi:
         fetched_metadata = await _fetch_metadata_from_doi(doi)
-    
+
     # Merge: user input takes priority, fetched fills gaps
     item = _merge_metadata(user_input, fetched_metadata)
 ```

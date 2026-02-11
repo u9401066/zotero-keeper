@@ -30,10 +30,10 @@ vscode-zotero-mcp/
 import * as vscode from 'vscode';
 
 class ZoteroMcpProvider implements vscode.McpServerDefinitionProvider<vscode.McpStdioServerDefinition> {
-    
+
     provideMcpServerDefinitions(): vscode.McpStdioServerDefinition[] {
         const pythonPath = this.getPythonPath();
-        
+
         return [
             // Zotero Keeper MCP Server
             new vscode.McpStdioServerDefinition(
@@ -71,14 +71,14 @@ async function ensureDependencies(): Promise<void> {
     // 1. Check if packages are installed
     const hasZotero = await checkPackage('zotero-keeper');
     const hasPubmed = await checkPackage('pubmed-search-mcp');
-    
+
     if (!hasZotero || !hasPubmed) {
         // 2. Ask user permission
         const choice = await vscode.window.showInformationMessage(
             'Zotero MCP requires Python packages. Install now?',
             'Yes', 'No'
         );
-        
+
         if (choice === 'Yes') {
             // 3. Install via uv
             await runTerminal(`uv pip install zotero-keeper[all] pubmed-search-mcp[mcp]`);

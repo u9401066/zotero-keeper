@@ -147,7 +147,7 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
 ## Phase 4.6: Unified Search Gateway 🔄
 
 > 🎯 **核心理念**：單一入口 + 後端自動分流（像 Google 一樣）
-> 
+>
 > 📄 **詳細設計**：
 > - `docs/research/UNIFIED_SEARCH_RESEARCH.md` - 總體規格
 > - `docs/research/AGENT_MCP_COLLABORATION.md` - Agent-MCP 協作設計
@@ -439,7 +439,7 @@ from urllib.parse import quote
 
 config = {
     "name": "zotero-keeper",
-    "command": "uvx", 
+    "command": "uvx",
     "args": ["zotero-keeper-mcp"]
 }
 
@@ -565,7 +565,7 @@ v3.0: Chat Participant (最佳體驗)
 ## Phase 5: Write Operations via Plugin Integration 🔄
 
 > ⚠️ **Zotero Local API 限制**: DELETE/PATCH/PUT 回傳 501 Not Implemented
-> 
+>
 > 解決方案：整合 Zotero 外掛，透過外掛的內部 API 實現寫入操作
 
 ### v2.0.0 - Plugin Bridge (Planned)
@@ -690,31 +690,31 @@ function shutdown() {
 // server_mcp.js - 加入 Collection 範例
 Zotero.Server.Endpoints["/mcp/items/:itemKey/collections"] = class {
     supportedMethods = ['POST', 'DELETE'];
-    
+
     async init({ method, pathParams, data }) {
         let item = await Zotero.Items.getByLibraryAndKeyAsync(
-            Zotero.Libraries.userLibraryID, 
+            Zotero.Libraries.userLibraryID,
             pathParams.itemKey
         );
-        
+
         if (!item) return 404;
-        
+
         if (method === 'POST') {
             let collection = Zotero.Collections.getByLibraryAndKey(
-                Zotero.Libraries.userLibraryID, 
+                Zotero.Libraries.userLibraryID,
                 data.collectionKey
             );
             if (!collection) return [400, 'text/plain', 'Collection not found'];
-            
+
             item.addToCollection(collection.id);
             await item.saveTx();
-            return [200, 'application/json', JSON.stringify({ 
+            return [200, 'application/json', JSON.stringify({
                 success: true,
                 item: pathParams.itemKey,
                 collection: data.collectionKey
             })];
         }
-        
+
         if (method === 'DELETE') {
             item.removeFromCollection(data.collectionKey);
             await item.saveTx();

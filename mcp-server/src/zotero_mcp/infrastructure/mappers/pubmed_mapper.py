@@ -88,17 +88,21 @@ def map_pubmed_to_zotero(
         for author_name in article.get("authors", []):
             parts = str(author_name).rsplit(" ", 1)
             if len(parts) == 2:
-                creators.append({
-                    "creatorType": "author",
-                    "firstName": parts[0],
-                    "lastName": parts[1],
-                })
+                creators.append(
+                    {
+                        "creatorType": "author",
+                        "firstName": parts[0],
+                        "lastName": parts[1],
+                    }
+                )
             else:
-                creators.append({
-                    "creatorType": "author",
-                    "lastName": author_name,
-                    "firstName": "",
-                })
+                creators.append(
+                    {
+                        "creatorType": "author",
+                        "lastName": author_name,
+                        "firstName": "",
+                    }
+                )
 
     if creators:
         item["creators"] = creators
@@ -241,18 +245,29 @@ def _month_to_number(month: str) -> str | None:
         return str(int(month)).zfill(2)
 
     month_map = {
-        "jan": "01", "january": "01",
-        "feb": "02", "february": "02",
-        "mar": "03", "march": "03",
-        "apr": "04", "april": "04",
+        "jan": "01",
+        "january": "01",
+        "feb": "02",
+        "february": "02",
+        "mar": "03",
+        "march": "03",
+        "apr": "04",
+        "april": "04",
         "may": "05",
-        "jun": "06", "june": "06",
-        "jul": "07", "july": "07",
-        "aug": "08", "august": "08",
-        "sep": "09", "september": "09",
-        "oct": "10", "october": "10",
-        "nov": "11", "november": "11",
-        "dec": "12", "december": "12",
+        "jun": "06",
+        "june": "06",
+        "jul": "07",
+        "july": "07",
+        "aug": "08",
+        "august": "08",
+        "sep": "09",
+        "september": "09",
+        "oct": "10",
+        "october": "10",
+        "nov": "11",
+        "november": "11",
+        "dec": "12",
+        "december": "12",
     }
 
     return month_map.get(month.lower().strip())
@@ -308,7 +323,7 @@ def extract_pmid_from_zotero_item(item: dict[str, Any]) -> str | None:
     if not extra:
         return None
 
-    match = re.search(r'PMID:\s*(\d+)', extra, re.IGNORECASE)
+    match = re.search(r"PMID:\s*(\d+)", extra, re.IGNORECASE)
     if match:
         return match.group(1)
 

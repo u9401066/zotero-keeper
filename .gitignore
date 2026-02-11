@@ -4,6 +4,9 @@
 build/
 # Build artifacts
 *.cache
+# Pre-commit log files
+precommit_stdout.txt
+precommit_stderr.txt
 .coverage
 coverage/
 desktop.ini

@@ -106,7 +106,7 @@ zotero-keeper (MCP tool):    直接呼叫 pubmed-search → 重複檢測 → 寫
 | **Duplicate Detection** | zotero-keeper | `check_duplicate`, `smart_add_reference` | Already exists |
 | **Collection Management** | zotero-keeper | `create_collection`, `list_collections` | NEW/Existing |
 
-**Principle: 
+**Principle:
 - pubmed-search 作為 **library** 被 keeper 直接 import
 - pubmed-search 同時也是獨立 MCP，Agent 可以直接呼叫搜尋功能**
 
@@ -269,7 +269,7 @@ Implement **two complementary tools**:
          │   └───────────────────────┘                   │
 ```
 
-**關鍵架構**: 
+**關鍵架構**:
 - zotero-keeper **直接 import** pubmed-search 作為 Python library
 - 資料不經過 Agent，完整無遺漏！
 - 用戶只需呼叫 keeper 的 `batch_import_from_pubmed(pmids)`，一站式服務
@@ -324,12 +324,12 @@ class BatchImportResult(TypedDict):
 1. Parse PMIDs (comma-separated string → list)
 
 2. 【直接 Python Import】從 pubmed-search library 取得完整 metadata
-   
+
    from pubmed_search.client import PubMedClient
-   
+
    client = PubMedClient()
    articles = client.fetch_details(pmids)
-   
+
    # SearchResult 包含所有欄位，不截斷：
    # ✓ title, abstract (FULL!)
    # ✓ authors, authors_full (with affiliations)
@@ -363,7 +363,7 @@ User: "Import all 30 anesthesia AI papers to Zotero with tag 'AI-Review'"
 
 Agent:
 batch_import_from_pubmed(
-    pmids="38353755,37864754,38215710,...", 
+    pmids="38353755,37864754,38215710,...",
     tags=["Anesthesia-AI", "AI-Review"]
 )
 
@@ -459,7 +459,7 @@ import_ris_to_zotero(
 def fetch_details(self, id_list: List[str]) -> List[Dict[str, Any]]:
     """
     Fetch complete details for a list of PMIDs.
-    
+
     Returns:
         List of dictionaries containing article details including:
         - pmid, title, authors, authors_full
@@ -673,10 +673,10 @@ class SearchResult:
 ```python
 def pubmed_to_zotero_item(pubmed_data: dict) -> dict:
     """Convert PubMed metadata to Zotero journalArticle schema"""
-    
+
     return {
         "itemType": "journalArticle",
-        
+
         # === P0: Core Fields (必填) ===
         "title": pubmed_data["title"],
         "creators": [
@@ -691,17 +691,17 @@ def pubmed_to_zotero_item(pubmed_data: dict) -> dict:
         "publicationTitle": pubmed_data["journal"],
         "date": pubmed_data["date"],  # YYYY-MM-DD or YYYY
         "DOI": pubmed_data.get("doi"),
-        
+
         # === P1: Publication Details ===
         "volume": pubmed_data.get("volume"),
         "issue": pubmed_data.get("issue"),
         "pages": pubmed_data.get("pages"),
         "ISSN": pubmed_data.get("issn"),
         "language": pubmed_data.get("language", "eng"),
-        
+
         # === P1: Identifiers & URLs ===
         "url": f"https://pubmed.ncbi.nlm.nih.gov/{pubmed_data['pmid']}/",
-        
+
         # === P1-P2: Tags (Keywords + MeSH) ===
         "tags": [
             # User keywords
@@ -709,10 +709,10 @@ def pubmed_to_zotero_item(pubmed_data: dict) -> dict:
             # MeSH terms with prefix
             *[{"tag": f"MeSH: {mesh}"} for mesh in pubmed_data.get("mesh_terms", [])]
         ],
-        
+
         # === P2: Extra Field (structured) ===
         "extra": _build_extra_field(pubmed_data),
-        
+
         # === Attachments (handled separately) ===
         # PDF attachment added via attach_pmc_pdfs tool
     }
@@ -720,28 +720,28 @@ def pubmed_to_zotero_item(pubmed_data: dict) -> dict:
 
 def _build_extra_field(pubmed_data: dict) -> str:
     """Build structured Extra field for additional metadata"""
-    
+
     lines = []
-    
+
     # Identifiers
     lines.append(f"PMID: {pubmed_data['pmid']}")
     if pubmed_data.get("pmc_id"):
         lines.append(f"PMCID: {pubmed_data['pmc_id']}")
-    
+
     # Publication type
     if pubmed_data.get("pub_types"):
         lines.append(f"Publication Type: {', '.join(pubmed_data['pub_types'])}")
-    
+
     # Affiliations (first 3, truncate if too long)
     if pubmed_data.get("affiliations"):
         lines.append("Affiliations:")
         for i, aff in enumerate(pubmed_data["affiliations"][:3]):
             lines.append(f"  {i+1}. {aff[:200]}")  # Truncate long affiliations
-    
+
     # Grant info (if available)
     if pubmed_data.get("grants"):
         lines.append(f"Grants: {', '.join(pubmed_data['grants'][:3])}")
-    
+
     return "\n".join(lines)
 ```
 
@@ -849,7 +849,7 @@ external/
             └── ...
 ```
 
-**關鍵**: 透過 `sys.path.insert(0, "external/pubmed-search-mcp/src")` 
+**關鍵**: 透過 `sys.path.insert(0, "external/pubmed-search-mcp/src")`
 直接 import `pubmed_search.client`，不需要複製程式碼！
 
 ---
@@ -870,7 +870,7 @@ external/
 - [ ] Implement `batch_import_from_pubmed` in `batch_tools.py`:
   ```python
   from pubmed_search.client import PubMedClient
-  
+
   client = PubMedClient()
   articles = client.fetch_details(pmids)
   # Direct access to SearchResult objects!
@@ -1004,7 +1004,7 @@ async def suggest_collection_name(
 ) -> dict:
     """
     Suggest a collection name based on article topics.
-    
+
     Returns:
     {
         "suggestions": [
@@ -1027,7 +1027,7 @@ async def create_collection(
 ) -> dict:
     """
     Create a new Zotero collection.
-    
+
     Note: Requires Zotero Connector API or manual creation.
     Returns instructions if API not available.
     """
@@ -1042,7 +1042,7 @@ When conflicts are found, return structured data for agent to discuss with user:
 ```python
 class BatchImportResult(TypedDict):
     # ... existing fields ...
-    
+
     # NEW: Structured conflict data for agent
     conflicts: list[ConflictItem]
     conflict_summary: str  # Human-readable summary for agent to relay
@@ -1123,12 +1123,12 @@ async def attach_pmc_pdfs(
 ) -> dict:
     """
     Download PMC PDFs and attach to Zotero items.
-    
+
     Workflow:
     1. Call pubmed-search's get_article_fulltext_links for each PMID
     2. Download PDFs from PMC
     3. Attach to corresponding Zotero items
-    
+
     Returns:
     {
         "total": 12,
@@ -1208,11 +1208,11 @@ async def search_pubmed(
 ) -> dict:
     """
     Search PubMed for articles (wrapper with Zotero integration).
-    
+
     This is the PREFERRED way to search when working with Zotero.
     Automatically checks which articles you already own.
-    
-    For raw PubMed search without Zotero integration, 
+
+    For raw PubMed search without Zotero integration,
     use pubmed-search MCP directly.
     """
     # 1. Call pubmed-search's search_literature

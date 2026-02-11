@@ -11,53 +11,56 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.11', '3.12']
+        python-version: ['3.12', '3.13']
 
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
+      run: uv python install ${{ matrix.python-version }}
 
     - name: Install dependencies
       working-directory: ./mcp-server
       run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[dev]"
+        uv venv --python ${{ matrix.python-version }}
+        uv pip install -e ".[dev]"
 
     - name: Lint with ruff
       working-directory: ./mcp-server
       run: |
-        ruff check src/
+        uv run ruff check src/
 
     - name: Type check with mypy
       working-directory: ./mcp-server
       run: |
-        mypy src/ --ignore-missing-imports || true
+        uv run mypy src/ --ignore-missing-imports || true
 
     - name: Run tests
       working-directory: ./mcp-server
       run: |
-        pytest tests/ -v --tb=short || echo "Tests require Zotero instance"
+        uv run pytest tests/ -v --tb=short || echo "Tests require Zotero instance"
 
   lint:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+
     - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
+      run: uv python install 3.12
 
     - name: Install linters
       run: |
-        pip install ruff
+        uv venv
+        uv pip install ruff
 
     - name: Check code formatting
       working-directory: ./mcp-server
       run: |
         # Use project settings from pyproject.toml (ignores E402, E501)
-        ruff check src/
+        uv run ruff check src/

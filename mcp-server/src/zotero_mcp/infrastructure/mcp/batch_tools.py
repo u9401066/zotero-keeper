@@ -48,7 +48,7 @@ except ImportError as e:
         f"pubmed-search not available: {e}\n"
         "Batch import disabled. Options:\n"
         "  1. Development: git submodule update --init --recursive\n"
-        "  2. Production: pip install pubmed-search-mcp"
+        "  2. Production: uv pip install pubmed-search-mcp"
     )
 
 
@@ -167,18 +167,12 @@ def register_batch_tools(mcp, zotero_client):
 
                     if not found:
                         # 提供相似名稱建議
-                        similar = [
-                            c.get("name") for c in collections
-                            if collection_name.lower() in c.get("name", "").lower()
-                        ][:5]
+                        similar = [c.get("name") for c in collections if collection_name.lower() in c.get("name", "").lower()][:5]
                         return {
                             "success": False,
                             "error": f"Collection '{collection_name}' not found",
                             "hint": f"Similar collections: {similar}" if similar else "Use list_collections() to see available collections",
-                            "available_collections": [
-                                {"key": c.get("key"), "name": c.get("name")}
-                                for c in collections[:10]
-                            ],
+                            "available_collections": [{"key": c.get("key"), "name": c.get("name")} for c in collections[:10]],
                         }
 
                     validated_collection_key = found.get("key")
@@ -203,10 +197,7 @@ def register_batch_tools(mcp, zotero_client):
                             "success": False,
                             "error": f"Collection key '{collection_key}' not found",
                             "hint": "Use list_collections() to see available collections",
-                            "available_collections": [
-                                {"key": c.get("key"), "name": c.get("name")}
-                                for c in collections[:10]
-                            ],
+                            "available_collections": [{"key": c.get("key"), "name": c.get("name")} for c in collections[:10]],
                         }
 
                     validated_collection_key = collection_key
@@ -267,13 +258,14 @@ def register_batch_tools(mcp, zotero_client):
             if include_citation_metrics:
                 try:
                     from ..pubmed import get_pubmed_client
+
                     client = get_pubmed_client()
                     # Import LiteratureSearcher from pubmed_search
                     # Note: pubmed_search is configured via ../pubmed/__init__.py
                     from pubmed_search import LiteratureSearcher  # type: ignore
+
                     searcher = LiteratureSearcher(
-                        email=getattr(client, 'email', 'zotero@example.com'),
-                        api_key=getattr(client, 'api_key', None)
+                        email=getattr(client, "email", "zotero@example.com"), api_key=getattr(client, "api_key", None)
                     )
                     citation_metrics = searcher.get_citation_metrics(pmid_list)
                     logger.info(f"Fetched citation metrics for {len(citation_metrics)} articles")
@@ -303,11 +295,7 @@ def register_batch_tools(mcp, zotero_client):
 
             if skip_duplicates:
                 # Extract DOIs from articles
-                article_dois = [
-                    a.get("doi", "").lower()
-                    for a in articles
-                    if a.get("doi")
-                ]
+                article_dois = [a.get("doi", "").lower() for a in articles if a.get("doi")]
 
                 try:
                     check_result = await zotero_client.batch_check_identifiers(
@@ -337,21 +325,25 @@ def register_batch_tools(mcp, zotero_client):
                 # Check if duplicate
                 if skip_duplicates:
                     if pmid in existing_identifiers.get("existing_pmids", set()):
-                        result.add_item(ImportedItem(
-                            pmid=pmid,
-                            title=title,
-                            action=ImportAction.SKIPPED,
-                            reason=f"PMID already exists (key: {pmid_to_key.get(pmid, 'unknown')})",
-                        ))
+                        result.add_item(
+                            ImportedItem(
+                                pmid=pmid,
+                                title=title,
+                                action=ImportAction.SKIPPED,
+                                reason=f"PMID already exists (key: {pmid_to_key.get(pmid, 'unknown')})",
+                            )
+                        )
                         continue
 
                     if doi and doi in existing_identifiers.get("existing_dois", set()):
-                        result.add_item(ImportedItem(
-                            pmid=pmid,
-                            title=title,
-                            action=ImportAction.SKIPPED,
-                            reason=f"DOI already exists (key: {doi_to_key.get(doi, 'unknown')})",
-                        ))
+                        result.add_item(
+                            ImportedItem(
+                                pmid=pmid,
+                                title=title,
+                                action=ImportAction.SKIPPED,
+                                reason=f"DOI already exists (key: {doi_to_key.get(doi, 'unknown')})",
+                            )
+                        )
                         continue
 
                 # Map to Zotero schema (complete metadata!)
@@ -366,12 +358,14 @@ def register_batch_tools(mcp, zotero_client):
                     items_to_save.append((pmid, title, zotero_item))
                 except Exception as e:
                     logger.error(f"Failed to map article {pmid}: {e}")
-                    result.add_item(ImportedItem(
-                        pmid=pmid,
-                        title=title,
-                        action=ImportAction.FAILED,
-                        error=f"Mapping error: {e}",
-                    ))
+                    result.add_item(
+                        ImportedItem(
+                            pmid=pmid,
+                            title=title,
+                            action=ImportAction.FAILED,
+                            error=f"Mapping error: {e}",
+                        )
+                    )
 
             # 5. Batch save to Zotero
             if items_to_save:
@@ -389,12 +383,14 @@ def register_batch_tools(mcp, zotero_client):
                     # Note: Zotero Connector API doesn't return individual keys easily
                     # So we mark all as added for now
                     for pmid, title, _ in items_to_save:
-                        result.add_item(ImportedItem(
-                            pmid=pmid,
-                            title=title,
-                            action=ImportAction.ADDED,
-                            zotero_key=None,  # Key not available from Connector API
-                        ))
+                        result.add_item(
+                            ImportedItem(
+                                pmid=pmid,
+                                title=title,
+                                action=ImportAction.ADDED,
+                                zotero_key=None,  # Key not available from Connector API
+                            )
+                        )
 
                     logger.info(f"Saved {len(items_to_save)} items to Zotero")
 
@@ -402,12 +398,14 @@ def register_batch_tools(mcp, zotero_client):
                     logger.error(f"Failed to save to Zotero: {e}")
                     # Mark all pending items as failed
                     for pmid, title, _ in items_to_save:
-                        result.add_item(ImportedItem(
-                            pmid=pmid,
-                            title=title,
-                            action=ImportAction.FAILED,
-                            error=f"Save error: {e}",
-                        ))
+                        result.add_item(
+                            ImportedItem(
+                                pmid=pmid,
+                                title=title,
+                                action=ImportAction.FAILED,
+                                error=f"Save error: {e}",
+                            )
+                        )
 
             # 6. Record collection info in result
             if validated_collection_key:

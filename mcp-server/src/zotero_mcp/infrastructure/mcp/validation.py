@@ -105,9 +105,7 @@ def validate_item(item: dict) -> dict[str, Any]:
     }
 
 
-async def find_duplicates(
-    item: dict, zotero_client, threshold: float = 0.85
-) -> list[dict]:
+async def find_duplicates(item: dict, zotero_client, threshold: float = 0.85) -> list[dict]:
     """
     Find potential duplicates for an item.
 

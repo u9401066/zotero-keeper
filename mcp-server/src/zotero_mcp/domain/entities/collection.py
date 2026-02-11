@@ -11,6 +11,7 @@ class Collection:
     Represents a collection (folder) in the Zotero library.
     Collections can be nested (have parent collections).
     """
+
     name: str
     key: str | None = None
     parent_key: str | None = None

@@ -12,6 +12,7 @@ from typing import Any
 
 class ImportAction(Enum):
     """Action taken for an imported item."""
+
     ADDED = "added"
     SKIPPED = "skipped"
     WARNING = "warning"
@@ -21,6 +22,7 @@ class ImportAction(Enum):
 @dataclass
 class ImportedItem:
     """Result for a single imported item."""
+
     pmid: str
     title: str
     action: ImportAction
@@ -54,6 +56,7 @@ class BatchImportResult:
 
     Provides detailed statistics and per-item results.
     """
+
     success: bool = True
     total: int = 0
     added: int = 0
@@ -190,6 +193,7 @@ class BatchImportResult:
 @dataclass
 class RisImportResult:
     """Result from RIS format import."""
+
     success: bool = True
     total: int = 0
     added: int = 0

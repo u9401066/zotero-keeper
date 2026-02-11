@@ -65,14 +65,16 @@ def register_basic_read_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
                 data = item.get("data", item)
                 if data.get("itemType") == "attachment":
                     continue  # Skip attachments
-                results.append({
-                    "key": item.get("key"),
-                    "title": data.get("title", ""),
-                    "itemType": data.get("itemType", ""),
-                    "date": data.get("date", ""),
-                    "creators": _format_creators(data.get("creators", [])),
-                    "DOI": data.get("DOI", ""),
-                })
+                results.append(
+                    {
+                        "key": item.get("key"),
+                        "title": data.get("title", ""),
+                        "itemType": data.get("itemType", ""),
+                        "date": data.get("date", ""),
+                        "creators": _format_creators(data.get("creators", [])),
+                        "DOI": data.get("DOI", ""),
+                    }
+                )
             return {
                 "count": len(results),
                 "query": query,
@@ -151,13 +153,15 @@ def register_basic_read_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
                 data = item.get("data", item)
                 if data.get("itemType") == "attachment":
                     continue
-                results.append({
-                    "key": item.get("key"),
-                    "title": data.get("title", ""),
-                    "itemType": data.get("itemType", ""),
-                    "date": data.get("date", ""),
-                    "creators": _format_creators(data.get("creators", [])),
-                })
+                results.append(
+                    {
+                        "key": item.get("key"),
+                        "title": data.get("title", ""),
+                        "itemType": data.get("itemType", ""),
+                        "date": data.get("date", ""),
+                        "creators": _format_creators(data.get("creators", [])),
+                    }
+                )
             return {
                 "count": len(results),
                 "items": results,

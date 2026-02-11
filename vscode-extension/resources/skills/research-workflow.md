@@ -1,6 +1,6 @@
 # Research Workflow Guide for Copilot
 
-> 這份指南幫助 Copilot 理解如何正確使用 Zotero + PubMed MCP tools
+> 這份指南幫助 Copilot 理解如何正確使用 Zotero + PubMed MCP tools (v0.3.8)
 
 ## 🔍 文獻搜尋流程
 
@@ -23,6 +23,12 @@
 - 使用 `get_session_pmids` 取得已搜尋的 PMID
 - **不要重複搜尋相同的關鍵字**
 - `unified_search` 會自動合併去重多個來源的結果
+
+#### 進階搜尋參數
+| 參數 | 用途 | 範例 |
+|------|------|------|
+| `include_preprints` | 搜尋 arXiv/medRxiv/bioRxiv 預印本 | `unified_search(query="...", include_preprints=true)` |
+| `peer_reviewed_only` | 只顯示同行審查文章 | `unified_search(query="...", peer_reviewed_only=true)` |
 
 ### 步驟 4: 過濾已有文獻
 使用 `search_pubmed_exclude_owned` 直接搜尋「尚未擁有」的新文獻
@@ -81,6 +87,31 @@
 ### 書庫分析
 - `get_library_stats` - 統計分析
 - `find_orphan_items` - 找出孤兒文獻（未分類）
+
+---
+
+## 🔬 進階工具
+
+### 引用網路
+- `build_citation_tree` - 從一篇文章建構引用網路（前向+後向）
+- `find_citing_articles` - 找出引用某篇文章的後續研究
+- `get_article_references` - 取得文章的參考文獻
+
+### ICD ↔ MeSH 轉換
+- `convert_icd_mesh` - 雙向轉換 ICD 代碼和 MeSH 術語
+- `search_by_icd` - 用 ICD 代碼搜尋 PubMed（自動轉換為 MeSH）
+
+### 研究時間軸
+- `build_research_timeline` - 建構研究主題的歷史演進時間軸
+- `compare_timelines` - 比較多個研究領域的時間軸
+
+### 圖片搜尋
+- `search_biomedical_images` - 搜尋 Open-i 和 Europe PMC 的生物醫學圖片
+
+### NCBI 延伸資料庫
+- `search_gene` / `get_gene_details` - 基因資訊
+- `search_compound` / `get_compound_details` - 化合物/藥物資訊
+- `search_clinvar` - 臨床變異搜尋
 
 ---
 

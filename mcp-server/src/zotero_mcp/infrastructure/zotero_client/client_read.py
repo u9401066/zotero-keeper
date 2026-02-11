@@ -95,9 +95,7 @@ class ZoteroReadMixin:
 
     async def get_collection(self, collection_key: str) -> dict[str, Any]:
         """Get a single collection"""
-        return await self._request(
-            "GET", f"/api/users/0/collections/{collection_key}"
-        )
+        return await self._request("GET", f"/api/users/0/collections/{collection_key}")
 
     async def get_collection_items(
         self,
@@ -125,9 +123,7 @@ class ZoteroReadMixin:
             col_name = data.get("name", "").lower().strip()
             col_parent = data.get("parentCollection")
 
-            if col_name == name_lower and (
-                parent_key is None or col_parent == parent_key
-            ):
+            if col_name == name_lower and (parent_key is None or col_parent == parent_key):
                 return col
 
         return None
@@ -174,9 +170,7 @@ class ZoteroReadMixin:
         """Get a specific saved search by key"""
         return await self._request("GET", f"/api/users/0/searches/{search_key}")
 
-    async def execute_search(
-        self, search_key: str, limit: int = 100
-    ) -> list[dict[str, Any]]:
+    async def execute_search(self, search_key: str, limit: int = 100) -> list[dict[str, Any]]:
         """
         Execute a saved search and return matching items.
 

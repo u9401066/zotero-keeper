@@ -5,19 +5,19 @@ Provides common fixtures for unit and integration tests.
 """
 
 import pytest
-from unittest.mock import AsyncMock, Mock, MagicMock, patch
-from dataclasses import dataclass
-import json
+from unittest.mock import AsyncMock, Mock
 
 
 # ============================================================
 # Configuration Fixtures
 # ============================================================
 
+
 @pytest.fixture
 def mock_config():
     """Provide mock ZoteroConfig."""
     from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
+
     return ZoteroConfig(host="localhost", port=23119, timeout=30.0)
 
 
@@ -25,12 +25,14 @@ def mock_config():
 def remote_config():
     """Provide remote ZoteroConfig for testing Host header."""
     from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
+
     return ZoteroConfig(host="192.168.1.100", port=23119)
 
 
 # ============================================================
 # Mock Zotero API Responses
 # ============================================================
+
 
 @pytest.fixture
 def mock_item_data():
@@ -127,6 +129,7 @@ def mock_tags():
 # Mock PubMed Data
 # ============================================================
 
+
 @pytest.fixture
 def mock_pubmed_article():
     """Mock PubMed article from pubmed-search library."""
@@ -134,9 +137,9 @@ def mock_pubmed_article():
         "pmid": "38353755",
         "title": "Artificial Intelligence in Anesthesiology: A Systematic Review",
         "abstract": "Background: AI is transforming anesthesiology. "
-                   "Methods: We conducted a systematic review. "
-                   "Results: We found 150 relevant studies. "
-                   "Conclusion: AI shows promise in anesthesia.",
+        "Methods: We conducted a systematic review. "
+        "Results: We found 150 relevant studies. "
+        "Conclusion: AI shows promise in anesthesia.",
         "authors": ["Smith J", "Doe J", "Johnson A"],
         "authors_full": [
             {"last_name": "Smith", "fore_name": "John", "initials": "J", "affiliations": ["MIT"]},
@@ -165,19 +168,23 @@ def mock_pubmed_article():
 def mock_pubmed_articles(mock_pubmed_article):
     """List of mock PubMed articles."""
     article2 = dict(mock_pubmed_article)
-    article2.update({
-        "pmid": "37864754",
-        "title": "Deep Learning for Sedation Monitoring",
-        "doi": "10.1234/deep.2024.002",
-    })
-    
+    article2.update(
+        {
+            "pmid": "37864754",
+            "title": "Deep Learning for Sedation Monitoring",
+            "doi": "10.1234/deep.2024.002",
+        }
+    )
+
     article3 = dict(mock_pubmed_article)
-    article3.update({
-        "pmid": "38215710",
-        "title": "Neural Networks in Critical Care",
-        "doi": "10.1234/nn.2024.003",
-    })
-    
+    article3.update(
+        {
+            "pmid": "38215710",
+            "title": "Neural Networks in Critical Care",
+            "doi": "10.1234/nn.2024.003",
+        }
+    )
+
     return [mock_pubmed_article, article2, article3]
 
 
@@ -185,11 +192,12 @@ def mock_pubmed_articles(mock_pubmed_article):
 # Mock Client Fixtures
 # ============================================================
 
+
 @pytest.fixture
 def mock_zotero_client(mock_item_data, mock_collection_data, mock_collection_list):
     """Create a mock ZoteroClient."""
     client = AsyncMock()
-    
+
     # Configure basic methods
     client.ping.return_value = True
     client.get_items.return_value = [mock_item_data]
@@ -213,7 +221,7 @@ def mock_zotero_client(mock_item_data, mock_collection_data, mock_collection_lis
         "doi_to_key": {},
     }
     client.close.return_value = None
-    
+
     return client
 
 
@@ -230,6 +238,7 @@ def mock_pubmed_client(mock_pubmed_articles):
 # HTTP Mock Fixtures
 # ============================================================
 
+
 @pytest.fixture
 def mock_httpx_client():
     """Mock httpx AsyncClient for testing HTTP operations."""
@@ -237,17 +246,18 @@ def mock_httpx_client():
     mock_response.status_code = 200
     mock_response.text = '{"success": true}'
     mock_response.json.return_value = {"success": True}
-    
+
     client = AsyncMock()
     client.request.return_value = mock_response
     client.aclose.return_value = None
-    
+
     return client
 
 
 # ============================================================
 # Test Data Fixtures
 # ============================================================
+
 
 @pytest.fixture
 def sample_reference_dict():
@@ -280,6 +290,7 @@ def sample_creator_names():
 # Environment Fixtures
 # ============================================================
 
+
 @pytest.fixture
 def clean_env(monkeypatch):
     """Clean environment variables for testing."""
@@ -304,8 +315,10 @@ def mock_env(monkeypatch):
 # Async Test Support
 # ============================================================
 
+
 @pytest.fixture
 def event_loop_policy():
     """Provide event loop policy for async tests."""
     import asyncio
+
     return asyncio.DefaultEventLoopPolicy()

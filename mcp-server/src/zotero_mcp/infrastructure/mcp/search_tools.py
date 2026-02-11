@@ -240,9 +240,7 @@ def register_search_tools(mcp, zotero_client):
                 "owned_count": len(owned_results),
                 "results": new_results[:limit],
                 "formatted": formatted,
-                "new_pmids": [
-                    r.get("pmid") for r in new_results[:limit] if r.get("pmid")
-                ],
+                "new_pmids": [r.get("pmid") for r in new_results[:limit] if r.get("pmid")],
             }
 
             if show_owned:

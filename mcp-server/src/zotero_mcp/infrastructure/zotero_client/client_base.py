@@ -35,12 +35,8 @@ class ZoteroConfig:
     """Zotero connection configuration"""
 
     host: str = field(default_factory=lambda: os.getenv("ZOTERO_HOST", "localhost"))
-    port: int = field(
-        default_factory=lambda: int(os.getenv("ZOTERO_PORT", "23119"))
-    )
-    timeout: float = field(
-        default_factory=lambda: float(os.getenv("ZOTERO_TIMEOUT", "30"))
-    )
+    port: int = field(default_factory=lambda: int(os.getenv("ZOTERO_PORT", "23119")))
+    timeout: float = field(default_factory=lambda: float(os.getenv("ZOTERO_TIMEOUT", "30")))
 
     @property
     def base_url(self) -> str:
@@ -134,9 +130,7 @@ class ZoteroClientBase:
                 f"Details: {e}"
             ) from e
         except httpx.TimeoutException as e:
-            raise ZoteroConnectionError(
-                f"連接 Zotero 超時 ({self.config.timeout}s)"
-            ) from e
+            raise ZoteroConnectionError(f"連接 Zotero 超時 ({self.config.timeout}s)") from e
 
     async def ping(self) -> bool:
         """Check if Zotero is running"""

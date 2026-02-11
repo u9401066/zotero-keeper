@@ -2,7 +2,7 @@
 
 Let AI manage your references! A MCP Server connecting VS Code Copilot / Claude Desktop to your local Zotero library.
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![MCP SDK](https://img.shields.io/badge/MCP-FastMCP-green.svg)](https://github.com/modelcontextprotocol/python-sdk)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Zotero 7](https://img.shields.io/badge/Zotero-7.0+-red.svg)](https://www.zotero.org/)
@@ -59,7 +59,7 @@ No more manually searching, copying, pasting. Just tell your AI in natural langu
 
 ### Prerequisites
 
-- ✅ [Python 3.11+](https://www.python.org/downloads/)
+- ✅ [Python 3.12+](https://www.python.org/downloads/)
 - ✅ [Zotero 7](https://www.zotero.org/download/) (must be running)
 - ✅ [VS Code](https://code.visualstudio.com/) + GitHub Copilot, or [Claude Desktop](https://claude.ai/)
 - ✅ [uv](https://docs.astral.sh/uv/getting-started/installation/) (recommended)
@@ -505,7 +505,7 @@ We understand that **most users are researchers, not developers**. Installing Py
 
 | Current (v1.x) | Future (v2.x) |
 |----------------|---------------|
-| Requires Python 3.11+ | Standalone executable (.exe / .app) |
+| Requires Python 3.12+ | Standalone executable (.exe / .app) |
 | Requires `uv pip install` | One-click installer |
 | Manual `mcp.json` config | Auto-configure VS Code/Claude |
 | Developer-friendly | Researcher-friendly |

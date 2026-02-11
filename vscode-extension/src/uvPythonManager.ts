@@ -1,12 +1,12 @@
 /**
  * UV Python Manager
- * 
+ *
  * Uses uv (ultra-fast Python package manager) to manage Python environments.
  * uv is a single binary that can:
  * - Install Python versions automatically
  * - Create virtual environments
  * - Install packages 10-100x faster than pip
- * 
+ *
  * This eliminates most Python installation issues for end users.
  */
 
@@ -88,13 +88,13 @@ export class UvPythonManager {
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
         this.outputChannel = vscode.window.createOutputChannel('Zotero MCP Setup');
-        
+
         // Setup paths
         this.baseDir = context.globalStorageUri.fsPath;
         this.uvPath = this.getUvPath();
         this.venvDir = path.join(this.baseDir, 'venv');
         this.pythonBinary = this.getPythonBinaryPath();
-        
+
         // Check if already ready
         this._isReady = this.checkReadySync();
     }
@@ -174,14 +174,14 @@ export class UvPythonManager {
                 `"${this.pythonBinary}" --version`,
                 { encoding: 'utf-8', stdio: 'pipe', timeout: 10000 }
             );
-            
+
             // Verify it's actually a Python process that responds properly
             if (!pythonVersionOutput.trim().startsWith('Python')) {
                 this.log(`Python binary exists but returned unexpected output: ${pythonVersionOutput.trim()}`);
                 this._isReady = false;
                 return false;
             }
-            
+
             // Check if packages are installed AND meet minimum version requirements
             // Write script to temp file to avoid shell escaping issues
             const scriptPath = path.join(this.baseDir, 'version_check.py');
@@ -227,19 +227,19 @@ for mod_name, min_ver in min_versions.items():
 print("OK")
 `;
             fs.writeFileSync(scriptPath, versionCheckScript, 'utf-8');
-            
+
             try {
                 const result = execSync(
                     `"${this.pythonBinary}" "${scriptPath}"`,
                     { encoding: 'utf-8', stdio: 'pipe' }
                 );
-                
+
                 const output = result.trim();
                 if (output === 'OK') {
                     this._isReady = true;
                     return true;
                 }
-                
+
                 this.log(`Version check result: ${output}`);
                 this._isReady = false;
                 return false;
@@ -288,7 +288,7 @@ print("OK")
         // Check if we just need to upgrade packages (not full setup)
         if (this.needsUpgradeOnly()) {
             this.log('Python exists but packages need upgrade...');
-            
+
             const upgraded = await vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
@@ -309,7 +309,7 @@ print("OK")
                 this.log('Package upgrade successful');
                 return this.pythonBinary;
             }
-            
+
             this.log('Package upgrade failed, will try full setup');
         }
 
@@ -389,7 +389,7 @@ print("OK")
 
             progress.report({ message: 'Setup complete!', increment: 100 });
             this.log('Setup complete!');
-            
+
             return true;
 
         } catch (error) {
@@ -409,10 +409,10 @@ print("OK")
     ): Promise<void> {
         const uvDir = path.join(this.baseDir, 'uv');
         fs.mkdirSync(uvDir, { recursive: true });
-        
+
         const isZip = url.endsWith('.zip');
         const archivePath = path.join(uvDir, isZip ? 'uv.zip' : 'uv.tar.gz');
-        
+
         // Download
         await this.downloadFile(url, archivePath, (percent) => {
             progress.report({ message: `Downloading uv... ${percent}%` });
@@ -420,7 +420,7 @@ print("OK")
 
         // Extract
         this.log(`Extracting uv to ${uvDir}...`);
-        
+
         if (isZip) {
             // Windows: use PowerShell to extract zip
             execSync(
@@ -437,12 +437,12 @@ print("OK")
 
         // Clean up archive
         fs.unlinkSync(archivePath);
-        
+
         // Make executable on Unix
         if (process.platform !== 'win32') {
             fs.chmodSync(this.uvPath, 0o755);
         }
-        
+
         this.log('uv extracted successfully');
     }
 
@@ -453,7 +453,7 @@ print("OK")
         // uv can automatically download and install Python!
         const cmd = `"${this.uvPath}" venv "${this.venvDir}" --python ${PYTHON_VERSION}`;
         this.log(`Running: ${cmd}`);
-        
+
         try {
             execSync(cmd, {
                 encoding: 'utf-8',
@@ -491,15 +491,15 @@ print("OK")
             // packaging may already be installed - safe to continue
             this.log('packaging already installed or install skipped');
         }
-        
+
         for (const pkg of REQUIRED_PACKAGES) {
             const pkgName = pkg.split('>=')[0].split('[')[0];
             this.log(`Installing/upgrading: ${pkg}`);
             onProgress?.(`Installing ${pkgName}...`);
-            
+
             // Use --upgrade to ensure version requirements are met
             const cmd = `"${this.uvPath}" pip install --upgrade --python "${this.pythonBinary}" "${pkg}"`;
-            
+
             try {
                 execSync(cmd, {
                     encoding: 'utf-8',
@@ -516,7 +516,7 @@ print("OK")
                 throw error;
             }
         }
-        
+
         this.log('All packages installed successfully');
     }
 
@@ -553,7 +553,7 @@ print("OK")
     ): Promise<void> {
         return new Promise((resolve, reject) => {
             const file = fs.createWriteStream(destPath);
-            
+
             const doRequest = (requestUrl: string, redirectCount = 0) => {
                 if (redirectCount > 5) {
                     reject(new Error('Too many redirects'));
@@ -561,7 +561,7 @@ print("OK")
                 }
 
                 const protocol = requestUrl.startsWith('https') ? https : http;
-                
+
                 const request = protocol.get(requestUrl, (response) => {
                     if (response.statusCode === 301 || response.statusCode === 302 || response.statusCode === 307) {
                         const redirectUrl = response.headers.location;
@@ -627,22 +627,127 @@ print("OK")
     }
 
     /**
+     * Kill any running processes that use the venv Python binary.
+     * This is required on Windows where running .exe files cannot be deleted (EPERM).
+     * MCP servers spawn python.exe processes that hold file locks.
+     */
+    private async killPythonProcesses(): Promise<void> {
+        if (!fs.existsSync(this.pythonBinary)) {
+            return;
+        }
+
+        try {
+            if (process.platform === 'win32') {
+                // Find and kill processes using our specific python.exe
+                // Use WMIC to find PIDs matching our venv path
+                const venvScriptsDir = path.join(this.venvDir, 'Scripts').replace(/\\/g, '\\\\');
+                try {
+                    const wmicOutput = execSync(
+                        `wmic process where "ExecutablePath like '%${venvScriptsDir}%'" get ProcessId /format:list`,
+                        { encoding: 'utf-8', stdio: 'pipe', timeout: 10000 }
+                    );
+                    const pids = wmicOutput.match(/ProcessId=(\d+)/g);
+                    if (pids && pids.length > 0) {
+                        for (const pidMatch of pids) {
+                            const pid = pidMatch.replace('ProcessId=', '');
+                            this.log(`Killing process PID ${pid} using venv Python...`);
+                            try {
+                                execSync(`taskkill /F /PID ${pid}`, {
+                                    encoding: 'utf-8', stdio: 'pipe', timeout: 5000
+                                });
+                            } catch {
+                                // Process may have already exited
+                            }
+                        }
+                        // Wait for processes to fully terminate
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                } catch {
+                    // WMIC may not be available on all Windows versions, try taskkill directly
+                    this.log('WMIC not available, trying taskkill by image name...');
+                    try {
+                        // As a fallback, try to kill any python.exe in our venv directory
+                        // by checking if our python.exe is locked
+                        execSync(
+                            `powershell -Command "Get-Process python -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '${this.venvDir.replace(/\\/g, '\\\\')}*' } | Stop-Process -Force"`,
+                            { encoding: 'utf-8', stdio: 'pipe', timeout: 10000 }
+                        );
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    } catch {
+                        // No matching processes found - that's fine
+                    }
+                }
+            } else {
+                // Unix: find and kill processes using our venv Python
+                try {
+                    const psOutput = execSync(
+                        `pgrep -f "${this.venvDir}"`,
+                        { encoding: 'utf-8', stdio: 'pipe', timeout: 5000 }
+                    );
+                    const pids = psOutput.trim().split('\n').filter((p: string) => p.trim());
+                    for (const pid of pids) {
+                        this.log(`Killing process PID ${pid} using venv Python...`);
+                        try {
+                            execSync(`kill -9 ${pid.trim()}`, { stdio: 'pipe', timeout: 5000 });
+                        } catch {
+                            // Process may have already exited
+                        }
+                    }
+                    if (pids.length > 0) {
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                } catch {
+                    // No matching processes
+                }
+            }
+        } catch (error) {
+            this.log(`Warning: Could not kill Python processes: ${error}`);
+            // Continue with cleanup anyway - rmSync with force may still work
+        }
+    }
+
+    /**
+     * Remove a directory with retry logic for Windows file locking.
+     * Even after killing processes, Windows may take a moment to release file handles.
+     */
+    private async rmWithRetry(dirPath: string, maxRetries = 3): Promise<void> {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                fs.rmSync(dirPath, { recursive: true, force: true });
+                return; // Success
+            } catch (error: unknown) {
+                const errCode = error instanceof Error ? (error as any).code : undefined;
+                if ((errCode === 'EPERM' || errCode === 'EBUSY') && attempt < maxRetries) {
+                    this.log(`Retry ${attempt}/${maxRetries}: File locked, waiting before retry...`);
+                    await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+                } else {
+                    throw error;
+                }
+            }
+        }
+    }
+
+    /**
      * Clean up for reinstall
      */
     async cleanup(): Promise<void> {
         this.log('Cleaning up Python environment...');
-        
-        // Remove venv
+
+        // Step 1: Kill any running processes using our venv Python
+        // This prevents EPERM errors on Windows when python.exe is locked
+        await this.killPythonProcesses();
+
+        // Step 2: Remove venv with retry (Windows may need extra time to release handles)
         if (fs.existsSync(this.venvDir)) {
-            fs.rmSync(this.venvDir, { recursive: true, force: true });
+            await this.rmWithRetry(this.venvDir);
         }
-        
-        // Optionally remove uv too
+
+        // Step 3: Remove uv too
         const uvDir = path.join(this.baseDir, 'uv');
         if (fs.existsSync(uvDir)) {
-            fs.rmSync(uvDir, { recursive: true, force: true });
+            await this.rmWithRetry(uvDir);
         }
-        
+
         this._isReady = false;
         this.log('Cleanup complete');
     }

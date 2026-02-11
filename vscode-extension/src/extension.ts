@@ -1,9 +1,9 @@
 /**
  * Zotero + PubMed MCP Extension
- * 
+ *
  * Provides AI-powered research assistant capabilities by integrating
  * Zotero reference management and PubMed literature search with GitHub Copilot.
- * 
+ *
  * Self-contained: Downloads Python automatically for non-technical users.
  */
 
@@ -42,20 +42,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     pythonEnv = new PythonEnvironment(context);
     uvPython = new UvPythonManager(context);
     statusBar = new StatusBarManager();
-    
+
     // Initialize status bar with context for statistics
     statusBar.initialize(context);
-    
+
     // Register commands first (so they're available even if setup fails)
     registerCommands(context);
-    
+
     // Show initial status
     statusBar.setStatus('initializing', 'Zotero MCP: Initializing...');
 
     try {
         // Step 1: Ensure Python is available (try system first, then embedded)
         resolvedPythonPath = await ensurePythonEnvironment();
-        
+
         if (!resolvedPythonPath) {
             statusBar.setStatus('error', 'Zotero MCP: Python setup failed');
             await vscode.commands.executeCommand('setContext', CONTEXT_PYTHON_READY, false);
@@ -66,7 +66,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
         // Step 2: Check/install required packages (handled by embedded Python if used)
         const packagesReady = await ensurePackagesInstalled();
-        
+
         if (!packagesReady) {
             statusBar.setStatus('error', 'Zotero MCP: Package install failed');
             await vscode.commands.executeCommand('setContext', CONTEXT_PACKAGES_READY, false);
@@ -77,7 +77,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
         // Step 3: Register MCP server provider
         mcpProvider = new ZoteroMcpServerProvider(resolvedPythonPath);
-        
+
         const providerDisposable = vscode.lm.registerMcpServerDefinitionProvider(
             'zotero-mcp.servers',
             mcpProvider
@@ -92,10 +92,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
         // Step 6: Update status
         statusBar.setStatus('ready', 'Zotero MCP: Ready');
-        
+
         // Show walkthrough on first activation
         showFirstTimeWalkthrough(context);
-        
+
         console.log('Zotero MCP extension activated successfully');
 
     } catch (error) {
@@ -107,24 +107,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
 /**
  * Ensure Python is available - uses uv-managed Python by default for consistency
- * 
+ *
  * Priority (when useEmbeddedPython = true, the default):
  *   1. Use uv-managed Python 3.11 (guaranteed compatible, self-contained)
  *   2. Fall back to system Python only if uv fails
- * 
+ *
  * Priority (when useEmbeddedPython = false):
  *   1. Use system Python (user's responsibility to ensure compatibility)
  */
 async function ensurePythonEnvironment(): Promise<string | undefined> {
     const config = vscode.workspace.getConfiguration('zoteroMcp');
     const useEmbedded = config.get<boolean>('useEmbeddedPython', true);
-    
+
     // When useEmbeddedPython is true (default), prioritize uv-managed Python
     // This ensures consistent behavior regardless of user's system Python version
     if (useEmbedded) {
         console.log('Using uv-managed Python (useEmbeddedPython=true)...');
         statusBar.setStatus('installing', 'Zotero MCP: Setting up Python environment...');
-        
+
         try {
             // UvPythonManager.ensureReady() handles uv download + Python 3.11 install + packages
             const uvPythonPath = await uvPython.ensureReady();
@@ -132,7 +132,7 @@ async function ensurePythonEnvironment(): Promise<string | undefined> {
             return uvPythonPath;
         } catch (error) {
             console.error('Failed to set up Python with uv:', error);
-            
+
             // Fall back to system Python if uv fails
             console.log('Falling back to system Python...');
             const systemPython = await pythonEnv.ensurePython();
@@ -144,7 +144,7 @@ async function ensurePythonEnvironment(): Promise<string | undefined> {
                 );
                 return systemPython;
             }
-            
+
             // Both uv and system Python failed
             vscode.window.showErrorMessage(
                 `Failed to set up Python environment: ${error}`,
@@ -159,16 +159,16 @@ async function ensurePythonEnvironment(): Promise<string | undefined> {
             return undefined;
         }
     }
-    
+
     // When useEmbeddedPython is false, use system Python only
     console.log('Using system Python (useEmbeddedPython=false)...');
     const systemPython = await pythonEnv.ensurePython();
-    
+
     if (systemPython) {
         console.log('Using system Python:', systemPython);
         return systemPython;
     }
-    
+
     // No system Python found and embedded is disabled
     vscode.window.showErrorMessage(
         'Python not found. Install Python 3.11+ or enable embedded Python in settings.',
@@ -181,7 +181,7 @@ async function ensurePythonEnvironment(): Promise<string | undefined> {
             vscode.commands.executeCommand('zoteroMcp.setupWizard');
         }
     });
-    
+
     return undefined;
 }
 
@@ -193,13 +193,13 @@ async function ensurePackagesInstalled(): Promise<boolean> {
     if (uvPython.isReady()) {
         return true;
     }
-    
+
     // Using system Python - check and install packages
     const config = vscode.workspace.getConfiguration('zoteroMcp');
     const autoInstall = config.get<boolean>('autoInstallPackages', true);
-    
+
     let packagesInstalled = await pythonEnv.checkPackages();
-    
+
     if (!packagesInstalled) {
         if (autoInstall) {
             statusBar.setStatus('installing', 'Zotero MCP: Installing packages...');
@@ -215,7 +215,7 @@ async function ensurePackagesInstalled(): Promise<boolean> {
             }
         }
     }
-    
+
     return packagesInstalled;
 }
 
@@ -224,11 +224,11 @@ async function ensurePackagesInstalled(): Promise<boolean> {
  */
 function showFirstTimeWalkthrough(context: vscode.ExtensionContext): void {
     const isFirstActivation = context.globalState.get<boolean>(FIRST_ACTIVATION_KEY, true);
-    
+
     if (isFirstActivation) {
         // Mark as not first time anymore
         context.globalState.update(FIRST_ACTIVATION_KEY, false);
-        
+
         // Open walkthrough
         vscode.commands.executeCommand(
             'workbench.action.openWalkthrough',
@@ -256,11 +256,11 @@ async function installCopilotInstructions(context: vscode.ExtensionContext): Pro
     if (!workspaceFolder) {
         return; // No workspace open
     }
-    
+
     const githubDir = path.join(workspaceFolder.uri.fsPath, '.github');
     const instructionsPath = path.join(githubDir, 'copilot-instructions.md');
     const workflowDest = path.join(githubDir, 'zotero-research-workflow.md');
-    
+
     // Check if we already have our files installed (check workflow file, which is unique to us)
     if (fs.existsSync(workflowDest)) {
         // Check if it's our file (look for our marker)
@@ -269,7 +269,7 @@ async function installCopilotInstructions(context: vscode.ExtensionContext): Pro
             return; // Already installed, don't touch anything
         }
     }
-    
+
     // Check if user has existing copilot-instructions.md
     if (fs.existsSync(instructionsPath)) {
         // User has their own instructions, don't overwrite!
@@ -278,38 +278,38 @@ async function installCopilotInstructions(context: vscode.ExtensionContext): Pro
             'Would you like to add Zotero+PubMed research workflow guide? (Your existing files will not be modified)',
             'Yes', 'No'
         );
-        
+
         if (choice !== 'Yes') {
             return;
         }
     }
-    
+
     try {
         // Create .github directory if it doesn't exist
         if (!fs.existsSync(githubDir)) {
             fs.mkdirSync(githubDir, { recursive: true });
         }
-        
+
         // Copy instructions from extension resources
         const extensionPath = context.extensionPath;
         const sourceInstructions = path.join(extensionPath, 'resources', 'skills', 'copilot-instructions.md');
         const sourceWorkflow = path.join(extensionPath, 'resources', 'skills', 'research-workflow.md');
-        
+
         // Only install copilot-instructions.md if user doesn't have one
         if (fs.existsSync(sourceInstructions) && !fs.existsSync(instructionsPath)) {
             fs.copyFileSync(sourceInstructions, instructionsPath);
             console.log('Installed Copilot instructions');
         }
-        
+
         // Only install workflow guide if it doesn't exist
         if (fs.existsSync(sourceWorkflow) && !fs.existsSync(workflowDest)) {
             fs.copyFileSync(sourceWorkflow, workflowDest);
             console.log('Installed research workflow guide');
         }
-        
+
         // Mark as installed in global state
         context.globalState.update(SKILLS_INSTALLED_KEY, true);
-        
+
     } catch (error) {
         console.error('Failed to install Copilot instructions:', error);
     }
@@ -401,14 +401,14 @@ function registerCommands(context: vscode.ExtensionContext): void {
                 'This will remove and reinstall the embedded Python environment. Continue?',
                 'Yes', 'No'
             );
-            
+
             if (confirm === 'Yes') {
                 statusBar.setStatus('installing', 'Zotero MCP: Reinstalling Python...');
-                
+
                 try {
                     await uvPython.cleanup();
                     const newPath = await uvPython.ensureReady();
-                    
+
                     if (newPath) {
                         resolvedPythonPath = newPath;
                         mcpProvider?.setPythonPath(newPath);
@@ -431,23 +431,23 @@ function registerCommands(context: vscode.ExtensionContext): void {
                 vscode.window.showWarningMessage('Please open a workspace folder first.');
                 return;
             }
-            
+
             const githubDir = path.join(workspaceFolder.uri.fsPath, '.github');
             const instructionsPath = path.join(githubDir, 'copilot-instructions.md');
             const workflowPath = path.join(githubDir, 'zotero-research-workflow.md');
-            
+
             // Create .github directory
             if (!fs.existsSync(githubDir)) {
                 fs.mkdirSync(githubDir, { recursive: true });
             }
-            
+
             const extensionPath = context.extensionPath;
             const sourceInstructions = path.join(extensionPath, 'resources', 'skills', 'copilot-instructions.md');
             const sourceWorkflow = path.join(extensionPath, 'resources', 'skills', 'research-workflow.md');
-            
+
             let installed = 0;
             let skipped = 0;
-            
+
             // Handle copilot-instructions.md - NEVER overwrite without explicit consent
             if (fs.existsSync(instructionsPath)) {
                 // Check if it's our file or user's own
@@ -470,7 +470,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
                 fs.copyFileSync(sourceInstructions, instructionsPath);
                 installed++;
             }
-            
+
             // Handle zotero-research-workflow.md - this is our unique file
             if (fs.existsSync(workflowPath)) {
                 // Check if it's our file
@@ -499,7 +499,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
                 fs.copyFileSync(sourceWorkflow, workflowPath);
                 installed++;
             }
-            
+
             // Show result
             if (installed > 0) {
                 vscode.window.showInformationMessage(
@@ -529,7 +529,7 @@ async function runSetupWizard(): Promise<void> {
         async (progress) => {
             // Step 1: Check/setup Python
             progress.report({ message: 'Setting up Python environment...', increment: 0 });
-            
+
             const pythonPath = await ensurePythonEnvironment();
             if (!pythonPath) {
                 return false;
@@ -551,7 +551,7 @@ async function runSetupWizard(): Promise<void> {
             // Step 3: Check Zotero
             progress.report({ message: 'Checking Zotero connection...', increment: 34 });
             const zoteroOk = await checkAndUpdateZoteroStatus();
-            
+
             if (!zoteroOk) {
                 const choice = await vscode.window.showWarningMessage(
                     'Zotero is not running. Start Zotero to enable full functionality.',
@@ -576,12 +576,12 @@ async function runSetupWizard(): Promise<void> {
             );
             extensionContext.subscriptions.push(providerDisposable);
         }
-        
+
         // Refresh MCP provider
         mcpProvider?.refresh();
-        
+
         statusBar.setStatus('ready', 'Zotero MCP: Ready');
-        
+
         vscode.window.showInformationMessage(
             '🎉 Zotero MCP is ready! Try asking Copilot to search PubMed.',
             'Open Copilot Chat'
@@ -600,7 +600,7 @@ async function checkZoteroConnection(): Promise<boolean> {
     const config = vscode.workspace.getConfiguration('zoteroMcp');
     const host = config.get<string>('zoteroHost', 'localhost');
     const port = config.get<number>('zoteroPort', 23119);
-    
+
     try {
         const response = await fetch(`http://${host}:${port}/connector/ping`);
         const text = await response.text();
@@ -617,10 +617,10 @@ async function checkZoteroConnection(): Promise<boolean> {
 async function getExtensionStatus(): Promise<ExtensionStatus> {
     const config = vscode.workspace.getConfiguration('zoteroMcp');
     const isUvManaged = uvPython.isReady();
-    
+
     return {
         pythonPath: resolvedPythonPath || 'Not configured',
-        pythonVersion: isUvManaged 
+        pythonVersion: isUvManaged
             ? await uvPython.getPythonVersion() || 'Unknown'
             : await pythonEnv.getPythonVersion() || 'Unknown',
         pythonType: isUvManaged ? 'uv-managed (self-contained)' : 'System',
@@ -655,7 +655,7 @@ interface ExtensionStatus {
 function getStatusWebviewContent(status: ExtensionStatus): string {
     const checkmark = '✅';
     const cross = '❌';
-    
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -694,7 +694,7 @@ function getStatusWebviewContent(status: ExtensionStatus): string {
 </head>
 <body>
     <h1>🔬 Zotero + PubMed MCP Status</h1>
-    
+
     <div class="section">
         <h2>Python Environment</h2>
         <div class="item">
@@ -716,7 +716,7 @@ function getStatusWebviewContent(status: ExtensionStatus): string {
             </span>
         </div>
     </div>
-    
+
     <div class="section">
         <h2>Zotero Connection</h2>
         <div class="item">
@@ -730,7 +730,7 @@ function getStatusWebviewContent(status: ExtensionStatus): string {
             </span>
         </div>
     </div>
-    
+
     <div class="section">
         <h2>MCP Servers</h2>
         <div class="item">

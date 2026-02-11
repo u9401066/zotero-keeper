@@ -1,0 +1,86 @@
+# Pre-commit hooks for Zotero Keeper
+# Install: uv pip install pre-commit && pre-commit install
+# Manual run: pre-commit run --all-files
+# Skip: git commit --no-verify (emergency only)
+
+repos:
+  # ============================================================
+  # 1. General file hygiene
+  # ============================================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+        exclude: '\.bat$'
+      - id: no-commit-to-branch
+        args: ['--branch', 'release']
+
+  # ============================================================
+  # 2. Python: ruff (lint + format)
+  # ============================================================
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        types_or: [python, pyi]
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  # ============================================================
+  # 3. Python: type checking (mypy) — run manually, not in pre-commit
+  #    CI already runs: mypy src/ --ignore-missing-imports || true
+  #    Too many pre-existing type errors to block commits
+  # ============================================================
+
+  # ============================================================
+  # 4. Security: detect secrets & credentials
+  # ============================================================
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: '(\.lock|package-lock\.json)$'
+
+  # ============================================================
+  # 5. Commit message convention
+  # ============================================================
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.6.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert, release]
+
+  # ============================================================
+  # 6. uv enforcer: ban pip usage
+  # ============================================================
+  - repo: local
+    hooks:
+      - id: no-pip-usage
+        name: Ban pip usage (uv only)
+        entry: python scripts/check_no_pip.py
+        language: python
+        types: [text]
+        exclude: '(\.pre-commit-config\.yaml|node_modules|\.git)$'
+
+      # ============================================================
+      # 7. Version sync check
+      # ============================================================
+      - id: version-sync-check
+        name: Check version sync (package.json == statusBar.ts)
+        entry: python scripts/check_version_sync.py
+        language: python
+        files: '(package\.json|statusBar\.ts|CHANGELOG\.md)$'
+        pass_filenames: false

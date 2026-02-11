@@ -2,6 +2,34 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.13] - 2026-02-11
+
+### Fixed
+
+- **EPERM: 重新安裝時無法刪除 python.exe** ⭐
+  - MCP server 持有 Python 程序鎖，導致 `unlink python.exe` 失敗 (EPERM)
+  - 新增 `killPythonProcesses()`：自動偵測並終止佔用 venv 的程序
+    - Windows：WMIC 查找 venv 路徑下的 python.exe PID → `taskkill /F`
+    - Unix：`pgrep -f` → `kill -9`
+  - 新增 `rmWithRetry()`：最多重試 3 次，指數退避（2s × attempt）
+  - `cleanup()` 重寫：先終止程序 → 重試刪除 venv → 重試刪除 uv
+
+### Added
+
+- **NCBI Email 自動偵測** ⭐
+  - 不再需要手動設定 `zoteroMcp.ncbiEmail`
+  - 自動讀取 `git config user.email` 作為 NCBI API 的 email
+  - 優先順序：設定值 > Git email > 空值
+  - 新增 `getGitEmail()` 方法（5 秒 timeout，失敗時靜默降級）
+
+### Changed
+
+- **Python 3.11 → Python 3.12** - 環境升級
+  - `PYTHON_VERSION` 更新為 `'3.12'`
+  - 更好的 async 效能和現代語法支持
+- **Pre-commit hooks** 加入開發流程
+  - ruff lint/format、detect-secrets、version-sync、no-pip-usage
+
 ## [0.5.12] - 2026-02-11
 
 ### Fixed
@@ -296,7 +324,7 @@ Now there's just **one main entry point**: `unified_search`
   - Extension updates requiring newer package versions would silently fail at runtime
   - Now performs version verification against `MIN_VERSIONS` requirements
   - Auto-upgrades packages when version requirements increase
-  
+
 - **🔒 Security: Improved Python script execution**
   - Version check script now uses temp file instead of command-line string escaping
   - Eliminates potential shell injection risks from malformed package versions

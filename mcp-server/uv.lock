@@ -3,6 +3,15 @@ revision = 3
 requires-python = ">=3.12"
 
 [[package]]
+name = "annotated-doc"
+version = "0.0.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/57/ba/046ceea27344560984e26a590f90bc7f4a75b06701f653222458922b558c/annotated_doc-0.0.4.tar.gz", hash = "sha256:fbcda96e87e9c92ad167c2e53839e57503ecfda18804ea28102353485033faa4", size = 7288, upload-time = "2025-11-10T22:07:42.062Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1e/d3/26bf1008eb3d2daa8ef4cacc7f3bfdc11818d111f7e2d0201bc6e3b49d45/annotated_doc-0.0.4-py3-none-any.whl", hash = "sha256:571ac1dc6991c450b25a9c2d84a3705e2ae7a53467b5d111c24fa8baabbed320", size = 5303, upload-time = "2025-11-10T22:07:40.673Z" },
+]
+
+[[package]]
 name = "annotated-types"
 version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -72,6 +81,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/14/dd/a2177328d841fda0a12e67c65d06279691e25363a2805f561b3665cae114/biopython-1.86-cp314-cp314t-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:dcd94717e83ba891ebd9acaecbf05ad38313095ca5706caf6c38fa3f2aa17528", size = 3272883, upload-time = "2025-10-29T00:37:01.189Z" },
     { url = "https://files.pythonhosted.org/packages/ce/04/1aa91f64db5e0728d596fcf7302e2ae2035800c0676e94ea09645a948b91/biopython-1.86-cp314-cp314t-win32.whl", hash = "sha256:2f6b205dcb4101cefa5c615114bd35a19f656abb9d340eb3cf190f829e43800a", size = 2701649, upload-time = "2025-10-29T00:28:20.527Z" },
     { url = "https://files.pythonhosted.org/packages/63/7c/4acaca39102d667175bb3d6502dea91c346f8674c06d5df0dbb678971596/biopython-1.86-cp314-cp314t-win_amd64.whl", hash = "sha256:efeee7c37f2331d2c55704df39e122189cc237ffd7511f34158418ad728131b8", size = 2741364, upload-time = "2025-10-29T00:28:15.752Z" },
+]
+
+[[package]]
+name = "cachetools"
+version = "7.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d4/07/56595285564e90777d758ebd383d6b0b971b87729bbe2184a849932a3736/cachetools-7.0.1.tar.gz", hash = "sha256:e31e579d2c5b6e2944177a0397150d312888ddf4e16e12f1016068f0c03b8341", size = 36126, upload-time = "2026-02-10T22:24:05.03Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ed/9e/5faefbf9db1db466d633735faceda1f94aa99ce506ac450d232536266b32/cachetools-7.0.1-py3-none-any.whl", hash = "sha256:8f086515c254d5664ae2146d14fc7f65c9a4bce75152eb247e5a9c5e6d7b2ecf", size = 13484, upload-time = "2026-02-10T22:24:03.741Z" },
 ]
 
 [[package]]
@@ -346,6 +364,40 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/0a/6e/1c8331ddf91ca4730ab3086a0f1be19c65510a33b5a441cb334e7a2d2560/cryptography-46.0.3-cp38-abi3-win32.whl", hash = "sha256:6276eb85ef938dc035d59b87c8a7dc559a232f954962520137529d77b18ff1df", size = 3036695, upload-time = "2025-10-15T23:18:08.672Z" },
     { url = "https://files.pythonhosted.org/packages/90/45/b0d691df20633eff80955a0fc7695ff9051ffce8b69741444bd9ed7bd0db/cryptography-46.0.3-cp38-abi3-win_amd64.whl", hash = "sha256:416260257577718c05135c55958b674000baef9a1c7d9e8f306ec60d71db850f", size = 3501720, upload-time = "2025-10-15T23:18:10.632Z" },
     { url = "https://files.pythonhosted.org/packages/e8/cb/2da4cc83f5edb9c3257d09e1e7ab7b23f049c7962cae8d842bbef0a9cec9/cryptography-46.0.3-cp38-abi3-win_arm64.whl", hash = "sha256:d89c3468de4cdc4f08a57e214384d0471911a3830fcdaf7a8cc587e42a866372", size = 2918740, upload-time = "2025-10-15T23:18:12.277Z" },
+]
+
+[[package]]
+name = "defusedxml"
+version = "0.7.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0f/d5/c66da9b79e5bdb124974bfe172b4daf3c984ebd9c2a06e2b8a4dc7331c72/defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69", size = 75520, upload-time = "2021-03-08T10:59:26.269Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61", size = 25604, upload-time = "2021-03-08T10:59:24.45Z" },
+]
+
+[[package]]
+name = "execnet"
+version = "2.1.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/89/780e11f9588d9e7128a3f87788354c7946a9cbb1401ad38a48c4db9a4f07/execnet-2.1.2.tar.gz", hash = "sha256:63d83bfdd9a23e35b9c6a3261412324f964c2ec8dcd8d3c6916ee9373e0befcd", size = 166622, upload-time = "2025-11-12T09:56:37.75Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ab/84/02fc1827e8cdded4aa65baef11296a9bbe595c474f0d6d758af082d849fd/execnet-2.1.2-py3-none-any.whl", hash = "sha256:67fba928dd5a544b783f6056f449e5e3931a5c378b128bc18501f7ea79e296ec", size = 40708, upload-time = "2025-11-12T09:56:36.333Z" },
+]
+
+[[package]]
+name = "fastapi"
+version = "0.128.7"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "annotated-doc" },
+    { name = "pydantic" },
+    { name = "starlette" },
+    { name = "typing-extensions" },
+    { name = "typing-inspection" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a0/fc/af386750b3fd8d8828167e4c82b787a8eeca2eca5c5429c9db8bb7c70e04/fastapi-0.128.7.tar.gz", hash = "sha256:783c273416995486c155ad2c0e2b45905dedfaf20b9ef8d9f6a9124670639a24", size = 375325, upload-time = "2026-02-10T12:26:40.968Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/af/1a/f983b45661c79c31be575c570d46c437a5409b67a939c1b3d8d6b3ed7a7f/fastapi-0.128.7-py3-none-any.whl", hash = "sha256:6bd9bd31cb7047465f2d3fa3ba3f33b0870b17d4eaf7cdb36d1576ab060ad662", size = 103630, upload-time = "2026-02-10T12:26:39.414Z" },
 ]
 
 [[package]]
@@ -650,16 +702,23 @@ wheels = [
 
 [[package]]
 name = "pubmed-search-mcp"
-version = "0.1.9"
+version = "0.3.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "biopython" },
+    { name = "cachetools" },
+    { name = "defusedxml" },
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "mcp" },
     { name = "pylatexenc" },
+    { name = "pywin32", marker = "sys_platform == 'win32'" },
     { name = "requests" },
+    { name = "tenacity" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/eb/8d/3bc79e87e4f36ead8b6853bbea39d17eb7d381b156418e9df4ba8c68edfd/pubmed_search_mcp-0.1.9.tar.gz", hash = "sha256:d1d7c4ae4791bec94270855232c77c91fb6ea1b9de8bc28e629088c1582fe780", size = 61921, upload-time = "2025-12-12T02:29:21.738Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8d/47/aa22ca0e18fa5f9c1a56b241a4db6fbecec501ce93931da7985b41edca0b/pubmed_search_mcp-0.3.8.tar.gz", hash = "sha256:85d1d4f4f30e030965166604530364cf00a2bbf8f970439f0d658f2c22286e3b", size = 297089, upload-time = "2026-02-10T15:09:58.497Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/de/1e/5fdc4ff8d7b011e9a0813a7e969adc11fb9659499f6aa8e22f9bad357fb3/pubmed_search_mcp-0.1.9-py3-none-any.whl", hash = "sha256:3bf4e058ab697ba32da16fbce4288e73cd474dfa78916695058504a44e18eaea", size = 69380, upload-time = "2025-12-12T02:29:19.611Z" },
+    { url = "https://files.pythonhosted.org/packages/4c/4a/a8d9ad1340fe7a3b02a35f1b426971d32c4c0cf1e8a2e7c7d3eb085d07e4/pubmed_search_mcp-0.3.8-py3-none-any.whl", hash = "sha256:3748f484fd7a3cbca1da8577a36127a27b475c83ac7e982c9386af2a06703c2f", size = 342444, upload-time = "2026-02-10T15:09:56.492Z" },
 ]
 
 [[package]]
@@ -841,6 +900,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/5e/f7/c933acc76f5208b3b00089573cf6a2bc26dc80a8aece8f52bb7d6b1855ca/pytest_cov-7.0.0.tar.gz", hash = "sha256:33c97eda2e049a0c5298e91f519302a1334c26ac65c1a483d6206fd458361af1", size = 54328, upload-time = "2025-09-09T10:57:02.113Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ee/49/1377b49de7d0c1ce41292161ea0f721913fa8722c19fb9c1e3aa0367eecb/pytest_cov-7.0.0-py3-none-any.whl", hash = "sha256:3b8e9558b16cc1479da72058bdecf8073661c7f57f7d3c5f22a1c23507f2d861", size = 22424, upload-time = "2025-09-09T10:57:00.695Z" },
+]
+
+[[package]]
+name = "pytest-xdist"
+version = "3.8.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "execnet" },
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/78/b4/439b179d1ff526791eb921115fca8e44e596a13efeda518b9d845a619450/pytest_xdist-3.8.0.tar.gz", hash = "sha256:7e578125ec9bc6050861aa93f2d59f1d8d085595d6551c2c90b6f4fad8d3a9f1", size = 88069, upload-time = "2025-07-01T13:30:59.346Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ca/31/d4e37e9e550c2b92a9cbc2e4d0b7420a27224968580b5a447f420847c975/pytest_xdist-3.8.0-py3-none-any.whl", hash = "sha256:202ca578cfeb7370784a8c33d6d05bc6e13b4f25b5053c30a152269fd10f0b88", size = 46396, upload-time = "2025-07-01T13:30:56.632Z" },
 ]
 
 [[package]]
@@ -1102,6 +1174,15 @@ wheels = [
 ]
 
 [[package]]
+name = "tenacity"
+version = "9.1.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/c6/ee486fd809e357697ee8a44d3d69222b344920433d3b6666ccd9b374630c/tenacity-9.1.4.tar.gz", hash = "sha256:adb31d4c263f2bd041081ab33b498309a57c77f9acf2db65aadf0898179cf93a", size = 49413, upload-time = "2026-02-07T10:45:33.841Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d7/c1/eb8f9debc45d3b7918a32ab756658a0904732f75e555402972246b0b8e71/tenacity-9.1.4-py3-none-any.whl", hash = "sha256:6095a360c919085f28c6527de529e76a06ad89b23659fa881ae0649b867a9d55", size = 28926, upload-time = "2026-02-07T10:45:32.24Z" },
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.15.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1166,6 +1247,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "pytest-xdist" },
     { name = "ruff" },
 ]
 pubmed = [
@@ -1175,6 +1257,7 @@ pubmed = [
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
+    { name = "pytest-xdist" },
 ]
 
 [package.metadata]
@@ -1182,13 +1265,14 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.27.0" },
     { name = "mcp", specifier = ">=1.0.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0.0" },
-    { name = "pubmed-search-mcp", marker = "extra == 'all'", specifier = ">=0.1.8" },
-    { name = "pubmed-search-mcp", marker = "extra == 'pubmed'", specifier = ">=0.1.8" },
+    { name = "pubmed-search-mcp", marker = "extra == 'all'", specifier = ">=0.3.8" },
+    { name = "pubmed-search-mcp", marker = "extra == 'pubmed'", specifier = ">=0.3.8" },
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pydantic-settings", specifier = ">=2.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
+    { name = "pytest-xdist", marker = "extra == 'dev'", specifier = ">=3.3.0" },
     { name = "rapidfuzz", specifier = ">=3.0.0" },
     { name = "rapidfuzz", marker = "extra == 'all'", specifier = ">=3.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
@@ -1196,4 +1280,7 @@ requires-dist = [
 provides-extras = ["pubmed", "all", "dev"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=9.0.2" }]
+dev = [
+    { name = "pytest", specifier = ">=9.0.2" },
+    { name = "pytest-xdist", specifier = ">=3.3.0" },
+]

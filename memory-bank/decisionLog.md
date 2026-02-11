@@ -34,7 +34,7 @@
 
 ### DEC-015: Collection 防呆機制完善
 - **決策**: 所有 import 工具必須有 collection 驗證
-- **實作**: 
+- **實作**:
   - 如果 `collection_name` 找不到 → 回傳錯誤 + 可用 collections 清單
   - 如果沒指定 collection → 存到 root 但加 warning
   - 成功時回傳 `saved_to` 資訊確認
@@ -46,7 +46,7 @@
 
 ### DEC-001: 專案整理優先順序
 - **決策**: 先更新 Memory Bank，暫緩大檔案拆分
-- **理由**: 
+- **理由**:
   1. 目前功能運作正常，拆分屬於 nice-to-have
   2. Memory Bank 需要先記錄現狀，才能追蹤未來改進
   3. 拆分需要更多時間和測試

@@ -126,20 +126,20 @@ class UnifiedArticle:
     # 核心識別
     pmid: Optional[str]
     doi: Optional[str]
-    
+
     # 基本資訊
     title: str
     authors: List[str]
     journal: str
     year: int
     abstract: str
-    
+
     # 自動增強
     oa_url: Optional[str]        # ← Unpaywall 自動查詢
     pdf_url: Optional[str]       # ← PMC/CORE 自動查詢
     citation_count: Optional[int] # ← CrossRef/iCite
     mesh_terms: List[str]        # ← PubMed
-    
+
     # 來源追蹤
     sources: List[str]           # 來自哪些 API
     relevance_score: float       # 綜合相關性分數
@@ -244,10 +244,10 @@ def search_crossref(query: str, email: str, rows: int = 20) -> list:
         "select": "DOI,title,author,container-title,published,is-referenced-by-count"
     }
     url = f"{base_url}?{urllib.parse.urlencode(params)}"
-    
+
     request = urllib.request.Request(url)
     request.add_header("User-Agent", f"pubmed-search-mcp/1.0 (mailto:{email})")
-    
+
     with urllib.request.urlopen(request) as response:
         data = json.loads(response.read())
         return data["message"]["items"]
@@ -290,7 +290,7 @@ def get_oa_link(doi: str, email: str) -> dict | None:
     """查詢 DOI 的 OA 狀態和連結"""
     encoded_doi = urllib.parse.quote(doi, safe="")
     url = f"https://api.unpaywall.org/v2/{encoded_doi}?email={email}"
-    
+
     try:
         with urllib.request.urlopen(url) as response:
             return json.loads(response.read())
@@ -319,7 +319,7 @@ def search_unpaywall(query: str, email: str, is_oa: bool = True) -> list:
         "email": email
     }
     url = f"https://api.unpaywall.org/v2/search?{urllib.parse.urlencode(params)}"
-    
+
     with urllib.request.urlopen(url) as response:
         data = json.loads(response.read())
         return [item["response"] for item in data["results"]]
@@ -585,7 +585,7 @@ prepare_export(pmids, format)    # RIS/BibTeX/CSV
 ```python
 class QueryAnalyzer:
     """分析查詢意圖，決定搜尋策略"""
-    
+
     def analyze(self, query: str) -> SearchStrategy:
         # 1. DOI 檢測
         if self._is_doi(query):
@@ -594,7 +594,7 @@ class QueryAnalyzer:
                 secondary=["pubmed"],
                 query_type="doi_lookup"
             )
-        
+
         # 2. 臨床試驗檢測
         if self._is_clinical_trial(query):
             return SearchStrategy(
@@ -602,7 +602,7 @@ class QueryAnalyzer:
                 secondary=["clinicaltrials"],
                 query_type="clinical_trial"
             )
-        
+
         # 3. 基因名稱檢測
         if self._is_gene(query):
             return SearchStrategy(
@@ -610,7 +610,7 @@ class QueryAnalyzer:
                 secondary=["ncbi_gene"],
                 enrich_with=["gene_info"]
             )
-        
+
         # 4. 藥物名稱檢測
         if self._is_drug(query):
             return SearchStrategy(
@@ -618,7 +618,7 @@ class QueryAnalyzer:
                 secondary=["pubchem"],
                 enrich_with=["drug_info"]
             )
-        
+
         # 5. 預設：醫學文獻搜尋
         return SearchStrategy(
             primary="pubmed",
@@ -703,7 +703,7 @@ class QueryAnalyzer:
     "description": "Email for Unpaywall API (required for OA lookup)"
   },
   "zoteroMcp.crossref.email": {
-    "type": "string", 
+    "type": "string",
     "description": "Email for CrossRef Polite Pool (recommended)"
   }
 }
@@ -804,19 +804,19 @@ src/pubmed_search/
 
 ```
 
-                        ITERATIVE PROTOCOL                               
+                        ITERATIVE PROTOCOL  
 
-   Agent                          MCP                                    
-      unified_search() ▶                                     
-                                                             
-                              簡單查詢？                               
-                                                             
-              Yes  No                  
-                                                                     
-              直接處理                     返回建議                     
-     ◀ 結果 ◀ needs_decision 
-      unified_search(decision=chosen) ▶                         
-     ◀ 最終結果                                      
+   Agent                          MCP  
+      unified_search() ▶  
+
+                              簡單查詢？  
+
+              Yes  No  
+
+              直接處理                     返回建議  
+     ◀ 結果 ◀ needs_decision
+      unified_search(decision=chosen) ▶  
+     ◀ 最終結果  
 
 ```
 
@@ -869,7 +869,7 @@ src/pubmed_search/
 
 ```python
 # 品質評分 - 可應用於 ResultAggregator
-def score_answer(answer: str, question: str, valid_titles: list, 
+def score_answer(answer: str, question: str, valid_titles: list,
                  confidence: float, top_score: float) -> float:
     """
     多維度評分:
@@ -881,10 +881,10 @@ def score_answer(answer: str, question: str, valid_titles: list,
     question_keywords = set(question.lower().split()) - stop_words
     answer_words = set(answer.lower().split())
     keyword_matches = len(question_keywords & answer_words)
-    
+
     uncertain_words = ["不確定", "可能", "也許", "uncertain", "maybe", "perhaps"]
     uncertain_count = sum(1 for w in uncertain_words if w in answer.lower())
-    
+
     score = (
         keyword_matches * 2 +           # 關鍵詞匹配獎勵
         min(len(answer.split()), 30) -  # 長度分 (上限30)
@@ -893,7 +893,7 @@ def score_answer(answer: str, question: str, valid_titles: list,
     return max(0, score) / 100  # 正規化到 0-1
 
 # 信任度評分 - 可應用於跨來源驗證
-def compute_trust_score(answer: str, sources: list[str], 
+def compute_trust_score(answer: str, sources: list[str],
                         embed_fn: callable) -> float:
     """
     雙維度信任評估:
@@ -902,12 +902,12 @@ def compute_trust_score(answer: str, sources: list[str],
     """
     # 1. 文字重疊
     overlap_pct = compute_overlap_percentage(answer, sources)
-    
+
     # 2. 語義相似度 (使用 embedding)
     answer_emb = embed_fn(answer)
     source_embs = [embed_fn(s) for s in sources]
     similarity = max(cosine_similarity(answer_emb, s) for s in source_embs)
-    
+
     return (overlap_pct + similarity) / 2
 
 # Delta Cutoff - 檢測相似度驟降
@@ -968,10 +968,10 @@ def mine_citations(text_content: str, pico_criteria: ProtocolStructure) -> list:
     """
     # Step 1: 找符合條件的研究
     included = extract_included_studies(text_content, pico_criteria)
-    
+
     # Step 2: 提取所有參考文獻
     all_refs = extract_bibliography(text_content)
-    
+
     # Step 3: 交叉比對
     return [ref for ref in all_refs if matches_pico(ref, pico_criteria)]
 
@@ -980,15 +980,15 @@ class TwoLevelScreening:
     """
     Level 1: Abstract 篩選 (快速)
     Level 2: Full-text 篩選 (精確)
-    
+
     信心度 < 85% 自動標記為 UNCERTAIN，需人工審核
     """
     CONFIDENCE_THRESHOLD = 0.85
-    
+
     async def screen_abstract(self, abstract: str, pico: ProtocolStructure) -> ReasoningLog:
         # 快速篩選，低成本
         pass
-    
+
     async def screen_fulltext(self, pdf_path: str, pico: ProtocolStructure) -> ReasoningLog:
         # 精確篩選，高成本
         pass
@@ -1016,20 +1016,20 @@ def get_date_from_crossref(doi: str) -> str | None:
     """
     encoded_doi = urllib.parse.quote(doi, safe="")
     url = f"https://api.crossref.org/works/{encoded_doi}"
-    
+
     try:
         with urllib.request.urlopen(url, timeout=10) as response:
             data = json.loads(response.read())
             message = data.get("message", {})
-            
+
             # 日期欄位優先順序
             date_fields = [
                 "published-print",
-                "published-online", 
+                "published-online",
                 "issued",
                 "created"
             ]
-            
+
             for field in date_fields:
                 if field in message:
                     date_parts = message[field].get("date-parts", [[]])
@@ -1039,7 +1039,7 @@ def get_date_from_crossref(doi: str) -> str | None:
                         month = parts[1] if len(parts) > 1 else 1
                         day = parts[2] if len(parts) > 2 else 1
                         return f"{year}-{month:02d}-{day:02d}"
-            
+
             return None
     except Exception:
         return None
@@ -1061,16 +1061,16 @@ def search_cochrane_via_europepmc(query: str) -> list:
     過濾條件: SRC:MED AND 標題含 "Cochrane"
     """
     adapted_query = f'({query}) AND (TITLE:"Cochrane Database")'
-    
+
     # 或使用來源過濾
     # adapted_query = f'({query}) AND (SRC:CTX)'  # Cochrane Trials
-    
+
     return search_europe_pmc(adapted_query)
 
 # Boolean 查詢驗證器
 class QueryValidator:
     """驗證並修正 Boolean 語法"""
-    
+
     def validate(self, query: str) -> tuple[bool, str]:
         """
         檢查:
@@ -1079,15 +1079,15 @@ class QueryValidator:
         - 欄位語法 ([Title], [Author], etc.)
         """
         errors = []
-        
+
         # 括號配對
         if query.count("(") != query.count(")"):
             errors.append("括號不配對")
-        
+
         # ... 其他驗證
-        
+
         return len(errors) == 0, "; ".join(errors)
-    
+
     def adapt_for_database(self, query: str, target: str) -> str:
         """
         轉換查詢語法:
@@ -1166,4 +1166,3 @@ class QueryValidator:
 ---
 
 > 本文件整合自原始分散文件: ACADEMIC_MEDICAL_APIS.md, API_INTEGRATION_CANDIDATES.md, COMPETITIVE_ANALYSIS.md
-

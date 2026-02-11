@@ -8,6 +8,7 @@ from typing import Self
 
 class ItemType(str, Enum):
     """Zotero item types"""
+
     JOURNAL_ARTICLE = "journalArticle"
     BOOK = "book"
     BOOK_SECTION = "bookSection"
@@ -24,6 +25,7 @@ class ItemType(str, Enum):
 @dataclass
 class Creator:
     """Author/Creator value object"""
+
     last_name: str
     first_name: str = ""
     creator_type: str = "author"
@@ -60,6 +62,7 @@ class Reference:
     Represents a bibliographic reference in the Zotero library.
     This is the core domain entity.
     """
+
     title: str
     item_type: ItemType = ItemType.JOURNAL_ARTICLE
     key: str | None = None
@@ -152,11 +155,13 @@ class Reference:
         """Create Reference from Zotero API response"""
         creators = []
         for c in data.get("creators", []):
-            creators.append(Creator(
-                first_name=c.get("firstName", ""),
-                last_name=c.get("lastName", c.get("name", "")),
-                creator_type=c.get("creatorType", "author"),
-            ))
+            creators.append(
+                Creator(
+                    first_name=c.get("firstName", ""),
+                    last_name=c.get("lastName", c.get("name", "")),
+                    creator_type=c.get("creatorType", "author"),
+                )
+            )
 
         tags = [t["tag"] if isinstance(t, dict) else t for t in data.get("tags", [])]
 

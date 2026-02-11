@@ -2,7 +2,7 @@
 
 讓 AI 幫你管理文獻！連接 VS Code Copilot / Claude Desktop 與本地 Zotero 書目資料庫。
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![MCP SDK](https://img.shields.io/badge/MCP-FastMCP-green.svg)](https://github.com/modelcontextprotocol/python-sdk)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Zotero 7](https://img.shields.io/badge/Zotero-7.0+-red.svg)](https://www.zotero.org/)
@@ -45,7 +45,7 @@
 
 ### 你需要準備
 
-- ✅ [Python 3.11+](https://www.python.org/downloads/)
+- ✅ [Python 3.12+](https://www.python.org/downloads/)
 - ✅ [Zotero 7](https://www.zotero.org/download/) (要先執行)
 - ✅ [VS Code](https://code.visualstudio.com/) + GitHub Copilot，或 [Claude Desktop](https://claude.ai/)
 - ✅ [uv](https://docs.astral.sh/uv/getting-started/installation/) 套件管理工具 (推薦)
@@ -464,7 +464,7 @@ Zotero 團隊正在開發 **Local API 寫入功能**：
 
 | 目前 (v1.x) | 未來 (v2.x) |
 |-------------|-------------|
-| 需要 Python 3.11+ | 獨立執行檔 (.exe / .app) |
+| 需要 Python 3.12+ | 獨立執行檔 (.exe / .app) |
 | 需要 `uv pip install` | 一鍵安裝程式 |
 | 手動設定 `mcp.json` | 自動設定 VS Code/Claude |
 | 開發者友善 | 研究人員友善 |

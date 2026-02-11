@@ -89,10 +89,10 @@ class QueryComplexity(Enum):
 class QueryAnalyzer:
     def analyze(self, query: str) -> QueryAnalysisResult:
         complexity = self._assess_complexity(query)
-        
+
         if complexity == QueryComplexity.SIMPLE:
             return QueryAnalysisResult(mode="auto", strategy=self._build_strategy(query))
-        
+
         elif complexity == QueryComplexity.AMBIGUOUS:
             return QueryAnalysisResult(
                 mode="suggest",
@@ -102,7 +102,7 @@ class QueryAnalyzer:
                 ],
                 question="您想搜尋哪個方向？"
             )
-        
+
         else:  # COMPLEX
             return QueryAnalysisResult(
                 mode="delegate",
@@ -164,14 +164,14 @@ STRATEGY_MATRIX = {
 async def execute(self, plan: DispatchPlan, query: str) -> DispatchResult:
     results = {}
     errors = {}
-    
+
     # 並行執行主要來源
     primary_tasks = [
         self._search_source(src, query, plan.timeout_per_source)
         for src in plan.primary_sources
     ]
     primary_results = await asyncio.gather(*primary_tasks, return_exceptions=True)
-    
+
     # 處理結果
     for src, result in zip(plan.primary_sources, primary_results):
         if isinstance(result, Exception):
@@ -187,7 +187,7 @@ async def execute(self, plan: DispatchPlan, query: str) -> DispatchResult:
                     errors[fallback_src] = str(e)
         else:
             results[src] = result
-    
+
     return DispatchResult(results=results, errors=errors)
 ```
 
@@ -201,12 +201,12 @@ async def execute(self, plan: DispatchPlan, query: str) -> DispatchResult:
 
 ```python
 class ResultAggregator:
-    def aggregate(self, results: Dict[str, List[Article]], query: str, 
+    def aggregate(self, results: Dict[str, List[Article]], query: str,
                   ranking_preference: str = "balanced") -> AggregatedResult:
-        
+
         # Step 1: 去重 (DOI/PMID/標題)
         unique_articles = self._deduplicate(results)
-        
+
         # Step 2: 計算多維度分數
         scored_articles = []
         for article in unique_articles:
@@ -219,15 +219,15 @@ class ResultAggregator:
             }
             final_score = self._weighted_score(scores, ranking_preference)
             scored_articles.append((article, scores, final_score))
-        
+
         # Step 3: 排序
         scored_articles.sort(key=lambda x: x[2], reverse=True)
-        
+
         # Step 4: 檢測品質斷崖 (Delta Cutoff)
         cutoff_index = self._detect_quality_drop(
             [s[2] for s in scored_articles], delta_threshold=0.15
         )
-        
+
         return AggregatedResult(
             articles=[a[0] for a in scored_articles[:cutoff_index]],
             scores={...}
@@ -249,7 +249,7 @@ RANKING_WEIGHTS = {
 
 ```python
 def should_request_agent_help(self, result: AggregatedResult) -> Optional[NeedsDecisionResponse]:
-    
+
     # 情況 1: 結果過少
     if result.total_after_filter < 3:
         return NeedsDecisionResponse(
@@ -261,7 +261,7 @@ def should_request_agent_help(self, result: AggregatedResult) -> Optional[NeedsD
                 {"label": "加入更多來源", "value": "add_sources"},
             ]
         )
-    
+
     # 情況 2: 分數差異過大
     if self._high_variance(result.scores):
         return NeedsDecisionResponse(
@@ -272,7 +272,7 @@ def should_request_agent_help(self, result: AggregatedResult) -> Optional[NeedsD
                 {"label": "顯示所有結果", "value": "show_all"},
             ]
         )
-    
+
     return None  # 不需要協助
 ```
 
@@ -296,27 +296,27 @@ class UnifiedSearchTool:
         decision: Optional[str] = None,  # Agent 的決策回饋
         session_id: Optional[str] = None  # 多輪交互的 session
     ) -> Union[SearchResult, NeedsDecisionResponse]:
-        
+
         # 如果是繼續之前的 session
         if session_id and decision:
             return await self._continue_session(session_id, decision)
-        
+
         # Step 1: 分析查詢
         analysis = self.query_analyzer.analyze(query)
         if analysis.mode == "suggest":
             return NeedsDecisionResponse(session_id=..., **analysis.to_response())
-        
+
         # Step 2: 分發搜尋
         dispatch_result = await self.dispatcher.execute(analysis.strategy.dispatch_plan, query)
-        
+
         # Step 3: 彙整結果
         aggregated = self.aggregator.aggregate(dispatch_result.results, query)
-        
+
         # Step 4: 檢查是否需要 Agent 協助
         help_needed = self.decision_maker.should_request_agent_help(aggregated)
         if help_needed:
             return help_needed
-        
+
         # Step 5: 增強結果
         enriched = await self.enricher.enrich(aggregated)
         return SearchResult(articles=enriched.articles, metadata=...)

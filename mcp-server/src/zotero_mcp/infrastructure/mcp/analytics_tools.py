@@ -231,17 +231,18 @@ def register_analytics_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
 
             # Count totals (might be more than limit)
             total_no_collection = sum(
-                1 for item in items
-                if item.get("data", item).get("itemType") not in ("attachment", "note")
-                and not item.get("data", item).get("collections")
+                1
+                for item in items
+                if item.get("data", item).get("itemType") not in ("attachment", "note") and not item.get("data", item).get("collections")
             )
             total_no_tags = sum(
-                1 for item in items
-                if item.get("data", item).get("itemType") not in ("attachment", "note")
-                and not item.get("data", item).get("tags")
+                1
+                for item in items
+                if item.get("data", item).get("itemType") not in ("attachment", "note") and not item.get("data", item).get("tags")
             )
             total_completely_orphan = sum(
-                1 for item in items
+                1
+                for item in items
                 if item.get("data", item).get("itemType") not in ("attachment", "note")
                 and not item.get("data", item).get("collections")
                 and not item.get("data", item).get("tags")
@@ -264,8 +265,7 @@ def register_analytics_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
             # Add suggestions
             if total_completely_orphan > 0:
                 result["suggestion"] = (
-                    f"Found {total_completely_orphan} items with no collection AND no tags. "
-                    "Consider organizing these items first."
+                    f"Found {total_completely_orphan} items with no collection AND no tags. " "Consider organizing these items first."
                 )
 
             return result

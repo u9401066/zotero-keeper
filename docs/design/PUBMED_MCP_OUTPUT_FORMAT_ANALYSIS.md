@@ -160,7 +160,7 @@
     "pages": "425-437",
     "keywords": ["machine learning"],
     "mesh_terms": ["Machine Learning", "Anesthesiology"],
-    
+
     # Europe PMC 特有欄位
     "citation_count": 15,
     "is_open_access": True,
@@ -356,7 +356,7 @@ UR  - https://pubmed.ncbi.nlm.nih.gov/38123456/
 L2  - https://doi.org/10.1016/j.bja.2024.01.015
 L1  - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10987654/pdf/
 DB  - PubMed
-ER  - 
+ER  -
 ```
 
 ### prepare_export JSON 回傳結構
@@ -408,16 +408,16 @@ class StandardAuthor:
     initials: str = ""
     affiliations: List[str] = field(default_factory=list)
     orcid: Optional[str] = None
-    
+
     # 集體作者
     collective_name: Optional[str] = None
-    
+
     def to_display_name(self) -> str:
         """返回顯示用名稱"""
         if self.collective_name:
             return self.collective_name
         return f"{self.last_name} {self.first_name}".strip()
-    
+
     def to_ris_format(self) -> str:
         """返回 RIS 格式 (Last, First)"""
         if self.collective_name:
@@ -431,28 +431,28 @@ class StandardAuthor:
 class StandardArticle:
     """
     標準化文章交換格式
-    
+
     統一來自 PubMed、Europe PMC、CORE 等來源的文章資料
     """
-    
+
     # === 必填欄位 ===
     title: str
-    
+
     # === 識別碼 (至少需要一個) ===
     pmid: Optional[str] = None
     doi: Optional[str] = None
     pmc_id: Optional[str] = None
     core_id: Optional[str] = None      # CORE 專用
     arxiv_id: Optional[str] = None     # arXiv 專用
-    
+
     # === 作者 ===
     authors: List[StandardAuthor] = field(default_factory=list)
-    
+
     # === 摘要與內容 ===
     abstract: str = ""
     keywords: List[str] = field(default_factory=list)
     mesh_terms: List[str] = field(default_factory=list)
-    
+
     # === 期刊資訊 ===
     journal: str = ""
     journal_abbrev: str = ""
@@ -460,7 +460,7 @@ class StandardArticle:
     volume: str = ""
     issue: str = ""
     pages: str = ""
-    
+
     # === 出版資訊 ===
     year: str = ""                     # 統一為字串
     month: str = ""
@@ -468,72 +468,72 @@ class StandardArticle:
     pub_date: Optional[date] = None    # 解析後的日期物件
     language: str = "eng"              # ISO 639-2 代碼
     publisher: str = ""
-    
+
     # === 類型與分類 ===
     publication_types: List[str] = field(default_factory=list)
     document_type: str = "journalArticle"  # Zotero item type
-    
+
     # === 開放取用與全文 ===
     is_open_access: bool = False
     has_fulltext: bool = False
     has_pdf: bool = False
     fulltext_url: Optional[str] = None
     pdf_url: Optional[str] = None
-    
+
     # === 指標 ===
     citation_count: Optional[int] = None
-    
+
     # === 來源追蹤 ===
     source: str = ""                   # 主要資料來源: pubmed, europe_pmc, core
     data_providers: List[str] = field(default_factory=list)
-    
+
     # === 擴展欄位 (來源特定) ===
     extra: Dict[str, Any] = field(default_factory=dict)
-    
+
     # === URL 生成 ===
     @property
     def pubmed_url(self) -> Optional[str]:
         if self.pmid:
             return f"https://pubmed.ncbi.nlm.nih.gov/{self.pmid}/"
         return None
-    
+
     @property
     def doi_url(self) -> Optional[str]:
         if self.doi:
             return f"https://doi.org/{self.doi}"
         return None
-    
+
     @property
     def pmc_url(self) -> Optional[str]:
         if self.pmc_id:
             return f"https://www.ncbi.nlm.nih.gov/pmc/articles/{self.pmc_id}/"
         return None
-    
+
     @property
     def pmc_pdf_url(self) -> Optional[str]:
         if self.pmc_id:
             return f"https://www.ncbi.nlm.nih.gov/pmc/articles/{self.pmc_id}/pdf/"
         return None
-    
+
     # === 作者便利方法 ===
     @property
     def author_names(self) -> List[str]:
         """返回作者顯示名稱列表"""
         return [a.to_display_name() for a in self.authors]
-    
+
     @property
     def first_author(self) -> Optional[str]:
         """返回第一作者姓氏"""
         if self.authors:
             return self.authors[0].last_name
         return None
-    
+
     # === 轉換方法 ===
     def to_dict(self) -> Dict[str, Any]:
         """轉換為字典格式"""
         from dataclasses import asdict
         return asdict(self)
-    
+
     def to_zotero_item(self) -> Dict[str, Any]:
         """轉換為 Zotero API 格式"""
         creators = []
@@ -549,7 +549,7 @@ class StandardArticle:
                     "firstName": author.first_name,
                     "lastName": author.last_name
                 })
-        
+
         return {
             "itemType": self.document_type,
             "title": self.title,
@@ -573,7 +573,7 @@ class StandardArticle:
 
 class ArticleConverter:
     """文章格式轉換器"""
-    
+
     @staticmethod
     def from_pubmed(data: Dict[str, Any]) -> StandardArticle:
         """從 PubMed 格式轉換"""
@@ -591,7 +591,7 @@ class ArticleConverter:
                     initials=af.get("initials", ""),
                     affiliations=af.get("affiliations", [])
                 ))
-        
+
         # 如果沒有 authors_full，使用 authors
         if not authors and data.get("authors"):
             for name in data["authors"]:
@@ -603,7 +603,7 @@ class ArticleConverter:
                     ))
                 else:
                     authors.append(StandardAuthor(last_name=name))
-        
+
         return StandardArticle(
             title=data.get("title", ""),
             pmid=data.get("pmid"),
@@ -626,30 +626,30 @@ class ArticleConverter:
             publication_types=data.get("publication_types", []),
             source="pubmed"
         )
-    
+
     @staticmethod
     def from_europe_pmc(data: Dict[str, Any]) -> StandardArticle:
         """從 Europe PMC 格式轉換"""
         article = ArticleConverter.from_pubmed(data)  # 基本結構相同
-        
+
         # 覆蓋來源
         article.source = "europe_pmc"
-        
+
         # 添加 Europe PMC 特有欄位
         article.citation_count = data.get("citation_count")
         article.is_open_access = data.get("is_open_access", False)
         article.has_fulltext = data.get("has_fulltext", False)
         article.has_pdf = data.get("has_pdf", False)
-        
+
         # 保存額外資料
         article.extra = {
             "epmc_source": data.get("source"),
             "pub_type": data.get("pub_type"),
             "epmc_id": data.get("_epmc_id")
         }
-        
+
         return article
-    
+
     @staticmethod
     def from_core(data: Dict[str, Any]) -> StandardArticle:
         """從 CORE 格式轉換"""
@@ -664,7 +664,7 @@ class ArticleConverter:
                     ))
                 else:
                     authors.append(StandardAuthor(last_name=name))
-        
+
         return StandardArticle(
             title=data.get("title", ""),
             pmid=data.get("pmid"),
@@ -750,7 +750,7 @@ zotero_item = article.to_zotero_item()
 async def batch_import_to_zotero(articles: List[StandardArticle]):
     """批次匯入文章到 Zotero"""
     zotero_items = [a.to_zotero_item() for a in articles]
-    
+
     # 調用 Zotero API
     response = await zotero_api.create_items(zotero_items)
     return response

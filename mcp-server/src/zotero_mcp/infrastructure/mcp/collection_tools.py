@@ -50,12 +50,14 @@ def register_collection_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
             results = []
             for col in collections:
                 data = col.get("data", col)
-                results.append({
-                    "key": col.get("key"),
-                    "name": data.get("name", ""),
-                    "parentKey": data.get("parentCollection"),
-                    "itemCount": data.get("numItems", 0),
-                })
+                results.append(
+                    {
+                        "key": col.get("key"),
+                        "name": data.get("name", ""),
+                        "parentKey": data.get("parentCollection"),
+                        "itemCount": data.get("numItems", 0),
+                    }
+                )
             return {
                 "count": len(results),
                 "collections": results,
@@ -119,13 +121,15 @@ def register_collection_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
                 data = item.get("data", item)
                 if data.get("itemType") == "attachment":
                     continue
-                results.append({
-                    "key": item.get("key"),
-                    "title": data.get("title", ""),
-                    "itemType": data.get("itemType", ""),
-                    "date": data.get("date", ""),
-                    "creators": _format_creators(data.get("creators", [])),
-                })
+                results.append(
+                    {
+                        "key": item.get("key"),
+                        "title": data.get("title", ""),
+                        "itemType": data.get("itemType", ""),
+                        "date": data.get("date", ""),
+                        "creators": _format_creators(data.get("creators", [])),
+                    }
+                )
             return {
                 "collection_key": collection_key,
                 "count": len(results),
@@ -232,4 +236,6 @@ def register_collection_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
         except (ZoteroConnectionError, ZoteroAPIError) as e:
             return {"found": False, "error": str(e)}
 
-    logger.info("Collection tools registered (list_collections, get_collection, get_collection_items, get_collection_tree, find_collection)")
+    logger.info(
+        "Collection tools registered (list_collections, get_collection, get_collection_items, get_collection_tree, find_collection)"
+    )

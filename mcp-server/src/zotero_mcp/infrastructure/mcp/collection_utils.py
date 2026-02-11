@@ -11,9 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def format_collection_options(
-    collections: list[dict], suggestions: list[dict] | None = None
-) -> tuple[str, dict[str, int]]:
+def format_collection_options(collections: list[dict], suggestions: list[dict] | None = None) -> tuple[str, dict[str, int]]:
     """
     Format collections as numbered options for user selection.
 
@@ -112,9 +110,7 @@ def num_to_collection_key(num_str: str, key_to_num: dict[str, int]) -> str | Non
         return None
 
 
-async def get_formatted_collections(
-    zotero_client, item: dict | None = None
-) -> tuple[list[dict], str, dict[str, int]]:
+async def get_formatted_collections(zotero_client, item: dict | None = None) -> tuple[list[dict], str, dict[str, int]]:
     """
     Get all collections formatted for selection.
 

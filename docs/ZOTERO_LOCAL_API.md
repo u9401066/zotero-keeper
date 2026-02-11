@@ -405,7 +405,7 @@ GET /api/users/0/collections/{key}/items
 
 **問題**: 當文獻已存在 Zotero 時，無法透過 Local API 將它加入新的 collection。
 
-**原因**: 
+**原因**:
 - Connector API 的 `saveItems` 只能在新建時指定 collection
 - Local API 不支援 PATCH/PUT
 
@@ -545,7 +545,7 @@ API 只接受 **Key**，不接受 Name。需要先查詢 collection 列表來取
    class ZoteroClient(Protocol):
        def get_items(self) -> list[dict]: ...
        def add_to_collection(self, item_key: str, collection_key: str) -> bool: ...
-   
+
    class LocalZoteroClient(ZoteroClient): ...  # 現有實作
    class WebZoteroClient(ZoteroClient): ...    # 新增，使用 pyzotero
    ```

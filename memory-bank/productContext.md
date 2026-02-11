@@ -8,7 +8,7 @@
 - **Runtime**: Python 3.11+
 - **Package Manager**: uv (recommended), pip
 - **Framework**: FastMCP
-- **Libraries**: 
+- **Libraries**:
   - biopython (NCBI Entrez)
   - httpx (async HTTP)
   - pyzotero-local (Zotero API)

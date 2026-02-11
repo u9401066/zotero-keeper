@@ -89,7 +89,7 @@ zotero-mcp-server (Linux/macOS)
 - 首次啟動自動下載 embedded Python
 
 ### 階段 2: 提供 standalone 版本
-- 為需要離線安裝的使用者提供 
+- 為需要離線安裝的使用者提供
 - 包含完整 Python 環境
 
 ---
@@ -128,7 +128,7 @@ bundled/
 async function ensureEnvironment() {
     const envPath = context.globalStorageUri.fsPath;
     const pythonPath = path.join(envPath, 'python', getPythonBinary());
-    
+
     if (!fs.existsSync(pythonPath)) {
         // Show progress
         await vscode.window.withProgress({
@@ -139,15 +139,15 @@ async function ensureEnvironment() {
             // Download Python
             progress.report({ message: "Downloading Python..." });
             await downloadPython(envPath);
-            
+
             // Install packages
             progress.report({ message: "Installing packages..." });
             await installPackages(pythonPath);
-            
+
             progress.report({ message: "Ready!" });
         });
     }
-    
+
     return pythonPath;
 }
 ```

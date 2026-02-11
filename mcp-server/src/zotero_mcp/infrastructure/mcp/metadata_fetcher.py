@@ -16,9 +16,7 @@ import re
 logger = logging.getLogger(__name__)
 
 
-async def fetch_metadata_from_pmid(
-    pmid: str, include_citation_metrics: bool = True
-) -> dict | None:
+async def fetch_metadata_from_pmid(pmid: str, include_citation_metrics: bool = True) -> dict | None:
     """
     Fetch complete article metadata from PubMed using PMID.
 
@@ -44,9 +42,7 @@ async def fetch_metadata_from_pmid(
             if include_citation_metrics:
                 enrich_articles_with_metrics([article], [pmid])
                 if article.get("relative_citation_ratio"):
-                    logger.info(
-                        f"✅ RCR {article['relative_citation_ratio']:.2f} for PMID {pmid}"
-                    )
+                    logger.info(f"✅ RCR {article['relative_citation_ratio']:.2f} for PMID {pmid}")
 
             zotero_item = pubmed_to_zotero_item(article)
             logger.info(f"Fetched complete metadata from PMID {pmid}")
@@ -194,9 +190,7 @@ async def auto_fetch_and_merge(
     if auto_fetch:
         # Try PMID first (more reliable for academic articles)
         if pmid:
-            fetched_metadata = await fetch_metadata_from_pmid(
-                pmid, include_citation_metrics=include_citation_metrics
-            )
+            fetched_metadata = await fetch_metadata_from_pmid(pmid, include_citation_metrics=include_citation_metrics)
             if fetched_metadata:
                 metadata_source = "pmid"
 

@@ -1,20 +1,23 @@
 """Check MCP SDK capabilities"""
+
 from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP("test")
 
 print("=== FastMCP Methods ===")
 for attr in dir(mcp):
-    if not attr.startswith('_'):
+    if not attr.startswith("_"):
         print(f"  {attr}")
 
 print("\n=== Check for elicitation ===")
 import mcp
+
 print(f"MCP package dir: {dir(mcp)}")
 
 # Check if elicitation is supported
 try:
-    from mcp.types import ElicitationRequest
+    from mcp.types import ElicitationRequest  # noqa: F401
+
     print("✅ ElicitationRequest found!")
 except ImportError as e:
     print(f"❌ ElicitationRequest not found: {e}")

@@ -1,6 +1,6 @@
 /**
  * Python Environment Manager
- * 
+ *
  * Handles Python detection, version checking, and package installation.
  */
 
@@ -44,7 +44,7 @@ export class PythonEnvironment {
         // 1. Check user-configured path first
         const config = vscode.workspace.getConfiguration('zoteroMcp');
         const configuredPath = config.get<string>('pythonPath');
-        
+
         if (configuredPath && await this.validatePython(configuredPath)) {
             this.pythonPath = configuredPath;
             this.log(`Using configured Python: ${configuredPath}`);
@@ -147,15 +147,15 @@ export class PythonEnvironment {
                 const major = parseInt(match[1]);
                 const minor = parseInt(match[2]);
 
-                const isValid = major > MIN_PYTHON_VERSION[0] || 
+                const isValid = major > MIN_PYTHON_VERSION[0] ||
                     (major === MIN_PYTHON_VERSION[0] && minor >= MIN_PYTHON_VERSION[1]);
-                
+
                 if (isValid) {
                     this.log(`Python ${major}.${minor} found at ${pythonPath}`);
                 } else {
                     this.log(`Python ${major}.${minor} too old (need ${MIN_PYTHON_VERSION.join('.')}+)`);
                 }
-                
+
                 resolve(isValid);
             });
         });
@@ -185,7 +185,7 @@ export class PythonEnvironment {
      */
     private async createVirtualEnvironment(): Promise<string | null> {
         const venvDir = path.join(this.context.globalStorageUri.fsPath, 'venv');
-        const pythonInVenv = process.platform === 'win32' 
+        const pythonInVenv = process.platform === 'win32'
             ? path.join(venvDir, 'Scripts', 'python.exe')
             : path.join(venvDir, 'bin', 'python');
 
@@ -195,9 +195,9 @@ export class PythonEnvironment {
         }
 
         // Find system Python to create venv
-        const systemPython = await this.resolvePythonCommand('python3') || 
+        const systemPython = await this.resolvePythonCommand('python3') ||
                             await this.resolvePythonCommand('python');
-        
+
         if (!systemPython) {
             return null;
         }
@@ -272,7 +272,7 @@ export class PythonEnvironment {
         this.log('Installing required packages...');
 
         const packages = REQUIRED_PACKAGES.map(p => p.pipName).join(' ');
-        
+
         // Use uv for package installation (required)
         const uvPath = this.getUvPath();
         if (!uvPath) {
@@ -285,17 +285,17 @@ export class PythonEnvironment {
 
         return new Promise((resolve) => {
             this.log(`Running: ${cmd}`);
-            
+
             const proc = cp.exec(cmd, { maxBuffer: 10 * 1024 * 1024 });
-            
+
             proc.stdout?.on('data', (data: string) => {
                 this.outputChannel.append(data);
             });
-            
+
             proc.stderr?.on('data', (data: string) => {
                 this.outputChannel.append(data);
             });
-            
+
             proc.on('close', (code) => {
                 if (code === 0) {
                     this.log('✅ Packages installed successfully');

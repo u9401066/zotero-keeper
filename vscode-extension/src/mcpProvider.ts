@@ -1,13 +1,14 @@
 /**
  * MCP Server Definition Provider
- * 
+ *
  * Provides Zotero Keeper and PubMed Search MCP servers to VS Code.
  */
 
 import * as vscode from 'vscode';
+import { execSync } from 'child_process';
 
 export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvider<vscode.McpStdioServerDefinition> {
-    
+
     private _onDidChangeMcpServerDefinitions = new vscode.EventEmitter<void>();
     readonly onDidChangeMcpServerDefinitions = this._onDidChangeMcpServerDefinitions.event;
 
@@ -23,6 +24,23 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
     setPythonPath(pythonPath: string): void {
         this.pythonPath = pythonPath;
         this.refresh();
+    }
+
+    /**
+     * Get git user.email as fallback for NCBI email.
+     * NCBI policy requires an email for API usage, but most users already
+     * have it configured in git - no need to ask them to set it again.
+     */
+    private getGitEmail(): string {
+        try {
+            return execSync('git config user.email', {
+                encoding: 'utf-8',
+                stdio: 'pipe',
+                timeout: 5000
+            }).trim();
+        } catch {
+            return '';
+        }
     }
 
     /**
@@ -68,10 +86,12 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
             const httpsProxy = config.get<string>('httpsProxy', '');
             const openUrlResolver = config.get<string>('openUrlResolver', '');
             const openUrlPreset = config.get<string>('openUrlPreset', '');
-            
+
             const env: Record<string, string> = {};
-            if (ncbiEmail) {
-                env['NCBI_EMAIL'] = ncbiEmail;
+            // Auto-detect email: user setting > git config user.email
+            const effectiveEmail = ncbiEmail || this.getGitEmail();
+            if (effectiveEmail) {
+                env['NCBI_EMAIL'] = effectiveEmail;
             }
             if (ncbiApiKey) {
                 env['NCBI_API_KEY'] = ncbiApiKey;

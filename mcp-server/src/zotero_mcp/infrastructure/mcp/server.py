@@ -104,14 +104,14 @@ class ZoteroKeeperServer:
         if is_search_tools_available():
             logger.info("PubMed integration enabled (search_pubmed_exclude_owned, check_articles_owned)")
         else:
-            logger.info("PubMed integration disabled (install with: pip install 'zotero-keeper[pubmed]')")
+            logger.info("PubMed integration disabled (install with: uv pip install 'zotero-keeper[pubmed]')")
 
         # Register PubMed tools if available
         if is_pubmed_available():
             register_pubmed_tools(self._mcp, self._zotero)
             logger.info("PubMed import enabled (import_ris_to_zotero, import_from_pmids)")
         else:
-            logger.info("PubMed integration disabled (install with: pip install 'zotero-keeper[pubmed]')")
+            logger.info("PubMed integration disabled (install with: uv pip install 'zotero-keeper[pubmed]')")
 
         # Register Batch Import tools
         if is_batch_import_available():
@@ -127,7 +127,6 @@ class ZoteroKeeperServer:
         # Register Unified Import tool (single entry point for all imports)
         register_unified_import_tools(self._mcp, self._zotero)
         logger.info("Unified import enabled (import_articles) ⭐ One tool for all sources!")
-
 
     def _register_connection_tool(self):
         """Register connection check tool"""
@@ -195,6 +194,7 @@ mcp = property(lambda self: get_server().mcp)
 # =============================================================================
 # Entry Point
 # =============================================================================
+
 
 def main():
     """Run the MCP server"""

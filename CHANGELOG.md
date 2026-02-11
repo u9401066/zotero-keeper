@@ -300,7 +300,7 @@ batch_import_from_pubmed(
 
 ### 🐛 Bug Fix: batch_import_from_pubmed collection support
 
-Fixed a critical bug where `collection_key` parameter in `batch_import_from_pubmed` 
+Fixed a critical bug where `collection_key` parameter in `batch_import_from_pubmed`
 was not actually adding items to the specified collection.
 
 ### Fixed
@@ -309,7 +309,7 @@ was not actually adding items to the specified collection.
   - Added `collection_keys` parameter to `map_pubmed_to_zotero()` mapper
   - Items now include `collections` field in Zotero item schema
   - Removed "not yet implemented" placeholder code
-  
+
 ### Technical Details
 
 - Modified files:

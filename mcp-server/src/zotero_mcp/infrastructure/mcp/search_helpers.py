@@ -76,11 +76,7 @@ async def get_owned_identifiers(zotero_client, limit: int = 500) -> dict[str, se
             if title:
                 owned["titles"].add(normalize_title(title))
 
-        logger.info(
-            f"Loaded {len(owned['dois'])} DOIs, "
-            f"{len(owned['pmids'])} PMIDs, "
-            f"{len(owned['titles'])} titles from Zotero"
-        )
+        logger.info(f"Loaded {len(owned['dois'])} DOIs, " f"{len(owned['pmids'])} PMIDs, " f"{len(owned['titles'])} titles from Zotero")
 
     except Exception as e:
         logger.error(f"Failed to load owned items: {e}")
@@ -133,9 +129,7 @@ def format_search_results(results: list[dict], show_owned: bool = False) -> str:
 
         # Format authors
         if authors:
-            author_str = (
-                f"{authors[0]} et al." if len(authors) > 3 else ", ".join(authors)
-            )
+            author_str = f"{authors[0]} et al." if len(authors) > 3 else ", ".join(authors)
         else:
             author_str = "Unknown"
 

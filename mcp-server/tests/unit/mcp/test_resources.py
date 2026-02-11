@@ -16,13 +16,13 @@ from zotero_mcp.infrastructure.mcp.resources import (
 
 class TestFormatCreatorsShort:
     """Tests for _format_creators_short function."""
-    
+
     def test_single_creator(self):
         """Test formatting single creator."""
         creators = [{"firstName": "John", "lastName": "Smith"}]
         result = _format_creators_short(creators)
         assert "John Smith" in result
-    
+
     def test_multiple_creators(self):
         """Test formatting multiple creators."""
         creators = [
@@ -32,7 +32,7 @@ class TestFormatCreatorsShort:
         result = _format_creators_short(creators)
         assert "John Smith" in result
         assert "Jane Doe" in result
-    
+
     def test_more_than_three_creators(self):
         """Test et al. for more than 3 creators."""
         creators = [
@@ -43,12 +43,12 @@ class TestFormatCreatorsShort:
         ]
         result = _format_creators_short(creators)
         assert "et al." in result
-    
+
     def test_empty_creators(self):
         """Test empty creators list."""
         result = _format_creators_short([])
         assert result == ""
-    
+
     def test_creator_with_name_only(self):
         """Test creator with only name field."""
         creators = [{"name": "Organization"}]
@@ -58,25 +58,27 @@ class TestFormatCreatorsShort:
 
 class TestRegisterResources:
     """Tests for register_resources function."""
-    
+
     def test_registers_resources(self):
         """Test that resources are registered."""
         mock_mcp = MagicMock()
         mock_client = MagicMock()
-        
+
         def resource_decorator(uri):
             def wrapper(func):
                 return func
+
             return wrapper
+
         mock_mcp.resource = resource_decorator
-        
+
         # Should complete without error
         register_resources(mock_mcp, mock_client)
 
 
 class TestCollectionsResource:
     """Tests for collections resources."""
-    
+
     @pytest.mark.asyncio
     async def test_list_collections_resource(self):
         """Test listing collections resource."""
@@ -85,23 +87,26 @@ class TestCollectionsResource:
         mock_client.get_collections.return_value = [
             {"key": "ABC123", "data": {"name": "Test Collection", "numItems": 10}},
         ]
-        
+
         registered_funcs = {}
+
         def resource_decorator(uri):
             def wrapper(func):
                 registered_funcs[uri] = func
                 return func
+
             return wrapper
+
         mock_mcp.resource = resource_decorator
-        
+
         register_resources(mock_mcp, mock_client)
-        
+
         if "zotero://collections" in registered_funcs:
             result = await registered_funcs["zotero://collections"]()
             data = json.loads(result)
             assert data["type"] == "collections"
             assert data["count"] == 1
-    
+
     @pytest.mark.asyncio
     async def test_get_collection_tree_resource(self):
         """Test collection tree resource."""
@@ -110,17 +115,20 @@ class TestCollectionsResource:
         mock_client.get_collection_tree.return_value = [
             {"key": "ABC", "name": "Root", "children": []},
         ]
-        
+
         registered_funcs = {}
+
         def resource_decorator(uri):
             def wrapper(func):
                 registered_funcs[uri] = func
                 return func
+
             return wrapper
+
         mock_mcp.resource = resource_decorator
-        
+
         register_resources(mock_mcp, mock_client)
-        
+
         if "zotero://collections/tree" in registered_funcs:
             result = await registered_funcs["zotero://collections/tree"]()
             data = json.loads(result)
@@ -129,7 +137,7 @@ class TestCollectionsResource:
 
 class TestItemsResource:
     """Tests for items resources."""
-    
+
     @pytest.mark.asyncio
     async def test_list_items_resource(self):
         """Test listing items resource."""
@@ -146,22 +154,25 @@ class TestItemsResource:
                 },
             },
         ]
-        
+
         registered_funcs = {}
+
         def resource_decorator(uri):
             def wrapper(func):
                 registered_funcs[uri] = func
                 return func
+
             return wrapper
+
         mock_mcp.resource = resource_decorator
-        
+
         register_resources(mock_mcp, mock_client)
-        
+
         if "zotero://items" in registered_funcs:
             result = await registered_funcs["zotero://items"]()
             data = json.loads(result)
             assert data["type"] == "items"
-    
+
     @pytest.mark.asyncio
     async def test_get_item_resource(self):
         """Test getting single item resource."""
@@ -176,17 +187,20 @@ class TestItemsResource:
                 "abstractNote": "Test abstract",
             },
         }
-        
+
         registered_funcs = {}
+
         def resource_decorator(uri):
             def wrapper(func):
                 registered_funcs[uri] = func
                 return func
+
             return wrapper
+
         mock_mcp.resource = resource_decorator
-        
+
         register_resources(mock_mcp, mock_client)
-        
+
         if "zotero://items/{key}" in registered_funcs:
             result = await registered_funcs["zotero://items/{key}"]("ITEM1")
             data = json.loads(result)
@@ -196,7 +210,7 @@ class TestItemsResource:
 
 class TestTagsResource:
     """Tests for tags resource."""
-    
+
     @pytest.mark.asyncio
     async def test_list_tags_resource(self):
         """Test listing tags resource."""
@@ -206,17 +220,20 @@ class TestTagsResource:
             {"tag": "machine learning"},
             {"tag": "AI"},
         ]
-        
+
         registered_funcs = {}
+
         def resource_decorator(uri):
             def wrapper(func):
                 registered_funcs[uri] = func
                 return func
+
             return wrapper
+
         mock_mcp.resource = resource_decorator
-        
+
         register_resources(mock_mcp, mock_client)
-        
+
         if "zotero://tags" in registered_funcs:
             result = await registered_funcs["zotero://tags"]()
             data = json.loads(result)
@@ -226,7 +243,7 @@ class TestTagsResource:
 
 class TestSearchesResource:
     """Tests for saved searches resource."""
-    
+
     @pytest.mark.asyncio
     async def test_list_searches_resource(self):
         """Test listing saved searches resource."""
@@ -235,17 +252,20 @@ class TestSearchesResource:
         mock_client.get_searches.return_value = [
             {"key": "SEARCH1", "data": {"name": "Missing PDF", "conditions": []}},
         ]
-        
+
         registered_funcs = {}
+
         def resource_decorator(uri):
             def wrapper(func):
                 registered_funcs[uri] = func
                 return func
+
             return wrapper
+
         mock_mcp.resource = resource_decorator
-        
+
         register_resources(mock_mcp, mock_client)
-        
+
         if "zotero://searches" in registered_funcs:
             result = await registered_funcs["zotero://searches"]()
             data = json.loads(result)
@@ -254,7 +274,7 @@ class TestSearchesResource:
 
 class TestSchemaResource:
     """Tests for schema resource."""
-    
+
     @pytest.mark.asyncio
     async def test_get_item_types_resource(self):
         """Test getting item types resource."""
@@ -264,17 +284,20 @@ class TestSchemaResource:
             {"itemType": "journalArticle"},
             {"itemType": "book"},
         ]
-        
+
         registered_funcs = {}
+
         def resource_decorator(uri):
             def wrapper(func):
                 registered_funcs[uri] = func
                 return func
+
             return wrapper
+
         mock_mcp.resource = resource_decorator
-        
+
         register_resources(mock_mcp, mock_client)
-        
+
         if "zotero://schema/item-types" in registered_funcs:
             result = await registered_funcs["zotero://schema/item-types"]()
             data = json.loads(result)
@@ -283,24 +306,27 @@ class TestSchemaResource:
 
 class TestResourceErrorHandling:
     """Tests for error handling in resources."""
-    
+
     @pytest.mark.asyncio
     async def test_handles_exception(self):
         """Test that exceptions are handled gracefully."""
         mock_mcp = MagicMock()
         mock_client = AsyncMock()
         mock_client.get_collections.side_effect = Exception("API Error")
-        
+
         registered_funcs = {}
+
         def resource_decorator(uri):
             def wrapper(func):
                 registered_funcs[uri] = func
                 return func
+
             return wrapper
+
         mock_mcp.resource = resource_decorator
-        
+
         register_resources(mock_mcp, mock_client)
-        
+
         if "zotero://collections" in registered_funcs:
             result = await registered_funcs["zotero://collections"]()
             data = json.loads(result)

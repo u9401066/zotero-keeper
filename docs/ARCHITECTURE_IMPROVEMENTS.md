@@ -130,7 +130,7 @@ PubMed Search → 標準化資料結構 → Zotero 批次匯入
 def import_from_ris(ris_file: str, collection_key: str = None) -> str:
     """
     從 RIS 檔案批次匯入 Zotero
-    
+
     Args:
         ris_file: RIS 檔案路徑 (或 "last" 使用最近匯出)
         collection_key: 目標 collection

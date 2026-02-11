@@ -12,12 +12,23 @@
 - Collection 管理
 - 書庫分析
 
-### 2. PubMed Search
+### 2. PubMed Search (v0.3.8)
 搜尋醫學文獻的工具，包括：
+- **`unified_search`** - 統一搜尋入口（支援多來源）
+- 預印本搜尋（arXiv、medRxiv、bioRxiv）
+- 同行審查篩選（`peer_reviewed_only`）
 - 文獻搜尋（支援 PICO 策略）
-- 引用分析
-- 全文連結取得
-- Session 管理
+- 引用分析與引用樹建構
+- 全文存取（Europe PMC、CORE）
+- NCBI 延伸（Gene、PubChem、ClinVar）
+- ICD ↔ MeSH 轉換
+- 研究時間軸與視覺化
+- 生物醫學圖片搜尋
+- Session 管理（搜尋結果快取）
+
+## NCBI Email
+- Extension 會自動偵測 `git config user.email` 作為 NCBI API email
+- 通常不需要手動設定 `zoteroMcp.ncbiEmail`
 
 ## 核心工作流程
 
@@ -25,6 +36,8 @@
 1. 使用 `parse_pico` 分析研究問題
 2. 使用 `generate_search_queries` 產生搜尋策略
 3. 使用 `unified_search` 搜尋多個來源（PubMed、Europe PMC、CORE 等）
+   - 需要預印本？加上 `include_preprints=true`
+   - 只要同行審查？加上 `peer_reviewed_only=true`
 4. 結果自動快取，用 `get_session_pmids` 取回
 
 ### 📥 匯入到 Zotero
@@ -38,6 +51,12 @@
 - 使用 `check_articles_owned` 檢查 PMID 是否已存在
 - 使用 `search_pubmed_exclude_owned` 直接搜尋未擁有的文獻
 - 使用 `get_cached_article` 取得快取的文章（避免重複 API 呼叫）
+
+### 🔬 進階功能
+- 使用 `build_citation_tree` 建構引用網路
+- 使用 `convert_icd_mesh` 轉換 ICD 和 MeSH
+- 使用 `build_research_timeline` 追蹤研究演進
+- 使用 `search_biomedical_images` 搜尋相關圖片
 
 ## 回應風格
 - 使用繁體中文

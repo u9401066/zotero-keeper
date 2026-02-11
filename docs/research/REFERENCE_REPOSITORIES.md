@@ -95,7 +95,7 @@ paper = scholarly.fill(paper)
 # 取得引用此論文的文章
 for citing_paper in scholarly.citedby(paper):
     print(citing_paper['bib']['title'])
-    
+
 # 取得作者的所有文章
 for pub in author['publications']:
     filled_pub = scholarly.fill(pub)
@@ -419,7 +419,7 @@ from metapub import FindIt
 
 class FulltextFinder:
     """整合 metapub FindIt 的全文發現器"""
-    
+
     def find_pdf_url(self, pmid: str) -> dict:
         """找出論文的 PDF 連結"""
         try:
@@ -476,12 +476,12 @@ from bioservices import REST, WSDL
 
 class MyService(REST):
     """自訂服務的基礎類別"""
-    
+
     _url = "https://api.example.com"
-    
+
     def __init__(self, verbose=False):
         super().__init__(name="MyService", url=self._url, verbose=verbose)
-    
+
     def search(self, query):
         return self.http_get(f"search?q={query}")
 ```
@@ -584,10 +584,10 @@ https://www.biorxiv.org/content/10.1101/2024.01.01.001.full/figure/F1.large.jpg
 async def get_article_figures(pmcid: str) -> dict:
     """
     從 PMC 全文取得論文圖片列表。
-    
+
     Args:
         pmcid: PMC ID (如 "PMC7096777")
-        
+
     Returns:
         {
             "figures": [
@@ -662,7 +662,7 @@ configuration.api_key['ClarivateApiKeyAuth'] = 'YOUR_API_KEY'
 
 with wos.ApiClient(configuration) as api_client:
     api = wos.DocumentsApi(api_client)
-    
+
     # 搜尋文獻
     result = api.documents_get(
         q='TS=machine learning AND PY=2024',
@@ -670,7 +670,7 @@ with wos.ApiClient(configuration) as api_client:
         limit=10,
         sort_field='TC+D'  # 按引用數降序
     )
-    
+
     # 取得單篇文獻
     doc = api.documents_uid_get(uid='WOS:000123456789')
 ```

@@ -48,17 +48,23 @@ def register_resources(mcp, zotero_client):
             result = []
             for col in collections:
                 data = col.get("data", col)
-                result.append({
-                    "key": col.get("key"),
-                    "name": data.get("name", ""),
-                    "parentKey": data.get("parentCollection"),
-                    "itemCount": data.get("numItems", 0),
-                })
-            return json.dumps({
-                "type": "collections",
-                "count": len(result),
-                "collections": result,
-            }, ensure_ascii=False, indent=2)
+                result.append(
+                    {
+                        "key": col.get("key"),
+                        "name": data.get("name", ""),
+                        "parentKey": data.get("parentCollection"),
+                        "itemCount": data.get("numItems", 0),
+                    }
+                )
+            return json.dumps(
+                {
+                    "type": "collections",
+                    "count": len(result),
+                    "collections": result,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
         except Exception as e:
             return json.dumps({"error": str(e)})
 
@@ -71,11 +77,15 @@ def register_resources(mcp, zotero_client):
         """
         try:
             tree = await zotero_client.get_collection_tree()
-            return json.dumps({
-                "type": "collection_tree",
-                "count": len(tree),
-                "tree": tree,
-            }, ensure_ascii=False, indent=2)
+            return json.dumps(
+                {
+                    "type": "collection_tree",
+                    "count": len(tree),
+                    "tree": tree,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
         except Exception as e:
             return json.dumps({"error": str(e)})
 
@@ -89,13 +99,17 @@ def register_resources(mcp, zotero_client):
         try:
             col = await zotero_client.get_collection(key)
             data = col.get("data", col)
-            return json.dumps({
-                "type": "collection",
-                "key": col.get("key"),
-                "name": data.get("name", ""),
-                "parentKey": data.get("parentCollection"),
-                "itemCount": data.get("numItems", 0),
-            }, ensure_ascii=False, indent=2)
+            return json.dumps(
+                {
+                    "type": "collection",
+                    "key": col.get("key"),
+                    "name": data.get("name", ""),
+                    "parentKey": data.get("parentCollection"),
+                    "itemCount": data.get("numItems", 0),
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
         except Exception as e:
             return json.dumps({"error": str(e), "key": key})
 
@@ -113,19 +127,25 @@ def register_resources(mcp, zotero_client):
                 data = item.get("data", item)
                 if data.get("itemType") == "attachment":
                     continue
-                result.append({
-                    "key": item.get("key"),
-                    "title": data.get("title", ""),
-                    "itemType": data.get("itemType", ""),
-                    "date": data.get("date", ""),
-                    "creators": _format_creators_short(data.get("creators", [])),
-                })
-            return json.dumps({
-                "type": "collection_items",
-                "collection_key": key,
-                "count": len(result),
-                "items": result,
-            }, ensure_ascii=False, indent=2)
+                result.append(
+                    {
+                        "key": item.get("key"),
+                        "title": data.get("title", ""),
+                        "itemType": data.get("itemType", ""),
+                        "date": data.get("date", ""),
+                        "creators": _format_creators_short(data.get("creators", [])),
+                    }
+                )
+            return json.dumps(
+                {
+                    "type": "collection_items",
+                    "collection_key": key,
+                    "count": len(result),
+                    "items": result,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
         except Exception as e:
             return json.dumps({"error": str(e), "collection_key": key})
 
@@ -145,18 +165,24 @@ def register_resources(mcp, zotero_client):
                 data = item.get("data", item)
                 if data.get("itemType") == "attachment":
                     continue
-                result.append({
-                    "key": item.get("key"),
-                    "title": data.get("title", ""),
-                    "itemType": data.get("itemType", ""),
-                    "date": data.get("date", ""),
-                    "creators": _format_creators_short(data.get("creators", [])),
-                })
-            return json.dumps({
-                "type": "items",
-                "count": len(result),
-                "items": result,
-            }, ensure_ascii=False, indent=2)
+                result.append(
+                    {
+                        "key": item.get("key"),
+                        "title": data.get("title", ""),
+                        "itemType": data.get("itemType", ""),
+                        "date": data.get("date", ""),
+                        "creators": _format_creators_short(data.get("creators", [])),
+                    }
+                )
+            return json.dumps(
+                {
+                    "type": "items",
+                    "count": len(result),
+                    "items": result,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
         except Exception as e:
             return json.dumps({"error": str(e)})
 
@@ -170,23 +196,27 @@ def register_resources(mcp, zotero_client):
         try:
             item = await zotero_client.get_item(key)
             data = item.get("data", item)
-            return json.dumps({
-                "type": "item",
-                "key": item.get("key"),
-                "itemType": data.get("itemType", ""),
-                "title": data.get("title", ""),
-                "creators": data.get("creators", []),
-                "date": data.get("date", ""),
-                "DOI": data.get("DOI", ""),
-                "url": data.get("url", ""),
-                "abstract": data.get("abstractNote", ""),
-                "publicationTitle": data.get("publicationTitle", ""),
-                "volume": data.get("volume", ""),
-                "issue": data.get("issue", ""),
-                "pages": data.get("pages", ""),
-                "tags": [t.get("tag", t) if isinstance(t, dict) else t for t in data.get("tags", [])],
-                "collections": data.get("collections", []),
-            }, ensure_ascii=False, indent=2)
+            return json.dumps(
+                {
+                    "type": "item",
+                    "key": item.get("key"),
+                    "itemType": data.get("itemType", ""),
+                    "title": data.get("title", ""),
+                    "creators": data.get("creators", []),
+                    "date": data.get("date", ""),
+                    "DOI": data.get("DOI", ""),
+                    "url": data.get("url", ""),
+                    "abstract": data.get("abstractNote", ""),
+                    "publicationTitle": data.get("publicationTitle", ""),
+                    "volume": data.get("volume", ""),
+                    "issue": data.get("issue", ""),
+                    "pages": data.get("pages", ""),
+                    "tags": [t.get("tag", t) if isinstance(t, dict) else t for t in data.get("tags", [])],
+                    "collections": data.get("collections", []),
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
         except Exception as e:
             return json.dumps({"error": str(e), "key": key})
 
@@ -202,11 +232,15 @@ def register_resources(mcp, zotero_client):
         try:
             tags = await zotero_client.get_tags()
             tag_list = [t.get("tag", str(t)) for t in tags]
-            return json.dumps({
-                "type": "tags",
-                "count": len(tag_list),
-                "tags": tag_list[:100],  # Limit to first 100
-            }, ensure_ascii=False, indent=2)
+            return json.dumps(
+                {
+                    "type": "tags",
+                    "count": len(tag_list),
+                    "tags": tag_list[:100],  # Limit to first 100
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
         except Exception as e:
             return json.dumps({"error": str(e)})
 
@@ -224,17 +258,23 @@ def register_resources(mcp, zotero_client):
             result = []
             for search in searches:
                 data = search.get("data", search)
-                result.append({
-                    "key": search.get("key"),
-                    "name": data.get("name", ""),
-                    "conditions": data.get("conditions", []),
-                })
-            return json.dumps({
-                "type": "saved_searches",
-                "count": len(result),
-                "note": "Use run_saved_search tool to execute these searches",
-                "searches": result,
-            }, ensure_ascii=False, indent=2)
+                result.append(
+                    {
+                        "key": search.get("key"),
+                        "name": data.get("name", ""),
+                        "conditions": data.get("conditions", []),
+                    }
+                )
+            return json.dumps(
+                {
+                    "type": "saved_searches",
+                    "count": len(result),
+                    "note": "Use run_saved_search tool to execute these searches",
+                    "searches": result,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
         except Exception as e:
             return json.dumps({"error": str(e)})
 
@@ -248,13 +288,17 @@ def register_resources(mcp, zotero_client):
         try:
             search = await zotero_client.get_search(key)
             data = search.get("data", search)
-            return json.dumps({
-                "type": "saved_search",
-                "key": search.get("key"),
-                "name": data.get("name", ""),
-                "conditions": data.get("conditions", []),
-                "hint": "Use run_saved_search tool to execute this search",
-            }, ensure_ascii=False, indent=2)
+            return json.dumps(
+                {
+                    "type": "saved_search",
+                    "key": search.get("key"),
+                    "name": data.get("name", ""),
+                    "conditions": data.get("conditions", []),
+                    "hint": "Use run_saved_search tool to execute this search",
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
         except Exception as e:
             return json.dumps({"error": str(e), "key": key})
 
@@ -269,11 +313,15 @@ def register_resources(mcp, zotero_client):
         """
         try:
             types = await zotero_client.get_item_types()
-            return json.dumps({
-                "type": "item_types",
-                "count": len(types),
-                "itemTypes": [t.get("itemType", str(t)) for t in types],
-            }, ensure_ascii=False, indent=2)
+            return json.dumps(
+                {
+                    "type": "item_types",
+                    "count": len(types),
+                    "itemTypes": [t.get("itemType", str(t)) for t in types],
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
         except Exception as e:
             return json.dumps({"error": str(e)})
 
@@ -283,6 +331,7 @@ def register_resources(mcp, zotero_client):
 # =============================================================================
 # Helper Functions
 # =============================================================================
+
 
 def _format_creators_short(creators: list[dict]) -> str:
     """Format creators list as short string"""

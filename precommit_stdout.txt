@@ -1,0 +1,430 @@
+[INFO] Installing environment for https://github.com/astral-sh/ruff-pre-commit.
+[INFO] Once installed this environment will be reused.
+[INFO] This may take a few minutes...
+[INFO] Installing environment for https://github.com/pre-commit/mirrors-mypy.
+[INFO] Once installed this environment will be reused.
+[INFO] This may take a few minutes...
+[INFO] Installing environment for https://github.com/Yelp/detect-secrets.
+[INFO] Once installed this environment will be reused.
+[INFO] This may take a few minutes...
+[INFO] Installing environment for local.
+[INFO] Once installed this environment will be reused.
+[INFO] This may take a few minutes...
+trim trailing whitespace.................................................Passed
+fix end of files.........................................................Failed
+- hook id: end-of-file-fixer
+- exit code: 1
+- files were modified by this hook
+
+Fixing docs/research/UNIFIED_SEARCH_RESEARCH.md
+Fixing vscode-extension/tests/test_results_round2.txt
+Fixing vscode-extension/tests/test_results_round1.txt
+Fixing mcp-server/tests/test.md
+
+check yaml...............................................................Passed
+check json...............................................................Passed
+check toml...............................................................Passed
+check for merge conflicts................................................Passed
+check for added large files..............................................Passed
+mixed line ending........................................................Failed
+- hook id: mixed-line-ending
+- exit code: 1
+- files were modified by this hook
+
+.claude/skills/code-reviewer/SKILL.md: fixed mixed line endings
+.claude/skills/test-generator/SKILL.md: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/zotero_client/client_read.py: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/validation.py: fixed mixed line endings
+mcp-server/scripts/test_connection.py: fixed mixed line endings
+vscode-extension/src/uvPythonManager.ts: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/zotero_client/client_write.py: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/zotero_client/__init__.py: fixed mixed line endings
+README.zh-TW.md: fixed mixed line endings
+docs/research/UNIFIED_SEARCH_RESEARCH.md: fixed mixed line endings
+vscode-extension/LICENSE: fixed mixed line endings
+mcp-server/tests/__init__.py: fixed mixed line endings
+mcp-server/tests/unit/infrastructure/test_config.py: fixed mixed line endings
+mcp-server/tests/unit/mcp/test_server.py: fixed mixed line endings
+CONTRIBUTING.md: fixed mixed line endings
+vscode-extension/resources/walkthrough/zotero.md: fixed mixed line endings
+mcp-server/tests/unit/infrastructure/test_pubmed_mapper.py: fixed mixed line endings
+mcp-server/tests/unit/mcp/test_resources.py: fixed mixed line endings
+.github/ISSUE_TEMPLATE/feature_request.md: fixed mixed line endings
+docs/research/ZOTERO_ECOSYSTEM_RESEARCH.md: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/pubmed_tools.py: fixed mixed line endings
+mcp-server/tests/unit/domain/test_collection.py: fixed mixed line endings
+docs/research/AGENT_MCP_COLLABORATION.md: fixed mixed line endings
+vscode-extension/resources/skills/copilot-instructions.md: fixed mixed line endings
+mcp-server/uv.lock: fixed mixed line endings
+.github/workflows/release.yml: fixed mixed line endings
+vscode-extension/package.json: fixed mixed line endings
+docs/research/anesthesia_ai_2024_2025.ris: fixed mixed line endings
+mcp-server/tests/unit/infrastructure/__init__.py: fixed mixed line endings
+ROADMAP.md: fixed mixed line endings
+ARCHITECTURE.md: fixed mixed line endings
+mcp-server/requirements-dev.txt: fixed mixed line endings
+.github/bylaws/git-workflow.md: fixed mixed line endings
+mcp-server/pyproject.toml: fixed mixed line endings
+mcp-server/tests/list_tools.py: fixed mixed line endings
+.claude/skills/memory-updater/SKILL.md: fixed mixed line endings
+vscode-extension/tests/test_results_round2.txt: fixed mixed line endings
+.github/bylaws/python-environment.md: fixed mixed line endings
+.github/workflows/publish-extension.yml: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/batch_tools.py: fixed mixed line endings
+vscode-extension/README.md: fixed mixed line endings
+memory-bank/systemPatterns.md: fixed mixed line endings
+docs/design/BATCH_IMPORT_DESIGN.md: fixed mixed line endings
+memory-bank/progress.md: fixed mixed line endings
+.github/ISSUE_TEMPLATE/bug_report.md: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/collection_tools.py: fixed mixed line endings
+vscode-extension/.eslintrc.json: fixed mixed line endings
+vscode-extension/src/mcpProvider.ts: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/basic_read_tools.py: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/search_tools.py: fixed mixed line endings
+mcp-server/scripts/test_mcp_tools.py: fixed mixed line endings
+.claude/skills/roadmap-updater/SKILL.md: fixed mixed line endings
+.claude/skills/memory-checkpoint/SKILL.md: fixed mixed line endings
+mcp-server/README.md: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/collection_utils.py: fixed mixed line endings
+mcp-server/tests/unit/domain/__init__.py: fixed mixed line endings
+mcp-server/tests/unit/__init__.py: fixed mixed line endings
+.claude/skills/code-refactor/SKILL.md: fixed mixed line endings
+mcp-server/tests/unit/mcp/test_search_tools.py: fixed mixed line endings
+.github/workflows/ci.yml: fixed mixed line endings
+mcp-server/tests/unit/domain/test_batch_result.py: fixed mixed line endings
+CODE_OF_CONDUCT.md: fixed mixed line endings
+memory-bank/decisionLog.md: fixed mixed line endings
+.gitmodules: fixed mixed line endings
+.github/CODEOWNERS: fixed mixed line endings
+mcp-server/tests/check_mcp.py: fixed mixed line endings
+vscode-extension/docs/SELF_CONTAINED.md: fixed mixed line endings
+vscode-extension/CHANGELOG.md: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mappers/pubmed_mapper.py: fixed mixed line endings
+mcp-server/src/zotero_mcp/__main__.py: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/unified_import_tools.py: fixed mixed line endings
+.github/debug.chatmode.md: fixed mixed line endings
+mcp-server/src/zotero_mcp/domain/entities/batch_result.py: fixed mixed line endings
+LICENSE: fixed mixed line endings
+mcp-server/test_mapper_debug.py: fixed mixed line endings
+mcp-server/tests/unit/mcp/test_batch_tools.py: fixed mixed line endings
+.editorconfig: fixed mixed line endings
+vscode-extension/src/statusBar.ts: fixed mixed line endings
+mcp-server/tests/unit/mcp/test_interactive_tools.py: fixed mixed line endings
+SECURITY.md: fixed mixed line endings
+memory-bank/projectBrief.md: fixed mixed line endings
+CONSTITUTION.md: fixed mixed line endings
+mcp-server/.env.example: fixed mixed line endings
+memory-bank/productContext.md: fixed mixed line endings
+mcp-server/src/zotero_mcp/main.py: fixed mixed line endings
+vscode-extension/tsconfig.json: fixed mixed line endings
+vscode-extension/src/extension.ts: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/config.py: fixed mixed line endings
+mcp-server/tests/unit/mcp/test_pubmed_tools.py: fixed mixed line endings
+.github/bylaws/ddd-architecture.md: fixed mixed line endings
+mcp-server/tests/unit/mcp/__init__.py: fixed mixed line endings
+.claude/skills/git-doc-updater/SKILL.md: fixed mixed line endings
+CHANGELOG.md: fixed mixed line endings
+docs/research/BJA_2025-12_Top5_Abstracts.md: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/smart_tools.py: fixed mixed line endings
+mcp-server/src/zotero_mcp/domain/entities/collection.py: fixed mixed line endings
+vscode-extension/resources/walkthrough/ncbi.md: fixed mixed line endings
+docs/ZOTERO_LOCAL_API.md: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/zotero_client/client.py: fixed mixed line endings
+vscode-extension/docs/DESIGN.md: fixed mixed line endings
+.claude/skills/ddd-architect/SKILL.md: fixed mixed line endings
+vscode-extension/resources/walkthrough/oneclick.md: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/search_helpers.py: fixed mixed line endings
+vscode-extension/package-lock.json: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/analytics_tools.py: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/__init__.py: fixed mixed line endings
+README.md: fixed mixed line endings
+mcp-server/src/zotero_mcp/domain/entities/reference.py: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/metadata_fetcher.py: fixed mixed line endings
+.github/zotero-research-workflow.md: fixed mixed line endings
+vscode-extension/src/pythonEnvironment.ts: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mappers/__init__.py: fixed mixed line endings
+.claude/skills/project-init/SKILL.md: fixed mixed line endings
+docs/ARCHITECTURE_IMPROVEMENTS.md: fixed mixed line endings
+docs/design/PUBMED_MCP_OUTPUT_FORMAT_ANALYSIS.md: fixed mixed line endings
+.claude/skills/readme-i18n/SKILL.md: fixed mixed line endings
+vscode-extension/resources/walkthrough/ready.md: fixed mixed line endings
+.github/copilot-instructions.md: fixed mixed line endings
+memory-bank/techContext.md: fixed mixed line endings
+.claude/skills/changelog-updater/SKILL.md: fixed mixed line endings
+mcp-server/tests/unit/domain/test_reference.py: fixed mixed line endings
+vscode-extension/resources/skills/research-workflow.md: fixed mixed line endings
+vscode-extension/.vscodeignore: fixed mixed line endings
+.github/bylaws/memory-bank.md: fixed mixed line endings
+mcp-server/tests/unit/mcp/test_saved_search_tools.py: fixed mixed line endings
+mcp-server/src/zotero_mcp/domain/__init__.py: fixed mixed line endings
+.github/code.chatmode.md: fixed mixed line endings
+.env.example: fixed mixed line endings
+.claude/skills/git-precommit/SKILL.md: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/__init__.py: fixed mixed line endings
+.claude/skills/uv-enforcer/SKILL.md: fixed mixed line endings
+vscode-extension/.gitignore: fixed mixed line endings
+.claude/skills/readme-updater/SKILL.md: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/pubmed/__init__.py: fixed mixed line endings
+mcp-server/src/zotero_mcp/__init__.py: fixed mixed line endings
+memory-bank/architect.md: fixed mixed line endings
+mcp-server/tests/conftest.py: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/resources.py: fixed mixed line endings
+vscode-extension/resources/walkthrough/python.md: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/zotero_client/client_base.py: fixed mixed line endings
+.github/FUNDING.yml: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/server.py: fixed mixed line endings
+mcp-server/tests/integration/__init__.py: fixed mixed line endings
+mcp-server/src/zotero_mcp/domain/entities/__init__.py: fixed mixed line endings
+.github/architect.chatmode.md: fixed mixed line endings
+vscode-extension/tests/test_results_round1.txt: fixed mixed line endings
+mcp-server/tests/unit/infrastructure/test_client.py: fixed mixed line endings
+.github/PULL_REQUEST_TEMPLATE.md: fixed mixed line endings
+.github/ask.chatmode.md: fixed mixed line endings
+mcp-server/tests/test.md: fixed mixed line endings
+.gitignore: fixed mixed line endings
+vscode-extension/docs/PUBLISH.md: fixed mixed line endings
+mcp-server/requirements.txt: fixed mixed line endings
+memory-bank/activeContext.md: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/saved_search_tools.py: fixed mixed line endings
+mcp-server/src/zotero_mcp/infrastructure/mcp/interactive_tools.py: fixed mixed line endings
+docs/research/REFERENCE_REPOSITORIES.md: fixed mixed line endings
+vscode-extension/tests/test_python_env_edge_cases.py: fixed mixed line endings
+mcp-server/tests/unit/mcp/test_smart_tools.py: fixed mixed line endings
+vscode-extension/resources/walkthrough/packages.md: fixed mixed line endings
+
+don't commit to branch...................................................Passed
+ruff.....................................................................Failed
+- hook id: ruff
+- exit code: 1
+- files were modified by this hook
+
+mcp-server\src\zotero_mcp\infrastructure\mcp\unified_import_tools.py:528:21: F841 Local variable `existing_pmids` is assigned to but never used
+    |
+526 |                     # We'll use DOI and PMID for duplicate detection if available
+527 |                     existing_dois = set()
+528 |                     existing_pmids = set()
+    |                     ^^^^^^^^^^^^^^ F841
+529 |
+530 |                     # Search for potential duplicates
+    |
+    = help: Remove assignment to unused variable `existing_pmids`
+
+mcp-server\tests\check_mcp.py:17:27: F401 `mcp.types.ElicitationRequest` imported but unused; consider using `importlib.util.find_spec` to test for availability
+   |
+15 | # Check if elicitation is supported
+16 | try:
+17 |     from mcp.types import ElicitationRequest
+   |                           ^^^^^^^^^^^^^^^^^^ F401
+18 |     print("âœ… ElicitationRequest found!")
+19 | except ImportError as e:
+   |
+   = help: Remove unused import: `mcp.types.ElicitationRequest`
+
+mcp-server\tests\unit\infrastructure\test_client.py:72:9: F841 Local variable `http_client` is assigned to but never used
+   |
+70 |         client = ZoteroClient(config=remote_config)
+71 |
+72 |         http_client = await client._get_client()
+   |         ^^^^^^^^^^^ F841
+73 |
+74 |         # Check that Host header was set
+   |
+   = help: Remove assignment to unused variable `http_client`
+
+mcp-server\tests\unit\mcp\test_pubmed_tools.py:314:9: F841 Local variable `ris_text` is assigned to but never used
+    |
+312 |         register_pubmed_tools(mock_mcp, mock_client)
+313 |
+314 |         ris_text = """TY  - JOUR
+    |         ^^^^^^^^ F841
+315 | TI  - Test Article
+316 | AU  - Smith, John
+    |
+    = help: Remove assignment to unused variable `ris_text`
+
+mcp-server\tests\unit\mcp\test_server.py:126:9: F841 Local variable `result` is assigned to but never used
+    |
+124 |         server_module._server = None
+125 |
+126 |         result = server_module.get_server()
+    |         ^^^^^^ F841
+127 |
+128 |         mock_server_class.assert_called_once()
+    |
+    = help: Remove assignment to unused variable `result`
+
+mcp-server\tests\unit\mcp\test_server.py:181:9: F841 Local variable `server` is assigned to but never used
+    |
+179 |         mock_mcp_instance.tool = tool_decorator
+180 |
+181 |         server = ZoteroKeeperServer()
+    |         ^^^^^^ F841
+182 |
+183 |         # Verify check_connection was registered
+    |
+    = help: Remove assignment to unused variable `server`
+
+mcp-server\tests\unit\mcp\test_server.py:214:9: F841 Local variable `server` is assigned to but never used
+    |
+212 |         mock_mcp_instance.tool = tool_decorator
+213 |
+214 |         server = ZoteroKeeperServer()
+    |         ^^^^^^ F841
+215 |
+216 |         assert "search_items" in registered_tools
+    |
+    = help: Remove assignment to unused variable `server`
+
+mcp-server\tests\unit\mcp\test_server.py:246:9: F841 Local variable `server` is assigned to but never used
+    |
+244 |         mock_mcp_instance.tool = tool_decorator
+245 |
+246 |         server = ZoteroKeeperServer()
+    |         ^^^^^^ F841
+247 |
+248 |         assert "list_collections" in registered_tools
+    |
+    = help: Remove assignment to unused variable `server`
+
+mcp-server\tests\unit\mcp\test_server.py:278:9: F841 Local variable `server` is assigned to but never used
+    |
+276 |         mock_mcp_instance.tool = tool_decorator
+277 |
+278 |         server = ZoteroKeeperServer()
+    |         ^^^^^^ F841
+279 |
+280 |         expected_tools = [
+    |
+    = help: Remove assignment to unused variable `server`
+
+vscode-extension\tests\test_python_env_edge_cases.py:555:9: F841 Local variable `result` is assigned to but never used
+    |
+553 |         # Reinstall (what upgradePackages does)
+554 |         log("Reinstalling with --upgrade...")
+555 |         result = run_cmd(
+    |         ^^^^^^ F841
+556 |             [self.uv, 'pip', 'install', '--upgrade', '--python', python, 'zotero-keeper>=1.11.0'],
+557 |             env={'VIRTUAL_ENV': str(venv_dir)},
+    |
+    = help: Remove assignment to unused variable `result`
+
+vscode-extension\tests\test_python_env_edge_cases.py:642:17: F841 Local variable `all_ok` is assigned to but never used
+    |
+640 |             if 'OUTDATED' in ver_check_result:
+641 |                 issues.append(f"Fixed check still reports OUTDATED for {pkg_name}: {ver_check_result}")
+642 |                 all_ok = False
+    |                 ^^^^^^ F841
+643 |
+644 |         if issues:
+    |
+    = help: Remove assignment to unused variable `all_ok`
+
+vscode-extension\tests\test_python_env_edge_cases.py:957:9: F841 Local variable `result` is assigned to but never used
+    |
+955 |         # Install pubmed-search-mcp with --upgrade (what the extension does)
+956 |         log("Installing pubmed-search-mcp with --upgrade...")
+957 |         result = run_cmd(
+    |         ^^^^^^ F841
+958 |             [self.uv, 'pip', 'install', '--upgrade', '--python', python, 'pubmed-search-mcp>=0.3.8'],
+959 |             env={'VIRTUAL_ENV': str(venv_dir)},
+    |
+    = help: Remove assignment to unused variable `result`
+
+Found 31 errors (19 fixed, 12 remaining).
+No fixes available (11 hidden fixes can be enabled with the `--unsafe-fixes` option).
+
+ruff-format..............................................................Failed
+- hook id: ruff-format
+- files were modified by this hook
+
+46 files reformatted, 16 files left unchanged
+
+mypy.....................................................................Failed
+- hook id: mypy
+- exit code: 1
+
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_read.py:72: error: "ZoteroReadMixin" has no attribute "_request"  [attr-defined]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_read.py:76: error: "ZoteroReadMixin" has no attribute "_request"  [attr-defined]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_read.py:80: error: "ZoteroReadMixin" has no attribute "_request"  [attr-defined]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_read.py:94: error: "ZoteroReadMixin" has no attribute "_request"  [attr-defined]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_read.py:98: error: "ZoteroReadMixin" has no attribute "_request"  [attr-defined]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_read.py:106: error: "ZoteroReadMixin" has no attribute "_request"  [attr-defined]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_read.py:139: error: Invalid index type "Any | None" for "dict[str, dict[Any, Any]]"; expected type "str"  [index]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_read.py:161: error: "ZoteroReadMixin" has no attribute "_request"  [attr-defined]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_read.py:167: error: "ZoteroReadMixin" has no attribute "_request"  [attr-defined]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_read.py:171: error: "ZoteroReadMixin" has no attribute "_request"  [attr-defined]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_read.py:179: error: "ZoteroReadMixin" has no attribute "_request"  [attr-defined]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_read.py:202: error: "ZoteroReadMixin" has no attribute "_request"  [attr-defined]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_read.py:206: error: "ZoteroReadMixin" has no attribute "_request"  [attr-defined]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_read.py:214: error: "ZoteroReadMixin" has no attribute "_request"  [attr-defined]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_write.py:46: error: "ZoteroWriteMixin" has no attribute "_request"  [attr-defined]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_write.py:107: error: "ZoteroWriteMixin" has no attribute "_request"  [attr-defined]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_write.py:148: error: "ZoteroWriteMixin" has no attribute "get_items"; maybe "export_items"?  [attr-defined]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_write.py:184: error: Dict entry 2 has incompatible type "str": "dict[str, str]"; expected "str": "set[str]"  [dict-item]
+mcp-server\src\zotero_mcp\infrastructure\zotero_client\client_write.py:185: error: Dict entry 3 has incompatible type "str": "dict[str, str]"; expected "str": "set[str]"  [dict-item]
+mcp-server\src\zotero_mcp\infrastructure\mcp\unified_import_tools.py:493: error: Item "None" of "list[dict[str, Any]] | None" has no attribute "__iter__" (not iterable)  [union-attr]
+mcp-server\src\zotero_mcp\infrastructure\mcp\unified_import_tools.py:531: error: Need type annotation for "existing_pmids" (hint: "existing_pmids: set[<type>] = ...")  [var-annotated]
+mcp-server\src\zotero_mcp\infrastructure\mcp\smart_tools.py:71: error: Need type annotation for "suggestions" (hint: "suggestions: list[<type>] = ...")  [var-annotated]
+mcp-server\src\zotero_mcp\infrastructure\mcp\smart_tools.py:160: error: Need type annotation for "duplicates" (hint: "duplicates: list[<type>] = ...")  [var-annotated]
+mcp-server\src\zotero_mcp\infrastructure\mcp\search_helpers.py:51: error: Need type annotation for "owned"  [var-annotated]
+mcp-server\src\zotero_mcp\infrastructure\mcp\metadata_fetcher.py:96: error: Incompatible types in assignment (expression has type "list[dict[str, Any]]", target has type "str")  [assignment]
+mcp-server\src\zotero_mcp\infrastructure\mcp\batch_tools.py:292: error: Need type annotation for "existing_identifiers"  [var-annotated]
+mcp-server\src\zotero_mcp\infrastructure\mcp\analytics_tools.py:196: error: Need type annotation for "no_collection" (hint: "no_collection: list[<type>] = ...")  [var-annotated]
+mcp-server\src\zotero_mcp\infrastructure\mcp\analytics_tools.py:197: error: Need type annotation for "no_tags" (hint: "no_tags: list[<type>] = ...")  [var-annotated]
+mcp-server\src\zotero_mcp\infrastructure\mcp\analytics_tools.py:198: error: Need type annotation for "completely_orphan" (hint: "completely_orphan: list[<type>] = ...")  [var-annotated]
+mcp-server\src\zotero_mcp\infrastructure\mcp\analytics_tools.py:260: error: Incompatible types in assignment (expression has type "list[dict[str, Any]]", target has type "dict[str, int]")  [assignment]
+mcp-server\src\zotero_mcp\infrastructure\mcp\analytics_tools.py:262: error: Incompatible types in assignment (expression has type "list[dict[str, Any]]", target has type "dict[str, int]")  [assignment]
+mcp-server\src\zotero_mcp\infrastructure\mcp\analytics_tools.py:263: error: Incompatible types in assignment (expression has type "list[dict[str, Any]]", target has type "dict[str, int]")  [assignment]
+mcp-server\src\zotero_mcp\infrastructure\mcp\analytics_tools.py:268: error: Incompatible types in assignment (expression has type "str", target has type "dict[str, int]")  [assignment]
+Found 33 errors in 8 files (checked 35 source files)
+
+Detect secrets...........................................................Passed
+Ban pip usage (uv only)..................................................Failed
+- hook id: no-pip-usage
+- exit code: 1
+
+ERROR: pip usage detected (use uv instead):
+  vscode-extension/src/uvPythonManager.ts:483: const packagingCmd = `"${this.uvPath}" pip install --python "${this.pythonBinary}" packaging`;
+  vscode-extension/src/uvPythonManager.ts:501: const cmd = `"${this.uvPath}" pip install --upgrade --python "${this.pythonBinary}" "${pkg}"`;
+ERROR: pip usage detected (use uv instead):
+  mcp-server/src/zotero_mcp/infrastructure/mcp/pubmed_tools.py:31: logger.info("Install with: pip install 'zotero-keeper[pubmed]'")
+  mcp-server/src/zotero_mcp/infrastructure/mcp/pubmed_tools.py:401: Requires: pip install "zotero-keeper[pubmed]"
+  mcp-server/src/zotero_mcp/infrastructure/mcp/pubmed_tools.py:440: "hint": "Install with: pip install 'zotero-keeper[pubmed]'",
+  mcp-server/src/zotero_mcp/infrastructure/mcp/pubmed_tools.py:715: "hint": "Install with: pip install 'zotero-keeper[pubmed]'",
+ERROR: pip usage detected (use uv instead):
+  .github/workflows/release.yml:28: pip install build
+ERROR: pip usage detected (use uv instead):
+  .github/bylaws/python-environment.md:15: 2. **¸T¤î¨Ï¥Î pip**¡A¥]¬A `pip install`¡B`pip freeze`¡B`pip list` µ¥«ü¥O
+  .github/bylaws/python-environment.md:21: - ¤å¥ó¤¤¤£±o¥X²{ `pip install` «ü¥O
+  .github/bylaws/python-environment.md:247: | ¦w¸Ë®M¥ó | `uv add package` | `pip install package` |
+  .github/bylaws/python-environment.md:248: | ¦w¸Ë¶}µo¨Ì¿à | `uv add --dev package` | `pip install package` |
+  .github/bylaws/python-environment.md:249: | ¦w¸Ë¥þ³¡ | `uv sync` | `pip install -r requirements.txt` |
+  mcp-server/src/zotero_mcp/infrastructure/mcp/batch_tools.py:51: "  2. Production: pip install pubmed-search-mcp"
+ERROR: pip usage detected (use uv instead):
+  vscode-extension/src/pythonEnvironment.ts:283: const cmd = `"${uvPath}" pip install --upgrade --python "${this.pythonPath}" ${packages}`;
+ERROR: pip usage detected (use uv instead):
+  .claude/skills/uv-enforcer/SKILL.md:13: - ¥X²{ `pip install`¡B`pip freeze`¡B`pip list` µ¥ pip «ü¥O
+  .claude/skills/uv-enforcer/SKILL.md:25: | `pip install package` | `uv add package` ©Î `uv pip install package` |
+  .claude/skills/uv-enforcer/SKILL.md:26: | `pip install -r requirements.txt` | `uv pip install -r requirements.txt` ©Î `uv sync` |
+  .claude/skills/uv-enforcer/SKILL.md:27: | `pip install -e .` | `uv pip install -e .` |
+  .claude/skills/uv-enforcer/SKILL.md:28: | `pip install -e ".[dev]"` | `uv pip install -e ".[dev]"` |
+  .claude/skills/uv-enforcer/SKILL.md:33: | `python -m pip` | `uv pip` |
+  .claude/skills/uv-enforcer/SKILL.md:64: grep -rn "pip install\|pip freeze\|pip list\|pip show\|pip uninstall" \
+  .claude/skills/uv-enforcer/SKILL.md:77: - [ ] ©Ò¦³ `pip install` ¡÷ `uv pip install` ©Î `uv add`
+  .claude/skills/uv-enforcer/SKILL.md:89: cmd = `"${pythonPath}" -m pip install --upgrade ${packages}`;
+  .claude/skills/uv-enforcer/SKILL.md:97: cmd = `"${uvPath}" pip install --upgrade --python "${pythonPath}" ${packages}`;
+  .claude/skills/uv-enforcer/SKILL.md:117: pip install zotero-keeper
+  mcp-server/src/zotero_mcp/infrastructure/pubmed/__init__.py:124: "  2. Production: pip install pubmed-search-mcp"
+  mcp-server/src/zotero_mcp/infrastructure/pubmed/__init__.py:144: "Install via 'pip install pubmed-search-mcp' or "
+ERROR: pip usage detected (use uv instead):
+  mcp-server/src/zotero_mcp/infrastructure/mcp/server.py:107: logger.info("PubMed integration disabled (install with: pip install 'zotero-keeper[pubmed]')")
+  mcp-server/src/zotero_mcp/infrastructure/mcp/server.py:114: logger.info("PubMed integration disabled (install with: pip install 'zotero-keeper[pubmed]')")
+ERROR: pip usage detected (use uv instead):
+  docs/research/REFERENCE_REPOSITORIES.md:26: - **¦w¸Ë**: `pip install scholarly`
+  docs/research/REFERENCE_REPOSITORIES.md:121: - **¦w¸Ë**: `pip install habanero`
+  docs/research/REFERENCE_REPOSITORIES.md:213: - **¦w¸Ë**: `pip install pyalex`
+  docs/research/REFERENCE_REPOSITORIES.md:319: - **¦w¸Ë**: `pip install metapub`
+  docs/research/REFERENCE_REPOSITORIES.md:446: - **¦w¸Ë**: `pip install bioservices`
+  docs/research/REFERENCE_REPOSITORIES.md:650: - **¦w¸Ë**: `pip install git+https://github.com/clarivate/wosstarter_python_client.git`
+
+Check version sync (package.json == statusBar.ts)........................Passed

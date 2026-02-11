@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 @dataclass
 class ZoteroConfig:
     """Zotero connection configuration"""
+
     host: str = field(default_factory=lambda: os.getenv("ZOTERO_HOST", "localhost"))
     port: int = field(default_factory=lambda: int(os.getenv("ZOTERO_PORT", "23119")))
     timeout: float = field(default_factory=lambda: float(os.getenv("ZOTERO_TIMEOUT", "30")))
@@ -33,6 +34,7 @@ class ZoteroConfig:
 @dataclass
 class McpServerConfig:
     """MCP Server configuration"""
+
     name: str = "Zotero Keeper"
     version: str = "1.2.0"
 
