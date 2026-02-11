@@ -4,22 +4,24 @@
 
 ---
 
-## 第 1 條：套件管理器優先順序
+## 第 1 條：套件管理器規範
 
 ```
-uv > pip-tools > pip
+uv（唯一允許的套件管理器）
 ```
 
-### 1.1 uv 優先原則
-1. **新專案必須使用 uv** 作為套件管理器
-2. uv 速度比 pip 快 10-100 倍
-3. 原生支援 lockfile 和虛擬環境
+### 1.1 uv 唯一原則
+1. **所有專案必須使用 uv** 作為套件管理器
+2. **禁止使用 pip**，包括 `pip install`、`pip freeze`、`pip list` 等指令
+3. uv 速度比 pip 快 10-100 倍
+4. 原生支援 lockfile 和虛擬環境
 
-### 1.2 降級條件
-僅在以下情況可使用 pip：
-- 舊專案遷移成本過高
-- CI 環境不支援 uv
-- 特殊依賴衝突
+### 1.2 不允許降級
+**任何情況下都不允許使用 pip**：
+- 文件中不得出現 `pip install` 指令
+- CI/CD 中必須使用 `uv` 取代 `pip`
+- 程式碼中不得有 `pip` fallback 邏輯
+- 若環境不支援 uv，應先安裝 uv 而非降級使用 pip
 
 ---
 
@@ -33,7 +35,7 @@ source .venv/bin/activate  # Linux/macOS
 .venv\Scripts\activate     # Windows
 
 # ❌ 禁止全域安裝
-pip install package  # 在系統 Python 中
+uv pip install package  # 在系統 Python 中（禁止！）
 ```
 
 ### 2.2 虛擬環境位置
@@ -219,7 +221,7 @@ uvx ruff@0.1.0 check .
 ## 第 6 條：常見問題
 
 ### Q1: uv 和 pip 可以混用嗎？
-A: 不建議。混用可能導致依賴衝突。若必須，先用 `uv pip` 取代 `pip`。
+A: **不可以**。本專案已全面禁止使用 pip。所有套件管理必須使用 `uv` 指令。
 
 ### Q2: 為什麼不用 Poetry/Pipenv？
 A: uv 比 Poetry 快 10-100 倍，且與 pip 完全相容。Poetry 的 resolver 較慢。

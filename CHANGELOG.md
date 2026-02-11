@@ -101,7 +101,7 @@ This release marks the official PyPI publication and VS Code extension improveme
 
 - **PyPI Publication** ⭐:
   - `zotero-keeper` now available on PyPI
-  - `pip install zotero-keeper` works out of the box
+  - `uv pip install zotero-keeper` works out of the box
   - All dependencies properly declared
 
 ### VS Code Extension v0.3.1

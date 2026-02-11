@@ -18,10 +18,11 @@
 - Field tags
 
 ### 步驟 3: 執行搜尋
-使用 `search_literature` 搜尋 PubMed，注意：
+使用 `unified_search` 搜尋多個來源（PubMed、Europe PMC、CORE 等），注意：
 - 結果會自動快取到 Session
 - 使用 `get_session_pmids` 取得已搜尋的 PMID
 - **不要重複搜尋相同的關鍵字**
+- `unified_search` 會自動合併去重多個來源的結果
 
 ### 步驟 4: 過濾已有文獻
 使用 `search_pubmed_exclude_owned` 直接搜尋「尚未擁有」的新文獻
@@ -107,7 +108,7 @@
 Copilot 動作:
 1. parse_pico: 分析研究問題
 2. generate_search_queries: 產生搜尋策略
-3. search_literature: 執行搜尋
+3. unified_search: 執行多來源搜尋
 4. [回報結果，詢問是否要存入 Zotero]
 5. list_collections: 取得 Collection 列表
 6. [詢問用戶要存入哪個 Collection]

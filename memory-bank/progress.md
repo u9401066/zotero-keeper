@@ -1,6 +1,20 @@
-# Progress (Updated: 2026-01-27)
+# Progress (Updated: 2026-02-11)
 
 ## Done
+
+### v0.5.12 - 關鍵 Bug 修復 + PubMed MCP v0.3.8 (2026-02-11)
+- ✅ **CRITICAL**: 修復版本檢查無限升級迴圈（`__version__` → `importlib.metadata`）
+- ✅ 修復損壞 Python binary 導致 WinError 216 崩潰
+- ✅ 強化 `checkReadySync()` 和 `needsUpgradeOnly()` 實際驗證 binary
+- ✅ PubMed Search MCP 更新至 v0.3.8（`search_literature` → `unified_search`）
+- ✅ 全面移除 pip，只使用 uv
+- ✅ 新增 pytest-xdist 多核測試
+- ✅ 新增 uv-enforcer skill
+- ✅ 20 項 edge case 測試全部通過（兩輪驗證）
+- ✅ Copilot instructions 和 research-workflow 更新
+
+### v0.5.11 - PubMed Search MCP v0.2.7 (2026-01-28)
+- ✅ 版本同步更新
 
 ### v0.5.9 - VS Code Extension 修復 (2026-01-27)
 - ✅ 修復 uv venv 沒有 pip 的問題

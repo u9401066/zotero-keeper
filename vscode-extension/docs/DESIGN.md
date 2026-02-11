@@ -80,8 +80,8 @@ async function ensureDependencies(): Promise<void> {
         );
         
         if (choice === 'Yes') {
-            // 3. Install via pip
-            await runTerminal(`pip install zotero-keeper[all] pubmed-search-mcp[mcp]`);
+            // 3. Install via uv
+            await runTerminal(`uv pip install zotero-keeper[all] pubmed-search-mcp[mcp]`);
         }
     }
 }

@@ -296,7 +296,7 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
 
 - ✅ **PyPI Publication**
   - ✅ `zotero-keeper` available on PyPI
-  - ✅ `pip install zotero-keeper` works out of the box
+  - ✅ `uv pip install zotero-keeper` works out of the box
   - ✅ All dependencies properly declared
 
 - ✅ **VS Code Extension v0.3.1** ⭐
@@ -335,7 +335,7 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
 > ⚠️ **目標用戶**：研究人員，不是開發者。需要簡化安裝流程。
 
 - 📋 **安裝簡化**
-  - 📋 PyPI Package: `pip install zotero-keeper-mcp`
+  - 📋 PyPI Package: `uv pip install zotero-keeper-mcp`
   - 📋 Standalone Executable (PyInstaller)
   - 📋 Auto-configure MCP settings
 
@@ -462,7 +462,7 @@ insiders_link = f"vscode-insiders:mcp/install?{quote(json.dumps(config))}"
 
 **或手動安裝:**
 \`\`\`bash
-pip install zotero-keeper-mcp
+uv pip install zotero-keeper-mcp
 \`\`\`
 ```
 

@@ -57,6 +57,7 @@ We love PRs! Here's how to contribute code:
 ### Prerequisites
 
 - Python 3.11+
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) (required package manager)
 - Zotero 7.0+ (for testing)
 - Git
 
@@ -67,14 +68,14 @@ We love PRs! Here's how to contribute code:
 git clone https://github.com/YOUR_USERNAME/zotero-keeper.git
 cd zotero-keeper
 
-# 2. Create virtual environment
+# 2. Create virtual environment with uv
 cd mcp-server
-python -m venv .venv
+uv venv
 source .venv/bin/activate  # Linux/Mac
 # or: .venv\Scripts\activate  # Windows
 
 # 3. Install in development mode
-pip install -e ".[dev]"
+uv pip install -e ".[dev]"
 
 # 4. Copy environment config
 cp ../.env.example .env

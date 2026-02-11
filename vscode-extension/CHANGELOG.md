@@ -2,6 +2,43 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.12] - 2026-02-11
+
+### Fixed
+
+- **CRITICAL: 版本檢查無限升級迴圈** ⭐
+  - `verifyReady()` 使用 `__version__` 屬性判斷套件版本，但 `__version__` 與 PyPI 版本不一致
+  - zotero-keeper: `__version__`=1.6.1 vs installed=1.11.0
+  - pubmed-search-mcp: `__version__`=0.3.6 vs installed=0.3.8
+  - **每次啟動都誤判套件過舊，觸發無效升級**
+  - 修復：改用 `importlib.metadata.version()` 取得正確的安裝版本
+
+- **損壞 Python binary 導致崩潰**
+  - 損壞的 `python.exe` 導致 WinError 216 未處理崩潰
+  - 修復：`verifyReady()` 加入 try/catch，偵測損壞後自動刪除 venv 並重建
+
+- **`checkReadySync()` 過度樂觀**
+  - 只檢查檔案是否存在，不驗證 binary 是否可執行
+  - 修復：實際執行 `python --version` 驗證完整性
+
+- **`needsUpgradeOnly()` 過度樂觀**
+  - 同上，只做 `fs.existsSync()` 檢查
+  - 修復：加入 binary 可執行驗證
+
+### Updated
+
+- **PubMed Search MCP v0.3.8** - 重大版本更新
+  - `search_literature` → `unified_search` 統一搜尋入口
+  - 支援多來源搜尋（PubMed、Europe PMC、CORE 等）
+  - 自動合併去重搜尋結果
+- **Copilot Instructions** - 更新 `search_literature` → `unified_search`
+- **Research Workflow Guide** - 更新搜尋步驟與工具名稱
+
+### Changed
+
+- 全面移除 pip，只使用 uv 進行套件管理
+- `pythonEnvironment.ts` 移除 pip fallback，改用 uv-only
+
 ## [0.5.11] - 2026-01-28
 
 ### Updated

@@ -9,10 +9,10 @@ The extension needs two Python packages:
 
 ## Automatic Installation
 
-When you activate the extension, it will automatically install these packages using `pip`:
+When you activate the extension, it will automatically install these packages using `uv`:
 
 ```bash
-pip install zotero-keeper[all] pubmed-search-mcp[mcp]
+uv pip install zotero-keeper[all] pubmed-search-mcp[mcp]
 ```
 
 ## Manual Installation
@@ -20,7 +20,7 @@ pip install zotero-keeper[all] pubmed-search-mcp[mcp]
 If automatic installation fails, run in your terminal:
 
 ```bash
-pip install zotero-keeper[all] pubmed-search-mcp[mcp]
+uv pip install zotero-keeper[all] pubmed-search-mcp[mcp]
 ```
 
 ## Virtual Environment
@@ -28,9 +28,9 @@ pip install zotero-keeper[all] pubmed-search-mcp[mcp]
 We recommend using a virtual environment to avoid conflicts:
 
 ```bash
-python -m venv ~/.zotero-mcp-venv
+uv venv ~/.zotero-mcp-venv
 source ~/.zotero-mcp-venv/bin/activate  # Linux/macOS
-pip install zotero-keeper[all] pubmed-search-mcp[mcp]
+uv pip install zotero-keeper[all] pubmed-search-mcp[mcp]
 ```
 
 Then set `zoteroMcp.pythonPath` to `~/.zotero-mcp-venv/bin/python`.

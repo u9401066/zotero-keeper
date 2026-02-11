@@ -2,51 +2,27 @@
 
 > 🎯 目前工作焦點與下一步行動
 
-## 當前狀態: VS Code Extension v0.5.9 發布完成 ✅
+## 當前狀態: VS Code Extension v0.5.12 準備發布 🚀
 
-### 已完成 (2026-01-27)
+### 已完成 (2026-02-11)
 
-1. ✅ 更新 pubmed-search-mcp 子模組到 v0.2.5
-   - 修復 server 啟動 bug (session manager 變數名稱)
+1. ✅ PubMed Search MCP 更新至 v0.3.8
+   - uvPythonManager.ts, mcpProvider.ts, pyproject.toml 版本更新
+   - Instructions 更新: `search_literature` → `unified_search`
 
-2. ✅ VS Code Extension v0.5.9 發布
-   - 修復 uv venv 沒有 pip 的問題
-   - pythonEnvironment.ts 自動偵測並使用 uv pip
-   - 套件大小優化：601 檔案→20 檔案
+2. ✅ pytest-xdist 多核測試
+   - 強制使用 `-n auto --dist worksteal`
 
-3. ✅ 安全性修復
-   - 修復 4 個 npm 安全漏洞
-   - 新增 32-bit Windows 支援
+3. ✅ pip → uv 全面遷移
+   - 16+ 檔案中移除所有 pip 參考
+   - pythonEnvironment.ts 移除 pip fallback
+   - 新增 uv-enforcer skill
 
-4. ⚠️ Marketplace 驗證問題
-   - v0.5.5-v0.5.8 都遇到 "Repository signing failed"
-   - 這是 Microsoft 端的暫時性問題
-   - v0.5.9 等待驗證中
-
----
-
-## 待解決問題
-
-### Marketplace Repository Signing Failed
-- 原因：Microsoft 端暫時性問題
-- 狀態：等待驗證或聯繫 VSMarketplace@microsoft.com
-- 公開版本仍是 v0.5.2
-
-### Open VSX 未發布
-- 需要 Open VSX token（不是 Azure DevOps PAT）
-- 取得方式：https://open-vsx.org/ → Settings → Access Tokens
-
----
-
-## VSIX 手動安裝
-
-```powershell
-# 清除舊資料
-Remove-Item -Recurse -Force "$env:APPDATA\Code - Insiders\User\globalStorage\u9401066.vscode-zotero-mcp"
-
-# 安裝 VSIX
-code-insiders --install-extension vscode-zotero-mcp-0.5.9.vsix
-```
+4. ✅ **CRITICAL Bug Fixes (uvPythonManager.ts)**
+   - 修復版本檢查無限升級迴圈（改用 `importlib.metadata.version()`）
+   - 修復損壞 Python binary 崩潰（auto-detect + auto-repair）
+   - 強化 `checkReadySync()` 和 `needsUpgradeOnly()` 驗證
+   - 20/20 edge case tests 通過（兩輪驗證）
 
 ---
 
@@ -54,11 +30,10 @@ code-insiders --install-extension vscode-zotero-mcp-0.5.9.vsix
 
 | 元件 | 版本 | 狀態 |
 |------|------|------|
-| pubmed-search-mcp | v0.2.5 | PyPI ✅ |
+| pubmed-search-mcp | v0.3.8 | PyPI ✅ |
 | zotero-keeper MCP | v1.11.0 | PyPI ✅ |
-| VS Code Extension | v0.5.9 | Marketplace 驗證中 |
-| 公開可用版本 | v0.5.2 | Marketplace ✅ |
+| VS Code Extension | v0.5.12 | 準備發布 🚀 |
 
 ---
-*Updated: 2026-01-27*
-*工作模式: Code*
+*Updated: 2026-02-11*
+*工作模式: Release*

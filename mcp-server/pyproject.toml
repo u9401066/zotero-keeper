@@ -38,16 +38,17 @@ Changelog = "https://github.com/u9401066/zotero-keeper/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 pubmed = [
-    "pubmed-search-mcp>=0.1.8",  # PubMed integration
+    "pubmed-search-mcp>=0.3.8",  # PubMed integration
 ]
 all = [
-    "pubmed-search-mcp>=0.1.8",
+    "pubmed-search-mcp>=0.3.8",
     "rapidfuzz>=3.0.0",
 ]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.3.0",
     "ruff>=0.1.0",
     "mypy>=1.0.0",
 ]
@@ -77,8 +78,10 @@ strict = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+addopts = "-n auto --dist worksteal"
 
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
+    "pytest-xdist>=3.3.0",
 ]

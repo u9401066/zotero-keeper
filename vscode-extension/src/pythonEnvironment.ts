@@ -273,19 +273,15 @@ export class PythonEnvironment {
 
         const packages = REQUIRED_PACKAGES.map(p => p.pipName).join(' ');
         
-        // Try to use uv if available (handles uv-created venvs without pip)
+        // Use uv for package installation (required)
         const uvPath = this.getUvPath();
-        let cmd: string;
-        
-        if (uvPath) {
-            // Use uv pip install
-            cmd = `"${uvPath}" pip install --upgrade --python "${this.pythonPath}" ${packages}`;
-            this.log('Using uv for package installation');
-        } else {
-            // Fallback to system pip
-            cmd = `"${this.pythonPath}" -m pip install --upgrade ${packages}`;
-            this.log('Using system pip for package installation');
+        if (!uvPath) {
+            this.log('❌ uv not found. Please install uv: https://docs.astral.sh/uv/getting-started/installation/');
+            return false;
         }
+
+        const cmd = `"${uvPath}" pip install --upgrade --python "${this.pythonPath}" ${packages}`;
+        this.log('Using uv for package installation');
 
         return new Promise((resolve) => {
             this.log(`Running: ${cmd}`);

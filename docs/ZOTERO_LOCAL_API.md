@@ -260,8 +260,6 @@ requests.patch(f"{BASE_URL}/items/{key}", json=data, headers=headers)
 ### 安裝
 
 ```bash
-pip install pyzotero
-# 或
 uv add pyzotero
 ```
 

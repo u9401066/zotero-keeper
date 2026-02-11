@@ -71,9 +71,7 @@ No more manually searching, copying, pasting. Just tell your AI in natural langu
 git clone https://github.com/u9401066/zotero-keeper.git
 cd zotero-keeper/mcp-server
 
-# Install
-pip install -e .
-# or with uv:
+# Install with uv (required)
 uv pip install -e .
 
 # Test (make sure Zotero is running)
@@ -337,7 +335,7 @@ You: Done! 25 new papers in Zotero
 ### Install PubMed Integration
 
 ```bash
-pip install -e ".[pubmed]"
+uv pip install -e ".[pubmed]"
 ```
 
 ---
@@ -508,13 +506,13 @@ We understand that **most users are researchers, not developers**. Installing Py
 | Current (v1.x) | Future (v2.x) |
 |----------------|---------------|
 | Requires Python 3.11+ | Standalone executable (.exe / .app) |
-| Requires `pip install` | One-click installer |
+| Requires `uv pip install` | One-click installer |
 | Manual `mcp.json` config | Auto-configure VS Code/Claude |
 | Developer-friendly | Researcher-friendly |
 
 ### 📦 Planned Distribution Methods
 
-1. **PyPI Package**: `pip install zotero-keeper-mcp` (simplified)
+1. **PyPI Package**: `uv pip install zotero-keeper-mcp` (simplified)
 2. **Standalone Executable**: PyInstaller bundle (no Python needed)
 3. **VS Code Extension**: One-click install from Marketplace (planned)
 4. **Homebrew/Chocolatey**: Package manager support
@@ -541,7 +539,7 @@ We understand that **most users are researchers, not developers**. Installing Py
 ### PubMed features missing?
 
 ```bash
-pip install -e ".[pubmed]"
+uv pip install -e ".[pubmed]"
 ```
 
 ---

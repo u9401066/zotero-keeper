@@ -102,7 +102,7 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
                     this.pythonPath,
                     ['-m', 'pubmed_search.presentation.mcp_server'],
                     env,
-                    '0.2.5'
+                    '0.3.8'
                 )
             );
         }

@@ -24,7 +24,7 @@
 ### 🔍 搜尋新文獻
 1. 使用 `parse_pico` 分析研究問題
 2. 使用 `generate_search_queries` 產生搜尋策略
-3. 使用 `search_literature` 搜尋 PubMed
+3. 使用 `unified_search` 搜尋多個來源（PubMed、Europe PMC、CORE 等）
 4. 結果自動快取，用 `get_session_pmids` 取回
 
 ### 📥 匯入到 Zotero

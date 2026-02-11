@@ -19,9 +19,10 @@
 - DAL (Data Access Layer) 必須獨立
 - 參見子法：`.github/bylaws/ddd-architecture.md`
 
-## Python 環境（uv 優先）
-- 新專案必須使用 uv 管理套件
+## Python 環境（uv 唯一）
+- **所有專案必須使用 uv 管理套件**（禁止使用 pip）
 - 必須建立虛擬環境（禁止全域安裝）
+- 文件、程式碼、CI 中一律使用 uv 指令
 - 參見子法：`.github/bylaws/python-environment.md`
 
 ## Memory Bank 同步

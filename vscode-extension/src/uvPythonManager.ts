@@ -59,14 +59,14 @@ const PYTHON_VERSION = '3.12';
 // Python 3.12+ required for new core module features
 const REQUIRED_PACKAGES = [
     'zotero-keeper>=1.11.0',
-    'pubmed-search-mcp>=0.2.5',
+    'pubmed-search-mcp>=0.3.8',
 ];
 
 // Minimum versions for verification (extracted from REQUIRED_PACKAGES)
 // IMPORTANT: Keep in sync with REQUIRED_PACKAGES above!
 const MIN_VERSIONS: Record<string, string> = {
     'zotero_mcp': '1.11.0',
-    'pubmed_search': '0.2.4',
+    'pubmed_search': '0.3.8',
 };
 
 // Timeout constants (in milliseconds)
@@ -120,7 +120,19 @@ export class UvPythonManager {
     }
 
     private checkReadySync(): boolean {
-        return fs.existsSync(this.pythonBinary) && fs.existsSync(this.uvPath);
+        if (!fs.existsSync(this.pythonBinary) || !fs.existsSync(this.uvPath)) {
+            return false;
+        }
+        // Quick validation: ensure Python binary is runnable (not corrupted)
+        try {
+            const output = execSync(
+                `"${this.pythonBinary}" --version`,
+                { encoding: 'utf-8', stdio: 'pipe', timeout: 10000 }
+            );
+            return output.trim().startsWith('Python');
+        } catch {
+            return false;
+        }
     }
 
     isReady(): boolean {
@@ -157,11 +169,26 @@ export class UvPythonManager {
         }
 
         try {
-            execSync(`"${this.pythonBinary}" --version`, { encoding: 'utf-8', stdio: 'pipe' });
+            // Verify Python binary is actually runnable (not corrupted)
+            const pythonVersionOutput = execSync(
+                `"${this.pythonBinary}" --version`,
+                { encoding: 'utf-8', stdio: 'pipe', timeout: 10000 }
+            );
+            
+            // Verify it's actually a Python process that responds properly
+            if (!pythonVersionOutput.trim().startsWith('Python')) {
+                this.log(`Python binary exists but returned unexpected output: ${pythonVersionOutput.trim()}`);
+                this._isReady = false;
+                return false;
+            }
             
             // Check if packages are installed AND meet minimum version requirements
             // Write script to temp file to avoid shell escaping issues
             const scriptPath = path.join(this.baseDir, 'version_check.py');
+            // IMPORTANT: Use importlib.metadata.version() instead of __version__ attribute
+            // because some packages have __version__ mismatches with their installed version
+            // (e.g., pubmed-search-mcp 0.3.8 reports __version__="0.3.6")
+            // importlib.metadata reads the actual installed package metadata from dist-info
             const versionCheckScript = `
 import sys
 try:
@@ -177,15 +204,25 @@ except ImportError as e:
     print(f"MISSING:{e}")
     sys.exit(0)
 
-min_versions = ${JSON.stringify(MIN_VERSIONS)}
-actual = {
-    'zotero_mcp': getattr(zotero_mcp, '__version__', '0.0.0'),
-    'pubmed_search': getattr(pubmed_search, '__version__', '0.0.0'),
+# Use importlib.metadata for accurate version detection
+# __version__ attributes can be stale/incorrect (known issue with some packages)
+from importlib.metadata import version as get_version, PackageNotFoundError
+
+# Map from module name to PyPI package name for metadata lookup
+_pkg_names = {
+    'zotero_mcp': 'zotero-keeper',
+    'pubmed_search': 'pubmed-search-mcp',
 }
 
-for pkg, min_ver in min_versions.items():
-    if Version(actual[pkg]) < Version(min_ver):
-        print(f"OUTDATED:{pkg}:{actual[pkg]}:<{min_ver}")
+min_versions = ${JSON.stringify(MIN_VERSIONS)}
+for mod_name, min_ver in min_versions.items():
+    try:
+        actual_ver = get_version(_pkg_names.get(mod_name, mod_name))
+    except PackageNotFoundError:
+        print(f"MISSING:Package metadata not found for {mod_name}")
+        sys.exit(0)
+    if Version(actual_ver) < Version(min_ver):
+        print(f"OUTDATED:{mod_name}:{actual_ver}:<{min_ver}")
         sys.exit(0)
 print("OK")
 `;
@@ -218,10 +255,24 @@ print("OK")
     }
 
     /**
-     * Check if Python binary exists but packages need upgrade
+     * Check if Python binary exists and works, but packages might need upgrade.
+     * This does a quick validation to avoid trying upgrades on corrupted environments.
      */
     private needsUpgradeOnly(): boolean {
-        return fs.existsSync(this.pythonBinary) && fs.existsSync(this.uvPath);
+        if (!fs.existsSync(this.pythonBinary) || !fs.existsSync(this.uvPath)) {
+            return false;
+        }
+        // Verify Python binary is actually runnable
+        try {
+            const output = execSync(
+                `"${this.pythonBinary}" --version`,
+                { encoding: 'utf-8', stdio: 'pipe', timeout: 10000 }
+            );
+            return output.trim().startsWith('Python');
+        } catch {
+            this.log('Python binary exists but is not runnable, needs full rebuild');
+            return false;
+        }
     }
 
     /**

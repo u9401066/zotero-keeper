@@ -57,9 +57,7 @@
 git clone https://github.com/u9401066/zotero-keeper.git
 cd zotero-keeper/mcp-server
 
-# 2. 安裝
-pip install -e .
-# 或使用 uv:
+# 2. 安裝（使用 uv）
 uv pip install -e .
 
 # 3. 測試連線 (先確認 Zotero 有開著)
@@ -296,7 +294,7 @@ AI 執行:
 ### 安裝 PubMed 整合
 
 ```bash
-pip install -e ".[pubmed]"
+uv pip install -e ".[pubmed]"
 ```
 
 ---
@@ -467,13 +465,13 @@ Zotero 團隊正在開發 **Local API 寫入功能**：
 | 目前 (v1.x) | 未來 (v2.x) |
 |-------------|-------------|
 | 需要 Python 3.11+ | 獨立執行檔 (.exe / .app) |
-| 需要 `pip install` | 一鍵安裝程式 |
+| 需要 `uv pip install` | 一鍵安裝程式 |
 | 手動設定 `mcp.json` | 自動設定 VS Code/Claude |
 | 開發者友善 | 研究人員友善 |
 
 ### 📦 計畫的發佈方式
 
-1. **PyPI 套件**：`pip install zotero-keeper-mcp`（簡化版）
+1. **PyPI 套件**：`uv pip install zotero-keeper-mcp`（簡化版）
 2. **獨立執行檔**：PyInstaller 打包（不需要 Python）
 3. **VS Code 擴充功能**：從 Marketplace 一鍵安裝（規劃中）
 4. **Homebrew/Chocolatey**：套件管理器支援
@@ -500,7 +498,7 @@ Zotero 團隊正在開發 **Local API 寫入功能**：
 ### ❓ PubMed 功能沒出現？
 
 ```bash
-pip install -e ".[pubmed]"
+uv pip install -e ".[pubmed]"
 ```
 
 ---

@@ -6,13 +6,13 @@ MCP Server for managing local Zotero libraries via AI Agents.
 
 ```bash
 # Basic installation
-pip install -e .
+uv pip install -e .
 
 # With PubMed support
-pip install -e ".[pubmed]"
+uv pip install -e ".[pubmed]"
 
 # All features
-pip install -e ".[all]"
+uv pip install -e ".[all]"
 ```
 
 ## Usage
@@ -50,7 +50,7 @@ ZOTERO_PORT=23119
 **Workflow:**
 ```python
 # Step 1: Search with pubmed-search-mcp
-results = search_literature("CRISPR gene therapy", limit=10)
+results = unified_search("CRISPR gene therapy", limit=10)
 
 # Step 2: Import to Zotero (ANY source works!)
 import_articles(

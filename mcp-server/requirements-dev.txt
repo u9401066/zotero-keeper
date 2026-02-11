@@ -1,5 +1,6 @@
 # Development requirements
-# Install with: pip install -r requirements-dev.txt
+# Install with: uv pip install -r requirements-dev.txt
+# Or recommended: uv sync --all-extras
 
 -r requirements.txt
 
@@ -7,6 +8,7 @@
 pytest>=7.0.0
 pytest-asyncio>=0.21.0
 pytest-cov>=4.0.0
+pytest-xdist>=3.3.0
 
 # Linting & Type checking
 ruff>=0.1.0

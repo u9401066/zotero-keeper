@@ -2,7 +2,7 @@
     "name": "vscode-zotero-mcp",
     "displayName": "Zotero + PubMed MCP",
     "description": "AI-powered research assistant - integrates Zotero reference management and PubMed literature search with GitHub Copilot. One-click setup for researchers!",
-    "version": "0.5.11",
+    "version": "0.5.12",
     "publisher": "u9401066",
     "license": "Apache-2.0",
     "icon": "resources/icon.png",
