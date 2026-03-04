@@ -2,12 +2,12 @@
 
 🔬 **AI-powered research assistant** - Integrates Zotero reference management and PubMed literature search with GitHub Copilot.
 
-## ✨ What's New in v0.5.13
+## ✨ What's New in v0.5.14
 
-- **🔧 NCBI Email 自動偵測**: 不再需要手動設定 email，自動讀取 `git config user.email`
-- **🛡️ EPERM 修復**: 重新安裝時自動終止佔用的 Python 程序，避免 `EPERM: unlink python.exe` 錯誤
-- **🐍 Python 3.12**: 環境升級至 Python 3.12，更好的效能和語法支持
-- **📦 PubMed Search MCP v0.3.8**: 統一搜尋入口 `unified_search`，支援預印本、同行審查篩選
+- **📎 Attachment & Fulltext Tools**: 存取 Zotero 項目的 PDF 附件和索引全文
+- **🧪 Test Infrastructure**: Mocha + Sinon 測試框架，完整單元測試覆蓋
+- **📋 Logger Module**: 集中式日誌管理，支援 logLevel 設定
+- **🔢 Version Unification**: MCP Server 版本統一為 0.5.14
 
 ## Features
 
@@ -20,6 +20,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 - Smart duplicate detection
 - Batch import from PubMed searches
 - **Library analytics** (stats, orphan detection)
+- **PDF attachment access** (list attachments, get indexed fulltext)
 
 ### 🔍 PubMed Search (v0.3.8)
 

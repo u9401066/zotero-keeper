@@ -2,27 +2,32 @@
 
 > 🎯 目前工作焦點與下一步行動
 
-## 當前狀態: VS Code Extension v0.5.12 準備發布 🚀
+## 當前狀態: v0.5.14 發布中 🚀
 
-### 已完成 (2026-02-11)
+### 已完成 (2025-06-27)
 
-1. ✅ PubMed Search MCP 更新至 v0.3.8
-   - uvPythonManager.ts, mcpProvider.ts, pyproject.toml 版本更新
-   - Instructions 更新: `search_literature` → `unified_search`
+1. ✅ Attachment & Fulltext Tools (2 new MCP tools)
+   - `get_item_attachments`: 列出附件及檔案路徑
+   - `get_item_fulltext`: 取得 Zotero 索引的全文
+   - DAL: `client_read.py` 新增 2 methods
+   - 15 unit tests
 
-2. ✅ pytest-xdist 多核測試
-   - 強制使用 `-n auto --dist worksteal`
+2. ✅ VS Code Test Infrastructure
+   - Mocha + Sinon + VS Code mock
+   - 5 模組單元測試
 
-3. ✅ pip → uv 全面遷移
-   - 16+ 檔案中移除所有 pip 參考
-   - pythonEnvironment.ts 移除 pip fallback
-   - 新增 uv-enforcer skill
+3. ✅ Structured Logging
+   - `logging_config.py` + `logger.ts`
+   - logLevel 設定
 
-4. ✅ **CRITICAL Bug Fixes (uvPythonManager.ts)**
-   - 修復版本檢查無限升級迴圈（改用 `importlib.metadata.version()`）
-   - 修復損壞 Python binary 崩潰（auto-detect + auto-repair）
-   - 強化 `checkReadySync()` 和 `needsUpgradeOnly()` 驗證
-   - 20/20 edge case tests 通過（兩輪驗證）
+4. ✅ Pre-commit Quality Gate
+   - ruff lint/format, pytest, trailing whitespace, conflict markers
+
+5. ✅ Version Unification
+   - MCP Server: 1.11.0/1.6.1 → 0.5.14
+   - VS Code Extension: 0.5.13 → 0.5.14
+
+6. ✅ Zotero Plugin Spec (HTTP Bridge 設計)
 
 ---
 
@@ -31,9 +36,9 @@
 | 元件 | 版本 | 狀態 |
 |------|------|------|
 | pubmed-search-mcp | v0.3.8 | PyPI ✅ |
-| zotero-keeper MCP | v1.11.0 | PyPI ✅ |
-| VS Code Extension | v0.5.12 | 準備發布 🚀 |
+| zotero-keeper MCP | v0.5.14 | 發布中 🚀 |
+| VS Code Extension | v0.5.14 | 發布中 🚀 |
 
 ---
-*Updated: 2026-02-11*
+*Updated: 2025-06-27*
 *工作模式: Release*

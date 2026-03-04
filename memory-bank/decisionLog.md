@@ -2,6 +2,26 @@
 
 > 📝 重要架構和實作決策記錄
 
+## 2025-06-27
+
+### DEC-018: Version Unification (MCP Server 1.x → 0.5.x)
+- **決策**: 統一 MCP Server 版本號，與 VS Code Extension 同步
+- **理由**:
+  1. MCP Server 版本 (1.11.0/1.6.1) 與 VS Code Extension (0.5.x) 不一致
+  2. monorepo 中各元件版本應統一，便於追蹤
+- **實作**: pyproject.toml, __init__.py, package.json, statusBar.ts 全部改為 0.5.14
+
+### DEC-017: Attachment Tools 實作策略
+- **決策**: 透過 Zotero Local API 存取附件和全文，不直接讀取 PDF 二進位
+- **理由**:
+  1. Zotero 已自動索引 PDF/EPUB/HTML，提供全文純文字 API
+  2. 直接讀取 PDF 需要 pymupdf 等重量級依賴
+  3. 傳送大量 PDF 二進位到 AI 不實際
+- **實作**:
+  - `get_item_fulltext`: 呼叫 `/api/users/0/items/{key}/fulltext`
+  - `resolve_attachment_path`: 組合 `ZOTERO_DATA_DIR/storage/{key}/{filename}`
+  - PDF 優先排序，file existence check
+
 ## 2026-01-12
 
 ### DEC-016: OpenURL 機構訂閱整合

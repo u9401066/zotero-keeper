@@ -2,6 +2,28 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.14] - 2025-06-27
+
+### Added
+
+- **Attachment & Fulltext MCP Tools** 📎
+  - `get_item_attachments`: 列出 Zotero 項目的所有附件（含檔案路徑）
+  - `get_item_fulltext`: 取得 Zotero 索引的全文內容（PDF/EPUB 純文字）
+
+- **Test Infrastructure** 🧪
+  - Mocha + Sinon 測試框架，VS Code mock
+  - 5 個模組的單元測試（extension, mcpProvider, statusBar, pythonEnvironment, uvPythonManager）
+  - `.mocharc.yml` 配置
+
+- **Logger Module**
+  - `logger.ts` 集中式日誌管理
+  - `logLevel` 設定選項（debug/info/warn/error）
+
+### Changed
+
+- **Version Unification**: MCP Server 版本統一為 0.5.14（原 1.11.0/1.6.1）
+- MCP tools 總計: **32** (新增 2 個 attachment tools)
+
 ## [0.5.13] - 2026-02-11
 
 ### Fixed

@@ -1,8 +1,25 @@
-# Progress (Updated: 2026-02-11)
+# Progress (Updated: 2025-06-27)
 
 ## Done
 
-### v0.5.12 - 關鍵 Bug 修復 + PubMed MCP v0.3.8 (2026-02-11)
+### v0.5.14 - Attachment Tools + Version Unification (2025-06-27)
+- ✅ `get_item_attachments` + `get_item_fulltext` MCP tools (2 new)
+- ✅ DAL: `client_read.py` 新增 `get_item_fulltext()` + `resolve_attachment_path()`
+- ✅ 15 unit tests for attachment tools
+- ✅ VS Code test infrastructure (Mocha + Sinon, 5 modules)
+- ✅ Structured logging (`logging_config.py` + `logger.ts`)
+- ✅ Pre-commit quality gate (ruff, pytest, trailing whitespace)
+- ✅ Version unification: MCP Server 1.x → 0.5.14
+- ✅ Zotero Plugin Spec (HTTP Bridge design)
+- ✅ Total MCP tools: 32
+
+### v0.5.13 - EPERM Fix + Python 3.12 (2025-06-26)
+- ✅ EPERM error handling (kill Python processes before reinstall)
+- ✅ NCBI email auto-detect (git config user.email)
+- ✅ Python 3.12 support
+- ✅ Pre-commit hooks
+
+### v0.5.12 - 關鍵 Bug 修復 + PubMed MCP v0.3.8 (2025-06-25)
 - ✅ **CRITICAL**: 修復版本檢查無限升級迴圈（`__version__` → `importlib.metadata`）
 - ✅ 修復損壞 Python binary 導致 WinError 216 崩潰
 - ✅ 強化 `checkReadySync()` 和 `needsUpgradeOnly()` 實際驗證 binary

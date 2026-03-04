@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.14] - 2025-06-27
+
+### 🔍 Attachment & Fulltext Access + Version Unification
+
+This release adds PDF attachment access tools and unifies version numbering across the monorepo.
+
+### Added
+
+- **Attachment Tools** 📎:
+  - `get_item_attachments`: List all attachments for a Zotero item with file paths and metadata
+  - `get_item_fulltext`: Get Zotero-indexed plain text content from PDF/EPUB attachments
+  - PDF priority sorting, file existence checks, ZOTERO_DATA_DIR support
+  - DAL layer: `get_item_fulltext()` and `resolve_attachment_path()` in `client_read.py`
+
+- **VS Code Extension Test Infrastructure**:
+  - Mocha + Sinon test framework with VS Code mock
+  - Unit tests for extension, mcpProvider, statusBar, pythonEnvironment, uvPythonManager
+  - `.mocharc.yml` configuration
+
+- **Structured Logging**:
+  - `logging_config.py` with `log_tool_call` decorator
+  - VS Code `logger.ts` unified output channel
+  - `logLevel` configuration setting
+
+- **Pre-commit Quality Gate**:
+  - `scripts/pre-commit`: ruff lint/format, pytest, trailing whitespace, conflict marker checks
+  - `scripts/install-hooks.sh`: one-command hook installation
+
+- **Zotero Plugin Spec**: `docs/design/ZOTERO_PLUGIN_SPEC.md` (HTTP Bridge Server design)
+
+### Changed
+
+- **Version Unification**: MCP Server version changed from `1.11.0`/`1.6.1` → `0.5.14` to align with VS Code extension versioning
+- Total MCP tools: **32** (was 30, +2 attachment tools)
+
+---
+
+## [0.5.13] - 2025-06-26
+
+### 🔧 EPERM Fix & Python 3.12
+
+- EPERM error handling for embedded Python
+- NCBI email auto-detect for PubMed MCP
+- Python 3.12 support
+- Documentation updates
+
+---
+
+## [0.5.12] - 2025-06-25
+
+### 🐛 Critical Fix
+
+- Fix version check infinite loop
+- PubMed MCP v0.3.8 integration
+- uv-only package management
+
+---
+
 ## [1.11.0] - 2026-01-12
 
 ### 🚀 Unified Import & Multi-Source Support
