@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, patch
 
 from zotero_mcp.infrastructure.mcp.server import (
     ZoteroKeeperServer,
-    _format_creators,
 )
+from zotero_mcp.infrastructure.mcp.basic_read_tools import _format_creators
 from zotero_mcp.infrastructure.mcp.config import McpServerConfig, ZoteroConfig
 
 

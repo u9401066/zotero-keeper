@@ -150,7 +150,8 @@ describe('ZoteroMcpServerProvider', () => {
 
             const servers = provider.provideMcpServerDefinitions(mockToken) as vscode.McpStdioServerDefinition[];
             const pubmed = servers[0];
-            assert.strictEqual(pubmed.env?.NCBI_EMAIL, undefined);
+            // NCBI_EMAIL may be auto-detected from git config (v0.5.13+)
+            // So we only check that empty config keys (API keys) are omitted
             assert.strictEqual(pubmed.env?.NCBI_API_KEY, undefined);
         });
 

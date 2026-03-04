@@ -6,7 +6,6 @@ import asyncio
 import logging
 
 import pytest
-import structlog
 
 from zotero_mcp.infrastructure.logging_config import (
     get_logger,
@@ -62,6 +61,7 @@ class TestLogToolCall:
 
     def test_decorates_async_function(self):
         """Should preserve function name and signature"""
+
         @log_tool_call
         async def my_tool(query: str, limit: int = 10) -> dict:
             """My tool docstring"""
@@ -71,6 +71,7 @@ class TestLogToolCall:
 
     def test_logs_successful_call(self):
         """Should return result unchanged"""
+
         @log_tool_call
         async def search(query: str) -> dict:
             return {"count": 5, "items": [1, 2, 3, 4, 5]}
@@ -81,6 +82,7 @@ class TestLogToolCall:
 
     def test_logs_error_and_reraises(self):
         """Should re-raise exception after logging"""
+
         @log_tool_call
         async def bad_tool() -> dict:
             raise ValueError("broken")

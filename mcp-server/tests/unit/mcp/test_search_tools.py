@@ -7,14 +7,16 @@ Tests the integrated PubMed search with Zotero filtering functionality.
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from zotero_mcp.infrastructure.mcp.search_helpers import (
+    normalize_title as _normalize_title,
+    extract_pmid_from_extra as _extract_pmid_from_extra,
+    get_owned_identifiers as _get_owned_identifiers,
+    is_owned as _is_owned,
+    format_search_results as _format_search_results,
+)
+from zotero_mcp.infrastructure.mcp.smart_tools import TITLE_MATCH_THRESHOLD
 from zotero_mcp.infrastructure.mcp.search_tools import (
-    _normalize_title,
-    _extract_pmid_from_extra,
-    _get_owned_identifiers,
-    _is_owned,
-    _format_search_results,
     is_search_tools_available,
-    TITLE_MATCH_THRESHOLD,
 )
 
 
@@ -322,21 +324,26 @@ class TestRegisterSearchTools:
     """Tests for register_search_tools function."""
 
     def test_skips_when_pubmed_unavailable(self):
-        """Test that registration is skipped when PubMed not available."""
-        from zotero_mcp.infrastructure.mcp import search_tools
-
-        original_available = search_tools.PUBMED_AVAILABLE
-        search_tools.PUBMED_AVAILABLE = False
+        """Test that PubMed tools are skipped when PubMed not available.
+        advanced_search is always registered regardless."""
+        from zotero_mcp.infrastructure.mcp.search_tools import register_search_tools
 
         mock_mcp = MagicMock()
         mock_client = MagicMock()
 
-        search_tools.register_search_tools(mock_mcp, mock_client)
+        def tool_decorator():
+            def wrapper(func):
+                return func
 
-        # Should not register any tools
-        mock_mcp.tool.assert_not_called()
+            return wrapper
 
-        search_tools.PUBMED_AVAILABLE = original_available
+        mock_mcp.tool = MagicMock(side_effect=tool_decorator)
+
+        with patch("zotero_mcp.infrastructure.mcp.search_tools.PUBMED_AVAILABLE", False):
+            register_search_tools(mock_mcp, mock_client)
+
+        # advanced_search is always registered (1 call)
+        assert mock_mcp.tool.call_count == 1
 
     @patch("zotero_mcp.infrastructure.mcp.search_tools.PUBMED_AVAILABLE", True)
     def test_registers_tools_when_available(self):

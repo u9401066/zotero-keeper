@@ -4,6 +4,9 @@ Tests for batch_tools.py
 Tests the batch import functionality for PubMed articles to Zotero.
 """
 
+import sys
+from contextlib import contextmanager
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -11,6 +14,20 @@ from zotero_mcp.infrastructure.mcp.batch_tools import (
     _parse_pmids,
     is_batch_import_available,
 )
+
+
+@contextmanager
+def block_pubmed_search():
+    """Temporarily block pubmed_search import to avoid citation metrics async issues in tests."""
+    original = sys.modules.get("pubmed_search")
+    sys.modules["pubmed_search"] = MagicMock(spec=[])
+    try:
+        yield
+    finally:
+        if original:
+            sys.modules["pubmed_search"] = original
+        else:
+            sys.modules.pop("pubmed_search", None)
 
 
 class TestParsePmids:
@@ -227,7 +244,9 @@ class TestBatchImportFromPubmed:
         register_batch_tools(mock_mcp, mock_client)
 
         if registered_func:
-            result = await registered_func("12345678")
+            # Mock pubmed_search to prevent citation metrics async issues
+            with block_pubmed_search():
+                result = await registered_func("12345678")
             assert result["success"] is True
             assert result["added"] == 1
 
@@ -266,7 +285,8 @@ class TestBatchImportFromPubmed:
         register_batch_tools(mock_mcp, mock_client)
 
         if registered_func:
-            result = await registered_func("12345678", skip_duplicates=True)
+            with block_pubmed_search():
+                result = await registered_func("12345678", skip_duplicates=True)
             assert result["success"] is True
             assert result["skipped"] == 1
             assert result["added"] == 0
@@ -317,9 +337,10 @@ class TestBatchImportIntegration:
         register_batch_tools(mock_mcp, mock_client)
 
         if registered_func:
-            result = await registered_func(
-                "11111111,22222222",
-                tags=["Test", "2024"],
-            )
+            with block_pubmed_search():
+                result = await registered_func(
+                    "11111111,22222222",
+                    tags=["Test", "2024"],
+                )
             assert result["success"] is True
             assert result["total"] == 2
