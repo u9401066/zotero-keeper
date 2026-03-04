@@ -76,7 +76,7 @@ async def get_owned_identifiers(zotero_client, limit: int = 500) -> dict[str, se
             if title:
                 owned["titles"].add(normalize_title(title))
 
-        logger.info(f"Loaded {len(owned['dois'])} DOIs, " f"{len(owned['pmids'])} PMIDs, " f"{len(owned['titles'])} titles from Zotero")
+        logger.info(f"Loaded {len(owned['dois'])} DOIs, {len(owned['pmids'])} PMIDs, {len(owned['titles'])} titles from Zotero")
 
     except Exception as e:
         logger.error(f"Failed to load owned items: {e}")

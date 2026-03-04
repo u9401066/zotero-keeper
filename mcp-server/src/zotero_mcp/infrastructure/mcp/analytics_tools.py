@@ -265,7 +265,7 @@ def register_analytics_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
             # Add suggestions
             if total_completely_orphan > 0:
                 result["suggestion"] = (
-                    f"Found {total_completely_orphan} items with no collection AND no tags. " "Consider organizing these items first."
+                    f"Found {total_completely_orphan} items with no collection AND no tags. Consider organizing these items first."
                 )
 
             return result

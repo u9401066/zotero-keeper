@@ -173,7 +173,7 @@ async def _handle_collection_selection(item: dict, zotero_client, ctx: Context |
 
         # Build elicitation message
         title = item.get("title", "Unknown")
-        elicit_msg = f"📚 **Saving:** {title}\n" f"{options_text}\n" f"Enter the number of your choice:"
+        elicit_msg = f"📚 **Saving:** {title}\n{options_text}\nEnter the number of your choice:"
 
         # Ask user
         choice_result = await ctx.elicit(
@@ -430,9 +430,7 @@ def register_interactive_save_tools(mcp, zotero_client):
                 duplicates = await find_duplicates(item, zotero_client)
                 if duplicates:
                     best = duplicates[0]
-                    result["message"] = (
-                        f"⚠️ Duplicate found: '{best['title']}' ({best['score']}% match). " f"Use force_add=True to add anyway."
-                    )
+                    result["message"] = f"⚠️ Duplicate found: '{best['title']}' ({best['score']}% match). Use force_add=True to add anyway."
                     result["duplicate"] = best
                     return result
 
