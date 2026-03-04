@@ -73,8 +73,8 @@ def register_analytics_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
                 data = item.get("data", item)
                 item_type = data.get("itemType", "unknown")
 
-                # Skip attachments and notes
-                if item_type in ("attachment", "note"):
+                # Skip attachments, notes, and annotations
+                if item_type in ("attachment", "note", "annotation"):
                     continue
 
                 type_counter[item_type] += 1
@@ -201,8 +201,8 @@ def register_analytics_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
                 data = item.get("data", item)
                 item_type = data.get("itemType", "unknown")
 
-                # Skip attachments and notes
-                if item_type in ("attachment", "note"):
+                # Skip attachments, notes, and annotations
+                if item_type in ("attachment", "note", "annotation"):
                     continue
 
                 collections = data.get("collections", [])
@@ -233,17 +233,17 @@ def register_analytics_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
             total_no_collection = sum(
                 1
                 for item in items
-                if item.get("data", item).get("itemType") not in ("attachment", "note") and not item.get("data", item).get("collections")
+                if item.get("data", item).get("itemType") not in ("attachment", "note", "annotation") and not item.get("data", item).get("collections")
             )
             total_no_tags = sum(
                 1
                 for item in items
-                if item.get("data", item).get("itemType") not in ("attachment", "note") and not item.get("data", item).get("tags")
+                if item.get("data", item).get("itemType") not in ("attachment", "note", "annotation") and not item.get("data", item).get("tags")
             )
             total_completely_orphan = sum(
                 1
                 for item in items
-                if item.get("data", item).get("itemType") not in ("attachment", "note")
+                if item.get("data", item).get("itemType") not in ("attachment", "note", "annotation")
                 and not item.get("data", item).get("collections")
                 and not item.get("data", item).get("tags")
             )

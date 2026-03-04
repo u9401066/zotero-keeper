@@ -119,8 +119,8 @@ def register_collection_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
             results = []
             for item in items:
                 data = item.get("data", item)
-                if data.get("itemType") == "attachment":
-                    continue
+                if data.get("itemType") in ("attachment", "annotation"):
+                    continue  # Skip attachments and annotations
                 results.append(
                     {
                         "key": item.get("key"),

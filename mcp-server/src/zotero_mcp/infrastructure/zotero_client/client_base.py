@@ -126,6 +126,8 @@ class ZoteroClientBase:
             return None
 
         except httpx.ConnectError as e:
+            # Close and reset client on connection failure to prevent stale connections
+            await self.close()
             raise ZoteroConnectionError(
                 f"無法連接到 Zotero ({self.config.base_url})。\n"
                 f"請確認:\n"
@@ -135,6 +137,7 @@ class ZoteroClientBase:
                 f"Details: {e}"
             ) from e
         except httpx.TimeoutException as e:
+            await self.close()
             raise ZoteroConnectionError(f"連接 Zotero 超時 ({self.config.timeout}s)") from e
 
     async def ping(self) -> bool:

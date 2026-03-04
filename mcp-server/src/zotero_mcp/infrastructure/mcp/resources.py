@@ -125,8 +125,8 @@ def register_resources(mcp, zotero_client):
             result = []
             for item in items:
                 data = item.get("data", item)
-                if data.get("itemType") == "attachment":
-                    continue
+                if data.get("itemType") in ("attachment", "annotation"):
+                    continue  # Skip attachments and annotations
                 result.append(
                     {
                         "key": item.get("key"),
@@ -163,8 +163,8 @@ def register_resources(mcp, zotero_client):
             result = []
             for item in items:
                 data = item.get("data", item)
-                if data.get("itemType") == "attachment":
-                    continue
+                if data.get("itemType") in ("attachment", "annotation"):
+                    continue  # Skip attachments and annotations
                 result.append(
                     {
                         "key": item.get("key"),
