@@ -7,9 +7,15 @@ Provides read operations:
 - Tags
 - Saved Searches (Local API exclusive!)
 - Schema
+- Attachments & Fulltext
 """
 
+import logging
+import os
+from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 class ZoteroReadMixin:
@@ -216,3 +222,45 @@ class ZoteroReadMixin:
             "/api/itemTypeCreatorTypes",
             params={"itemType": item_type},
         )
+
+    # ==================== Attachments & Fulltext ====================
+
+    async def get_item_fulltext(self, item_key: str) -> dict[str, Any]:
+        """
+        Get fulltext content indexed by Zotero for an attachment.
+
+        Zotero automatically indexes PDF/EPUB/HTML attachments.
+        This endpoint returns the indexed plain text.
+
+        Args:
+            item_key: The attachment item key (NOT the parent item key)
+
+        Returns:
+            Dict with 'content', 'indexedPages', 'totalPages'
+            Raises ZoteroAPIError (404) if not indexed
+
+        Example response:
+            {"content": "Full text...", "indexedPages": 12, "totalPages": 12}
+        """
+        return await self._request("GET", f"/api/users/0/items/{item_key}/fulltext")
+
+    def resolve_attachment_path(self, attachment_key: str, filename: str) -> Path | None:
+        """
+        Resolve the file system path for a Zotero attachment.
+
+        Zotero stores attachments at:
+            {ZOTERO_DATA_DIR}/storage/{ATTACHMENT_KEY}/{filename}
+
+        Args:
+            attachment_key: 8-character attachment key
+            filename: Original filename (e.g. "paper.pdf")
+
+        Returns:
+            Path to the file if ZOTERO_DATA_DIR is configured, None otherwise
+        """
+        data_dir = os.getenv("ZOTERO_DATA_DIR")
+        if not data_dir:
+            return None
+
+        path = Path(data_dir) / "storage" / attachment_key / filename
+        return path

@@ -22,6 +22,7 @@ from mcp.server.fastmcp import FastMCP
 
 from ..zotero_client.client import ZoteroClient, ZoteroConfig, ZoteroConnectionError
 from .analytics_tools import register_analytics_tools
+from .attachment_tools import register_attachment_tools
 from .basic_read_tools import register_basic_read_tools
 from .batch_tools import is_batch_import_available, register_batch_tools
 from .collection_tools import register_collection_tools
@@ -127,6 +128,10 @@ class ZoteroKeeperServer:
         # Register Unified Import tool (single entry point for all imports)
         register_unified_import_tools(self._mcp, self._zotero)
         logger.info("Unified import enabled (import_articles) ⭐ One tool for all sources!")
+
+        # Register Attachment & Fulltext tools (PDF access)
+        register_attachment_tools(self._mcp, self._zotero)
+        logger.info("Attachment tools enabled (get_item_attachments, get_item_fulltext)")
 
     def _register_connection_tool(self):
         """Register connection check tool"""
