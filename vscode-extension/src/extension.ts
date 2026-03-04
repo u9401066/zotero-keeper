@@ -337,7 +337,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
                 const host = config.get<string>('zoteroHost', 'localhost');
                 const port = config.get<number>('zoteroPort', 23119);
                 const choice = await vscode.window.showWarningMessage(
-                    `❌ Cannot connect to Zotero at ${host}:${port}. Make sure Zotero 7 is running.`,
+                    `❌ Cannot connect to Zotero at ${host}:${port}. Make sure Zotero is running.`,
                     'Retry', 'Download Zotero', 'Open Settings'
                 );
                 if (choice === 'Retry') {

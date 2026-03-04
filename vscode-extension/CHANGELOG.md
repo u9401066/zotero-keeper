@@ -2,6 +2,20 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.15] - 2026-03-04
+
+### Fixed
+
+- **Critical: TCP Port Exhaustion Fix** 🛡️
+  - Fixed `metadata_fetcher.py` creating new `httpx.AsyncClient` per DOI query, causing thousands of TIME_WAIT sockets
+  - Added module-level shared CrossRef HTTP client with connection pooling (`max_connections=5`, `keepalive_expiry=30`)
+  - Added `await self.close()` on `ConnectError` and `TimeoutException` in `client_base.py` to prevent stale connection accumulation
+  - These fixes prevent Zotero port 23119 from being overwhelmed by orphaned TCP connections
+
+- **Zotero 8 Annotation Filtering** 🔇
+  - Filter out `annotation` itemType from search/list/collection/analytics results (Zotero 8 now returns annotations via Local API)
+  - Updated 5 MCP tool files: `basic_read_tools`, `collection_tools`, `analytics_tools`, `resources`, `saved_search_tools`
+
 ## [0.5.14] - 2025-06-27
 
 ### Added

@@ -205,7 +205,7 @@ async function ensureDependencies(): Promise<void> {
   - `pubmed-search-mcp[mcp]>=0.1.8`
 
 ### External
-- Zotero 7 (running locally with API enabled)
+- Zotero 7 or 8 (running locally with API enabled)
 
 ## 🗓️ 開發計劃
 

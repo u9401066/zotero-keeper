@@ -2,7 +2,7 @@
     "name": "vscode-zotero-mcp",
     "displayName": "Zotero + PubMed MCP",
     "description": "AI-powered research assistant - integrates Zotero reference management and PubMed literature search with GitHub Copilot. One-click setup for researchers!",
-    "version": "0.5.14",
+    "version": "0.5.15",
     "publisher": "u9401066",
     "license": "Apache-2.0",
     "icon": "resources/icon.png",
@@ -117,7 +117,19 @@
                 "zoteroMcp.openUrlPreset": {
                     "type": "string",
                     "default": "",
-                    "enum": ["", "ntu", "ncku", "nthu", "nycu", "harvard", "stanford", "mit", "yale", "oxford", "cambridge"],
+                    "enum": [
+                        "",
+                        "ntu",
+                        "ncku",
+                        "nthu",
+                        "nycu",
+                        "harvard",
+                        "stanford",
+                        "mit",
+                        "yale",
+                        "oxford",
+                        "cambridge"
+                    ],
                     "enumDescriptions": [
                         "None (use custom URL)",
                         "National Taiwan University (台大)",
@@ -155,7 +167,12 @@
                 "zoteroMcp.logLevel": {
                     "type": "string",
                     "default": "info",
-                    "enum": ["debug", "info", "warn", "error"],
+                    "enum": [
+                        "debug",
+                        "info",
+                        "warn",
+                        "error"
+                    ],
                     "enumDescriptions": [
                         "Show all logs (verbose, for debugging)",
                         "Normal operation logs",
@@ -231,16 +248,20 @@
                         "media": {
                             "markdown": "resources/walkthrough/oneclick.md"
                         },
-                        "completionEvents": ["onContext:zoteroMcp.packagesReady"]
+                        "completionEvents": [
+                            "onContext:zoteroMcp.packagesReady"
+                        ]
                     },
                     {
                         "id": "zotero",
                         "title": "Connect to Zotero",
-                        "description": "Make sure Zotero 7 is running on your computer.\n\n[Check Connection](command:zoteroMcp.checkConnection)\n\n[Download Zotero](https://www.zotero.org/download/)",
+                        "description": "Make sure Zotero (7 or 8) is running on your computer.\n\n[Check Connection](command:zoteroMcp.checkConnection)\n\n[Download Zotero](https://www.zotero.org/download/)",
                         "media": {
                             "markdown": "resources/walkthrough/zotero.md"
                         },
-                        "completionEvents": ["onContext:zoteroMcp.zoteroConnected"]
+                        "completionEvents": [
+                            "onContext:zoteroMcp.zoteroConnected"
+                        ]
                     },
                     {
                         "id": "ready",

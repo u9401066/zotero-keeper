@@ -55,7 +55,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 ## Requirements
 
 - **VS Code** 1.99.0 or later
-- **Zotero 7** running locally (for Zotero features)
+- **Zotero 7 or 8** running locally (for Zotero features)
 
 **Note**: Python is managed automatically by the extension using [uv](https://github.com/astral-sh/uv).
 
@@ -138,7 +138,7 @@ The Python environment is completely isolated from your system Python.
 ## Troubleshooting
 
 ### Cannot connect to Zotero
-1. Make sure Zotero 7 is running
+1. Make sure Zotero is running
 2. Check that the API is enabled (Edit → Settings → Advanced → Allow other applications...)
 3. Verify host/port settings match your setup
 
