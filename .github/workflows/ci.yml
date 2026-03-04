@@ -45,6 +45,9 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./mcp-server
     steps:
     - uses: actions/checkout@v4
 
@@ -60,7 +63,5 @@ jobs:
         uv pip install ruff
 
     - name: Check code formatting
-      working-directory: ./mcp-server
       run: |
-        # Use project settings from pyproject.toml (ignores E402, E501)
         uv run ruff check src/
