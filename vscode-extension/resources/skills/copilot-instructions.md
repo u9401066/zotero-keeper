@@ -12,7 +12,7 @@
 - Collection 管理
 - 書庫分析
 
-### 2. PubMed Search (v0.3.8)
+### 2. PubMed Search (v0.4.4)
 搜尋醫學文獻的工具，包括：
 - **`unified_search`** - 統一搜尋入口（支援多來源）
 - 預印本搜尋（arXiv、medRxiv、bioRxiv）
@@ -57,6 +57,9 @@
 - 使用 `convert_icd_mesh` 轉換 ICD 和 MeSH
 - 使用 `build_research_timeline` 追蹤研究演進
 - 使用 `search_biomedical_images` 搜尋相關圖片
+
+## 💡 研究模式
+切換到 **@research** agent 可獲得完整的文獻搜尋助理功能，包括 PICO 搜尋、引用網路、全文取得等進階功能。
 
 ## 回應風格
 - 使用繁體中文

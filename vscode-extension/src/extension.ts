@@ -258,24 +258,35 @@ async function installCopilotInstructions(context: vscode.ExtensionContext): Pro
     }
 
     const githubDir = path.join(workspaceFolder.uri.fsPath, '.github');
+    const agentsDir = path.join(githubDir, 'agents');
     const instructionsPath = path.join(githubDir, 'copilot-instructions.md');
     const workflowDest = path.join(githubDir, 'zotero-research-workflow.md');
+    const agentDest = path.join(agentsDir, 'research.agent.md');
 
-    // Check if we already have our files installed (check workflow file, which is unique to us)
-    if (fs.existsSync(workflowDest)) {
-        // Check if it's our file (look for our marker)
+    // Check if research agent already installed (primary marker for v0.5.15+)
+    if (fs.existsSync(agentDest)) {
+        const content = fs.readFileSync(agentDest, 'utf-8');
+        if (content.includes('PubMed') && content.includes('Zotero')) {
+            return; // Already installed, don't touch anything
+        }
+    }
+
+    // Fallback: check legacy workflow file
+    if (fs.existsSync(workflowDest) && !fs.existsSync(agentDest)) {
         const content = fs.readFileSync(workflowDest, 'utf-8');
         if (content.includes('Zotero + PubMed MCP')) {
-            return; // Already installed, don't touch anything
+            // Legacy install exists, upgrade to agent format
+            await installResearchAgent(context, githubDir, agentsDir, agentDest);
+            return;
         }
     }
 
     // Check if user has existing copilot-instructions.md
     if (fs.existsSync(instructionsPath)) {
         // User has their own instructions, don't overwrite!
-        // Only offer to add our separate workflow guide
+        // Only offer to add our research agent
         const choice = await vscode.window.showInformationMessage(
-            'Would you like to add Zotero+PubMed research workflow guide? (Your existing files will not be modified)',
+            'Would you like to add Zotero+PubMed research agent? (Your existing files will not be modified)',
             'Yes', 'No'
         );
 
@@ -285,33 +296,48 @@ async function installCopilotInstructions(context: vscode.ExtensionContext): Pro
     }
 
     try {
-        // Create .github directory if it doesn't exist
+        // Create directories
         if (!fs.existsSync(githubDir)) {
             fs.mkdirSync(githubDir, { recursive: true });
         }
 
-        // Copy instructions from extension resources
         const extensionPath = context.extensionPath;
-        const sourceInstructions = path.join(extensionPath, 'resources', 'skills', 'copilot-instructions.md');
-        const sourceWorkflow = path.join(extensionPath, 'resources', 'skills', 'research-workflow.md');
 
-        // Only install copilot-instructions.md if user doesn't have one
+        // Install copilot-instructions.md (only if user doesn't have one)
+        const sourceInstructions = path.join(extensionPath, 'resources', 'skills', 'copilot-instructions.md');
         if (fs.existsSync(sourceInstructions) && !fs.existsSync(instructionsPath)) {
             fs.copyFileSync(sourceInstructions, instructionsPath);
             console.log('Installed Copilot instructions');
         }
 
-        // Only install workflow guide if it doesn't exist
-        if (fs.existsSync(sourceWorkflow) && !fs.existsSync(workflowDest)) {
-            fs.copyFileSync(sourceWorkflow, workflowDest);
-            console.log('Installed research workflow guide');
-        }
+        // Install research agent
+        await installResearchAgent(context, githubDir, agentsDir, agentDest);
 
-        // Mark as installed in global state
+        // Mark as installed
         context.globalState.update(SKILLS_INSTALLED_KEY, true);
 
     } catch (error) {
         console.error('Failed to install Copilot instructions:', error);
+    }
+}
+
+/**
+ * Install research agent to .github/agents/
+ */
+async function installResearchAgent(
+    context: vscode.ExtensionContext,
+    githubDir: string,
+    agentsDir: string,
+    agentDest: string
+): Promise<void> {
+    if (!fs.existsSync(agentsDir)) {
+        fs.mkdirSync(agentsDir, { recursive: true });
+    }
+
+    const sourceAgent = path.join(context.extensionPath, 'resources', 'agents', 'research.agent.md');
+    if (fs.existsSync(sourceAgent) && !fs.existsSync(agentDest)) {
+        fs.copyFileSync(sourceAgent, agentDest);
+        console.log('Installed research agent');
     }
 }
 
@@ -438,24 +464,24 @@ function registerCommands(context: vscode.ExtensionContext): void {
             }
 
             const githubDir = path.join(workspaceFolder.uri.fsPath, '.github');
+            const agentsDir = path.join(githubDir, 'agents');
             const instructionsPath = path.join(githubDir, 'copilot-instructions.md');
-            const workflowPath = path.join(githubDir, 'zotero-research-workflow.md');
+            const agentDest = path.join(agentsDir, 'research.agent.md');
 
-            // Create .github directory
+            // Create directories
             if (!fs.existsSync(githubDir)) {
                 fs.mkdirSync(githubDir, { recursive: true });
             }
 
             const extensionPath = context.extensionPath;
             const sourceInstructions = path.join(extensionPath, 'resources', 'skills', 'copilot-instructions.md');
-            const sourceWorkflow = path.join(extensionPath, 'resources', 'skills', 'research-workflow.md');
+            const sourceAgent = path.join(extensionPath, 'resources', 'agents', 'research.agent.md');
 
             let installed = 0;
             let skipped = 0;
 
             // Handle copilot-instructions.md - NEVER overwrite without explicit consent
             if (fs.existsSync(instructionsPath)) {
-                // Check if it's our file or user's own
                 const content = fs.readFileSync(instructionsPath, 'utf-8');
                 if (content.includes('Zotero + PubMed MCP')) {
                     // It's our file, safe to update
@@ -471,44 +497,44 @@ function registerCommands(context: vscode.ExtensionContext): void {
                     skipped++;
                 }
             } else if (fs.existsSync(sourceInstructions)) {
-                // No existing file, safe to create
                 fs.copyFileSync(sourceInstructions, instructionsPath);
                 installed++;
             }
 
-            // Handle zotero-research-workflow.md - this is our unique file
-            if (fs.existsSync(workflowPath)) {
-                // Check if it's our file
-                const content = fs.readFileSync(workflowPath, 'utf-8');
-                if (content.includes('Zotero + PubMed MCP')) {
+            // Handle research.agent.md
+            if (fs.existsSync(agentDest)) {
+                const content = fs.readFileSync(agentDest, 'utf-8');
+                if (content.includes('PubMed') && content.includes('Zotero')) {
                     // It's our file, safe to update
-                    if (fs.existsSync(sourceWorkflow)) {
-                        fs.copyFileSync(sourceWorkflow, workflowPath);
+                    if (fs.existsSync(sourceAgent)) {
+                        fs.copyFileSync(sourceAgent, agentDest);
                         installed++;
                     }
                 } else {
-                    // User modified it - ask before overwriting
-                    const choice = await vscode.window.showWarningMessage(
-                        'zotero-research-workflow.md has been modified. Update to latest version?',
-                        'Update', 'Keep Mine'
-                    );
-                    if (choice === 'Update' && fs.existsSync(sourceWorkflow)) {
-                        fs.copyFileSync(sourceWorkflow, workflowPath);
-                        installed++;
-                    } else {
-                        skipped++;
-                    }
+                    skipped++;
                 }
-            } else if (fs.existsSync(sourceWorkflow)) {
-                // No existing file, safe to create
-                fs.copyFileSync(sourceWorkflow, workflowPath);
+            } else if (fs.existsSync(sourceAgent)) {
+                if (!fs.existsSync(agentsDir)) {
+                    fs.mkdirSync(agentsDir, { recursive: true });
+                }
+                fs.copyFileSync(sourceAgent, agentDest);
                 installed++;
+            }
+
+            // Clean up legacy workflow file if agent is now installed
+            const legacyWorkflow = path.join(githubDir, 'zotero-research-workflow.md');
+            if (fs.existsSync(legacyWorkflow) && fs.existsSync(agentDest)) {
+                const content = fs.readFileSync(legacyWorkflow, 'utf-8');
+                if (content.includes('Zotero + PubMed MCP')) {
+                    fs.unlinkSync(legacyWorkflow);
+                    console.log('Removed legacy zotero-research-workflow.md (replaced by research.agent.md)');
+                }
             }
 
             // Show result
             if (installed > 0) {
                 vscode.window.showInformationMessage(
-                    `✅ Installed/updated ${installed} Copilot skill file(s).${skipped > 0 ? ` ${skipped} file(s) preserved.` : ''}`
+                    `✅ Installed/updated ${installed} Copilot file(s).${skipped > 0 ? ` ${skipped} file(s) preserved.` : ''}`
                 );
             } else if (skipped > 0) {
                 vscode.window.showInformationMessage(

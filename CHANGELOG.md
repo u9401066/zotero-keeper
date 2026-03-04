@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.16] - 2026-03-04
+
+### 🤖 Research Agent + PubMed 0.4.4
+
+Adds a dedicated `@research` Copilot agent for literature search workflows, and upgrades pubmed-search-mcp to v0.4.4.
+
+### Added
+
+- **`@research` Copilot Agent** — Dedicated research assistant deployed to `.github/agents/research.agent.md`. Consolidates 8 PubMed skills into a single agent with restricted tools (no terminal/pylance). Includes: PICO search, systematic search, citation networks, fulltext access, NCBI extended databases, export workflows
+- **Agent auto-deployment** — Extension automatically installs research agent on activation, with legacy upgrade support
+
+### Changed
+
+- **pubmed-search-mcp 0.3.8 → 0.4.4** — Citation metrics caching (30min TTL), BM25 ranking, mypy strict bug fixes
+- Updated copilot-instructions.md and research-workflow.md to reference v0.4.4
+- Extension deployment refactored: `installResearchAgent()` for `.github/agents/` directory
+
+---
+
 ## [0.5.15] - 2026-03-04
 
 ### 🐛 Critical Bug Fixes + Zotero 8 Compatibility

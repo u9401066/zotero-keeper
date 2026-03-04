@@ -2,6 +2,22 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.16] - 2026-03-04
+
+### Added
+
+- **`@research` Copilot Agent** 🤖
+  - Dedicated research assistant at `.github/agents/research.agent.md`
+  - Consolidates 8 PubMed skills (quick search, systematic, PICO, paper exploration, fulltext, export, gene/drug, tools reference)
+  - Restricted tools: only `editFiles`, `fetch`, `new`, `search` (no terminal/pylance)
+  - Auto-deployed on extension activation with legacy upgrade support
+
+### Changed
+
+- **pubmed-search-mcp 0.3.8 → 0.4.4**: citation metrics caching, BM25 ranking, bug fixes
+- Updated version references in copilot-instructions.md and research-workflow.md
+- Refactored `installCopilotInstructions()` with new `installResearchAgent()` function
+
 ## [0.5.15] - 2026-03-04
 
 ### Fixed
