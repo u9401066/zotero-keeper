@@ -77,6 +77,11 @@ class ZoteroClientBase:
                 base_url=self.config.base_url,
                 timeout=self.config.timeout,
                 headers=headers,
+                limits=httpx.Limits(
+                    max_connections=10,
+                    max_keepalive_connections=5,
+                    keepalive_expiry=30,
+                ),
             )
         return self._client
 

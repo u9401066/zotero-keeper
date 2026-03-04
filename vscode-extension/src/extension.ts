@@ -333,11 +333,16 @@ function registerCommands(context: vscode.ExtensionContext): void {
             if (connected) {
                 vscode.window.showInformationMessage('✅ Zotero is running and accessible!');
             } else {
+                const config = vscode.workspace.getConfiguration('zoteroMcp');
+                const host = config.get<string>('zoteroHost', 'localhost');
+                const port = config.get<number>('zoteroPort', 23119);
                 const choice = await vscode.window.showWarningMessage(
-                    '❌ Cannot connect to Zotero. Make sure Zotero 7 is running.',
-                    'Download Zotero', 'Open Settings'
+                    `❌ Cannot connect to Zotero at ${host}:${port}. Make sure Zotero 7 is running.`,
+                    'Retry', 'Download Zotero', 'Open Settings'
                 );
-                if (choice === 'Download Zotero') {
+                if (choice === 'Retry') {
+                    vscode.commands.executeCommand('zoteroMcp.checkConnection');
+                } else if (choice === 'Download Zotero') {
                     vscode.env.openExternal(vscode.Uri.parse('https://www.zotero.org/download/'));
                 } else if (choice === 'Open Settings') {
                     vscode.commands.executeCommand('workbench.action.openSettings', 'zoteroMcp.zotero');
@@ -601,13 +606,25 @@ async function checkZoteroConnection(): Promise<boolean> {
     const host = config.get<string>('zoteroHost', 'localhost');
     const port = config.get<number>('zoteroPort', 23119);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     try {
-        const response = await fetch(`http://${host}:${port}/connector/ping`);
+        const response = await fetch(`http://${host}:${port}/connector/ping`, {
+            signal: controller.signal,
+        });
         const text = await response.text();
-        return text.includes('Zotero is running');
-    } catch {
-        // Connection failed - Zotero is not running or not accessible
+        const ok = text.includes('Zotero is running');
+        if (!ok) {
+            console.warn(`Zotero ping responded but unexpected body: ${text.substring(0, 200)}`);
+        }
+        return ok;
+    } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.warn(`Zotero connection check failed (${host}:${port}): ${msg}`);
         return false;
+    } finally {
+        clearTimeout(timeoutId);
     }
 }
 

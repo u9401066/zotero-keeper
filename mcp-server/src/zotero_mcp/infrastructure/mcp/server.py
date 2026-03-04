@@ -148,16 +148,20 @@ class ZoteroKeeperServer:
             """
             try:
                 is_running = await self._zotero.ping()
-                return {
+                result: dict[str, Any] = {
                     "connected": is_running,
                     "endpoint": self._zotero.config.base_url,
                     "message": "Zotero is running" if is_running else "Cannot connect to Zotero",
                 }
+                if not is_running:
+                    result["hint"] = "Zotero responded but returned unexpected content. Make sure Zotero 7 is running (not just Zotero 6)."
+                return result
             except ZoteroConnectionError as e:
                 return {
                     "connected": False,
                     "endpoint": self._zotero.config.base_url,
                     "message": str(e),
+                    "hint": "Check if Zotero is running and the port is accessible.",
                 }
 
     def _register_tools(self):
