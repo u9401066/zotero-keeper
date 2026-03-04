@@ -1227,7 +1227,7 @@ wheels = [
 
 [[package]]
 name = "zotero-keeper"
-version = "0.5.14"
+version = "0.5.15"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },

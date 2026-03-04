@@ -1,6 +1,6 @@
 [project]
 name = "zotero-keeper"
-version = "0.5.14"
+version = "0.5.15"
 description = "MCP Server for managing local Zotero libraries - enables AI assistants to read and write bibliographic references"
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -38,10 +38,10 @@ Changelog = "https://github.com/u9401066/zotero-keeper/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 pubmed = [
-    "pubmed-search-mcp>=0.3.8",  # PubMed integration
+    "pubmed-search-mcp>=0.4.4",  # PubMed integration
 ]
 all = [
-    "pubmed-search-mcp>=0.3.8",
+    "pubmed-search-mcp>=0.4.4",
     "rapidfuzz>=3.0.0",
 ]
 dev = [
