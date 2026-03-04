@@ -2,7 +2,7 @@
     "name": "vscode-zotero-mcp",
     "displayName": "Zotero + PubMed MCP",
     "description": "AI-powered research assistant - integrates Zotero reference management and PubMed literature search with GitHub Copilot. One-click setup for researchers!",
-    "version": "0.5.13",
+    "version": "0.5.14",
     "publisher": "u9401066",
     "license": "Apache-2.0",
     "icon": "resources/icon.png",
@@ -151,6 +151,19 @@
                     "default": true,
                     "description": "Automatically install required Python packages",
                     "order": 40
+                },
+                "zoteroMcp.logLevel": {
+                    "type": "string",
+                    "default": "info",
+                    "enum": ["debug", "info", "warn", "error"],
+                    "enumDescriptions": [
+                        "Show all logs (verbose, for debugging)",
+                        "Normal operation logs",
+                        "Warnings and errors only",
+                        "Errors only"
+                    ],
+                    "markdownDescription": "Log level for the Zotero MCP output channel. Set to `debug` for troubleshooting.",
+                    "order": 50
                 }
             }
         },
@@ -245,14 +258,17 @@
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
-        "pretest": "npm run compile && npm run lint",
+        "pretest": "npm run compile && npm run lint && cp -r src/test/__mocks__ out/test/",
         "lint": "eslint src/**/*.ts",
-        "test": "vscode-test",
+        "test": "NODE_PATH=out/test/__mocks__ mocha",
+        "test:vscode": "vscode-test",
         "package": "vsce package",
         "publish": "vsce publish"
     },
     "devDependencies": {
+        "@types/mocha": "^10.0.10",
         "@types/node": "^20.11.0",
+        "@types/sinon": "^21.0.0",
         "@types/vscode": "^1.99.0",
         "@typescript-eslint/eslint-plugin": "^7.0.0",
         "@typescript-eslint/parser": "^7.0.0",
@@ -260,6 +276,8 @@
         "@vscode/test-electron": "^2.4.1",
         "@vscode/vsce": "^3.0.0",
         "eslint": "^8.57.0",
+        "mocha": "^11.7.5",
+        "sinon": "^21.0.1",
         "typescript": "^5.3.3"
     },
     "extensionDependencies": [],

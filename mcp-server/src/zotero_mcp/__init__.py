@@ -5,7 +5,7 @@ A MCP server that enables AI agents to read and write bibliographic references
 to local Zotero libraries using Zotero's built-in APIs.
 """
 
-__version__ = "1.6.1"
+__version__ = "0.5.14"
 
 
 # Lazy imports to avoid circular dependencies

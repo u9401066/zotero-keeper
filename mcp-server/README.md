@@ -41,7 +41,7 @@ ZOTERO_PORT=23119
 
 ## MCP Tools
 
-### 🌟 Unified Import (NEW in v1.11.0)
+### 🌟 Unified Import (NEW in v0.5.14)
 
 | Tool | Description |
 |------|-------------|
