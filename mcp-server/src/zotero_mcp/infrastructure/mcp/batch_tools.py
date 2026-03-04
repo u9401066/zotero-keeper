@@ -158,34 +158,35 @@ def register_batch_tools(mcp, zotero_client):
             try:
                 if collection_name and not collection_key:
                     # 用名稱查找 collection
-                    collections = await zotero_client.list_collections()
+                    collections = await zotero_client.get_collections()
                     found = None
                     for col in collections:
-                        if col.get("name", "").lower() == collection_name.lower():
+                        col_name = col.get("data", {}).get("name", "")
+                        if col_name.lower() == collection_name.lower():
                             found = col
                             break
 
                     if not found:
                         # 提供相似名稱建議
-                        similar = [c.get("name") for c in collections if collection_name.lower() in c.get("name", "").lower()][:5]
+                        similar = [c.get("data", {}).get("name", "") for c in collections if collection_name.lower() in c.get("data", {}).get("name", "").lower()][:5]
                         return {
                             "success": False,
                             "error": f"Collection '{collection_name}' not found",
                             "hint": f"Similar collections: {similar}" if similar else "Use list_collections() to see available collections",
-                            "available_collections": [{"key": c.get("key"), "name": c.get("name")} for c in collections[:10]],
+                            "available_collections": [{"key": c.get("key"), "name": c.get("data", {}).get("name", "")} for c in collections[:10]],
                         }
 
                     validated_collection_key = found.get("key")
                     collection_info = {
                         "key": validated_collection_key,
-                        "name": found.get("name"),
+                        "name": found.get("data", {}).get("name", ""),
                         "resolved_from": "name",
                     }
                     logger.info(f"Resolved collection '{collection_name}' → key: {validated_collection_key}")
 
                 elif collection_key:
                     # 驗證 collection_key 是否存在
-                    collections = await zotero_client.list_collections()
+                    collections = await zotero_client.get_collections()
                     found = None
                     for col in collections:
                         if col.get("key") == collection_key:
@@ -197,16 +198,16 @@ def register_batch_tools(mcp, zotero_client):
                             "success": False,
                             "error": f"Collection key '{collection_key}' not found",
                             "hint": "Use list_collections() to see available collections",
-                            "available_collections": [{"key": c.get("key"), "name": c.get("name")} for c in collections[:10]],
+                            "available_collections": [{"key": c.get("key"), "name": c.get("data", {}).get("name", "")} for c in collections[:10]],
                         }
 
                     validated_collection_key = collection_key
                     collection_info = {
                         "key": validated_collection_key,
-                        "name": found.get("name"),
+                        "name": found.get("data", {}).get("name", ""),
                         "resolved_from": "key",
                     }
-                    logger.info(f"Validated collection key: {validated_collection_key} ({found.get('name')})")
+                    logger.info(f"Validated collection key: {validated_collection_key} ({found.get('data', {}).get('name', '')})")
 
             except Exception as e:
                 logger.warning(f"Collection validation failed: {e}")
@@ -236,7 +237,7 @@ def register_batch_tools(mcp, zotero_client):
             # This is DIRECT Python import, not MCP call!
             # Data is complete and not truncated!
             try:
-                articles = fetch_pubmed_articles(pmid_list)
+                articles = await fetch_pubmed_articles(pmid_list)
             except Exception as e:
                 logger.error(f"Failed to fetch from PubMed: {e}")
                 return {
@@ -267,7 +268,7 @@ def register_batch_tools(mcp, zotero_client):
                     searcher = LiteratureSearcher(
                         email=getattr(client, "email", "zotero@example.com"), api_key=getattr(client, "api_key", None)
                     )
-                    citation_metrics = searcher.get_citation_metrics(pmid_list)
+                    citation_metrics = await searcher.get_citation_metrics(pmid_list)
                     logger.info(f"Fetched citation metrics for {len(citation_metrics)} articles")
                 except ImportError as e:
                     logger.warning(f"Cannot import LiteratureSearcher for citation metrics: {e}")

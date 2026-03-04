@@ -13,7 +13,27 @@ Supports:
 import logging
 import re
 
+import httpx
+
 logger = logging.getLogger(__name__)
+
+# Module-level shared client to avoid port exhaustion from per-request clients
+_crossref_client: httpx.AsyncClient | None = None
+
+
+def _get_crossref_client() -> httpx.AsyncClient:
+    """Get or create shared CrossRef HTTP client (connection pooling)"""
+    global _crossref_client
+    if _crossref_client is None or _crossref_client.is_closed:
+        _crossref_client = httpx.AsyncClient(
+            timeout=10,
+            limits=httpx.Limits(
+                max_connections=5,
+                max_keepalive_connections=2,
+                keepalive_expiry=30,
+            ),
+        )
+    return _crossref_client
 
 
 async def fetch_metadata_from_pmid(pmid: str, include_citation_metrics: bool = True) -> dict | None:
@@ -34,13 +54,13 @@ async def fetch_metadata_from_pmid(pmid: str, include_citation_metrics: bool = T
         from ..mappers.pubmed_mapper import pubmed_to_zotero_item
         from ..pubmed import fetch_pubmed_articles, enrich_articles_with_metrics
 
-        articles = fetch_pubmed_articles([pmid])
+        articles = await fetch_pubmed_articles([pmid])
         if articles:
             article = articles[0]
 
             # Enrich with citation metrics (RCR) if requested
             if include_citation_metrics:
-                enrich_articles_with_metrics([article], [pmid])
+                await enrich_articles_with_metrics([article], [pmid])
                 if article.get("relative_citation_ratio"):
                     logger.info(f"✅ RCR {article['relative_citation_ratio']:.2f} for PMID {pmid}")
 
@@ -64,12 +84,10 @@ async def fetch_metadata_from_doi(doi: str) -> dict | None:
     Returns:
         Zotero-compatible item dict, or None if fetch fails
     """
-    import httpx
-
     try:
         url = f"https://api.crossref.org/works/{doi}"
-        async with httpx.AsyncClient(timeout=10) as client:
-            response = await client.get(url)
+        client = _get_crossref_client()
+        response = await client.get(url)
 
         if response.status_code != 200:
             return None

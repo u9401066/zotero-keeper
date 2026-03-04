@@ -178,7 +178,7 @@ def register_search_tools(mcp, zotero_client):
             pubmed = PubMedClient(email=email, api_key=api_key)
 
             search_limit = limit * 3
-            results_raw = pubmed.search_raw(
+            results_raw = await pubmed.search_raw(
                 query=query,
                 limit=search_limit,
                 min_year=min_year,
@@ -277,7 +277,7 @@ def register_search_tools(mcp, zotero_client):
             if PUBMED_AVAILABLE:
                 email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
                 pubmed = PubMedClient(email=email)
-                articles = pubmed.fetch_details(pmids)
+                articles = await pubmed.fetch_details(pmids)
 
                 for article in articles:
                     pmid = article.get("pmid", "")

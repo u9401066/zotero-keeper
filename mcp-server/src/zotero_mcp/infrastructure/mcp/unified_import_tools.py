@@ -468,7 +468,7 @@ def register_unified_import_tools(mcp, zotero_client):
                     target_key = collection_key
                     target_name = col.get("data", {}).get("name", collection_key)
                 except Exception:
-                    collections = await zotero_client.list_collections()
+                    collections = await zotero_client.get_collections()
                     available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:20]]
                     result["error"] = f"Collection key '{collection_key}' not found"
                     result["available_collections"] = available
@@ -481,7 +481,7 @@ def register_unified_import_tools(mcp, zotero_client):
                     target_key = found.get("key")
                     target_name = found.get("data", {}).get("name", collection_name)
                 else:
-                    collections = await zotero_client.list_collections()
+                    collections = await zotero_client.get_collections()
                     available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:20]]
                     result["error"] = f"Collection '{collection_name}' not found"
                     result["available_collections"] = available

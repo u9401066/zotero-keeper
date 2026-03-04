@@ -315,7 +315,7 @@ def register_pubmed_tools(mcp, zotero_client):
                     target_name = col.get("data", {}).get("name", collection_key)
                 except Exception:
                     # 取得可用 collections 列表
-                    collections = await zotero_client.list_collections()
+                    collections = await zotero_client.get_collections()
                     available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:20]]
                     return {
                         "success": False,
@@ -331,7 +331,7 @@ def register_pubmed_tools(mcp, zotero_client):
                     target_name = found.get("data", {}).get("name", collection_name)
                 else:
                     # 取得可用 collections 列表
-                    collections = await zotero_client.list_collections()
+                    collections = await zotero_client.get_collections()
                     available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:20]]
                     return {
                         "success": False,
@@ -452,7 +452,7 @@ def register_pubmed_tools(mcp, zotero_client):
                     target_key = collection_key
                     target_name = col.get("data", {}).get("name", collection_key)
                 except Exception:
-                    collections = await zotero_client.list_collections()
+                    collections = await zotero_client.get_collections()
                     available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:20]]
                     return {
                         "success": False,
@@ -467,7 +467,7 @@ def register_pubmed_tools(mcp, zotero_client):
                     target_key = found.get("key")
                     target_name = found.get("data", {}).get("name", collection_name)
                 else:
-                    collections = await zotero_client.list_collections()
+                    collections = await zotero_client.get_collections()
                     available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:20]]
                     return {
                         "success": False,
@@ -482,7 +482,7 @@ def register_pubmed_tools(mcp, zotero_client):
             client = PubMedClient(email=email)
 
             # Fetch article details (returns dicts directly)
-            articles = client.fetch_details(pmids)
+            articles = await client.fetch_details(pmids)
 
             if not articles:
                 return {
@@ -497,7 +497,7 @@ def register_pubmed_tools(mcp, zotero_client):
                 try:
                     from ..pubmed import enrich_articles_with_metrics
 
-                    enrich_articles_with_metrics(articles, pmids)
+                    await enrich_articles_with_metrics(articles, pmids)
                     citation_metrics_count = sum(1 for a in articles if a.get("relative_citation_ratio"))
                     logger.info(f"Enriched {citation_metrics_count} articles with RCR")
                 except Exception as e:
@@ -627,29 +627,30 @@ def register_pubmed_tools(mcp, zotero_client):
                 collection_key = None
                 collection_info = None
                 if collection_name:
-                    collections = await zotero_client.list_collections()
+                    collections = await zotero_client.get_collections()
                     found = None
                     for col in collections:
-                        if col.get("name", "").lower() == collection_name.lower():
+                        col_name = col.get("data", {}).get("name", "")
+                        if col_name.lower() == collection_name.lower():
                             found = col
                             collection_key = col.get("key")
                             break
 
                     # 如果找不到 collection，回傳錯誤！不是靜默存到 root！
                     if not found:
-                        similar = [c.get("name") for c in collections if collection_name.lower() in c.get("name", "").lower()][:5]
+                        similar = [c.get("data", {}).get("name", "") for c in collections if collection_name.lower() in c.get("data", {}).get("name", "").lower()][:5]
                         return {
                             "success": False,
                             "error": f"Collection '{collection_name}' not found",
                             "hint": f"Similar: {similar}" if similar else "Use list_collections() first",
-                            "available_collections": [{"key": c.get("key"), "name": c.get("name")} for c in collections[:10]],
+                            "available_collections": [{"key": c.get("key"), "name": c.get("data", {}).get("name", "")} for c in collections[:10]],
                         }
 
-                    collection_info = {"key": collection_key, "name": found.get("name")}
+                    collection_info = {"key": collection_key, "name": found.get("data", {}).get("name", "")}
                     logger.info(f"Resolved collection '{collection_name}' → key: {collection_key}")
 
                 # Fetch articles
-                articles = fetch_pubmed_articles(pmid_list)
+                articles = await fetch_pubmed_articles(pmid_list)
                 if not articles:
                     return {
                         "success": False,
@@ -686,7 +687,7 @@ def register_pubmed_tools(mcp, zotero_client):
 
                 email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
                 client = PubMedClient(email=email)
-                articles = client.fetch_details(pmid_list)
+                articles = await client.fetch_details(pmid_list)
 
                 if not articles:
                     return {

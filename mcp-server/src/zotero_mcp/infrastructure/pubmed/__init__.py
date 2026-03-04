@@ -160,7 +160,7 @@ def is_using_submodule() -> bool:
     return _use_submodule
 
 
-def fetch_pubmed_articles(pmids: list[str]) -> list[dict]:
+async def fetch_pubmed_articles(pmids: list[str]) -> list[dict]:
     """
     Fetch complete article details from PubMed.
 
@@ -178,10 +178,10 @@ def fetch_pubmed_articles(pmids: list[str]) -> list[dict]:
         Exception: If fetch fails
     """
     client = get_pubmed_client()
-    return client.fetch_details(pmids)
+    return await client.fetch_details(pmids)
 
 
-def fetch_citation_metrics(pmids: list[str]) -> dict[str, dict]:
+async def fetch_citation_metrics(pmids: list[str]) -> dict[str, dict]:
     """
     Fetch citation metrics (RCR, percentile) from NIH iCite.
 
@@ -208,7 +208,7 @@ def fetch_citation_metrics(pmids: list[str]) -> dict[str, dict]:
         from pubmed_search import LiteratureSearcher  # type: ignore
 
         searcher = LiteratureSearcher(email=getattr(client, "email", "zotero@example.com"), api_key=getattr(client, "api_key", None))
-        metrics = searcher.get_citation_metrics(pmids)
+        metrics = await searcher.get_citation_metrics(pmids)
         logger.info(f"Fetched citation metrics for {len(metrics)} articles")
         return metrics
 
@@ -220,7 +220,7 @@ def fetch_citation_metrics(pmids: list[str]) -> dict[str, dict]:
         return {}
 
 
-def enrich_articles_with_metrics(articles: list[dict], pmids: list[str] | None = None) -> list[dict]:
+async def enrich_articles_with_metrics(articles: list[dict], pmids: list[str] | None = None) -> list[dict]:
     """
     Enrich article data with citation metrics.
 
@@ -244,7 +244,7 @@ def enrich_articles_with_metrics(articles: list[dict], pmids: list[str] | None =
         return articles
 
     # Fetch metrics
-    metrics = fetch_citation_metrics(pmids)
+    metrics = await fetch_citation_metrics(pmids)
 
     if not metrics:
         return articles
