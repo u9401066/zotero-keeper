@@ -5,7 +5,7 @@ Let AI manage your references! A MCP Server connecting VS Code Copilot / Claude 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![MCP SDK](https://img.shields.io/badge/MCP-FastMCP-green.svg)](https://github.com/modelcontextprotocol/python-sdk)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Zotero 7](https://img.shields.io/badge/Zotero-7.0+-red.svg)](https://www.zotero.org/)
+[![Zotero 7/8](https://img.shields.io/badge/Zotero-7%20%2F%208-red.svg)](https://www.zotero.org/)
 [![CI](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml/badge.svg)](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
@@ -15,7 +15,7 @@ Let AI manage your references! A MCP Server connecting VS Code Copilot / Claude 
 
 ## 🚀 One-Click Install (VS Code)
 
-> **Prerequisites**: [Zotero 7](https://www.zotero.org/download/) must be running
+> **Prerequisites**: [Zotero 7 or 8](https://www.zotero.org/download/) must be running
 
 <a href="vscode:mcp/install?%7B%22name%22%3A%22zotero-keeper%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22zotero-keeper%22%5D%7D"><img src="https://img.shields.io/badge/VS%20Code-Install%20MCP%20Server-007ACC?style=for-the-badge&logo=visualstudiocode" alt="Install in VS Code"></a>
 <a href="vscode-insiders:mcp/install?%7B%22name%22%3A%22zotero-keeper%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22zotero-keeper%22%5D%7D"><img src="https://img.shields.io/badge/VS%20Code%20Insiders-Install%20MCP%20Server-24bfa5?style=for-the-badge&logo=visualstudiocode" alt="Install in VS Code Insiders"></a>
@@ -60,7 +60,7 @@ No more manually searching, copying, pasting. Just tell your AI in natural langu
 ### Prerequisites
 
 - ✅ [Python 3.12+](https://www.python.org/downloads/)
-- ✅ [Zotero 7](https://www.zotero.org/download/) (must be running)
+- ✅ [Zotero 7 or 8](https://www.zotero.org/download/) (must be running)
 - ✅ [VS Code](https://code.visualstudio.com/) + GitHub Copilot, or [Claude Desktop](https://claude.ai/)
 - ✅ [uv](https://docs.astral.sh/uv/getting-started/installation/) (recommended)
 
@@ -472,7 +472,7 @@ Zotero provides **two local APIs**, but neither supports full CRUD:
 
 Zotero team is working on **Local API write support**:
 - [GitHub Issue #1320](https://github.com/zotero/zotero/issues/1320) - Request for write support
-- Expected in future Zotero 7.x releases
+- Expected in future Zotero releases (8.x+)
 
 **We'll update zotero-keeper as soon as Zotero supports it!**
 

@@ -5,7 +5,7 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![MCP SDK](https://img.shields.io/badge/MCP-FastMCP-green.svg)](https://github.com/modelcontextprotocol/python-sdk)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Zotero 7](https://img.shields.io/badge/Zotero-7.0+-red.svg)](https://www.zotero.org/)
+[![Zotero 7/8](https://img.shields.io/badge/Zotero-7%20%2F%208-red.svg)](https://www.zotero.org/)
 [![CI](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml/badge.svg)](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml)
 
 > 🌐 **[English](README.md)** | **繁體中文**
@@ -46,7 +46,7 @@
 ### 你需要準備
 
 - ✅ [Python 3.12+](https://www.python.org/downloads/)
-- ✅ [Zotero 7](https://www.zotero.org/download/) (要先執行)
+- ✅ [Zotero 7 or 8](https://www.zotero.org/download/) (要先執行)
 - ✅ [VS Code](https://code.visualstudio.com/) + GitHub Copilot，或 [Claude Desktop](https://claude.ai/)
 - ✅ [uv](https://docs.astral.sh/uv/getting-started/installation/) 套件管理工具 (推薦)
 
@@ -431,7 +431,7 @@ Zotero 提供**兩個本地 API**，但都不支援完整的 CRUD：
 
 Zotero 團隊正在開發 **Local API 寫入功能**：
 - [GitHub Issue #1320](https://github.com/zotero/zotero/issues/1320) - 請求寫入支援
-- 預計在 Zotero 7.x 後續版本加入
+- 預計在 Zotero 後續版本加入 (8.x+)
 
 **當 Zotero 支援後，我們會立即更新 zotero-keeper！**
 

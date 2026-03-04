@@ -325,6 +325,11 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
   - 📋 `get_item_attachments` - 列出附件
   - 📋 `get_pdf_annotations` - 讀取 PDF 標註 (if possible)
 
+- 📋 **Fulltext Search (Zotero 8 Local API)** 🆕
+  - 📋 `search_fulltext` - 透過 `/fulltext` endpoint 搜尋 Zotero 全文索引
+  - 📋 支援關鍵字搜尋 PDF/EPUB 內文
+  - 📋 結合現有 `search_items` 提供標題+全文雙重搜尋
+
 - 📋 **Better Error Handling**
   - 📋 Detailed error messages
   - 📋 Retry logic for transient failures
@@ -593,10 +598,10 @@ v3.0: Chat Participant (最佳體驗)
 
 ## Phase 5.5: Zotero Plugin Development 📋 **NEW!**
 
-> 🎯 **核心價值**：開發獨立的 Zotero 7 插件，擴展 Local API 支援完整 CRUD
+> 🎯 **核心價值**：開發獨立的 Zotero 7/8 插件，擴展 Local API 支援完整 CRUD
 >
 > 📚 **參考資源**：
-> - [Zotero 7 for Developers](https://www.zotero.org/support/dev/zotero_7_for_developers)
+> - [Zotero 8 for Developers](https://www.zotero.org/support/dev/zotero_8_for_developers)
 > - [zotero-plugin-template](https://github.com/windingwind/zotero-plugin-template) (747⭐)
 > - [Make It Red](https://github.com/zotero/make-it-red) - 官方示例插件
 

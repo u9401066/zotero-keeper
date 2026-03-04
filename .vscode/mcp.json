@@ -1,0 +1,54 @@
+{
+  // Zotero Keeper - Development MCP Servers
+  // 開發用：使用 uv 直接執行，clone 後即可使用
+  // 終端用戶請安裝 VS Code Extension (vscode-zotero-mcp)，會自動配置
+  //
+  // 前置條件：
+  //   1. 安裝 uv: https://docs.astral.sh/uv/getting-started/installation/
+  //   2. cd mcp-server && uv sync --extra pubmed
+  //   3. 確認 Zotero 已開啟 (port 23119)
+  "servers": {
+    // ─── Zotero Keeper MCP Server ───
+    // 管理本地 Zotero 書目庫（搜尋、讀取、寫入文獻）
+    "zotero-keeper": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory", "${workspaceFolder}/mcp-server",
+        "python", "-m", "zotero_mcp"
+      ],
+      "env": {
+        "ZOTERO_HOST": "localhost",
+        "ZOTERO_PORT": "23119"
+      }
+    },
+    // ─── PubMed Search MCP Server ───
+    // 搜尋 PubMed / OpenAlex / Europe PMC 等學術資料庫
+    // 需先安裝: cd mcp-server && uv sync --extra pubmed
+    "pubmed-search": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory", "${workspaceFolder}/mcp-server",
+        "python", "-m", "pubmed_search.presentation.mcp_server"
+      ],
+      "env": {
+        // NCBI 建議提供 email（不提供也可用，但可能被限速）
+        // "NCBI_EMAIL": "your-email@example.com",
+        // NCBI API Key（可選，提高速率限制 3→10 req/s）
+        // "NCBI_API_KEY": "",
+        // CORE API Key（可選，搜尋開放取用全文）
+        // "CORE_API_KEY": "",
+        // Semantic Scholar API Key（可選）
+        // "S2_API_KEY": "",
+        // 機構 OpenURL Resolver（可選，取得全文連結）
+        // "OPENURL_PRESET": "",
+        // Proxy 設定（可選）
+        // "HTTP_PROXY": "",
+        // "HTTPS_PROXY": ""
+      }
+    }
+  }
+}

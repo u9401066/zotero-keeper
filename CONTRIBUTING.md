@@ -58,7 +58,7 @@ We love PRs! Here's how to contribute code:
 
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) (required package manager)
-- Zotero 7.0+ (for testing)
+- Zotero 7 or 8 (for testing)
 - Git
 
 ### Setup Steps
@@ -91,7 +91,7 @@ mypy src/
 
 ### Testing with Zotero
 
-1. Ensure Zotero 7+ is running
+1. Ensure Zotero (7 or 8) is running
 2. Enable Local API in Zotero:
    ```javascript
    // Run in Zotero console (Tools > Developer > Run JavaScript)

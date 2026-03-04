@@ -36,7 +36,7 @@ Paste error messages here
 
 - **OS**: [e.g., Ubuntu 22.04, Windows 11, macOS 14]
 - **Python Version**: [e.g., 3.11.5]
-- **Zotero Version**: [e.g., 7.0.5]
+- **Zotero Version**: [e.g., 8.0.3]
 - **zotero-keeper Version**: [e.g., 1.6.0]
 - **Installation Method**: [pip, uv, from source]
 

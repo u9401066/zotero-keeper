@@ -70,7 +70,8 @@ vendor/
 .venv/
 venv/
 # Virtual environments
-.vscode/
+.vscode/*
+!.vscode/mcp.json
 wheels/
 *.xpi
 # Zotero Keeper

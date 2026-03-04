@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.15] - 2026-03-04
+
+### 🐛 Critical Bug Fixes + Zotero 8 Compatibility
+
+This release fixes multiple critical async/await bugs that prevented PubMed import tools from working, adds Zotero 8 annotation filtering, and fixes TCP port exhaustion from httpx connection leaks.
+
+### Fixed
+
+- **Critical: Async/Await Missing** — 12 call sites across 6 files were calling async PubMed functions without `await`, returning coroutine objects instead of data. Affected tools: `batch_import_from_pubmed`, `import_from_pmids`, `quick_import_pmids`, `search_pubmed_exclude_owned`, `check_articles_owned`
+- **Critical: `list_collections()` → `get_collections()`** — 8 call sites used non-existent `list_collections()` method on ZoteroClient, causing AttributeError on all import tools with collection targeting
+- **Critical: Collection Name Resolution** — 3 call sites used `col.get("name")` instead of `col.get("data", {}).get("name", "")`, causing collection name matching to always fail
+- **TCP Port Exhaustion** — `metadata_fetcher.py` created a new `httpx.AsyncClient` per CrossRef request, exhausting ephemeral ports on Windows. Now uses module-level shared client with connection pooling
+- **Wrapper Functions Made Async** — `fetch_pubmed_articles()`, `fetch_citation_metrics()`, `enrich_articles_with_metrics()` in `pubmed/__init__.py` converted from sync to async
+
+### Added
+
+- **Zotero 8 Annotation Filtering** — All item-listing tools now filter out `annotation` itemType (Zotero 8 stores PDF annotations as top-level items). Affected: `search_items`, `list_items`, `get_collection_items`, `get_library_stats`, `find_orphan_items`, MCP resources
+- **VS Code Extension v0.5.15** — Zotero 8 compatibility docs, dependency updates
+- **`.vscode/mcp.json`** — Dev MCP config template using `uv run`
+
+### Changed
+
+- **pubmed-search-mcp upgraded 0.3.8 → 0.4.4** — citation metrics caching (30min TTL), mypy strict bug fixes, BM25 ranking improvements
+- Zotero documentation updated for Zotero 8 (port 23119 confirmed)
+- VS Code Extension: npm dependency updates
+
+---
+
 ## [0.5.14] - 2025-06-27
 
 ### 🔍 Attachment & Fulltext Access + Version Unification
