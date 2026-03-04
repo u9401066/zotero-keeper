@@ -2,6 +2,17 @@
 
 ## Done
 
+### v0.5.15 - Critical Bug Fixes + Zotero 8 + PubMed 0.4.4 (2026-03-04)
+- ✅ **CRITICAL**: 修復 12 處 async/await 遺漏（PubMed import 工具全壞）
+- ✅ **CRITICAL**: 修復 `list_collections()` → `get_collections()` (8 處)
+- ✅ **CRITICAL**: 修復 Collection name resolution `col["data"]["name"]` (3 處)
+- ✅ TCP Port Exhaustion Fix (httpx 共享 client)
+- ✅ Zotero 8 annotation filtering (6 files)
+- ✅ pubmed-search-mcp 0.3.8 → 0.4.4 (submodule + dependency)
+- ✅ VS Code Extension v0.5.15 (Zotero 8 docs, npm updates)
+- ✅ `.vscode/mcp.json` 開發設定
+- ✅ E2E 測試通過: 5 個 MCP tools 驗證
+
 ### v0.5.14 - Attachment Tools + Version Unification (2025-06-27)
 - ✅ `get_item_attachments` + `get_item_fulltext` MCP tools (2 new)
 - ✅ DAL: `client_read.py` 新增 `get_item_fulltext()` + `resolve_attachment_path()`
@@ -61,10 +72,11 @@
 
 ## Doing
 
-- 等待 Marketplace v0.5.9 驗證結果（Repository signing 問題）
+（無）
 
 ## Next
 
-- 解決 Marketplace Repository signing 問題（可能需聯繫 Microsoft）
-- Open VSX 發布（需要 Open VSX token）
-- 測試 v0.5.9 在 Windows 的安裝流程
+- v0.6.0: Tool Consolidation (28 → 22 tools)
+- 解決 Marketplace Repository signing 問題
+- Open VSX 發布
+- Zotero Plugin (HTTP Bridge) 實作

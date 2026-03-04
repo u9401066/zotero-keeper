@@ -2,32 +2,31 @@
 
 > 🎯 目前工作焦點與下一步行動
 
-## 當前狀態: v0.5.14 發布中 🚀
+## 當前狀態: v0.5.15 已完成 ✅
 
-### 已完成 (2025-06-27)
+### 已完成 (2026-03-04)
 
-1. ✅ Attachment & Fulltext Tools (2 new MCP tools)
-   - `get_item_attachments`: 列出附件及檔案路徑
-   - `get_item_fulltext`: 取得 Zotero 索引的全文
-   - DAL: `client_read.py` 新增 2 methods
-   - 15 unit tests
+1. ✅ Critical Async/Await Bug Fixes (12 call sites, 6 files)
+   - `fetch_pubmed_articles`, `fetch_details`, `search_raw`, `get_citation_metrics` 全部加上 await
+   - `pubmed/__init__.py` 三個 wrapper 函數改為 async
+   - 影響工具: batch_import, import_from_pmids, quick_import, search_pubmed, check_articles
 
-2. ✅ VS Code Test Infrastructure
-   - Mocha + Sinon + VS Code mock
-   - 5 模組單元測試
+2. ✅ `list_collections()` → `get_collections()` (8 處)
+   - ZoteroClient 方法名修正
 
-3. ✅ Structured Logging
-   - `logging_config.py` + `logger.ts`
-   - logLevel 設定
+3. ✅ Collection Name Resolution Fix (3 處)
+   - `col.get("name")` → `col.get("data",{}).get("name","")` 修正資料結構存取
 
-4. ✅ Pre-commit Quality Gate
-   - ruff lint/format, pytest, trailing whitespace, conflict markers
+4. ✅ Zotero 8 Annotation Filtering (5 tool files + resources)
+   - 過濾 `annotation` itemType（Zotero 8 新增的 PDF 標註項目）
 
-5. ✅ Version Unification
-   - MCP Server: 1.11.0/1.6.1 → 0.5.14
-   - VS Code Extension: 0.5.13 → 0.5.14
+5. ✅ TCP Port Exhaustion Fix
+   - `metadata_fetcher.py` 使用共享 httpx.AsyncClient 避免連線洩漏
 
-6. ✅ Zotero Plugin Spec (HTTP Bridge 設計)
+6. ✅ VS Code Extension v0.5.15
+   - Zotero 8 相容性文件、npm 依賴更新
+
+7. ✅ `.vscode/mcp.json` 開發用 MCP 設定
 
 ---
 
@@ -35,10 +34,10 @@
 
 | 元件 | 版本 | 狀態 |
 |------|------|------|
-| pubmed-search-mcp | v0.3.8 | PyPI ✅ |
-| zotero-keeper MCP | v0.5.14 | 發布中 🚀 |
-| VS Code Extension | v0.5.14 | 發布中 🚀 |
+| pubmed-search-mcp | v0.4.4 | installed ✅ |
+| zotero-keeper MCP | v0.5.15 | ready to push 🚀 |
+| VS Code Extension | v0.5.15 | ready to push 🚀 |
 
 ---
-*Updated: 2025-06-27*
+*Updated: 2026-03-04*
 *工作模式: Release*

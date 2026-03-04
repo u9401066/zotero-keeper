@@ -2,6 +2,21 @@
 
 > 📝 重要架構和實作決策記錄
 
+## 2026-03-04
+
+### DEC-019: Async/Await 全面修復策略
+- **決策**: 一次修復所有 PubMed API 呼叫的 async/await 問題，而非逐個修
+- **理由**:
+  1. PubMedClient 所有方法都是 async，但 wrapper 和 tool 呼叫端多數遺漏 await
+  2. 逐個修會遺漏，應全面搜索並一次修正
+- **影響**: 12 call sites + 3 wrapper functions across 6 files
+- **結果**: 所有 PubMed import/search tools 恢復正常
+
+### DEC-020: pubmed-search-mcp 0.3.8 → 0.4.4 升級
+- **決策**: 升級 submodule 至最新 0.4.4，pyproject.toml 同步更新
+- **理由**: 新版本含 citation metrics 快取、mypy strict 修正、BM25 排序改進
+- **相容性**: 無 breaking changes，我們用的 API (PubMedClient, LiteratureSearcher, SearchResult) 簽名完全不變
+
 ## 2025-06-27
 
 ### DEC-018: Version Unification (MCP Server 1.x → 0.5.x)
