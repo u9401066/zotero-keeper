@@ -97,7 +97,6 @@ def register_batch_tools(mcp, zotero_client):
 
         Args:
             pmids: Comma-separated PMIDs (e.g., "38353755,37864754")
-                   or "last" to use results from last search (requires session)
             tags: Additional tags to apply to all imported articles
             skip_duplicates: Skip if exact PMID or DOI match found (default: True)
             collection_key: Zotero collection key (⚠️ 不建議直接使用，容易出錯)
@@ -442,7 +441,7 @@ def _parse_pmids(pmids_input: str) -> list[str]:
     Parse PMID input string to list of PMIDs.
 
     Args:
-        pmids_input: Comma-separated PMIDs or special values like "last"
+        pmids_input: Comma-separated PMIDs
 
     Returns:
         List of PMID strings
@@ -450,11 +449,9 @@ def _parse_pmids(pmids_input: str) -> list[str]:
     if not pmids_input:
         return []
 
-    # Handle "last" keyword (would need session state)
+    # Fail explicitly for unsupported shortcuts instead of silently returning [].
     if pmids_input.strip().lower() == "last":
-        # TODO: Implement session-based last search results
-        logger.warning("'last' keyword not yet implemented")
-        return []
+        raise ValueError("'last' is not supported by batch_import_from_pubmed yet; provide comma-separated PMIDs instead")
 
     # Parse comma-separated PMIDs
     pmids = []

@@ -3,10 +3,10 @@ Zotero Keeper MCP Server - Main Entry Point
 
 Usage:
     # Default (stdio transport, localhost)
-    python -m zotero_mcp
+  uv run python -m zotero_mcp
 
     # With remote Zotero host
-    ZOTERO_HOST=<your-zotero-ip> python -m zotero_mcp
+  ZOTERO_HOST=<your-zotero-ip> uv run python -m zotero_mcp
 
     # With MCP inspector
     mcp dev src/zotero_mcp/infrastructure/mcp/server.py
@@ -39,17 +39,17 @@ def main():
         epilog="""
 Examples:
   # Local Zotero (default)
-  python -m zotero_mcp
+  uv run python -m zotero_mcp
 
   # Remote Zotero
-  ZOTERO_HOST=<your-zotero-ip> python -m zotero_mcp
+  ZOTERO_HOST=<your-zotero-ip> uv run python -m zotero_mcp
 
 VS Code Copilot Configuration:
   {
     "github.copilot.chat.agent.mcpServers": {
       "zotero-keeper": {
-        "command": "python",
-        "args": ["-m", "zotero_mcp"],
+        "command": "uv",
+        "args": ["run", "python", "-m", "zotero_mcp"],
         "cwd": "/path/to/zotero-keeper/mcp-server"
       }
     }

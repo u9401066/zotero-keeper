@@ -58,10 +58,10 @@ git clone https://github.com/u9401066/zotero-keeper.git
 cd zotero-keeper/mcp-server
 
 # 2. 安裝（使用 uv）
-uv pip install -e .
+uv sync --extra all
 
 # 3. 測試連線 (先確認 Zotero 有開著)
-python -m zotero_mcp
+uv run python -m zotero_mcp
 ```
 
 ### 設定 VS Code Copilot
@@ -93,8 +93,8 @@ python -m zotero_mcp
 {
   "mcpServers": {
     "zotero-keeper": {
-      "command": "python",
-      "args": ["-m", "zotero_mcp"],
+      "command": "uv",
+      "args": ["run", "python", "-m", "zotero_mcp"],
       "cwd": "/你的路徑/zotero-keeper/mcp-server"
     }
   }
@@ -165,7 +165,7 @@ python -m zotero_mcp
 | `import_from_pmids` | 用 PMID 匯入 + 自動 RCR | 「匯入 PMID 12345678」 |
 | `batch_import_from_pubmed` ⭐ | 批次匯入 + 自動 RCR | 「匯入這些 PMID: 123,456,789」 |
 
-#### advanced_search v1.8.0 新功能
+#### advanced_search 使用範例
 
 ```python
 # 🔍 依文獻類型搜尋
@@ -367,7 +367,7 @@ netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=23119 conn
 
 ## ⚠️ Zotero API 限制（重要！）
 
-### � API 能力矩陣
+### API 能力矩陣
 
 Zotero 提供**兩個本地 API**，但都不支援完整的 CRUD：
 

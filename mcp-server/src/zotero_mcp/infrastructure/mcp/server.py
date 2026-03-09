@@ -164,10 +164,6 @@ class ZoteroKeeperServer:
                     "hint": "Check if Zotero is running and the port is accessible.",
                 }
 
-    def _register_tools(self):
-        """Register all MCP tools - DEPRECATED, use _register_all_tools()"""
-        pass  # Kept for backwards compatibility, all tools moved to separate modules
-
     def run(self, transport: str = "stdio"):
         """Run the MCP server"""
         logger.info(f"Starting Zotero Keeper MCP Server ({transport} transport)")

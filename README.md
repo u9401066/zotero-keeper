@@ -44,9 +44,9 @@ No more manually searching, copying, pasting. Just tell your AI in natural langu
 - **📖 MCP Resources**: Browse Zotero data via URIs (`zotero://collections`, etc.)
 - **💬 MCP Elicitation**: Interactive collection selection with numbered options
 - **🔒 Auto-fetch Metadata**: DOI/PMID → complete abstract + all fields automatically!
-- **� Citation Metrics**: RCR, NIH Percentile → stored in Zotero extra field (v1.8.0)
-- **🛡️ Collection 防呆**: Use collection_name for auto-validation (v1.8.0)
-- **�📖 Read Operations**: Search, list, retrieve items from local Zotero
+- **📊 Citation Metrics**: RCR and NIH Percentile stored in Zotero extra fields
+- **🛡️ Collection Validation**: Use `collection_name` for safer auto-validation
+- **📖 Read Operations**: Search, list, and retrieve items from local Zotero
 - **✏️ Write Operations**: Add references via Connector API
 - **🧠 Smart Features**: Duplicate detection, validation, intelligent import
 - **📁 Collection Support**: Nested collections (folders) with hierarchy
@@ -72,10 +72,10 @@ git clone https://github.com/u9401066/zotero-keeper.git
 cd zotero-keeper/mcp-server
 
 # Install with uv (required)
-uv pip install -e .
+uv sync --extra all
 
 # Test (make sure Zotero is running)
-python -m zotero_mcp
+uv run python -m zotero_mcp
 ```
 
 ### Configure VS Code Copilot
@@ -107,8 +107,8 @@ Add to `claude_desktop_config.json`:
 {
   "mcpServers": {
     "zotero-keeper": {
-      "command": "python",
-      "args": ["-m", "zotero_mcp"],
+      "command": "uv",
+      "args": ["run", "python", "-m", "zotero_mcp"],
       "cwd": "/path/to/zotero-keeper/mcp-server"
     }
   }
@@ -189,7 +189,7 @@ Add to `claude_desktop_config.json`:
 | `get_library_stats` | Library statistics (year/author/journal) | "Show my library statistics" |
 | `find_orphan_items` | Find unorganized items | "Which papers need organizing?" |
 
-#### batch_import_from_pubmed v1.8.0+ Features
+#### batch_import_from_pubmed Features
 
 ```python
 # ✅ Simple: just provide PMIDs and collection
@@ -206,7 +206,7 @@ batch_import_from_pubmed(
 # Citations: 127
 ```
 
-#### advanced_search v1.8.0 新功能
+#### advanced_search Examples
 
 ```python
 # 🔍 依文獻類型搜尋
@@ -408,7 +408,7 @@ netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=23119 conn
 
 ## ⚠️ Zotero API Limitations (Important!)
 
-### � API Capability Matrix
+### API Capability Matrix
 
 Zotero provides **two local APIs**, but neither supports full CRUD:
 
@@ -503,18 +503,18 @@ We understand that **most users are researchers, not developers**. Installing Py
 
 ### 🎯 Planned Improvements
 
-| Current (v1.x) | Future (v2.x) |
+| Current | Future |
 |----------------|---------------|
-| Requires Python 3.12+ | Standalone executable (.exe / .app) |
-| Requires `uv pip install` | One-click installer |
-| Manual `mcp.json` config | Auto-configure VS Code/Claude |
-| Developer-friendly | Researcher-friendly |
+| Python 3.12+ with `uv` | Standalone executable (.exe / .app) |
+| MCP server install via CLI | One-click installer for non-technical users |
+| VS Code extension already available | Broader desktop distribution |
+| Manual config outside VS Code | More guided setup for Claude/Desktop tools |
 
 ### 📦 Planned Distribution Methods
 
 1. **PyPI Package**: `uv pip install zotero-keeper-mcp` (simplified)
 2. **Standalone Executable**: PyInstaller bundle (no Python needed)
-3. **VS Code Extension**: One-click install from Marketplace (planned)
+3. **VS Code Extension**: Already available on the VS Code Marketplace
 4. **Homebrew/Chocolatey**: Package manager support
 
 > 💡 **Want to help?** We welcome contributions to simplify installation!

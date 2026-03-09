@@ -6,23 +6,23 @@ MCP Server for managing local Zotero libraries via AI Agents.
 
 ```bash
 # Basic installation
-uv pip install -e .
+uv sync
 
 # With PubMed support
-uv pip install -e ".[pubmed]"
+uv sync --extra pubmed
 
 # All features
-uv pip install -e ".[all]"
+uv sync --extra all
 ```
 
 ## Usage
 
 ```bash
 # Run MCP server
-python -m zotero_mcp
+uv run python -m zotero_mcp
 
 # Or use the CLI
-zotero-keeper
+uv run zotero-keeper
 ```
 
 ## Environment Variables
