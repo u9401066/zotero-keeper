@@ -40,7 +40,7 @@ import logging
 import re
 from typing import Any
 
-from .collection_support import apply_collection_and_tags, resolve_collection_target
+from .collection_support import apply_collection_and_tags, attach_saved_to_info, resolve_collection_target
 
 logger = logging.getLogger(__name__)
 
@@ -535,13 +535,7 @@ def register_unified_import_tools(mcp, zotero_client):
                 result["message"] += f" ({skipped_count} duplicates skipped)"
 
             # Collection info
-            if target_key:
-                result["saved_to"] = {"key": target_key, "name": target_name}
-            else:
-                result["saved_to"] = "My Library (root)"
-                result["warning"] = "No collection specified - items saved to library root. Consider specifying collection_name."
-
-            return result
+            return attach_saved_to_info(result, target_key=target_key, target_name=target_name)
 
         except Exception as e:
             logger.error(f"Import failed: {e}")

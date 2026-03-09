@@ -2,6 +2,12 @@
 
 ## Done
 
+### 2026-03-09 - 第五輪結構清理 (Shared saved_to helper)
+
+- ✅ `collection_support.py` 新增 `attach_saved_to_info()`
+- ✅ `pubmed_tools.py` / `unified_import_tools.py` 共用同一套 `saved_to` / root warning 組裝
+- ✅ `uv run pytest tests/unit/mcp/test_collection_support.py tests/unit/mcp/test_pubmed_tools.py -q` 通過（34 passed）
+
 ### 2026-03-09 - 第四輪結構清理 (PubMed import helpers)
 
 - ✅ `pubmed_tools.py` 抽出共用 helper：`_fetch_pubmed_details()`
@@ -111,7 +117,7 @@
 
 ## Doing
 
-- 第五輪候選：進一步縮減 `unified_import_tools.py` 與 `pubmed_tools.py` 的回應組裝／轉換重複
+- 第六輪候選：評估 `pubmed_tools.py` 與 `unified_import_tools.py` 的 article conversion / title summary 是否值得再抽共享 helper
 
 ## Next
 

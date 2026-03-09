@@ -19,7 +19,7 @@ import os
 import re
 from typing import Any
 
-from .collection_support import apply_collection_and_tags, resolve_collection_target
+from .collection_support import apply_collection_and_tags, attach_saved_to_info, resolve_collection_target
 
 logger = logging.getLogger(__name__)
 
@@ -238,16 +238,6 @@ def _pmid_to_zotero_item(article: dict) -> dict[str, Any]:
     return item
 
 
-def _attach_saved_to_info(result: dict[str, Any], *, target_key: str | None, target_name: str | None) -> dict[str, Any]:
-    """Attach collection destination metadata to a tool result."""
-    if target_key:
-        result["saved_to"] = {"key": target_key, "name": target_name}
-    else:
-        result["saved_to"] = "My Library (root)"
-        result["warning"] = "No collection specified - items saved to library root. Consider specifying collection_name."
-    return result
-
-
 async def _fetch_pubmed_details(pmids: list[str]) -> list[dict[str, Any]]:
     """Fetch PubMed article details using the configured NCBI email."""
     if not PUBMED_AVAILABLE or PubMedClient is None:
@@ -360,7 +350,7 @@ def register_pubmed_tools(mcp, zotero_client):
                 "message": f"Successfully imported {len(items)} items to Zotero",
             }
 
-            return _attach_saved_to_info(result, target_key=target_key, target_name=target_name)
+            return attach_saved_to_info(result, target_key=target_key, target_name=target_name)
 
         except Exception as e:
             logger.error(f"RIS import failed: {e}")
@@ -482,7 +472,7 @@ def register_pubmed_tools(mcp, zotero_client):
             if include_citation_metrics:
                 result["citation_metrics_fetched"] = citation_metrics_count
 
-            return _attach_saved_to_info(result, target_key=target_key, target_name=target_name)
+            return attach_saved_to_info(result, target_key=target_key, target_name=target_name)
 
         except Exception as e:
             logger.error(f"PMID import failed: {e}")
@@ -605,7 +595,7 @@ def register_pubmed_tools(mcp, zotero_client):
                 }
                 if collection_info:
                     result["collection_info"] = collection_info
-                _attach_saved_to_info(result, target_key=collection_key, target_name=collection_info["name"] if collection_info else None)
+                attach_saved_to_info(result, target_key=collection_key, target_name=collection_info["name"] if collection_info else None)
                 return result
 
             # Fallback to import_from_pmids if pubmed package available
@@ -631,7 +621,7 @@ def register_pubmed_tools(mcp, zotero_client):
                     "pmids": pmid_list,
                     "message": f"Successfully imported {len(zotero_items)} articles",
                 }
-                return _attach_saved_to_info(result, target_key=None, target_name=None)
+                return attach_saved_to_info(result, target_key=None, target_name=None)
 
             else:
                 return {

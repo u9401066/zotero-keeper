@@ -6,6 +6,7 @@ import pytest
 
 from zotero_mcp.infrastructure.mcp.collection_support import (
     apply_collection_and_tags,
+    attach_saved_to_info,
     resolve_collection_target,
 )
 
@@ -103,3 +104,19 @@ class TestApplyCollectionAndTags:
         assert result["collections"] == ["ABC123"]
         assert {"tag": "existing"} in result["tags"]
         assert {"tag": "new"} in result["tags"]
+
+
+class TestAttachSavedToInfo:
+    """Tests for shared saved_to response helper."""
+
+    def test_attaches_named_collection(self):
+        result = attach_saved_to_info({"success": True}, target_key="ABC123", target_name="AI Research")
+
+        assert result["saved_to"] == {"key": "ABC123", "name": "AI Research"}
+        assert "warning" not in result
+
+    def test_attaches_root_warning_when_collection_missing(self):
+        result = attach_saved_to_info({"success": True}, target_key=None, target_name=None)
+
+        assert result["saved_to"] == "My Library (root)"
+        assert "warning" in result

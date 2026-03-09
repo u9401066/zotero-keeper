@@ -8,7 +8,6 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from zotero_mcp.infrastructure.mcp.pubmed_tools import (
-    _attach_saved_to_info,
     _build_article_import_items,
     _fetch_pubmed_details,
     _parse_ris_to_zotero_items,
@@ -279,20 +278,6 @@ class TestIsPubmedAvailable:
 
 class TestPubmedToolHelpers:
     """Tests for shared pubmed tool helpers."""
-
-    def test_attach_saved_to_info_with_collection(self):
-        """Test collection metadata attachment for named collection."""
-        result = _attach_saved_to_info({"success": True}, target_key="ABCD1234", target_name="ML Papers")
-
-        assert result["saved_to"] == {"key": "ABCD1234", "name": "ML Papers"}
-        assert "warning" not in result
-
-    def test_attach_saved_to_info_for_library_root(self):
-        """Test root-library metadata attachment includes warning."""
-        result = _attach_saved_to_info({"success": True}, target_key=None, target_name=None)
-
-        assert result["saved_to"] == "My Library (root)"
-        assert "warning" in result
 
     def test_build_article_import_items(self):
         """Test compact response item builder."""

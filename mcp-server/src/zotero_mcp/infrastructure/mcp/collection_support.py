@@ -104,3 +104,14 @@ def apply_collection_and_tags(item: dict[str, Any], *, collection_key: str | Non
         item["tags"] = existing_tags
 
     return item
+
+
+def attach_saved_to_info(result: dict[str, Any], *, target_key: str | None, target_name: str | None) -> dict[str, Any]:
+    """Attach normalized collection destination metadata to a result payload."""
+    if target_key:
+        result["saved_to"] = {"key": target_key, "name": target_name}
+    else:
+        result["saved_to"] = "My Library (root)"
+        result["warning"] = "No collection specified - items saved to library root. Consider specifying collection_name."
+
+    return result
