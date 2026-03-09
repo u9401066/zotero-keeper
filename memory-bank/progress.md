@@ -8,6 +8,19 @@
 - ✅ `pubmed_tools.py` / `unified_import_tools.py` 共用同一套 `saved_to` / root warning 組裝
 - ✅ `uv run pytest tests/unit/mcp/test_collection_support.py tests/unit/mcp/test_pubmed_tools.py -q` 通過（34 passed）
 
+### 2026-03-09 - Reuse audit
+
+- ✅ 確認 `pubmed_tools.py::_fetch_pubmed_details()` 原本重複了 `infrastructure/pubmed/__init__.py::fetch_pubmed_articles()` 的 wrapper 責任
+- ✅ 已改為直接重用 `fetch_pubmed_articles()`，避免在 MCP tool 層重建 client fetch wrapper
+- ✅ `uv run pytest tests/unit/mcp/test_pubmed_tools.py -q` 通過（25 passed）
+
+### 2026-03-09 - Full PubMed wrapper convergence
+
+- ✅ `infrastructure/pubmed/__init__.py` 新增 shared helpers：`is_pubmed_available()`、`search_pubmed_raw()`
+- ✅ `pubmed_tools.py` 與 `search_tools.py` 全面改走 shared pubmed integration wrapper
+- ✅ `mcp-server/src/zotero_mcp/infrastructure/mcp/*.py` 已無 direct `PubMedClient` import / instantiation
+- ✅ `uv run pytest tests/unit/mcp/test_pubmed_tools.py tests/unit/mcp/test_search_tools.py -q` 通過（62 passed）
+
 ### 2026-03-09 - 第四輪結構清理 (PubMed import helpers)
 
 - ✅ `pubmed_tools.py` 抽出共用 helper：`_fetch_pubmed_details()`

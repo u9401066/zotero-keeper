@@ -7,9 +7,9 @@ a unified search experience that excludes already-owned articles.
 """
 
 import logging
-import os
 from typing import Any
 
+from ..pubmed import fetch_pubmed_articles, is_pubmed_available as pubmed_integration_available, search_pubmed_raw
 from .search_helpers import (
     get_owned_identifiers,
     is_owned,
@@ -18,15 +18,6 @@ from .search_helpers import (
 )
 
 logger = logging.getLogger(__name__)
-
-# Check if pubmed-search-mcp is available
-try:
-    from pubmed_search import PubMedClient
-
-    PUBMED_AVAILABLE = True
-except ImportError:
-    PUBMED_AVAILABLE = False
-    logger.info("pubmed-search-mcp not installed. Integrated search disabled.")
 
 
 def register_search_tools(mcp, zotero_client):
@@ -127,7 +118,7 @@ def register_search_tools(mcp, zotero_client):
 
     # ==================== PubMed Integration ====================
 
-    if not PUBMED_AVAILABLE:
+    if not pubmed_integration_available():
         logger.info("Skipping PubMed search tools")
         return
 
@@ -173,12 +164,8 @@ def register_search_tools(mcp, zotero_client):
             - new_pmids: Ready for import with quick_import_pmids
         """
         try:
-            email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
-            api_key = os.environ.get("NCBI_API_KEY")
-            pubmed = PubMedClient(email=email, api_key=api_key)
-
             search_limit = limit * 3
-            results_raw = await pubmed.search_raw(
+            results_raw = await search_pubmed_raw(
                 query=query,
                 limit=search_limit,
                 min_year=min_year,
@@ -274,10 +261,8 @@ def register_search_tools(mcp, zotero_client):
             new_pmids = []
             details = {}
 
-            if PUBMED_AVAILABLE:
-                email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
-                pubmed = PubMedClient(email=email)
-                articles = await pubmed.fetch_details(pmids)
+            if pubmed_integration_available():
+                articles = await fetch_pubmed_articles(pmids)
 
                 for article in articles:
                     pmid = article.get("pmid", "")
@@ -317,4 +302,4 @@ def register_search_tools(mcp, zotero_client):
 
 def is_search_tools_available() -> bool:
     """Check if integrated search tools are available."""
-    return PUBMED_AVAILABLE
+    return pubmed_integration_available()

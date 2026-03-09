@@ -294,19 +294,15 @@ class TestPubmedToolHelpers:
         ]
 
     @pytest.mark.asyncio
-    @patch("zotero_mcp.infrastructure.mcp.pubmed_tools.PUBMED_AVAILABLE", True)
-    @patch("zotero_mcp.infrastructure.mcp.pubmed_tools.PubMedClient")
-    async def test_fetch_pubmed_details_uses_configured_email(self, mock_client_cls):
-        """Test shared PubMed detail fetcher uses NCBI_EMAIL."""
-        mock_client = AsyncMock()
-        mock_client.fetch_details.return_value = [{"pmid": "123"}]
-        mock_client_cls.return_value = mock_client
+    @patch("zotero_mcp.infrastructure.mcp.pubmed_tools.pubmed_integration_available", return_value=True)
+    @patch("zotero_mcp.infrastructure.mcp.pubmed_tools.fetch_pubmed_articles", new_callable=AsyncMock)
+    async def test_fetch_pubmed_details_uses_shared_wrapper(self, mock_fetch_pubmed_articles, _mock_available):
+        """Test shared PubMed detail fetcher delegates to infrastructure wrapper."""
+        mock_fetch_pubmed_articles.return_value = [{"pmid": "123"}]
 
-        with patch.dict("os.environ", {"NCBI_EMAIL": "tester@example.com"}, clear=False):
-            result = await _fetch_pubmed_details(["123"])
+        result = await _fetch_pubmed_details(["123"])
 
-        mock_client_cls.assert_called_once_with(email="tester@example.com")
-        mock_client.fetch_details.assert_awaited_once_with(["123"])
+        mock_fetch_pubmed_articles.assert_awaited_once_with(["123"])
         assert result == [{"pmid": "123"}]
 
 
@@ -384,8 +380,8 @@ class TestImportFromPmids:
     """Tests for import_from_pmids tool."""
 
     @pytest.mark.asyncio
-    @patch("zotero_mcp.infrastructure.mcp.pubmed_tools.PUBMED_AVAILABLE", False)
-    async def test_returns_error_when_unavailable(self):
+    @patch("zotero_mcp.infrastructure.mcp.pubmed_tools.pubmed_integration_available", return_value=False)
+    async def test_returns_error_when_unavailable(self, _mock_available):
         """Test error when pubmed not available."""
         mock_mcp = MagicMock()
         mock_client = AsyncMock()
@@ -401,8 +397,8 @@ class TestImportFromPmids:
         register_pubmed_tools(mock_mcp, mock_client)
 
     @pytest.mark.asyncio
-    @patch("zotero_mcp.infrastructure.mcp.pubmed_tools.PUBMED_AVAILABLE", True)
-    async def test_successful_import(self):
+    @patch("zotero_mcp.infrastructure.mcp.pubmed_tools.pubmed_integration_available", return_value=True)
+    async def test_successful_import(self, _mock_available):
         """Test successful PMID import."""
         mock_mcp = MagicMock()
         mock_client = AsyncMock()

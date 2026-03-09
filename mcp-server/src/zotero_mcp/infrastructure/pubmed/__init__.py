@@ -14,7 +14,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -160,6 +160,11 @@ def is_using_submodule() -> bool:
     return _use_submodule
 
 
+def is_pubmed_available() -> bool:
+    """Check whether pubmed-search integration is available through the shared wrapper."""
+    return _configure_pubmed_search()
+
+
 async def fetch_pubmed_articles(pmids: list[str]) -> list[dict]:
     """
     Fetch complete article details from PubMed.
@@ -179,6 +184,31 @@ async def fetch_pubmed_articles(pmids: list[str]) -> list[dict]:
     """
     client = get_pubmed_client()
     return await client.fetch_details(pmids)
+
+
+async def search_pubmed_raw(
+    query: str,
+    *,
+    limit: int = 10,
+    min_year: Optional[int] = None,
+    max_year: Optional[int] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    article_type: Optional[str] = None,
+    strategy: str = "relevance",
+) -> list[dict]:
+    """Run a raw PubMed search through the shared pubmed integration wrapper."""
+    client = get_pubmed_client()
+    return await client.search_raw(
+        query=query,
+        limit=limit,
+        min_year=min_year,
+        max_year=max_year,
+        date_from=date_from,
+        date_to=date_to,
+        article_type=article_type,
+        strategy=strategy,
+    )
 
 
 async def fetch_citation_metrics(pmids: list[str]) -> dict[str, dict]:

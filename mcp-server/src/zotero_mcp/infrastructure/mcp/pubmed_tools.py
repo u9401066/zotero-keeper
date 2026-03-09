@@ -15,24 +15,13 @@ Alternative (requires pubmed extra):
 """
 
 import logging
-import os
 import re
 from typing import Any
 
+from ..pubmed import fetch_pubmed_articles, is_pubmed_available as pubmed_integration_available
 from .collection_support import apply_collection_and_tags, attach_saved_to_info, resolve_collection_target
 
 logger = logging.getLogger(__name__)
-
-# Check if pubmed-search-mcp is available (for direct PMID import)
-try:
-    from pubmed_search import PubMedClient
-
-    PUBMED_AVAILABLE = True
-except ImportError:
-    PubMedClient = None
-    PUBMED_AVAILABLE = False
-    logger.info("pubmed-search-mcp not installed. Direct PMID import disabled.")
-    logger.info("Run: uv sync --extra pubmed")
 
 
 def _parse_ris_to_zotero_items(ris_text: str) -> list[dict[str, Any]]:
@@ -239,13 +228,11 @@ def _pmid_to_zotero_item(article: dict) -> dict[str, Any]:
 
 
 async def _fetch_pubmed_details(pmids: list[str]) -> list[dict[str, Any]]:
-    """Fetch PubMed article details using the configured NCBI email."""
-    if not PUBMED_AVAILABLE or PubMedClient is None:
+    """Fetch PubMed article details through the shared pubmed integration wrapper."""
+    if not pubmed_integration_available():
         raise RuntimeError("PubMed integration not available")
 
-    email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
-    client = PubMedClient(email=email)
-    return await client.fetch_details(pmids)
+    return await fetch_pubmed_articles(pmids)
 
 
 def _build_article_import_items(articles: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -410,7 +397,7 @@ def register_pubmed_tools(mcp, zotero_client):
                 tags=["ML", "review"]
             )
         """
-        if not PUBMED_AVAILABLE:
+        if not pubmed_integration_available():
             return {
                 "success": False,
                 "error": "pubmed-search-mcp not installed",
@@ -599,7 +586,7 @@ def register_pubmed_tools(mcp, zotero_client):
                 return result
 
             # Fallback to import_from_pmids if pubmed package available
-            elif PUBMED_AVAILABLE:
+            elif pubmed_integration_available():
                 articles = await _fetch_pubmed_details(pmid_list)
 
                 if not articles:
@@ -641,4 +628,4 @@ def register_pubmed_tools(mcp, zotero_client):
 
 def is_pubmed_available() -> bool:
     """Check if direct PMID import is available"""
-    return PUBMED_AVAILABLE
+    return pubmed_integration_available()

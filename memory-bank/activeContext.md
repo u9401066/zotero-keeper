@@ -2,7 +2,7 @@
 
 > 🎯 目前工作焦點與下一步行動
 
-## 當前狀態: 結構清理第五輪完成 ✅
+## 當前狀態: PubMed wrapper 收斂完成 ✅
 
 ### 已完成 (2026-03-09)
 
@@ -27,12 +27,21 @@
    - `collection_support.py` 新增 `attach_saved_to_info()`
    - `unified_import_tools.py` 與 `pubmed_tools.py` 使用同一份 collection destination response helper
 
+6. ✅ Reuse audit
+   - 確認 `pubmed_tools.py` 內的 PMID detail wrapper 曾重複 `infrastructure.pubmed.fetch_pubmed_articles()`
+   - 已收斂回既有 shared pubmed integration wrapper
+
+7. ✅ Full PubMed wrapper convergence
+   - `infrastructure.pubmed` 新增 `is_pubmed_available()` 與 `search_pubmed_raw()`
+   - `search_tools.py` 與 `pubmed_tools.py` 都改用 shared pubmed wrapper
+   - MCP tool 層已不再直接 import / instantiate `PubMedClient`
+
 ### 目前版本狀態
 
 | 元件 | 版本 | 狀態 |
 | ---- | ---- | ---- |
 | pubmed-search-mcp | v0.4.4 | installed ✅ |
-| zotero-keeper MCP | repo cleanup in progress | working tree pending commit |
+| zotero-keeper MCP | pubmed wrapper convergence complete | working tree pending commit |
 | VS Code Extension | v0.5.17 published | stable ✅ |
 
 ### 下一步

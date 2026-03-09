@@ -339,14 +339,14 @@ class TestRegisterSearchTools:
 
         mock_mcp.tool = MagicMock(side_effect=tool_decorator)
 
-        with patch("zotero_mcp.infrastructure.mcp.search_tools.PUBMED_AVAILABLE", False):
+        with patch("zotero_mcp.infrastructure.mcp.search_tools.pubmed_integration_available", return_value=False):
             register_search_tools(mock_mcp, mock_client)
 
         # advanced_search is always registered (1 call)
         assert mock_mcp.tool.call_count == 1
 
-    @patch("zotero_mcp.infrastructure.mcp.search_tools.PUBMED_AVAILABLE", True)
-    def test_registers_tools_when_available(self):
+    @patch("zotero_mcp.infrastructure.mcp.search_tools.pubmed_integration_available", return_value=True)
+    def test_registers_tools_when_available(self, _mock_available):
         """Test tool registration when PubMed available."""
         from zotero_mcp.infrastructure.mcp.search_tools import register_search_tools
 
