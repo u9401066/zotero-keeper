@@ -78,5 +78,4 @@
 
 - v0.6.0: Tool Consolidation (28 → 22 tools)
 - 解決 Marketplace Repository signing 問題
-- Open VSX 發布
 - Zotero Plugin (HTTP Bridge) 實作

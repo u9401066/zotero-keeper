@@ -42,7 +42,7 @@
 ## VS Code Extension 開發
 - 位置: `vscode-extension/`
 - 使用 TypeScript
-- 發布到 VS Code Marketplace 與 Open VSX
+- 發布到 VS Code Marketplace
 
 ### 發布流程
 
@@ -91,29 +91,17 @@ curl -s "https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zot
 # npx @vscode/vsce show u9401066.vscode-zotero-mcp --json | grep version
 ```
 
-**Open VSX（可能需要更長時間）**
-- URL: https://open-vsx.org/extension/u9401066/vscode-zotero-mcp
-```bash
-# curl 方式
-curl -s "https://open-vsx.org/api/u9401066/vscode-zotero-mcp" | \
-  python3 -c "import sys,json; print(json.load(sys.stdin).get('version', 'Not Found'))"
 
-# npx 方式（可能會卡住）
-# npx ovsx get u9401066.vscode-zotero-mcp --json | grep version
-```
 
 #### 5. 常見問題排除
 
 | 問題 | 原因 | 解決方案 |
 |------|------|----------|
 | "version already exists" | Marketplace 已有此版本 | 升級版本號重新發布 |
-| "Repository signing failed" | Open VSX 暫時性錯誤 | 等待後重試或檢查 `OVSX_PAT` |
-| Open VSX "Extension Not Found" | Token 權限或首次發布審核 | 檢查 workflow log |
 | CI 未觸發 | tag 格式錯誤 | 確保使用 `vX.Y.Z-ext` 格式 |
 
 #### 6. Secrets 設定（Repository Settings）
 - `VSCE_PAT` - VS Code Marketplace Personal Access Token
-- `OVSX_PAT` - Open VSX Personal Access Token
 
 ### 平台支援
 擴充功能支援以下平台：
