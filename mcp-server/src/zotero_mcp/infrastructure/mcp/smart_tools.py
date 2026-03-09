@@ -227,10 +227,3 @@ async def _find_duplicates(
     return duplicates
 
 
-def register_smart_tools(mcp, zotero_client):
-    """
-    Register smart tools (空函數，向後兼容).
-
-    所有 tools 已移至 interactive_tools.py
-    """
-    logger.info("Smart tools module loaded (helpers only, no tools)")

@@ -9,7 +9,7 @@ Usage:
   ZOTERO_HOST=<your-zotero-ip> uv run python -m zotero_mcp
 
     # With MCP inspector
-    mcp dev src/zotero_mcp/infrastructure/mcp/server.py
+  uv run mcp dev src/zotero_mcp/infrastructure/mcp/server.py
 
 Environment Variables:
     ZOTERO_HOST     Zotero machine IP (default: localhost)

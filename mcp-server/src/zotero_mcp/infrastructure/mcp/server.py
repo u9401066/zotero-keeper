@@ -9,14 +9,14 @@ Usage:
     mcp dev src/zotero_mcp/infrastructure/mcp/server.py
 
     # Direct execution (stdio transport, localhost)
-    python -m zotero_mcp
+    uv run python -m zotero_mcp
 
     # With remote Zotero host
-    ZOTERO_HOST=<your-zotero-ip> python -m zotero_mcp
+    ZOTERO_HOST=<your-zotero-ip> uv run python -m zotero_mcp
 """
 
 import logging
-from typing import Any
+from typing import Any, Literal, cast
 
 from mcp.server.fastmcp import FastMCP
 
@@ -32,7 +32,6 @@ from .pubmed_tools import is_pubmed_available, register_pubmed_tools
 from .resources import register_resources
 from .saved_search_tools import register_saved_search_tools
 from .search_tools import is_search_tools_available, register_search_tools
-from .smart_tools import register_smart_tools
 from .unified_import_tools import register_unified_import_tools
 
 logger = logging.getLogger(__name__)
@@ -88,9 +87,6 @@ class ZoteroKeeperServer:
         register_resources(self._mcp, self._zotero)
         logger.info("MCP Resources enabled (zotero://collections, zotero://items, zotero://tags, zotero://searches)")
 
-        # Register Smart tools helpers (internal functions only, no tools)
-        register_smart_tools(self._mcp, self._zotero)
-
         # Register Interactive Save tools (with elicitation support)
         register_interactive_save_tools(self._mcp, self._zotero)
         logger.info("Save tools enabled (interactive_save, quick_save) 🎯 Uses MCP Elicitation + Auto-fetch metadata!")
@@ -105,14 +101,14 @@ class ZoteroKeeperServer:
         if is_search_tools_available():
             logger.info("PubMed integration enabled (search_pubmed_exclude_owned, check_articles_owned)")
         else:
-            logger.info("PubMed integration disabled (install with: uv pip install 'zotero-keeper[pubmed]')")
+            logger.info("PubMed integration disabled (run: uv sync --extra pubmed)")
 
         # Register PubMed tools if available
         if is_pubmed_available():
             register_pubmed_tools(self._mcp, self._zotero)
             logger.info("PubMed import enabled (import_ris_to_zotero, import_from_pmids)")
         else:
-            logger.info("PubMed integration disabled (install with: uv pip install 'zotero-keeper[pubmed]')")
+            logger.info("PubMed integration disabled (run: uv sync --extra pubmed)")
 
         # Register Batch Import tools
         if is_batch_import_available():
@@ -164,7 +160,7 @@ class ZoteroKeeperServer:
                     "hint": "Check if Zotero is running and the port is accessible.",
                 }
 
-    def run(self, transport: str = "stdio"):
+    def run(self, transport: Literal["stdio", "sse", "streamable-http"] = "stdio"):
         """Run the MCP server"""
         logger.info(f"Starting Zotero Keeper MCP Server ({transport} transport)")
         self._mcp.run(transport=transport)
@@ -187,13 +183,14 @@ def get_server() -> ZoteroKeeperServer:
 
 def create_server(config: McpServerConfig | None = None) -> ZoteroKeeperServer:
     """Create a new server instance with custom config"""
-    global _server
+    global _server, mcp
     _server = ZoteroKeeperServer(config)
+    mcp = _server.mcp
     return _server
 
 
-# Export mcp instance for FastMCP compatibility
-mcp = property(lambda self: get_server().mcp)
+# Export the concrete FastMCP instance for `mcp dev .../server.py` compatibility.
+mcp: FastMCP = get_server().mcp
 
 
 # =============================================================================
@@ -205,11 +202,13 @@ def main():
     """Run the MCP server"""
     import sys
 
-    transport = "stdio"
+    transport: Literal["stdio", "sse", "streamable-http"] = "stdio"
     if "--transport" in sys.argv:
         idx = sys.argv.index("--transport")
         if idx + 1 < len(sys.argv):
-            transport = sys.argv[idx + 1]
+            candidate = sys.argv[idx + 1]
+            if candidate in {"stdio", "sse", "streamable-http"}:
+                transport = cast(Literal["stdio", "sse", "streamable-http"], candidate)
 
     get_server().run(transport)
 

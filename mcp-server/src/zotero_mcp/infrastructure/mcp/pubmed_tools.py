@@ -28,7 +28,7 @@ try:
 except ImportError:
     PUBMED_AVAILABLE = False
     logger.info("pubmed-search-mcp not installed. Direct PMID import disabled.")
-    logger.info("Install with: uv pip install 'zotero-keeper[pubmed]'")
+    logger.info("Run: uv sync --extra pubmed")
 
 
 def _parse_ris_to_zotero_items(ris_text: str) -> list[dict[str, Any]]:
@@ -437,7 +437,7 @@ def register_pubmed_tools(mcp, zotero_client):
             return {
                 "success": False,
                 "error": "pubmed-search-mcp not installed",
-                "hint": "Install with: uv pip install 'zotero-keeper[pubmed]'",
+                "hint": "Run: uv sync --extra pubmed",
                 "alternative": "Use import_ris_to_zotero with RIS text from pubmed-search-mcp's prepare_export tool",
             }
 
@@ -713,7 +713,7 @@ def register_pubmed_tools(mcp, zotero_client):
                 return {
                     "success": False,
                     "error": "PubMed integration not available",
-                    "hint": "Install with: uv pip install 'zotero-keeper[pubmed]'",
+                    "hint": "Run: uv sync --extra pubmed",
                     "alternative": "Use import_ris_to_zotero with RIS text",
                 }
 
