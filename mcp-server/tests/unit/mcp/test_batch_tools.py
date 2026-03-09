@@ -64,9 +64,9 @@ class TestParsePmids:
         assert result == ["12345678", "87654321"]
 
     def test_last_keyword(self):
-        """Test 'last' keyword handling."""
-        result = _parse_pmids("last")
-        assert result == []  # Not implemented yet
+        """Test 'last' keyword fails explicitly."""
+        with pytest.raises(ValueError, match="'last' is not supported"):
+            _parse_pmids("last")
 
     def test_non_numeric_pmids(self):
         """Test non-numeric PMIDs are skipped."""

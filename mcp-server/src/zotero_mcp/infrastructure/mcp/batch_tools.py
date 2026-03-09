@@ -25,6 +25,7 @@ from ...domain.entities.batch_result import (
     ImportAction,
     ImportedItem,
 )
+from .collection_support import resolve_collection_target
 
 # Import mappers  # noqa: E402
 from ..mappers.pubmed_mapper import (
@@ -48,7 +49,7 @@ except ImportError as e:
         f"pubmed-search not available: {e}\n"
         "Batch import disabled. Options:\n"
         "  1. Development: git submodule update --init --recursive\n"
-        "  2. Production: uv pip install pubmed-search-mcp"
+        "  2. Production: uv sync --extra pubmed"
     )
 
 
@@ -136,7 +137,7 @@ def register_batch_tools(mcp, zotero_client):
 
         Workflow:
             1. (可選) zotero-keeper: list_collections() → 確認目標 collection 名稱
-            2. pubmed-search: search_literature("AI anesthesia") → PMIDs
+            2. pubmed-search: unified_search(query="AI anesthesia") → PMIDs / articles
             3. zotero-keeper: batch_import_from_pubmed(pmids, collection_name="xxx")
         """
         if not BATCH_IMPORT_AVAILABLE:
@@ -149,75 +150,19 @@ def register_batch_tools(mcp, zotero_client):
         start_time = time.time()
         result = BatchImportResult()
 
-        # === 防呆機制 1: Collection 驗證 ===
-        validated_collection_key = None
-        collection_info = None
+        resolution = await resolve_collection_target(
+            zotero_client,
+            collection_name=collection_name,
+            collection_key=collection_key,
+            available_limit=10,
+            include_similar=True,
+            fallback_to_unvalidated_key=True,
+        )
+        if not resolution["success"]:
+            return resolution
 
-        if collection_name or collection_key:
-            try:
-                if collection_name and not collection_key:
-                    # 用名稱查找 collection
-                    collections = await zotero_client.get_collections()
-                    found = None
-                    for col in collections:
-                        col_name = col.get("data", {}).get("name", "")
-                        if col_name.lower() == collection_name.lower():
-                            found = col
-                            break
-
-                    if not found:
-                        # 提供相似名稱建議
-                        similar = [c.get("data", {}).get("name", "") for c in collections if collection_name.lower() in c.get("data", {}).get("name", "").lower()][:5]
-                        return {
-                            "success": False,
-                            "error": f"Collection '{collection_name}' not found",
-                            "hint": f"Similar collections: {similar}" if similar else "Use list_collections() to see available collections",
-                            "available_collections": [{"key": c.get("key"), "name": c.get("data", {}).get("name", "")} for c in collections[:10]],
-                        }
-
-                    validated_collection_key = found.get("key")
-                    collection_info = {
-                        "key": validated_collection_key,
-                        "name": found.get("data", {}).get("name", ""),
-                        "resolved_from": "name",
-                    }
-                    logger.info(f"Resolved collection '{collection_name}' → key: {validated_collection_key}")
-
-                elif collection_key:
-                    # 驗證 collection_key 是否存在
-                    collections = await zotero_client.get_collections()
-                    found = None
-                    for col in collections:
-                        if col.get("key") == collection_key:
-                            found = col
-                            break
-
-                    if not found:
-                        return {
-                            "success": False,
-                            "error": f"Collection key '{collection_key}' not found",
-                            "hint": "Use list_collections() to see available collections",
-                            "available_collections": [{"key": c.get("key"), "name": c.get("data", {}).get("name", "")} for c in collections[:10]],
-                        }
-
-                    validated_collection_key = collection_key
-                    collection_info = {
-                        "key": validated_collection_key,
-                        "name": found.get("data", {}).get("name", ""),
-                        "resolved_from": "key",
-                    }
-                    logger.info(f"Validated collection key: {validated_collection_key} ({found.get('data', {}).get('name', '')})")
-
-            except Exception as e:
-                logger.warning(f"Collection validation failed: {e}")
-                # 如果驗證失敗但有 key，繼續使用（向後相容）
-                if collection_key:
-                    validated_collection_key = collection_key
-                    collection_info = {
-                        "key": collection_key,
-                        "name": "unknown (validation failed)",
-                        "warning": str(e),
-                    }
+        validated_collection_key = resolution["target_key"]
+        collection_info = resolution["collection_info"]
 
         try:
             # 1. Parse PMIDs

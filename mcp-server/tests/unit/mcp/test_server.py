@@ -62,14 +62,12 @@ class TestZoteroKeeperServer:
     @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
     @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
     @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
-    @patch("zotero_mcp.infrastructure.mcp.server.register_smart_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_interactive_save_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_saved_search_tools")
     def test_server_initialization(
         self,
         mock_saved_search,
         mock_interactive,
-        mock_smart,
         mock_resources,
         mock_mcp,
         mock_client,
@@ -86,14 +84,12 @@ class TestZoteroKeeperServer:
     @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
     @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
     @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
-    @patch("zotero_mcp.infrastructure.mcp.server.register_smart_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_interactive_save_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_saved_search_tools")
     def test_server_with_custom_config(
         self,
         mock_saved_search,
         mock_interactive,
-        mock_smart,
         mock_resources,
         mock_mcp,
         mock_client,
@@ -154,14 +150,12 @@ class TestServerTools:
     @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
     @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
     @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
-    @patch("zotero_mcp.infrastructure.mcp.server.register_smart_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_interactive_save_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_saved_search_tools")
     async def test_check_connection_tool(
         self,
         mock_saved_search,
         mock_interactive,
-        mock_smart,
         mock_resources,
         mock_mcp,
         mock_client_class,
@@ -191,14 +185,12 @@ class TestServerTools:
     @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
     @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
     @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
-    @patch("zotero_mcp.infrastructure.mcp.server.register_smart_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_interactive_save_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_saved_search_tools")
     async def test_search_items_tool(
         self,
         mock_saved_search,
         mock_interactive,
-        mock_smart,
         mock_resources,
         mock_mcp,
         mock_client_class,
@@ -226,14 +218,12 @@ class TestServerTools:
     @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
     @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
     @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
-    @patch("zotero_mcp.infrastructure.mcp.server.register_smart_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_interactive_save_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_saved_search_tools")
     async def test_list_collections_tool(
         self,
         mock_saved_search,
         mock_interactive,
-        mock_smart,
         mock_resources,
         mock_mcp,
         mock_client_class,
@@ -261,14 +251,12 @@ class TestServerTools:
     @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
     @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
     @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
-    @patch("zotero_mcp.infrastructure.mcp.server.register_smart_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_interactive_save_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_saved_search_tools")
     async def test_all_basic_tools_registered(
         self,
         mock_saved_search,
         mock_interactive,
-        mock_smart,
         mock_resources,
         mock_mcp,
         mock_client_class,
@@ -314,14 +302,12 @@ class TestServerRun:
     @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
     @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
     @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
-    @patch("zotero_mcp.infrastructure.mcp.server.register_smart_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_interactive_save_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_saved_search_tools")
     def test_run_method(
         self,
         mock_saved_search,
         mock_interactive,
-        mock_smart,
         mock_resources,
         mock_mcp,
         mock_client_class,

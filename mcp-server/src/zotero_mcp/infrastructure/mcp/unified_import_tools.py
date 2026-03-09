@@ -12,9 +12,7 @@ Architecture Decision (2026-01-12):
     making it easy to import from any source that MCP supports.
 
 Supported Sources:
-    - PubMed (via search_literature, fetch_article_details)
-    - Europe PMC (via search_europe_pmc)
-    - CORE (via search_core)
+    - PubMed and other academic sources (via unified_search / article detail tools)
     - CrossRef (via DOI lookup)
     - OpenAlex (via openalex_id lookup)
     - Semantic Scholar (via s2_id lookup)
@@ -28,7 +26,7 @@ Workflow:
 
 Example:
     # From pubmed-search-mcp search result
-    articles = await search_literature("CRISPR", limit=5)
+    articles = await unified_search(query="CRISPR", limit=5)
 
     # Import to Zotero
     result = await import_articles(
@@ -41,6 +39,8 @@ Example:
 import logging
 import re
 from typing import Any
+
+from .collection_support import apply_collection_and_tags, resolve_collection_target
 
 logger = logging.getLogger(__name__)
 
@@ -387,9 +387,8 @@ def register_unified_import_tools(mcp, zotero_client):
 
         🔗 INTEGRATION WITH pubmed-search-mcp:
         Articles from these tools can be directly imported:
-        - search_literature() → articles
-        - search_europe_pmc() → articles
-        - search_core() → articles
+        - unified_search() → articles
+        - fetch_article_details() → article details
         - fetch_article_details() → article
         - prepare_export(format="ris") → ris_text
 
@@ -418,7 +417,7 @@ def register_unified_import_tools(mcp, zotero_client):
 
         Example - From PubMed search:
             # Step 1: Search with pubmed-search-mcp
-            results = await search_literature("machine learning anesthesia", limit=10)
+            results = await unified_search(query="machine learning anesthesia", limit=10)
 
             # Step 2: Import to Zotero
             await import_articles(
@@ -427,8 +426,8 @@ def register_unified_import_tools(mcp, zotero_client):
                 tags=["ML", "review-2024"]
             )
 
-        Example - From Europe PMC:
-            results = await search_europe_pmc("CRISPR", open_access_only=True)
+        Example - From multi-source search:
+            results = await unified_search(query="CRISPR", sources="pubmed,europe_pmc")
             await import_articles(articles=results["articles"], collection_name="CRISPR OA")
 
         Example - From RIS text:
@@ -447,7 +446,7 @@ def register_unified_import_tools(mcp, zotero_client):
             # === Step 1: Validate input ===
             if not articles and not ris_text:
                 result["error"] = "Must provide either 'articles' or 'ris_text'"
-                result["hint"] = "Use search_literature, search_europe_pmc, etc. to get articles, then pass them here"
+                result["hint"] = "Use unified_search or article detail tools to get articles, then pass them here"
                 return result
 
             # === Step 2: Parse RIS if provided ===
@@ -458,54 +457,24 @@ def register_unified_import_tools(mcp, zotero_client):
                     return result
                 logger.info(f"Parsed {len(articles)} articles from RIS text")
 
-            # === Step 3: Collection validation (防呆) ===
-            target_key = None
-            target_name = None
+            resolution = await resolve_collection_target(
+                zotero_client,
+                collection_name=collection_name,
+                collection_key=collection_key,
+            )
+            if not resolution["success"]:
+                result.update(resolution)
+                return result
 
-            if collection_key:
-                try:
-                    col = await zotero_client.get_collection(collection_key)
-                    target_key = collection_key
-                    target_name = col.get("data", {}).get("name", collection_key)
-                except Exception:
-                    collections = await zotero_client.get_collections()
-                    available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:20]]
-                    result["error"] = f"Collection key '{collection_key}' not found"
-                    result["available_collections"] = available
-                    result["hint"] = "Use collection_name instead for human-readable names"
-                    return result
-
-            elif collection_name:
-                found = await zotero_client.find_collection_by_name(collection_name)
-                if found:
-                    target_key = found.get("key")
-                    target_name = found.get("data", {}).get("name", collection_name)
-                else:
-                    collections = await zotero_client.get_collections()
-                    available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:20]]
-                    result["error"] = f"Collection '{collection_name}' not found"
-                    result["available_collections"] = available
-                    result["hint"] = "Check spelling or use list_collections to see all collections"
-                    return result
+            target_key = resolution["target_key"]
+            target_name = resolution["target_name"]
 
             # === Step 4: Convert articles to Zotero format ===
             zotero_items = []
             for article in articles:
                 try:
                     zotero_item = _unified_article_to_zotero(article)
-
-                    # Set collection
-                    if target_key:
-                        zotero_item["collections"] = [target_key]
-
-                    # Add extra tags
-                    if tags:
-                        existing_tags = zotero_item.get("tags", [])
-                        for tag in tags:
-                            existing_tags.append({"tag": tag})
-                        zotero_item["tags"] = existing_tags
-
-                    zotero_items.append(zotero_item)
+                    zotero_items.append(apply_collection_and_tags(zotero_item, collection_key=target_key, tags=tags))
                 except Exception as e:
                     result["errors"].append(
                         {

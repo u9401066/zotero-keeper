@@ -12,7 +12,6 @@ from zotero_mcp.infrastructure.mcp.smart_tools import (
     _extract_identifier,
     _suggest_collections,
     _find_duplicates,
-    register_smart_tools,
     TITLE_MATCH_THRESHOLD,
     COLLECTION_MATCH_THRESHOLD,
 )
@@ -280,19 +279,6 @@ class TestFindDuplicates:
         await _find_duplicates(item, mock_client, limit=50)
 
         mock_client.get_items.assert_called_once_with(limit=50)
-
-
-class TestRegisterSmartTools:
-    """Tests for register_smart_tools function."""
-
-    def test_registers_without_error(self):
-        """Test that registration completes without error."""
-        mock_mcp = MagicMock()
-        mock_client = MagicMock()
-
-        # Should not raise
-        register_smart_tools(mock_mcp, mock_client)
-
 
 class TestConstants:
     """Tests for module constants."""

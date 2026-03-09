@@ -5,18 +5,20 @@ Focused import tools that complement pubmed-search-mcp.
 Use pubmed-search-mcp for searching, use these tools for importing to Zotero.
 
 Recommended Workflow:
-1. pubmed-search: search_literature("CRISPR") → PMIDs
+1. pubmed-search: unified_search(query="CRISPR") → PMIDs / articles
 2. pubmed-search: prepare_export(pmids, format="ris") → RIS text
 3. zotero-keeper: import_ris_to_zotero(ris_text) → Zotero items
 
 Alternative (requires pubmed extra):
-1. pubmed-search: search_literature("CRISPR") → PMIDs
+1. pubmed-search: unified_search(query="CRISPR") → PMIDs
 2. zotero-keeper: import_from_pmids(pmids) → Zotero items
 """
 
 import logging
 import re
 from typing import Any
+
+from .collection_support import apply_collection_and_tags, resolve_collection_target
 
 logger = logging.getLogger(__name__)
 
@@ -257,11 +259,11 @@ def register_pubmed_tools(mcp, zotero_client):
         將 RIS 格式的引用文獻匯入 Zotero
 
         🔄 NEW RECOMMENDED WORKFLOW:
-        1. pubmed: search_literature("query") → articles
+        1. pubmed: unified_search(query="query") → articles
         2. keeper: import_articles(articles=articles, collection_name="...")
 
         LEGACY workflow with pubmed-search-mcp:
-        1. pubmed: search_literature("query") → PMIDs
+        1. pubmed: unified_search(query="query") → PMIDs
         2. pubmed: prepare_export(pmids, format="ris") → RIS text
         3. keeper: import_ris_to_zotero(ris_text, collection_name="My Collection")
 
@@ -304,54 +306,19 @@ def register_pubmed_tools(mcp, zotero_client):
                     "imported": 0,
                 }
 
-            # === 防呆機制: Collection 驗證 ===
-            target_key = None
-            target_name = None
+            resolution = await resolve_collection_target(
+                zotero_client,
+                collection_name=collection_name,
+                collection_key=collection_key,
+            )
+            if not resolution["success"]:
+                return resolution
 
-            if collection_key:
-                try:
-                    col = await zotero_client.get_collection(collection_key)
-                    target_key = collection_key
-                    target_name = col.get("data", {}).get("name", collection_key)
-                except Exception:
-                    # 取得可用 collections 列表
-                    collections = await zotero_client.get_collections()
-                    available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:20]]
-                    return {
-                        "success": False,
-                        "error": f"Collection key '{collection_key}' not found",
-                        "available_collections": available,
-                        "hint": "Use collection_name instead for human-readable names",
-                    }
+            target_key = resolution["target_key"]
+            target_name = resolution["target_name"]
 
-            elif collection_name:
-                found = await zotero_client.find_collection_by_name(collection_name)
-                if found:
-                    target_key = found.get("key")
-                    target_name = found.get("data", {}).get("name", collection_name)
-                else:
-                    # 取得可用 collections 列表
-                    collections = await zotero_client.get_collections()
-                    available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:20]]
-                    return {
-                        "success": False,
-                        "error": f"Collection '{collection_name}' not found",
-                        "available_collections": available,
-                        "hint": "Check spelling or use list_collections to see all collections",
-                    }
-
-            # 設定 collection（如果有指定）
-            if target_key:
-                for item in items:
-                    item["collections"] = [target_key]
-
-            # Add custom tags
-            if tags:
-                for item in items:
-                    existing_tags = item.get("tags", [])
-                    for tag in tags:
-                        existing_tags.append({"tag": tag})
-                    item["tags"] = existing_tags
+            for item in items:
+                apply_collection_and_tags(item, collection_key=target_key, tags=tags)
 
             # Import to Zotero
             await zotero_client.save_items(items)
@@ -398,10 +365,10 @@ def register_pubmed_tools(mcp, zotero_client):
 
         直接透過 PMID 匯入 PubMed 文獻到 Zotero
 
-        Requires: uv pip install "zotero-keeper[pubmed]"
+        Requires: uv sync --extra pubmed
 
         🔄 NEW RECOMMENDED WORKFLOW:
-        1. pubmed: search_literature("query") → articles
+        1. pubmed: unified_search(query="query") → articles
         2. keeper: import_articles(articles=articles, collection_name="...")
 
         📊 CITATION METRICS (RCR):
@@ -413,7 +380,7 @@ def register_pubmed_tools(mcp, zotero_client):
         - 不會靜默存到 library root
 
         Alternative workflow (without pubmed extra):
-        1. pubmed: search_literature("query") → PMIDs
+        1. pubmed: unified_search(query="query") → PMIDs
         2. keeper: import_from_pmids(pmids, collection_name="My Collection")
 
         Args:
@@ -442,39 +409,16 @@ def register_pubmed_tools(mcp, zotero_client):
             }
 
         try:
-            # === 防呆機制: Collection 驗證 ===
-            target_key = None
-            target_name = None
+            resolution = await resolve_collection_target(
+                zotero_client,
+                collection_name=collection_name,
+                collection_key=collection_key,
+            )
+            if not resolution["success"]:
+                return resolution
 
-            if collection_key:
-                try:
-                    col = await zotero_client.get_collection(collection_key)
-                    target_key = collection_key
-                    target_name = col.get("data", {}).get("name", collection_key)
-                except Exception:
-                    collections = await zotero_client.get_collections()
-                    available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:20]]
-                    return {
-                        "success": False,
-                        "error": f"Collection key '{collection_key}' not found",
-                        "available_collections": available,
-                        "hint": "Use collection_name instead for human-readable names",
-                    }
-
-            elif collection_name:
-                found = await zotero_client.find_collection_by_name(collection_name)
-                if found:
-                    target_key = found.get("key")
-                    target_name = found.get("data", {}).get("name", collection_name)
-                else:
-                    collections = await zotero_client.get_collections()
-                    available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:20]]
-                    return {
-                        "success": False,
-                        "error": f"Collection '{collection_name}' not found",
-                        "available_collections": available,
-                        "hint": "Check spelling or use list_collections to see all collections",
-                    }
+            target_key = resolution["target_key"]
+            target_name = resolution["target_name"]
 
             import os
 
@@ -507,15 +451,7 @@ def register_pubmed_tools(mcp, zotero_client):
             zotero_items = []
             for article in articles:
                 item = _pmid_to_zotero_item(article)
-                # 設定 collection
-                if target_key:
-                    item["collections"] = [target_key]
-                if tags:
-                    existing_tags = item.get("tags", [])
-                    for tag in tags:
-                        existing_tags.append({"tag": tag})
-                    item["tags"] = existing_tags
-                zotero_items.append(item)
+                zotero_items.append(apply_collection_and_tags(item, collection_key=target_key, tags=tags))
 
             # Import to Zotero
             await zotero_client.save_items(zotero_items)
@@ -624,30 +560,17 @@ def register_pubmed_tools(mcp, zotero_client):
                 from ..mappers.pubmed_mapper import map_pubmed_to_zotero
 
                 # === 防呆機制: Collection 驗證 ===
-                collection_key = None
-                collection_info = None
-                if collection_name:
-                    collections = await zotero_client.get_collections()
-                    found = None
-                    for col in collections:
-                        col_name = col.get("data", {}).get("name", "")
-                        if col_name.lower() == collection_name.lower():
-                            found = col
-                            collection_key = col.get("key")
-                            break
+                resolution = await resolve_collection_target(
+                    zotero_client,
+                    collection_name=collection_name,
+                    available_limit=10,
+                    include_similar=True,
+                )
+                if not resolution["success"]:
+                    return resolution
 
-                    # 如果找不到 collection，回傳錯誤！不是靜默存到 root！
-                    if not found:
-                        similar = [c.get("data", {}).get("name", "") for c in collections if collection_name.lower() in c.get("data", {}).get("name", "").lower()][:5]
-                        return {
-                            "success": False,
-                            "error": f"Collection '{collection_name}' not found",
-                            "hint": f"Similar: {similar}" if similar else "Use list_collections() first",
-                            "available_collections": [{"key": c.get("key"), "name": c.get("data", {}).get("name", "")} for c in collections[:10]],
-                        }
-
-                    collection_info = {"key": collection_key, "name": found.get("data", {}).get("name", "")}
-                    logger.info(f"Resolved collection '{collection_name}' → key: {collection_key}")
+                collection_key = resolution["target_key"]
+                collection_info = resolution["collection_info"]
 
                 # Fetch articles
                 articles = await fetch_pubmed_articles(pmid_list)
