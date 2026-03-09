@@ -2,6 +2,15 @@
 
 ## Done
 
+### 2026-03-09 - VS Code Extension v0.5.18 release verification
+
+- ✅ `npm run compile` 通過（vscode-extension）
+- ✅ `uv run python tests/test_mac_compatibility.py` 通過（46 passed）
+- ✅ `uv run python tests/test_python_env_edge_cases.py` 通過（20/20 passed）
+- ✅ 驗證覆蓋 fresh install / upgrade / uninstall-reinstall / corrupted python recovery / cleanup-reinstall / idempotent install
+- ✅ `scripts/check_version_sync.py` 通過，版本同步為 `0.5.18`
+- ✅ `test_mac_compatibility.py` 的 recursive scandir helper 已清理 `ResourceWarning` 噪音
+
 ### 2026-03-09 - 第五輪結構清理 (Shared saved_to helper)
 
 - ✅ `collection_support.py` 新增 `attach_saved_to_info()`

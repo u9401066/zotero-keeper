@@ -2,6 +2,27 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.18] - 2026-03-09
+
+### Fixed
+
+- **Multi-environment installation validation**
+  - Re-verified fresh install, upgrade, reinstall, corrupted Python recovery, and idempotent install flows before release
+  - Confirmed both new installation and update scenarios complete without extension-managed environment errors
+
+### Changed
+
+- **PubMed access path cleanup**
+  - Unified extension-adjacent server code to use the shared PubMed wrapper instead of duplicating direct client access paths
+
+### Test
+
+- **Release verification matrix**
+  - `npm run compile`
+  - `uv run python tests/test_mac_compatibility.py`
+  - `uv run python tests/test_python_env_edge_cases.py`
+  - Cleaned `test_mac_compatibility.py` recursive scan helper to avoid `ResourceWarning` noise during verification
+
 ## [0.5.17] - 2026-03-04
 
 ### Fixed

@@ -18,7 +18,6 @@ import platform
 import unittest
 import tempfile
 import shutil
-import json
 import re
 
 
@@ -108,7 +107,6 @@ class TestPathConstruction(unittest.TestCase):
         base = '/Users/user/Library/Application Support/Code/User/globalStorage/ext'
         uv_path = os.path.join(base, 'uv', 'uv')
         venv_dir = os.path.join(base, 'venv')
-        python = os.path.join(venv_dir, 'bin', 'python')
 
         # Command would be: "path with spaces" (must be quoted)
         cmd = f'"{uv_path}" venv "{venv_dir}" --python 3.12'
@@ -240,13 +238,14 @@ class TestTarExtractionFallback(unittest.TestCase):
     def _find_file_recursive(self, directory, filename):
         """Python equivalent of TypeScript findFileRecursive."""
         try:
-            for entry in os.scandir(directory):
-                if entry.is_file() and entry.name == filename:
-                    return entry.path
-                if entry.is_dir():
-                    found = self._find_file_recursive(entry.path, filename)
-                    if found:
-                        return found
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    if entry.is_file() and entry.name == filename:
+                        return entry.path
+                    if entry.is_dir():
+                        found = self._find_file_recursive(entry.path, filename)
+                        if found:
+                            return found
         except PermissionError:
             pass
         return None
@@ -379,6 +378,8 @@ class TestSourceCodePatterns(unittest.TestCase):
         py_match = re.search(r'const MIN_PYTHON_VERSION = \[(\d+), (\d+)\]', self.py_source)
         self.assertIsNotNone(uv_match, "PYTHON_VERSION not found in uvPythonManager.ts")
         self.assertIsNotNone(py_match, "MIN_PYTHON_VERSION not found in pythonEnvironment.ts")
+        assert uv_match is not None
+        assert py_match is not None
 
         uv_version = uv_match.group(1)
         py_version = f"{py_match.group(1)}.{py_match.group(2)}"

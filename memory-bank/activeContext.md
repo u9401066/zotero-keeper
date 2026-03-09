@@ -2,7 +2,7 @@
 
 > 🎯 目前工作焦點與下一步行動
 
-## 當前狀態: PubMed wrapper 收斂完成 ✅
+## 當前狀態: 0.5.18 發版驗證完成 ✅
 
 ### 已完成 (2026-03-09)
 
@@ -36,17 +36,23 @@
    - `search_tools.py` 與 `pubmed_tools.py` 都改用 shared pubmed wrapper
    - MCP tool 層已不再直接 import / instantiate `PubMedClient`
 
+8. ✅ VS Code Extension 0.5.18 release verification
+   - `npm run compile` 通過
+   - `test_mac_compatibility.py` 46 tests 通過且已清理 `ResourceWarning`
+   - `test_python_env_edge_cases.py` 20/20 通過，覆蓋新安裝、升級、重裝、損壞 Python 恢復
+   - 版本同步檢查通過：`0.5.18`
+
 ### 目前版本狀態
 
 | 元件 | 版本 | 狀態 |
 | ---- | ---- | ---- |
 | pubmed-search-mcp | v0.4.4 | installed ✅ |
-| zotero-keeper MCP | pubmed wrapper convergence complete | working tree pending commit |
-| VS Code Extension | v0.5.17 published | stable ✅ |
+| zotero-keeper MCP | pubmed wrapper convergence complete | stable ✅ |
+| VS Code Extension | v0.5.18 verified | pending release commit/tag |
 
 ### 下一步
 
-- 第六輪：評估 `pubmed_tools.py` 與 `unified_import_tools.py` 間剩餘的 article conversion / title summary 重複
+- 立即下一步：建立 `v0.5.18` release commit 與 `v0.5.18-ext` tag
 
 ---
 *Updated: 2026-03-09*
