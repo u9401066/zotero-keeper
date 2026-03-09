@@ -2,6 +2,22 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.17] - 2026-03-04
+
+### Fixed
+
+- **macOS Installation Compatibility** 🍎
+  - Fixed VS Code GUI apps on macOS not inheriting shell PATH (Finder/Dock launch)
+  - Added `getEnrichedEnv()` to prepend `/opt/homebrew/bin`, `~/.local/bin`, `~/.cargo/bin`, `~/.pyenv/shims` to PATH
+  - Added `findFileRecursive()` fallback for tar extraction when `--strip-components` produces unexpected paths
+  - Added `findMacPython()` to search well-known macOS Python paths (homebrew, pyenv, Python.framework, Xcode CLI tools)
+  - Fixed `checkReadySync()` crash when `uvPath` is empty
+  - Fixed error messages referencing "Python 3.11+" → "Python 3.12+"
+
+### Added
+
+- **Cross-platform compatibility tests** (46 tests verifying Mac fix patterns)
+
 ## [0.5.16] - 2026-03-04
 
 ### Added

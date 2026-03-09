@@ -16,6 +16,7 @@ import * as fs from 'fs';
 import * as https from 'https';
 import * as http from 'http';
 import { execSync } from 'child_process';
+import * as os from 'os';
 
 // UV download URLs from GitHub releases
 // Using latest stable version
@@ -75,6 +76,36 @@ const DOWNLOAD_TIMEOUT_MS = 60000;
 const VENV_CREATION_TIMEOUT_MS = 300000;  // 5 minutes for Python download
 const PACKAGE_INSTALL_TIMEOUT_MS = 300000;
 
+/**
+ * Build enriched PATH for macOS.
+ * VS Code launched from Finder/Dock does NOT inherit shell PATH,
+ * so common locations like /opt/homebrew/bin are missing.
+ */
+function getEnrichedEnv(): NodeJS.ProcessEnv {
+    if (process.platform !== 'darwin') {
+        return process.env;
+    }
+    const home = os.homedir();
+    const extraPaths = [
+        '/opt/homebrew/bin',           // Apple Silicon homebrew
+        '/opt/homebrew/sbin',
+        '/usr/local/bin',              // Intel homebrew / manual installs
+        '/usr/local/sbin',
+        path.join(home, '.local', 'bin'),  // pipx, uv, cargo installs
+        path.join(home, '.cargo', 'bin'),  // cargo (uv may be here)
+        path.join(home, '.pyenv', 'shims'), // pyenv
+    ].filter(p => fs.existsSync(p));
+
+    if (extraPaths.length === 0) {
+        return process.env;
+    }
+
+    return {
+        ...process.env,
+        PATH: [...extraPaths, process.env.PATH || ''].join(':'),
+    };
+}
+
 export class UvPythonManager {
     private context: vscode.ExtensionContext;
     private outputChannel: vscode.OutputChannel;
@@ -120,14 +151,14 @@ export class UvPythonManager {
     }
 
     private checkReadySync(): boolean {
-        if (!fs.existsSync(this.pythonBinary) || !fs.existsSync(this.uvPath)) {
+        if (!this.uvPath || !fs.existsSync(this.pythonBinary) || !fs.existsSync(this.uvPath)) {
             return false;
         }
         // Quick validation: ensure Python binary is runnable (not corrupted)
         try {
             const output = execSync(
                 `"${this.pythonBinary}" --version`,
-                { encoding: 'utf-8', stdio: 'pipe', timeout: 10000 }
+                { encoding: 'utf-8', stdio: 'pipe', timeout: 10000, env: getEnrichedEnv() }
             );
             return output.trim().startsWith('Python');
         } catch {
@@ -357,7 +388,7 @@ print("OK")
 
         if (!uvInfo) {
             vscode.window.showErrorMessage(
-                `Unsupported platform: ${platformKey}. Please install Python 3.11+ manually.`
+                `Unsupported platform: ${platformKey}. Please install Python 3.12+ manually.`
             );
             return false;
         }
@@ -429,10 +460,25 @@ print("OK")
             );
         } else {
             // Unix: use tar
+            // First try --strip-components=1 (standard for uv releases)
             execSync(`tar -xzf "${archivePath}" -C "${uvDir}" --strip-components=1`, {
                 encoding: 'utf-8',
                 stdio: 'pipe'
             });
+
+            // Verify the uv binary actually landed at the expected path
+            // Some tar versions or archive structures may put files differently
+            if (!fs.existsSync(this.uvPath)) {
+                this.log('uv binary not found after strip-components=1, searching...');
+                // Walk extracted directory to find the uv binary
+                const found = this.findFileRecursive(uvDir, 'uv');
+                if (found) {
+                    this.log(`Found uv at ${found}, moving to ${this.uvPath}`);
+                    fs.copyFileSync(found, this.uvPath);
+                } else {
+                    throw new Error('uv binary not found after extraction');
+                }
+            }
         }
 
         // Clean up archive
@@ -441,6 +487,11 @@ print("OK")
         // Make executable on Unix
         if (process.platform !== 'win32') {
             fs.chmodSync(this.uvPath, 0o755);
+        }
+
+        // Final verification
+        if (!fs.existsSync(this.uvPath)) {
+            throw new Error(`uv binary not found at expected path: ${this.uvPath}`);
         }
 
         this.log('uv extracted successfully');
@@ -455,14 +506,17 @@ print("OK")
         this.log(`Running: ${cmd}`);
 
         try {
+            const enrichedEnv = getEnrichedEnv();
             execSync(cmd, {
                 encoding: 'utf-8',
                 stdio: 'pipe',
                 timeout: VENV_CREATION_TIMEOUT_MS,
                 env: {
-                    ...process.env,
+                    ...enrichedEnv,
                     // Allow uv to download Python
                     UV_PYTHON_DOWNLOADS: 'automatic',
+                    // Ensure HOME is set (macOS GUI apps may not have it)
+                    HOME: enrichedEnv.HOME || os.homedir(),
                 }
             });
             this.log('Virtual environment created');
@@ -478,6 +532,9 @@ print("OK")
      * Uses --upgrade to ensure packages meet minimum version requirements
      */
     private async installPackages(onProgress?: (msg: string) => void): Promise<void> {
+        const enrichedEnv = getEnrichedEnv();
+        const baseEnv = { ...enrichedEnv, VIRTUAL_ENV: this.venvDir };
+
         // First, install packaging for version checks
         try {
             const packagingCmd = `"${this.uvPath}" pip install --python "${this.pythonBinary}" packaging`;
@@ -485,7 +542,7 @@ print("OK")
                 encoding: 'utf-8',
                 stdio: 'pipe',
                 timeout: DOWNLOAD_TIMEOUT_MS,
-                env: { ...process.env, VIRTUAL_ENV: this.venvDir }
+                env: baseEnv
             });
         } catch {
             // packaging may already be installed - safe to continue
@@ -505,10 +562,7 @@ print("OK")
                     encoding: 'utf-8',
                     stdio: 'pipe',
                     timeout: PACKAGE_INSTALL_TIMEOUT_MS,
-                    env: {
-                        ...process.env,
-                        VIRTUAL_ENV: this.venvDir,
-                    }
+                    env: baseEnv,
                 });
             } catch (error: unknown) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
@@ -624,6 +678,31 @@ print("OK")
 
     showOutput(): void {
         this.outputChannel.show();
+    }
+
+    /**
+     * Recursively search for a file by name within a directory.
+     * Used as fallback when tar extraction puts files in unexpected locations.
+     */
+    private findFileRecursive(dir: string, filename: string): string | null {
+        try {
+            const entries = fs.readdirSync(dir, { withFileTypes: true });
+            for (const entry of entries) {
+                const fullPath = path.join(dir, entry.name);
+                if (entry.isFile() && entry.name === filename) {
+                    return fullPath;
+                }
+                if (entry.isDirectory()) {
+                    const found = this.findFileRecursive(fullPath, filename);
+                    if (found) {
+                        return found;
+                    }
+                }
+            }
+        } catch {
+            // directory may not be readable
+        }
+        return null;
     }
 
     /**

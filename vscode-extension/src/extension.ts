@@ -139,7 +139,7 @@ async function ensurePythonEnvironment(): Promise<string | undefined> {
             if (systemPython) {
                 console.log('Using system Python as fallback:', systemPython);
                 vscode.window.showWarningMessage(
-                    'Using system Python as fallback. For best results, ensure Python 3.11+ is installed.',
+                    'Using system Python as fallback. For best results, ensure Python 3.12+ is installed.',
                     'OK'
                 );
                 return systemPython;
@@ -171,7 +171,7 @@ async function ensurePythonEnvironment(): Promise<string | undefined> {
 
     // No system Python found and embedded is disabled
     vscode.window.showErrorMessage(
-        'Python not found. Install Python 3.11+ or enable embedded Python in settings.',
+        'Python not found. Install Python 3.12+ or enable embedded Python in settings.',
         'Download Python', 'Enable Embedded Python'
     ).then(choice => {
         if (choice === 'Download Python') {

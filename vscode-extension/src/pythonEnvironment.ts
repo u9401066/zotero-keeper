@@ -8,6 +8,7 @@ import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as os from 'os';
 
 const REQUIRED_PACKAGES = [
     { name: 'zotero-keeper', importName: 'zotero_mcp', pipName: 'zotero-keeper' },
@@ -59,13 +60,23 @@ export class PythonEnvironment {
             return this.pythonPath;
         }
 
-        // 3. Try common Python commands
+        // 3. Try common Python commands (with enriched PATH on macOS)
         const candidates = ['python3', 'python', 'py'];
         for (const cmd of candidates) {
             const resolved = await this.resolvePythonCommand(cmd);
             if (resolved && await this.validatePython(resolved)) {
                 this.pythonPath = resolved;
                 this.log(`Using system Python: ${resolved}`);
+                return this.pythonPath;
+            }
+        }
+
+        // 4. Try well-known paths on macOS (GUI apps don't inherit shell PATH)
+        if (process.platform === 'darwin') {
+            const macPython = await this.findMacPython();
+            if (macPython) {
+                this.pythonPath = macPython;
+                this.log(`Using macOS Python: ${macPython}`);
                 return this.pythonPath;
             }
         }
@@ -110,12 +121,15 @@ export class PythonEnvironment {
     }
 
     /**
-     * Resolve a Python command to full path
+     * Resolve a Python command to full path.
+     * On macOS, enriches PATH to include common locations that
+     * GUI-launched apps don't inherit from shell profiles.
      */
     private async resolvePythonCommand(cmd: string): Promise<string | null> {
         return new Promise((resolve) => {
             const which = process.platform === 'win32' ? 'where' : 'which';
-            cp.exec(`${which} ${cmd}`, (err, stdout) => {
+            const env = this.getEnrichedEnv();
+            cp.exec(`${which} ${cmd}`, { env }, (err, stdout) => {
                 if (err || !stdout.trim()) {
                     resolve(null);
                 } else {
@@ -124,6 +138,62 @@ export class PythonEnvironment {
                 }
             });
         });
+    }
+
+    /**
+     * Search well-known macOS Python installation paths.
+     * Covers: Homebrew (Intel & Apple Silicon), pyenv, official installer,
+     * Xcode Command Line Tools, and Framework installs.
+     */
+    private async findMacPython(): Promise<string | null> {
+        const home = os.homedir();
+        const knownPaths = [
+            // Homebrew - Apple Silicon
+            '/opt/homebrew/bin/python3',
+            // Homebrew - Intel
+            '/usr/local/bin/python3',
+            // pyenv
+            path.join(home, '.pyenv', 'shims', 'python3'),
+            // Official Python.org installer
+            '/Library/Frameworks/Python.framework/Versions/3.12/bin/python3',
+            '/Library/Frameworks/Python.framework/Versions/3.13/bin/python3',
+            // Xcode Command Line Tools
+            '/usr/bin/python3',
+        ];
+
+        for (const p of knownPaths) {
+            if (fs.existsSync(p)) {
+                this.log(`Checking macOS path: ${p}`);
+                if (await this.validatePython(p)) {
+                    return p;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get PATH environment enriched with common macOS locations.
+     */
+    private getEnrichedEnv(): NodeJS.ProcessEnv {
+        if (process.platform !== 'darwin') {
+            return process.env;
+        }
+        const home = os.homedir();
+        const extraPaths = [
+            '/opt/homebrew/bin',
+            '/usr/local/bin',
+            path.join(home, '.pyenv', 'shims'),
+            path.join(home, '.local', 'bin'),
+        ].filter(p => fs.existsSync(p));
+
+        if (extraPaths.length === 0) {
+            return process.env;
+        }
+        return {
+            ...process.env,
+            PATH: [...extraPaths, process.env.PATH || ''].join(':'),
+        };
     }
 
     /**
