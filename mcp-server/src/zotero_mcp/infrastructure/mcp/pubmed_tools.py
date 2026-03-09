@@ -15,6 +15,7 @@ Alternative (requires pubmed extra):
 """
 
 import logging
+import os
 import re
 from typing import Any
 
@@ -28,6 +29,7 @@ try:
 
     PUBMED_AVAILABLE = True
 except ImportError:
+    PubMedClient = None
     PUBMED_AVAILABLE = False
     logger.info("pubmed-search-mcp not installed. Direct PMID import disabled.")
     logger.info("Run: uv sync --extra pubmed")
@@ -236,6 +238,31 @@ def _pmid_to_zotero_item(article: dict) -> dict[str, Any]:
     return item
 
 
+def _attach_saved_to_info(result: dict[str, Any], *, target_key: str | None, target_name: str | None) -> dict[str, Any]:
+    """Attach collection destination metadata to a tool result."""
+    if target_key:
+        result["saved_to"] = {"key": target_key, "name": target_name}
+    else:
+        result["saved_to"] = "My Library (root)"
+        result["warning"] = "No collection specified - items saved to library root. Consider specifying collection_name."
+    return result
+
+
+async def _fetch_pubmed_details(pmids: list[str]) -> list[dict[str, Any]]:
+    """Fetch PubMed article details using the configured NCBI email."""
+    if not PUBMED_AVAILABLE or PubMedClient is None:
+        raise RuntimeError("PubMed integration not available")
+
+    email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
+    client = PubMedClient(email=email)
+    return await client.fetch_details(pmids)
+
+
+def _build_article_import_items(articles: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Build a compact article summary list for import responses."""
+    return [{"pmid": article.get("pmid"), "title": article.get("title", "")[:50]} for article in articles]
+
+
 def register_pubmed_tools(mcp, zotero_client):
     """
     Register PubMed import tools.
@@ -333,14 +360,7 @@ def register_pubmed_tools(mcp, zotero_client):
                 "message": f"Successfully imported {len(items)} items to Zotero",
             }
 
-            # 加入 collection 資訊
-            if target_key:
-                result["saved_to"] = {"key": target_key, "name": target_name}
-            else:
-                result["saved_to"] = "My Library (root)"
-                result["warning"] = "No collection specified - items saved to library root. Consider specifying collection_name."
-
-            return result
+            return _attach_saved_to_info(result, target_key=target_key, target_name=target_name)
 
         except Exception as e:
             logger.error(f"RIS import failed: {e}")
@@ -420,13 +440,8 @@ def register_pubmed_tools(mcp, zotero_client):
             target_key = resolution["target_key"]
             target_name = resolution["target_name"]
 
-            import os
-
-            email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
-            client = PubMedClient(email=email)
-
             # Fetch article details (returns dicts directly)
-            articles = await client.fetch_details(pmids)
+            articles = await _fetch_pubmed_details(pmids)
 
             if not articles:
                 return {
@@ -457,26 +472,17 @@ def register_pubmed_tools(mcp, zotero_client):
             await zotero_client.save_items(zotero_items)
 
             # Build response
-            imported_info = [{"pmid": a.get("pmid"), "title": a.get("title", "")[:50]} for a in articles]
-
             result = {
                 "success": True,
                 "imported": len(zotero_items),
-                "items": imported_info,
+                "items": _build_article_import_items(articles),
                 "message": f"Successfully imported {len(zotero_items)} articles to Zotero",
             }
 
             if include_citation_metrics:
                 result["citation_metrics_fetched"] = citation_metrics_count
 
-            # 加入 collection 資訊
-            if target_key:
-                result["saved_to"] = {"key": target_key, "name": target_name}
-            else:
-                result["saved_to"] = "My Library (root)"
-                result["warning"] = "No collection specified - items saved to library root. Consider specifying collection_name."
-
-            return result
+            return _attach_saved_to_info(result, target_key=target_key, target_name=target_name)
 
         except Exception as e:
             logger.error(f"PMID import failed: {e}")
@@ -597,20 +603,14 @@ def register_pubmed_tools(mcp, zotero_client):
                     "pmids": pmid_list,
                     "message": f"Successfully imported {len(zotero_items)} articles",
                 }
-                # 加入 collection_info 讓使用者確認
                 if collection_info:
                     result["collection_info"] = collection_info
-                else:
-                    result["warning"] = "No collection specified - items saved to library root"
+                _attach_saved_to_info(result, target_key=collection_key, target_name=collection_info["name"] if collection_info else None)
                 return result
 
             # Fallback to import_from_pmids if pubmed package available
             elif PUBMED_AVAILABLE:
-                import os
-
-                email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
-                client = PubMedClient(email=email)
-                articles = await client.fetch_details(pmid_list)
+                articles = await _fetch_pubmed_details(pmid_list)
 
                 if not articles:
                     return {
@@ -625,12 +625,13 @@ def register_pubmed_tools(mcp, zotero_client):
 
                 await zotero_client.save_items(zotero_items)
 
-                return {
+                result = {
                     "success": True,
                     "imported": len(zotero_items),
                     "pmids": pmid_list,
                     "message": f"Successfully imported {len(zotero_items)} articles",
                 }
+                return _attach_saved_to_info(result, target_key=None, target_name=None)
 
             else:
                 return {
