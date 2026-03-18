@@ -326,6 +326,22 @@ class TestSourceCodePatterns(unittest.TestCase):
         # Look for enrichedEnv usage in the install section
         self.assertIn('getEnrichedEnv()', self.uv_source)
 
+    def test_uv_validates_required_python_version(self):
+        """Ready checks must enforce Python 3.12+, not just any runnable Python."""
+        self.assertIn('hasRequiredPythonVersion', self.uv_source)
+        self.assertIn('need ${PYTHON_VERSION}+', self.uv_source)
+
+    def test_uv_recreates_invalid_venv_before_setup(self):
+        """createVenv should remove invalid or corrupted venvs before recreating them."""
+        self.assertIn('Removing existing venv before recreate', self.uv_source)
+        self.assertIn('await this.rmWithRetry(this.venvDir)', self.uv_source)
+
+    def test_uv_tracks_install_state_for_migration(self):
+        """Manager should persist install-state so old environments are upgraded once."""
+        self.assertIn("install-state.json", self.uv_source)
+        self.assertIn('hasExpectedInstallState', self.uv_source)
+        self.assertIn('writeInstallState', self.uv_source)
+
     # ─── pythonEnvironment.ts checks ───
 
     def test_py_imports_os_module(self):

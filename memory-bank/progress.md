@@ -2,6 +2,27 @@
 
 ## Done
 
+### 2026-03-18 - Extension tool/runtime recovery hardening
+
+- ✅ 找出 extension 仍安裝舊 `pubmed-search-mcp>=0.3.8` 與過舊 PyPI `zotero-keeper==1.11.0` 是使用者持續撞到舊 tool bug 的主因
+- ✅ `vscode-extension/src/uvPythonManager.ts` 改為：
+	- 安裝 GitHub tarball `zotero-keeper`（tag `v0.5.19-ext`, package version `0.5.16`）
+	- `pubmed-search-mcp` 最低版本升到 `0.4.5`
+- ✅ `UvPythonManager` 新增 Python 3.12 版本驗證與 invalid venv recreate 邏輯
+- ✅ 補上 `install-state.json` 遷移機制：舊 PyPI 環境會在升級後自動刷新一次，之後不會每次開資料夾都重裝
+- ✅ `vscode-extension/src/mcpProvider.ts` server version metadata 同步到 `zotero-keeper 0.5.16` / `pubmed-search-mcp 0.4.5`
+- ✅ `npm test` 通過（47 passing）
+- ✅ `uv run python tests/test_mac_compatibility.py` 通過（48 passed）
+- ✅ 乾淨 venv smoke test 通過：
+	- `batch_import_from_pubmed` 成功
+	- `import_from_pmids` 成功
+	- 未再出現 coroutine / iterable 類錯誤
+
+### 2026-03-18 - 驗證補充說明
+
+- ℹ️ `vscode-extension/tests/test_python_env_edge_cases.py` 目前仍有 5 個 raw-uv 行為假設失敗，屬於測試腳本對 `uv venv` 覆寫語義的舊假設，非本次修正路徑的回歸失敗
+- ℹ️ 本次以 extension 單測 + cross-platform 靜態檢查 + 乾淨 venv runtime smoke test 作為修正驗證主體
+
 ### 2026-03-09 - VS Code Extension v0.5.18 release verification
 
 - ✅ `npm run compile` 通過（vscode-extension）

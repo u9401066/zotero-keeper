@@ -126,7 +126,7 @@ async function ensurePythonEnvironment(): Promise<string | undefined> {
         statusBar.setStatus('installing', 'Zotero MCP: Setting up Python environment...');
 
         try {
-            // UvPythonManager.ensureReady() handles uv download + Python 3.11 install + packages
+            // UvPythonManager.ensureReady() handles uv download + Python 3.12 install + packages
             const uvPythonPath = await uvPython.ensureReady();
             console.log('uv-managed Python ready:', uvPythonPath);
             return uvPythonPath;

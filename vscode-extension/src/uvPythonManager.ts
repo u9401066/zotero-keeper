@@ -55,19 +55,25 @@ const UV_DOWNLOADS: Record<string, { url: string; executable: string }> = {
 // Python 3.12+ required for type parameter syntax (PEP 695), TaskGroup, etc.
 const PYTHON_VERSION = '3.12';
 
+// PyPI's latest zotero-keeper release still lags behind the MCP tool fixes in this repo.
+// Install from the tagged GitHub source archive so users get the fixed async/tool behavior
+// without requiring git on macOS, Linux, or Windows.
+const ZOTERO_KEEPER_PACKAGE =
+    'zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.5.19-ext.tar.gz#subdirectory=mcp-server';
+
 // Required packages with minimum versions
 // IMPORTANT: Update these when extension depends on new package features
 // Python 3.12+ required for new core module features
 const REQUIRED_PACKAGES = [
-    'zotero-keeper>=1.11.0',
-    'pubmed-search-mcp>=0.3.8',
+    ZOTERO_KEEPER_PACKAGE,
+    'pubmed-search-mcp>=0.4.5',
 ];
 
 // Minimum versions for verification (extracted from REQUIRED_PACKAGES)
 // IMPORTANT: Keep in sync with REQUIRED_PACKAGES above!
 const MIN_VERSIONS: Record<string, string> = {
-    'zotero_mcp': '1.11.0',
-    'pubmed_search': '0.3.8',
+    'zotero_mcp': '0.5.16',
+    'pubmed_search': '0.4.5',
 };
 
 // Timeout constants (in milliseconds)
@@ -75,6 +81,15 @@ const SETUP_POLL_INTERVAL_MS = 1000;
 const DOWNLOAD_TIMEOUT_MS = 60000;
 const VENV_CREATION_TIMEOUT_MS = 300000;  // 5 minutes for Python download
 const PACKAGE_INSTALL_TIMEOUT_MS = 300000;
+
+const REQUIRED_PYTHON_VERSION = PYTHON_VERSION.split('.').map(part => Number.parseInt(part, 10));
+const INSTALL_STATE_FILE = 'install-state.json';
+
+type InstallState = {
+    pythonVersion: string;
+    zoteroKeeperPackage: string;
+    pubmedSearchMinVersion: string;
+};
 
 /**
  * Build enriched PATH for macOS.
@@ -113,6 +128,7 @@ export class UvPythonManager {
     private uvPath: string;
     private venvDir: string;
     private pythonBinary: string;
+    private installStatePath: string;
     private _isReady: boolean = false;
     private _setupInProgress: boolean = false;
 
@@ -125,6 +141,7 @@ export class UvPythonManager {
         this.uvPath = this.getUvPath();
         this.venvDir = path.join(this.baseDir, 'venv');
         this.pythonBinary = this.getPythonBinaryPath();
+        this.installStatePath = path.join(this.baseDir, INSTALL_STATE_FILE);
 
         // Check if already ready
         this._isReady = this.checkReadySync();
@@ -150,20 +167,77 @@ export class UvPythonManager {
         return path.join(this.venvDir, 'bin', 'python');
     }
 
+    private getExpectedInstallState(): InstallState {
+        return {
+            pythonVersion: PYTHON_VERSION,
+            zoteroKeeperPackage: ZOTERO_KEEPER_PACKAGE,
+            pubmedSearchMinVersion: MIN_VERSIONS.pubmed_search,
+        };
+    }
+
+    private readInstallStateSync(): InstallState | null {
+        if (!fs.existsSync(this.installStatePath)) {
+            return null;
+        }
+
+        try {
+            const raw = fs.readFileSync(this.installStatePath, 'utf-8');
+            return JSON.parse(raw) as InstallState;
+        } catch {
+            return null;
+        }
+    }
+
+    private hasExpectedInstallState(): boolean {
+        const actual = this.readInstallStateSync();
+        if (!actual) {
+            return false;
+        }
+
+        const expected = this.getExpectedInstallState();
+        return actual.pythonVersion === expected.pythonVersion
+            && actual.zoteroKeeperPackage === expected.zoteroKeeperPackage
+            && actual.pubmedSearchMinVersion === expected.pubmedSearchMinVersion;
+    }
+
+    private writeInstallState(): void {
+        fs.writeFileSync(this.installStatePath, JSON.stringify(this.getExpectedInstallState(), null, 2), 'utf-8');
+    }
+
+    private hasRequiredPythonVersion(versionOutput: string): boolean {
+        const match = versionOutput.match(/Python\s+(\d+)\.(\d+)/);
+        if (!match) {
+            return false;
+        }
+
+        const major = Number.parseInt(match[1], 10);
+        const minor = Number.parseInt(match[2], 10);
+        const [requiredMajor, requiredMinor] = REQUIRED_PYTHON_VERSION;
+
+        return major > requiredMajor || (major === requiredMajor && minor >= requiredMinor);
+    }
+
+    private getPythonVersionOutputSync(pythonPath: string): string | null {
+        try {
+            return execSync(
+                `"${pythonPath}" --version`,
+                { encoding: 'utf-8', stdio: 'pipe', timeout: 10000, env: getEnrichedEnv() }
+            ).trim();
+        } catch {
+            return null;
+        }
+    }
+
     private checkReadySync(): boolean {
         if (!this.uvPath || !fs.existsSync(this.pythonBinary) || !fs.existsSync(this.uvPath)) {
             return false;
         }
-        // Quick validation: ensure Python binary is runnable (not corrupted)
-        try {
-            const output = execSync(
-                `"${this.pythonBinary}" --version`,
-                { encoding: 'utf-8', stdio: 'pipe', timeout: 10000, env: getEnrichedEnv() }
-            );
-            return output.trim().startsWith('Python');
-        } catch {
+        const output = this.getPythonVersionOutputSync(this.pythonBinary);
+        if (!output) {
             return false;
         }
+
+        return this.hasRequiredPythonVersion(output) && this.hasExpectedInstallState();
     }
 
     isReady(): boolean {
@@ -201,14 +275,23 @@ export class UvPythonManager {
 
         try {
             // Verify Python binary is actually runnable (not corrupted)
-            const pythonVersionOutput = execSync(
-                `"${this.pythonBinary}" --version`,
-                { encoding: 'utf-8', stdio: 'pipe', timeout: 10000 }
-            );
+            const pythonVersionOutput = this.getPythonVersionOutputSync(this.pythonBinary);
 
             // Verify it's actually a Python process that responds properly
-            if (!pythonVersionOutput.trim().startsWith('Python')) {
-                this.log(`Python binary exists but returned unexpected output: ${pythonVersionOutput.trim()}`);
+            if (!pythonVersionOutput) {
+                this.log('Python binary exists but returned no version output');
+                this._isReady = false;
+                return false;
+            }
+
+            if (!this.hasRequiredPythonVersion(pythonVersionOutput)) {
+                this.log(`Python ${pythonVersionOutput} is too old, need ${PYTHON_VERSION}+`);
+                this._isReady = false;
+                return false;
+            }
+
+            if (!this.hasExpectedInstallState()) {
+                this.log('Install state missing or outdated, package refresh required');
                 this._isReady = false;
                 return false;
             }
@@ -217,8 +300,7 @@ export class UvPythonManager {
             // Write script to temp file to avoid shell escaping issues
             const scriptPath = path.join(this.baseDir, 'version_check.py');
             // IMPORTANT: Use importlib.metadata.version() instead of __version__ attribute
-            // because some packages have __version__ mismatches with their installed version
-            // (e.g., pubmed-search-mcp 0.3.8 reports __version__="0.3.6")
+            // because some packages have __version__ mismatches with their installed version.
             // importlib.metadata reads the actual installed package metadata from dist-info
             const versionCheckScript = `
 import sys
@@ -293,17 +375,18 @@ print("OK")
         if (!fs.existsSync(this.pythonBinary) || !fs.existsSync(this.uvPath)) {
             return false;
         }
-        // Verify Python binary is actually runnable
-        try {
-            const output = execSync(
-                `"${this.pythonBinary}" --version`,
-                { encoding: 'utf-8', stdio: 'pipe', timeout: 10000 }
-            );
-            return output.trim().startsWith('Python');
-        } catch {
+        const output = this.getPythonVersionOutputSync(this.pythonBinary);
+        if (!output) {
             this.log('Python binary exists but is not runnable, needs full rebuild');
             return false;
         }
+
+        if (!this.hasRequiredPythonVersion(output)) {
+            this.log(`Python ${output} does not satisfy ${PYTHON_VERSION}+, needs full rebuild`);
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -501,6 +584,19 @@ print("OK")
      * Create virtual environment with Python
      */
     private async createVenv(): Promise<void> {
+        if (fs.existsSync(this.venvDir)) {
+            const versionOutput = this.getPythonVersionOutputSync(this.pythonBinary);
+            const shouldRecreate = !versionOutput || !this.hasRequiredPythonVersion(versionOutput);
+
+            if (shouldRecreate) {
+                const reason = versionOutput
+                    ? `found ${versionOutput}, need ${PYTHON_VERSION}+`
+                    : 'existing environment is incomplete or corrupted';
+                this.log(`Removing existing venv before recreate: ${reason}`);
+                await this.rmWithRetry(this.venvDir);
+            }
+        }
+
         // uv can automatically download and install Python!
         const cmd = `"${this.uvPath}" venv "${this.venvDir}" --python ${PYTHON_VERSION}`;
         this.log(`Running: ${cmd}`);
@@ -570,6 +666,8 @@ print("OK")
                 throw error;
             }
         }
+
+        this.writeInstallState();
 
         this.log('All packages installed successfully');
     }
@@ -825,6 +923,10 @@ print("OK")
         const uvDir = path.join(this.baseDir, 'uv');
         if (fs.existsSync(uvDir)) {
             await this.rmWithRetry(uvDir);
+        }
+
+        if (fs.existsSync(this.installStatePath)) {
+            fs.rmSync(this.installStatePath, { force: true });
         }
 
         this._isReady = false;

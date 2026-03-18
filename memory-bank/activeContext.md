@@ -2,7 +2,23 @@
 
 > 🎯 目前工作焦點與下一步行動
 
-## 當前狀態: 0.5.18 發版驗證完成 ✅
+## 當前狀態: Extension tool/runtime 修正完成，待決定是否發版 ✅
+
+### 最新完成 (2026-03-18)
+
+1. ✅ 修正 extension 安裝來源
+   - `zotero-keeper` 改由 GitHub tarball 安裝，避開過舊 PyPI 1.11.0
+   - `pubmed-search-mcp` 最低版本升到 `0.4.5`
+
+2. ✅ 修正 venv 復原邏輯
+   - `UvPythonManager` 現在會驗證 Python 是否為 3.12+
+   - 既有 venv 若缺 binary、損壞、或版本過舊，先刪除再重建
+
+3. ✅ 驗證完成
+   - `npm test` 通過（47 passing）
+   - `test_mac_compatibility.py` 通過（48 passed）
+   - 乾淨 venv 實測：`batch_import_from_pubmed` / `import_from_pmids` 均成功
+   - 未重現 `Coroutine object is not iterable`
 
 ### 已完成 (2026-03-09)
 
@@ -46,14 +62,14 @@
 
 | 元件 | 版本 | 狀態 |
 | ---- | ---- | ---- |
-| pubmed-search-mcp | v0.4.4 | installed ✅ |
-| zotero-keeper MCP | pubmed wrapper convergence complete | stable ✅ |
-| VS Code Extension | v0.5.18 verified | pending release commit/tag |
+| pubmed-search-mcp | v0.4.5 minimum | verified ✅ |
+| zotero-keeper MCP | 0.5.16 via GitHub tarball | verified ✅ |
+| VS Code Extension | v0.5.18 | code updated, not released |
 
 ### 下一步
 
-- 立即下一步：建立 `v0.5.18` release commit 與 `v0.5.18-ext` tag
+- 可選下一步：決定是否發新版 extension，讓 Marketplace 使用者拿到新的安裝來源與 recovery 邏輯
 
 ---
-*Updated: 2026-03-09*
+*Updated: 2026-03-18*
 *工作模式: Refactor*

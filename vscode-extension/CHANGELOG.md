@@ -2,6 +2,30 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.19] - 2026-03-18
+
+### Fixed
+
+- **One-time embedded environment migration**
+  - Older extension-managed environments are now detected and refreshed once on upgrade instead of being mistaken for already-current installs
+  - Added install-state tracking so stale PyPI-based environments are upgraded to the fixed package source automatically
+
+- **Environment reuse vs reinstall confusion**
+  - Embedded Python installation remains in extension global storage and is reused across folders in the same environment
+  - Added explicit validation so only corrupted, outdated, or mismatched environments trigger rebuild/upgrade
+
+### Changed
+
+- **Release metadata alignment**
+  - Version synchronized across `package.json`, `statusBar.ts`, and extension-facing docs
+  - README "What's New" updated to reflect the current upgrade/migration behavior instead of older release notes
+
+### Test
+
+- `npm run compile`
+- `npm test`
+- `uv run python tests/test_mac_compatibility.py`
+
 ## [0.5.18] - 2026-03-09
 
 ### Fixed

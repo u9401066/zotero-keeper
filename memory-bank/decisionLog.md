@@ -4,6 +4,32 @@
 
 ## 2026-03-04
 
+## 2026-03-18
+
+### DEC-021: VS Code Extension 必須避開過舊 PyPI zotero-keeper
+- **決策**: extension 改為從 GitHub release tarball 安裝 `zotero-keeper`，而非直接信任 PyPI `>=1.11.0`
+- **理由**:
+  1. PyPI 最新 `zotero-keeper==1.11.0` 仍缺少 repo 內已修復的 PubMed import/tool async 修正
+  2. 使用者實際會因此持續遇到舊 tool 問題（包含 coroutine 類錯誤）
+  3. `uv` 可直接安裝 GitHub tarball，不需 git，跨平台可用
+- **實作**:
+  - `vscode-extension/src/uvPythonManager.ts` 改為安裝 `v0.5.19-ext` tag 的 `mcp-server` subdirectory
+  - `pubmed-search-mcp` 最低版本提升到 `0.4.5`
+
+### DEC-022: uv-managed venv 必須先驗證 Python 版本並清除壞環境
+- **決策**: `UvPythonManager` 對既有 venv 先做 Python 版本驗證；若缺 binary、binary 壞掉、或版本低於 3.12，先刪除再重建
+- **理由**:
+  1. `uv venv --python 3.12` 不保證會覆寫既有錯誤/舊版 venv
+  2. 原本 ready check 只驗證「可執行」，不足以防止 3.11 舊環境殘留
+  3. 這會在 macOS / Linux / Windows 都影響修復與重裝成功率
+
+### DEC-023: 用 install-state 判斷 extension 管理環境是否需要一次性遷移
+- **決策**: 在 extension global storage 寫入 `install-state.json`，用來辨識「這個環境是不是由新版 extension 安裝」
+- **理由**:
+  1. 舊 PyPI `zotero-keeper==1.11.0` 的版本號數值比 `0.5.16` 大，單靠 package version 會誤判成已最新
+  2. 新版需要把舊環境自動遷移到 GitHub tarball 安裝來源，但不應每次開資料夾都重裝
+  3. install-state 可做到「升級時補一次、之後穩定重用」
+
 ### DEC-019: Async/Await 全面修復策略
 - **決策**: 一次修復所有 PubMed API 呼叫的 async/await 問題，而非逐個修
 - **理由**:

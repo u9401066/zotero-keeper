@@ -2,12 +2,12 @@
 
 🔬 **AI-powered research assistant** - Integrates Zotero reference management and PubMed literature search with GitHub Copilot.
 
-## ✨ What's New in v0.5.17
+## ✨ What's New in v0.5.19
 
-- **🍎 macOS Installation Compatibility**: 修正 Finder/Dock 啟動 VS Code 時 PATH 缺失造成的安裝失敗
-- **🤖 `@research` Agent**: 自動部署研究助理 agent 與 Copilot workflow 指引
-- **🔍 PubMed Search MCP v0.4.4**: 升級多來源搜尋、citation metrics caching 與排名修正
-- **🧪 Cross-platform Tests**: 新增相容性測試，驗證安裝與路徑處理邏輯
+- **🔄 One-time Upgrade Migration**: 舊版 embedded Python 環境會在升級後自動刷新一次，遷移到修正版安裝來源
+- **🧱 Environment Reuse**: 改為每台環境重用同一份 global storage 安裝，不會每開一個資料夾都重裝
+- **🧪 Verified Recovery Logic**: 補強壞掉 venv / 舊 Python / 過時 install-state 的偵測與重建流程
+- **🔍 PubMed Search MCP v0.4.5**: 版本門檻與文件同步到目前實際要求
 
 ## Features
 
@@ -22,7 +22,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 - **Library analytics** (stats, orphan detection)
 - **PDF attachment access** (list attachments, get indexed fulltext)
 
-### 🔍 PubMed Search (v0.4.4)
+### 🔍 PubMed Search (v0.4.5)
 
 - **`unified_search`** - 統一搜尋入口，自動合併去重多來源結果
 - **Multi-source search** (PubMed, Europe PMC, CORE)

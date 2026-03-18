@@ -31,9 +31,13 @@ from typing import Optional
 # ======================================================================
 UV_VERSION = "0.5.14"
 PYTHON_VERSION = "3.12"
+ZOTERO_KEEPER_PACKAGE = (
+    "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/"
+    "v0.5.19-ext.tar.gz#subdirectory=mcp-server"
+)
 REQUIRED_PACKAGES = [
-    "zotero-keeper>=1.11.0",
-    "pubmed-search-mcp>=0.3.8",
+    ZOTERO_KEEPER_PACKAGE,
+    "pubmed-search-mcp>=0.4.5",
 ]
 
 # Test directory - use temp
@@ -677,8 +681,8 @@ class TestPythonEnvEdgeCases:
         issues = []
         _all_ok = True
         for pkg_name, import_name, min_ver in [
-            ("zotero-keeper", "zotero_mcp", "1.11.0"),
-            ("pubmed-search-mcp", "pubmed_search", "0.3.8"),
+            ("zotero-keeper", "zotero_mcp", "0.5.16"),
+            ("pubmed-search-mcp", "pubmed_search", "0.4.5"),
         ]:
             attr_ver = self._check_package_version(venv_dir, import_name)
             pip_ver = self._check_installed_version_via_pip(venv_dir, pkg_name)
@@ -1093,7 +1097,7 @@ print("OK")
                 "--upgrade",
                 "--python",
                 python,
-                "pubmed-search-mcp>=0.3.8",
+                "pubmed-search-mcp>=0.4.5",
             ],
             env={"VIRTUAL_ENV": str(venv_dir)},
             timeout=120,

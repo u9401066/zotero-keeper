@@ -1,6 +1,6 @@
 # Research Workflow Guide for Copilot
 
-> 這份指南幫助 Copilot 理解如何正確使用 Zotero + PubMed MCP tools (v0.4.4)
+> 這份指南幫助 Copilot 理解如何正確使用 Zotero + PubMed MCP tools (v0.4.5)
 
 ## 🔍 文獻搜尋流程
 

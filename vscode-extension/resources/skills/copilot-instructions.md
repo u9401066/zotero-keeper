@@ -12,7 +12,7 @@
 - Collection 管理
 - 書庫分析
 
-### 2. PubMed Search (v0.4.4)
+### 2. PubMed Search (v0.4.5)
 搜尋醫學文獻的工具，包括：
 - **`unified_search`** - 統一搜尋入口（支援多來源）
 - 預印本搜尋（arXiv、medRxiv、bioRxiv）
