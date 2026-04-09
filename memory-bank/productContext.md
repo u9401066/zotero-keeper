@@ -12,6 +12,7 @@
   - biopython (NCBI Entrez)
   - httpx (async HTTP)
   - pyzotero-local (Zotero API)
+  - structlog (structured MCP tool logging)
 
 ### VS Code Extension
 - **Runtime**: Node.js 18+

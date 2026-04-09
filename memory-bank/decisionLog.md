@@ -6,6 +6,13 @@
 
 ## 2026-03-18
 
+### DEC-024: pre-tag edge-case 測試改用本地 mcp-server 作為安裝來源
+- **決策**: `vscode-extension/tests/test_python_env_edge_cases.py` 預設改為安裝目前工作樹的 `mcp-server/`，並保留 `ZOTERO_KEEPER_PACKAGE_SOURCE` 覆寫能力
+- **理由**:
+  1. release 前本地驗證時，`v0.5.20-ext` GitHub archive 尚未存在，直接抓 release tarball 會造成假性失敗
+  2. edge-case suite 的目的在驗證 `UvPythonManager` 的安裝/重建/版本檢查邏輯，而不是驗證 Git tag 是否已發布
+  3. 本地 path 安裝可以驗證當前工作樹的 keeper 版本與匯入流程，同時保留覆寫能力給真正的 release-archive smoke test
+
 ### DEC-021: VS Code Extension 必須避開過舊 PyPI zotero-keeper
 - **決策**: extension 改為從 GitHub release tarball 安裝 `zotero-keeper`，而非直接信任 PyPI `>=1.11.0`
 - **理由**:
