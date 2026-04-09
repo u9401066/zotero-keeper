@@ -53,9 +53,10 @@ class TestFetchMetadataFromDoi:
             }
         }
 
-        with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
-
+        with patch(
+            "zotero_mcp.infrastructure.mcp.metadata_fetcher._get_crossref_client",
+            return_value=MagicMock(get=AsyncMock(return_value=mock_response)),
+        ):
             result = await _fetch_metadata_from_doi("10.1234/test")
 
         assert result is not None
@@ -75,9 +76,10 @@ class TestFetchMetadataFromDoi:
         mock_response = MagicMock()
         mock_response.status_code = 404
 
-        with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
-
+        with patch(
+            "zotero_mcp.infrastructure.mcp.metadata_fetcher._get_crossref_client",
+            return_value=MagicMock(get=AsyncMock(return_value=mock_response)),
+        ):
             result = await _fetch_metadata_from_doi("10.9999/notfound")
 
         assert result is None
@@ -85,9 +87,10 @@ class TestFetchMetadataFromDoi:
     @pytest.mark.asyncio
     async def test_exception_handling(self):
         """Test exception handling."""
-        with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.get = AsyncMock(side_effect=Exception("Network error"))
-
+        with patch(
+            "zotero_mcp.infrastructure.mcp.metadata_fetcher._get_crossref_client",
+            return_value=MagicMock(get=AsyncMock(side_effect=Exception("Network error"))),
+        ):
             result = await _fetch_metadata_from_doi("10.1234/test")
 
         assert result is None

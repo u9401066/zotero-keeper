@@ -156,7 +156,7 @@ class TestGetItemAttachments:
         result = await get_item_attachments(item_key="PARENT01")
 
         att = result["attachments"][0]
-        assert att["file_path"] == "/home/user/Zotero/storage/ATT00001/paper.pdf"
+        assert Path(att["file_path"]).as_posix() == "/home/user/Zotero/storage/ATT00001/paper.pdf"
 
     @pytest.mark.asyncio
     async def test_no_attachments(self, mock_zotero, register_tools):

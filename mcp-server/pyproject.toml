@@ -27,6 +27,7 @@ dependencies = [
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
     "rapidfuzz>=3.0.0",
+    "structlog>=24.4.0",
 ]
 
 [project.urls]
