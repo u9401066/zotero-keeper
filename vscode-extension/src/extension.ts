@@ -32,6 +32,24 @@ const FIRST_ACTIVATION_KEY = 'zoteroMcp.firstActivation';
 const SKILLS_INSTALLED_KEY = 'zoteroMcp.skillsInstalled';
 
 /**
+ * Official user-facing PubMed skill names that the extension is allowed to
+ * install and manage.  Skills not in this list will be removed during cleanup
+ * so that stale directories from older extension versions do not linger.
+ */
+const PUBMED_USER_SKILL_NAMES: readonly string[] = [
+    'pubmed-quick-search',
+    'pubmed-systematic-search',
+    'pubmed-pico-search',
+    'pubmed-multi-source-search',
+    'pubmed-paper-exploration',
+    'pubmed-fulltext-access',
+    'pubmed-export-citations',
+    'pubmed-gene-drug-research',
+    'pubmed-mcp-tools-reference',
+    'pipeline-persistence',
+];
+
+/**
  * Extension activation
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -87,7 +105,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         // Step 4: Check Zotero connection (non-blocking)
         checkAndUpdateZoteroStatus();
 
-        // Step 5: Install Copilot skills/instructions if needed
+        // Step 5: Install official Copilot assets if needed
         await installCopilotInstructions(context);
 
         // Step 6: Update status
@@ -247,47 +265,257 @@ async function checkAndUpdateZoteroStatus(): Promise<boolean> {
     return connected;
 }
 
-/**
- * Install Copilot instructions and skills to workspace (if not already installed)
- * IMPORTANT: Never overwrite existing user files automatically!
- */
-async function installCopilotInstructions(context: vscode.ExtensionContext): Promise<void> {
-    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-    if (!workspaceFolder) {
-        return; // No workspace open
+type InstallMode = 'auto' | 'manual';
+
+interface InstallSummary {
+    installed: number;
+    updated: number;
+    preserved: number;
+    missingSources: string[];
+}
+
+function createInstallSummary(): InstallSummary {
+    return {
+        installed: 0,
+        updated: 0,
+        preserved: 0,
+        missingSources: [],
+    };
+}
+
+function getBundledAssetPath(context: vscode.ExtensionContext, ...segments: string[]): string {
+    return path.join(context.extensionPath, 'resources', 'repo-assets', ...segments);
+}
+
+function ensureParentDirectory(filePath: string): void {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+}
+
+function readUtf8IfExists(filePath: string): string | undefined {
+    if (!fs.existsSync(filePath)) {
+        return undefined;
     }
 
-    const githubDir = path.join(workspaceFolder.uri.fsPath, '.github');
-    const agentsDir = path.join(githubDir, 'agents');
-    const instructionsPath = path.join(githubDir, 'copilot-instructions.md');
-    const workflowDest = path.join(githubDir, 'zotero-research-workflow.md');
-    const agentDest = path.join(agentsDir, 'research.agent.md');
+    return fs.readFileSync(filePath, 'utf-8');
+}
 
-    // Check if research agent already installed (primary marker for v0.5.15+)
-    if (fs.existsSync(agentDest)) {
-        const content = fs.readFileSync(agentDest, 'utf-8');
-        if (content.includes('PubMed') && content.includes('Zotero')) {
-            return; // Already installed, don't touch anything
+function isKeeperInstructionsFile(content: string): boolean {
+    return content.includes('# Copilot User Instructions for Zotero + PubMed MCP')
+        || content.includes('# Copilot Instructions for Zotero + PubMed MCP')
+        || content.includes('# Copilot 自定義指令 - Zotero Keeper');
+}
+
+function isKeeperWorkflowFile(content: string): boolean {
+    return content.includes('# Research Workflow Guide for Copilot')
+        && content.includes('Zotero + PubMed MCP tools');
+}
+
+function copyBundledFile(sourcePath: string, destinationPath: string): boolean {
+    ensureParentDirectory(destinationPath);
+
+    if (fs.existsSync(destinationPath)) {
+        const current = fs.readFileSync(destinationPath, 'utf-8');
+        const incoming = fs.readFileSync(sourcePath, 'utf-8');
+        if (current === incoming) {
+            return false;
         }
     }
 
-    // Fallback: check legacy workflow file
-    if (fs.existsSync(workflowDest) && !fs.existsSync(agentDest)) {
-        const content = fs.readFileSync(workflowDest, 'utf-8');
-        if (content.includes('Zotero + PubMed MCP')) {
-            // Legacy install exists, upgrade to agent format
-            await installResearchAgent(context, githubDir, agentsDir, agentDest);
+    fs.copyFileSync(sourcePath, destinationPath);
+    return true;
+}
+
+function collectFilesRecursive(rootDir: string): string[] {
+    const files: string[] = [];
+
+    for (const entry of fs.readdirSync(rootDir, { withFileTypes: true })) {
+        const fullPath = path.join(rootDir, entry.name);
+        if (entry.isDirectory()) {
+            files.push(...collectFilesRecursive(fullPath));
+        } else {
+            files.push(fullPath);
+        }
+    }
+
+    return files;
+}
+
+function syncManagedDirectory(
+    sourceDir: string,
+    destinationDir: string,
+    summary: InstallSummary,
+    overwriteExisting: boolean
+): void {
+    if (!fs.existsSync(sourceDir)) {
+        summary.missingSources.push(sourceDir);
+        return;
+    }
+
+    for (const sourceFile of collectFilesRecursive(sourceDir)) {
+        const relativePath = path.relative(sourceDir, sourceFile);
+        const destinationFile = path.join(destinationDir, relativePath);
+        const alreadyExists = fs.existsSync(destinationFile);
+
+        if (alreadyExists && !overwriteExisting) {
+            continue;
+        }
+
+        if (!copyBundledFile(sourceFile, destinationFile)) {
+            continue;
+        }
+
+        if (alreadyExists) {
+            summary.updated++;
+        } else {
+            summary.installed++;
+        }
+    }
+}
+
+function syncSkillDirectories(
+    sourceRoot: string,
+    destinationRoot: string,
+    summary: InstallSummary,
+    overwriteExisting: boolean
+): void {
+    if (!fs.existsSync(sourceRoot)) {
+        summary.missingSources.push(sourceRoot);
+        return;
+    }
+
+    for (const entry of fs.readdirSync(sourceRoot, { withFileTypes: true })) {
+        if (!entry.isDirectory()) {
+            continue;
+        }
+
+        syncManagedDirectory(
+            path.join(sourceRoot, entry.name),
+            path.join(destinationRoot, entry.name),
+            summary,
+            overwriteExisting
+        );
+    }
+}
+
+/**
+ * Remove legacy files from older extension versions that are no longer
+ * distributed.  Safe to call even if the files do not exist.
+ */
+function cleanupLegacyAssets(workspaceRoot: string, summary: InstallSummary): void {
+    const githubDir = path.join(workspaceRoot, '.github');
+
+    // v0.5.13 and earlier installed simplified markdown files from
+    // resources/skills/ which have been replaced by official repo assets.
+    const legacyFiles = [
+        // Old simplified copilot instructions (replaced by repo-assets/keeper/.github/copilot-instructions.md)
+        path.join(githubDir, 'copilot-instructions.md.old'),
+        // Old simplified research workflow (replaced by repo-assets/keeper/.github/zotero-research-workflow.md)
+        path.join(githubDir, 'zotero-research-workflow.md.old'),
+    ];
+
+    for (const legacyFile of legacyFiles) {
+        if (fs.existsSync(legacyFile)) {
+            fs.unlinkSync(legacyFile);
+            summary.updated++;
+        }
+    }
+
+    // The old extension also installed two files directly from resources/skills/:
+    //   .github/copilot-instructions.md  (simplified, not the official repo version)
+    //   .github/zotero-research-workflow.md  (simplified)
+    // These are now replaced by the official repo-asset versions above,
+    // so no separate cleanup is needed — they get overwritten in the main flow.
+}
+
+/**
+ * Remove skill directories that are no longer in the official allowlist.
+ * This prevents stale skills from lingering after an extension upgrade.
+ */
+function cleanupStaleSkills(
+    destinationRoot: string,
+    allowedSkillNames: readonly string[],
+    summary: InstallSummary
+): void {
+    if (!fs.existsSync(destinationRoot)) {
+        return;
+    }
+
+    for (const entry of fs.readdirSync(destinationRoot, { withFileTypes: true })) {
+        if (!entry.isDirectory()) {
+            continue;
+        }
+
+        // Only clean up pubmed-* and pipeline-* directories that we manage
+        const isManaged = entry.name.startsWith('pubmed-') || entry.name.startsWith('pipeline-');
+        if (!isManaged) {
+            continue;
+        }
+
+        if (!allowedSkillNames.includes(entry.name)) {
+            const staleDir = path.join(destinationRoot, entry.name);
+            fs.rmSync(staleDir, { recursive: true, force: true });
+            summary.updated++;
+        }
+    }
+}
+
+/**
+ * Install official Copilot assets from bundled keeper/pubmed repository files.
+ * IMPORTANT: Never overwrite existing user instructions automatically.
+ */
+async function installCopilotInstructions(
+    context: vscode.ExtensionContext,
+    mode: InstallMode = 'auto'
+): Promise<void> {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) {
+        if (mode === 'manual') {
+            vscode.window.showWarningMessage('Please open a workspace folder first.');
+        }
+        return;
+    }
+
+    const workspaceRoot = workspaceFolder.uri.fsPath;
+    const githubDir = path.join(workspaceRoot, '.github');
+    const skillsDir = path.join(workspaceRoot, '.claude', 'skills');
+    const agentsDir = path.join(githubDir, 'agents');
+    const hooksDir = path.join(githubDir, 'hooks');
+    const copilotScriptsDir = path.join(workspaceRoot, 'scripts', 'hooks', 'copilot');
+
+    const instructionsPath = path.join(githubDir, 'copilot-instructions.md');
+    const workflowDest = path.join(githubDir, 'zotero-research-workflow.md');
+
+    const keeperInstructions = getBundledAssetPath(context, 'keeper', '.github', 'copilot-instructions.md');
+    const keeperWorkflow = getBundledAssetPath(context, 'keeper', '.github', 'zotero-research-workflow.md');
+    const pubmedSkills = getBundledAssetPath(context, 'pubmed-search-mcp', '.claude', 'skills');
+    const pubmedAgents = getBundledAssetPath(context, 'pubmed-search-mcp', '.github', 'agents');
+    const pubmedHooks = getBundledAssetPath(context, 'pubmed-search-mcp', '.github', 'hooks');
+    const pubmedCopilotScripts = getBundledAssetPath(context, 'pubmed-search-mcp', 'scripts', 'hooks', 'copilot');
+
+    const summary = createInstallSummary();
+    const managedAgentPath = path.join(agentsDir, 'research.agent.md');
+    const hasManagedAssets = fs.existsSync(workflowDest) || fs.existsSync(managedAgentPath);
+
+    if (mode === 'manual') {
+        const choice = await vscode.window.showInformationMessage(
+            'Install/update curated user-facing official Copilot assets from Zotero Keeper and PubMed Search MCP? Existing custom copilot-instructions.md will be preserved.',
+            'Install',
+            'Cancel'
+        );
+
+        if (choice !== 'Install') {
             return;
         }
     }
 
-    // Check if user has existing copilot-instructions.md
-    if (fs.existsSync(instructionsPath)) {
-        // User has their own instructions, don't overwrite!
-        // Only offer to add our research agent
+    const existingInstructions = readUtf8IfExists(instructionsPath);
+    const hasCustomInstructions = !!existingInstructions && !isKeeperInstructionsFile(existingInstructions);
+
+    if (mode === 'auto' && hasCustomInstructions && !hasManagedAssets) {
         const choice = await vscode.window.showInformationMessage(
-            'Would you like to add Zotero+PubMed research agent? (Your existing files will not be modified)',
-            'Yes', 'No'
+            'Install curated user-facing Zotero + PubMed Copilot assets? Your existing copilot-instructions.md will be preserved.',
+            'Yes',
+            'No'
         );
 
         if (choice !== 'Yes') {
@@ -296,28 +524,92 @@ async function installCopilotInstructions(context: vscode.ExtensionContext): Pro
     }
 
     try {
-        // Create directories
-        if (!fs.existsSync(githubDir)) {
-            fs.mkdirSync(githubDir, { recursive: true });
+        // Clean up legacy assets from older extension versions
+        cleanupLegacyAssets(workspaceRoot, summary);
+
+        if (!fs.existsSync(keeperInstructions)) {
+            summary.missingSources.push(keeperInstructions);
+        } else if (!existingInstructions) {
+            copyBundledFile(keeperInstructions, instructionsPath);
+            summary.installed++;
+        } else if (isKeeperInstructionsFile(existingInstructions)) {
+            // Always update our own official instructions (auto + manual)
+            // so that users who installed an older extension version get
+            // the latest collaboration-safe workflow automatically.
+            copyBundledFile(keeperInstructions, instructionsPath);
+            summary.updated++;
+        } else {
+            summary.preserved++;
         }
 
-        const extensionPath = context.extensionPath;
+        const existingWorkflow = readUtf8IfExists(workflowDest);
+        if (!fs.existsSync(keeperWorkflow)) {
+            summary.missingSources.push(keeperWorkflow);
+        } else if (!existingWorkflow) {
+            copyBundledFile(keeperWorkflow, workflowDest);
+            summary.installed++;
+        } else if (isKeeperWorkflowFile(existingWorkflow)) {
+            // Always update our own official workflow (auto + manual)
+            // so that legacy tool references are replaced with the new
+            // collaboration-safe import_articles workflow.
+            copyBundledFile(keeperWorkflow, workflowDest);
+            summary.updated++;
+        } else if (mode === 'manual') {
+            const choice = await vscode.window.showWarningMessage(
+                'zotero-research-workflow.md has been modified. Update it to the latest official version?',
+                'Update',
+                'Keep Mine'
+            );
 
-        // Install copilot-instructions.md (only if user doesn't have one)
-        const sourceInstructions = path.join(extensionPath, 'resources', 'skills', 'copilot-instructions.md');
-        if (fs.existsSync(sourceInstructions) && !fs.existsSync(instructionsPath)) {
-            fs.copyFileSync(sourceInstructions, instructionsPath);
-            console.log('Installed Copilot instructions');
+            if (choice === 'Update') {
+                copyBundledFile(keeperWorkflow, workflowDest);
+                summary.updated++;
+            } else {
+                summary.preserved++;
+            }
+        } else {
+            summary.preserved++;
         }
 
-        // Install research agent
-        await installResearchAgent(context, githubDir, agentsDir, agentDest);
+        // Remove stale skill directories that are no longer in the official allowlist
+        cleanupStaleSkills(skillsDir, PUBMED_USER_SKILL_NAMES, summary);
 
-        // Mark as installed
-        context.globalState.update(SKILLS_INSTALLED_KEY, true);
+        syncSkillDirectories(pubmedSkills, skillsDir, summary, true);
 
+        syncManagedDirectory(pubmedAgents, agentsDir, summary, true);
+        syncManagedDirectory(pubmedHooks, hooksDir, summary, true);
+        syncManagedDirectory(pubmedCopilotScripts, copilotScriptsDir, summary, true);
+
+        await context.globalState.update(SKILLS_INSTALLED_KEY, true);
+
+        if (mode === 'manual') {
+            if (summary.missingSources.length > 0) {
+                vscode.window.showWarningMessage(
+                    `Installed ${summary.installed} and updated ${summary.updated} Copilot asset(s), but ${summary.missingSources.length} bundled source path(s) were missing.`
+                );
+            } else if (summary.installed > 0 || summary.updated > 0) {
+                const details: string[] = [];
+                if (summary.preserved > 0) {
+                    details.push(`${summary.preserved} preserved`);
+                }
+
+                const suffix = details.length > 0 ? ` (${details.join(', ')})` : '';
+                vscode.window.showInformationMessage(
+                    `Installed ${summary.installed} and updated ${summary.updated} official Copilot asset(s)${suffix}.`
+                );
+            } else if (summary.preserved > 0) {
+                vscode.window.showInformationMessage(
+                    `No official assets changed. Preserved ${summary.preserved} custom file(s).`
+                );
+            } else {
+                vscode.window.showInformationMessage('No official Copilot assets needed updating.');
+            }
+        }
     } catch (error) {
-        console.error('Failed to install Copilot instructions:', error);
+        console.error('Failed to install official Copilot assets:', error);
+        if (mode === 'manual') {
+            vscode.window.showErrorMessage(`Failed to install official Copilot assets: ${error}`);
+        }
     }
 }
 
@@ -454,95 +746,10 @@ function registerCommands(context: vscode.ExtensionContext): void {
         })
     );
 
-    // Install/Update Copilot Skills
+    // Install/Update official Copilot assets
     context.subscriptions.push(
         vscode.commands.registerCommand('zoteroMcp.installSkills', async () => {
-            const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-            if (!workspaceFolder) {
-                vscode.window.showWarningMessage('Please open a workspace folder first.');
-                return;
-            }
-
-            const githubDir = path.join(workspaceFolder.uri.fsPath, '.github');
-            const agentsDir = path.join(githubDir, 'agents');
-            const instructionsPath = path.join(githubDir, 'copilot-instructions.md');
-            const agentDest = path.join(agentsDir, 'research.agent.md');
-
-            // Create directories
-            if (!fs.existsSync(githubDir)) {
-                fs.mkdirSync(githubDir, { recursive: true });
-            }
-
-            const extensionPath = context.extensionPath;
-            const sourceInstructions = path.join(extensionPath, 'resources', 'skills', 'copilot-instructions.md');
-            const sourceAgent = path.join(extensionPath, 'resources', 'agents', 'research.agent.md');
-
-            let installed = 0;
-            let skipped = 0;
-
-            // Handle copilot-instructions.md - NEVER overwrite without explicit consent
-            if (fs.existsSync(instructionsPath)) {
-                const content = fs.readFileSync(instructionsPath, 'utf-8');
-                if (content.includes('Zotero + PubMed MCP')) {
-                    // It's our file, safe to update
-                    if (fs.existsSync(sourceInstructions)) {
-                        fs.copyFileSync(sourceInstructions, instructionsPath);
-                        installed++;
-                    }
-                } else {
-                    // User's own file - DO NOT TOUCH
-                    vscode.window.showInformationMessage(
-                        'ℹ️ Your existing copilot-instructions.md was preserved (not modified).'
-                    );
-                    skipped++;
-                }
-            } else if (fs.existsSync(sourceInstructions)) {
-                fs.copyFileSync(sourceInstructions, instructionsPath);
-                installed++;
-            }
-
-            // Handle research.agent.md
-            if (fs.existsSync(agentDest)) {
-                const content = fs.readFileSync(agentDest, 'utf-8');
-                if (content.includes('PubMed') && content.includes('Zotero')) {
-                    // It's our file, safe to update
-                    if (fs.existsSync(sourceAgent)) {
-                        fs.copyFileSync(sourceAgent, agentDest);
-                        installed++;
-                    }
-                } else {
-                    skipped++;
-                }
-            } else if (fs.existsSync(sourceAgent)) {
-                if (!fs.existsSync(agentsDir)) {
-                    fs.mkdirSync(agentsDir, { recursive: true });
-                }
-                fs.copyFileSync(sourceAgent, agentDest);
-                installed++;
-            }
-
-            // Clean up legacy workflow file if agent is now installed
-            const legacyWorkflow = path.join(githubDir, 'zotero-research-workflow.md');
-            if (fs.existsSync(legacyWorkflow) && fs.existsSync(agentDest)) {
-                const content = fs.readFileSync(legacyWorkflow, 'utf-8');
-                if (content.includes('Zotero + PubMed MCP')) {
-                    fs.unlinkSync(legacyWorkflow);
-                    console.log('Removed legacy zotero-research-workflow.md (replaced by research.agent.md)');
-                }
-            }
-
-            // Show result
-            if (installed > 0) {
-                vscode.window.showInformationMessage(
-                    `✅ Installed/updated ${installed} Copilot file(s).${skipped > 0 ? ` ${skipped} file(s) preserved.` : ''}`
-                );
-            } else if (skipped > 0) {
-                vscode.window.showInformationMessage(
-                    `ℹ️ All ${skipped} file(s) preserved. Your custom configurations were not modified.`
-                );
-            } else {
-                vscode.window.showInformationMessage('No files to install.');
-            }
+            await installCopilotInstructions(context, 'manual');
         })
     );
 }

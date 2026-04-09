@@ -12,6 +12,10 @@ vsc-extension-quickstart.md
 **/*.ts
 !out/**/*.js
 docs/**
+scripts/**
+resources/skills/**
+tests/**
+.pytest_cache/**
 
 # Exclude AI agent skill folders (not needed in extension)
 .agent/**

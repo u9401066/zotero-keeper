@@ -22,11 +22,11 @@ Open **GitHub Copilot Chat** and try:
 
 | Tool | Description |
 |------|-------------|
-| `search_literature` | Search PubMed |
+| `unified_search` | Search PubMed and other academic sources |
 | `generate_search_queries` | Build MeSH queries |
 | `search_items` | Search Zotero |
-| `quick_save` | Save to Zotero |
-| `batch_import_from_pubmed` | Import multiple papers |
+| `import_articles` | Import articles into Zotero |
+| `check_articles_owned` | Check if articles already in Zotero |
 
 ## Get Help
 

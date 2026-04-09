@@ -220,7 +220,7 @@
             },
             {
                 "command": "zoteroMcp.installSkills",
-                "title": "Zotero MCP: Install Copilot Research Skills"
+                "title": "Zotero MCP: Install Official Copilot Assets"
             },
             {
                 "command": "zoteroMcp.showStatus",
@@ -276,15 +276,16 @@
         ]
     },
     "scripts": {
-        "vscode:prepublish": "npm run compile",
+        "sync-assets": "node ./scripts/sync-copilot-assets.mjs",
+        "vscode:prepublish": "npm run sync-assets && npm run compile",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
-        "pretest": "npm run compile && npm run lint && cp -r src/test/__mocks__ out/test/",
+        "pretest": "npm run sync-assets && npm run compile && npm run lint && cp -r src/test/__mocks__ out/test/",
         "lint": "eslint src/**/*.ts",
         "test": "NODE_PATH=out/test/__mocks__ mocha",
         "test:vscode": "vscode-test",
-        "package": "vsce package",
-        "publish": "vsce publish"
+        "package": "npm run sync-assets && vsce package",
+        "publish": "npm run sync-assets && vsce publish"
     },
     "devDependencies": {
         "@types/mocha": "^10.0.10",

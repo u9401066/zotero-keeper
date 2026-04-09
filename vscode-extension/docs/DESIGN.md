@@ -81,7 +81,7 @@ async function ensureDependencies(): Promise<void> {
 
         if (choice === 'Yes') {
             // 3. Install via uv
-            await runTerminal(`uv pip install zotero-keeper[all] pubmed-search-mcp[mcp]`);
+            await runTerminal(`uv pip install zotero-keeper[all] pubmed-search-mcp`);
         }
     }
 }
@@ -201,8 +201,8 @@ async function ensureDependencies(): Promise<void> {
 ### Python
 - 最低版本: 3.11
 - Required packages:
-  - `zotero-keeper[all]>=1.7.0`
-  - `pubmed-search-mcp[mcp]>=0.1.8`
+    - `zotero-keeper[all]>=1.12.0`
+    - `pubmed-search-mcp>=0.5.2`
 
 ### External
 - Zotero 7 or 8 (running locally with API enabled)
