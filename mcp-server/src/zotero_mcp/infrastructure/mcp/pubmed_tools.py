@@ -5,24 +5,22 @@ Focused import tools that complement pubmed-search-mcp.
 Use pubmed-search-mcp for searching, use these tools for importing to Zotero.
 
 Recommended Workflow:
-1. pubmed-search: unified_search(query="CRISPR") → PMIDs / articles
-2. pubmed-search: prepare_export(pmids, format="ris") → RIS text
+1. pubmed-search: unified_search("CRISPR", output_format="json") → structured articles
+2. pubmed-search: prepare_export(pmids="last", format="ris") → RIS text
 3. zotero-keeper: import_ris_to_zotero(ris_text) → Zotero items
 
 Alternative (requires pubmed extra):
-1. pubmed-search: unified_search(query="CRISPR") → PMIDs
+1. pubmed-search: get_session_pmids() → PMIDs
 2. zotero-keeper: import_from_pmids(pmids) → Zotero items
 """
 
 import logging
-import re
 from typing import Any
 
 from ..pubmed import fetch_pubmed_articles, is_pubmed_available as pubmed_integration_available
 from .collection_support import apply_collection_and_tags, attach_saved_to_info, resolve_collection_target
 
 logger = logging.getLogger(__name__)
-
 
 def _parse_ris_to_zotero_items(ris_text: str) -> list[dict[str, Any]]:
     """
@@ -42,113 +40,9 @@ def _parse_ris_to_zotero_items(ris_text: str) -> list[dict[str, Any]]:
     - KW: Keywords
     - UR: URL
     """
-    items = []
-    current_item: dict[str, Any] = {}
-    current_authors: list[dict] = []
-    current_tags: list[dict] = []
+    from .unified_import_tools import _parse_ris_to_articles, _unified_article_to_zotero
 
-    # RIS type to Zotero type mapping
-    type_map = {
-        "JOUR": "journalArticle",
-        "BOOK": "book",
-        "CHAP": "bookSection",
-        "CONF": "conferencePaper",
-        "THES": "thesis",
-        "RPRT": "report",
-        "ELEC": "webpage",
-        "GEN": "document",
-    }
-
-    for line in ris_text.strip().split("\n"):
-        line = line.strip()
-        if not line or len(line) < 6:
-            continue
-
-        # Parse RIS tag format: "XX  - value"
-        match = re.match(r"^([A-Z][A-Z0-9])\s+-\s+(.*)$", line)
-        if not match:
-            continue
-
-        tag, value = match.groups()
-        value = value.strip()
-
-        if tag == "TY":
-            # Start new record
-            if current_item:
-                if current_authors:
-                    current_item["creators"] = current_authors
-                if current_tags:
-                    current_item["tags"] = current_tags
-                items.append(current_item)
-            current_item = {"itemType": type_map.get(value, "journalArticle")}
-            current_authors = []
-            current_tags = []
-        elif tag == "ER":
-            # End record
-            if current_item:
-                if current_authors:
-                    current_item["creators"] = current_authors
-                if current_tags:
-                    current_item["tags"] = current_tags
-                items.append(current_item)
-            current_item = {}
-            current_authors = []
-            current_tags = []
-        elif tag in ("TI", "T1"):
-            current_item["title"] = value
-        elif tag in ("AU", "A1"):
-            # Author format: "LastName, FirstName" or "LastName"
-            if "," in value:
-                parts = value.split(",", 1)
-                current_authors.append(
-                    {"lastName": parts[0].strip(), "firstName": parts[1].strip() if len(parts) > 1 else "", "creatorType": "author"}
-                )
-            else:
-                current_authors.append({"lastName": value, "firstName": "", "creatorType": "author"})
-        elif tag in ("PY", "Y1"):
-            # Year: might be "2024" or "2024/01/15"
-            current_item["date"] = value.split("/")[0]
-        elif tag in ("JO", "JF", "T2"):
-            current_item["publicationTitle"] = value
-        elif tag == "VL":
-            current_item["volume"] = value
-        elif tag == "IS":
-            current_item["issue"] = value
-        elif tag == "SP":
-            current_item["pages"] = value
-        elif tag == "EP":
-            if current_item.get("pages"):
-                current_item["pages"] += f"-{value}"
-            else:
-                current_item["pages"] = value
-        elif tag == "DO":
-            current_item["DOI"] = value
-        elif tag == "AB":
-            current_item["abstractNote"] = value
-        elif tag == "KW":
-            current_tags.append({"tag": value})
-        elif tag == "UR":
-            current_item["url"] = value
-        elif tag == "SN":
-            current_item["ISSN"] = value
-        elif tag == "N1":
-            # Notes - often contains PMID
-            if "PMID:" in value or value.isdigit():
-                pmid = re.search(r"(\d+)", value)
-                if pmid:
-                    current_item["extra"] = f"PMID: {pmid.group(1)}"
-            else:
-                current_item["extra"] = value
-
-    # Don't forget last item if no ER tag
-    if current_item and current_item.get("title"):
-        if current_authors:
-            current_item["creators"] = current_authors
-        if current_tags:
-            current_item["tags"] = current_tags
-        items.append(current_item)
-
-    return items
+    return [_unified_article_to_zotero(article) for article in _parse_ris_to_articles(ris_text)]
 
 
 def _pmid_to_zotero_item(article: dict) -> dict[str, Any]:
@@ -263,12 +157,12 @@ def register_pubmed_tools(mcp, zotero_client):
         將 RIS 格式的引用文獻匯入 Zotero
 
         🔄 NEW RECOMMENDED WORKFLOW:
-        1. pubmed: unified_search(query="query") → articles
+        1. pubmed: unified_search("query", output_format="json") → structured articles
         2. keeper: import_articles(articles=articles, collection_name="...")
 
         LEGACY workflow with pubmed-search-mcp:
-        1. pubmed: unified_search(query="query") → PMIDs
-        2. pubmed: prepare_export(pmids, format="ris") → RIS text
+        1. pubmed: unified_search("query") → session cache
+        2. pubmed: prepare_export(pmids="last", format="ris") → RIS text
         3. keeper: import_ris_to_zotero(ris_text, collection_name="My Collection")
 
         ⚠️ COLLECTION 防呆:
@@ -365,7 +259,7 @@ def register_pubmed_tools(mcp, zotero_client):
         Requires: uv sync --extra pubmed
 
         🔄 NEW RECOMMENDED WORKFLOW:
-        1. pubmed: unified_search(query="query") → articles
+        1. pubmed: unified_search("query", output_format="json") → structured articles
         2. keeper: import_articles(articles=articles, collection_name="...")
 
         📊 CITATION METRICS (RCR):
@@ -377,7 +271,7 @@ def register_pubmed_tools(mcp, zotero_client):
         - 不會靜默存到 library root
 
         Alternative workflow (without pubmed extra):
-        1. pubmed: unified_search(query="query") → PMIDs
+        1. pubmed: get_session_pmids() → PMIDs
         2. keeper: import_from_pmids(pmids, collection_name="My Collection")
 
         Args:

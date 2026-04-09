@@ -8,97 +8,97 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from zotero_mcp.infrastructure.mcp.search_helpers import (
-    normalize_title as _normalize_title,
-    extract_pmid_from_extra as _extract_pmid_from_extra,
-    get_owned_identifiers as _get_owned_identifiers,
-    is_owned as _is_owned,
-    format_search_results as _format_search_results,
+    normalize_title,
+    extract_pmid_from_extra,
+    get_owned_identifiers,
+    is_owned,
+    format_search_results,
+    TITLE_MATCH_THRESHOLD,
 )
-from zotero_mcp.infrastructure.mcp.smart_tools import TITLE_MATCH_THRESHOLD
 from zotero_mcp.infrastructure.mcp.search_tools import (
     is_search_tools_available,
 )
 
 
 class TestNormalizeTitle:
-    """Tests for _normalize_title function."""
+    """Tests for normalize_title function."""
 
     def test_basic_normalization(self):
         """Test basic title normalization."""
-        assert _normalize_title("Hello World") == "hello world"
+        assert normalize_title("Hello World") == "hello world"
 
     def test_removes_punctuation(self):
         """Test that punctuation is removed."""
-        assert _normalize_title("Hello, World!") == "hello world"
+        assert normalize_title("Hello, World!") == "hello world"
 
     def test_collapses_whitespace(self):
         """Test that multiple spaces are collapsed."""
-        assert _normalize_title("Hello    World") == "hello world"
+        assert normalize_title("Hello    World") == "hello world"
 
     def test_strips_whitespace(self):
         """Test that leading/trailing whitespace is stripped."""
-        assert _normalize_title("  Hello World  ") == "hello world"
+        assert normalize_title("  Hello World  ") == "hello world"
 
     def test_empty_string(self):
         """Test empty string handling."""
-        assert _normalize_title("") == ""
+        assert normalize_title("") == ""
 
     def test_none_handling(self):
         """Test None handling."""
-        assert _normalize_title(None) == ""
+        assert normalize_title(None) == ""
 
     def test_special_characters(self):
         """Test special characters removal."""
-        result = _normalize_title("Title: A Study of X & Y (2024)")
+        result = normalize_title("Title: A Study of X & Y (2024)")
         assert result == "title a study of x y 2024"
 
     def test_unicode_characters(self):
         """Test unicode characters handling."""
-        result = _normalize_title("Étude: α-receptor")
+        result = normalize_title("Étude: α-receptor")
         # Should keep word characters including unicode
         assert "tude" in result
         assert "receptor" in result
 
 
 class TestExtractPmidFromExtra:
-    """Tests for _extract_pmid_from_extra function."""
+    """Tests for extract_pmid_from_extra function."""
 
     def test_extract_standard_format(self):
         """Test extraction from standard format."""
-        assert _extract_pmid_from_extra("PMID: 12345678") == "12345678"
+        assert extract_pmid_from_extra("PMID: 12345678") == "12345678"
 
     def test_extract_lowercase(self):
         """Test case-insensitive extraction."""
-        assert _extract_pmid_from_extra("pmid: 12345678") == "12345678"
+        assert extract_pmid_from_extra("pmid: 12345678") == "12345678"
 
     def test_extract_no_space(self):
         """Test extraction without space after colon."""
-        assert _extract_pmid_from_extra("PMID:12345678") == "12345678"
+        assert extract_pmid_from_extra("PMID:12345678") == "12345678"
 
     def test_extract_with_other_fields(self):
         """Test extraction when other fields present."""
         extra = "PMID: 12345678\nDOI: 10.1234/test"
-        assert _extract_pmid_from_extra(extra) == "12345678"
+        assert extract_pmid_from_extra(extra) == "12345678"
 
     def test_no_pmid(self):
         """Test when no PMID present."""
-        assert _extract_pmid_from_extra("DOI: 10.1234/test") is None
+        assert extract_pmid_from_extra("DOI: 10.1234/test") is None
 
     def test_empty_string(self):
         """Test empty string."""
-        assert _extract_pmid_from_extra("") is None
+        assert extract_pmid_from_extra("") is None
 
     def test_none_input(self):
         """Test None input."""
-        assert _extract_pmid_from_extra(None) is None
+        assert extract_pmid_from_extra(None) is None
 
     def test_extract_mixed_case(self):
         """Test mixed case format."""
-        assert _extract_pmid_from_extra("Pmid: 12345678") == "12345678"
+        assert extract_pmid_from_extra("Pmid: 12345678") == "12345678"
 
 
 class TestGetOwnedIdentifiers:
-    """Tests for _get_owned_identifiers function."""
+    """Tests for get_owned_identifiers function."""
 
     @pytest.mark.asyncio
     async def test_extracts_dois(self):
@@ -109,7 +109,7 @@ class TestGetOwnedIdentifiers:
             {"data": {"DOI": "10.5678/TEST2", "title": "Test 2"}},
         ]
 
-        owned = await _get_owned_identifiers(mock_client)
+        owned = await get_owned_identifiers(mock_client)
 
         assert "10.1234/test1" in owned["dois"]
         assert "10.5678/test2" in owned["dois"]  # Should be lowercase
@@ -122,7 +122,7 @@ class TestGetOwnedIdentifiers:
             {"data": {"extra": "PMID: 12345678", "title": "Test"}},
         ]
 
-        owned = await _get_owned_identifiers(mock_client)
+        owned = await get_owned_identifiers(mock_client)
 
         assert "12345678" in owned["pmids"]
 
@@ -134,7 +134,7 @@ class TestGetOwnedIdentifiers:
             {"data": {"title": "Hello World!"}},
         ]
 
-        owned = await _get_owned_identifiers(mock_client)
+        owned = await get_owned_identifiers(mock_client)
 
         assert "hello world" in owned["titles"]
 
@@ -144,7 +144,7 @@ class TestGetOwnedIdentifiers:
         mock_client = AsyncMock()
         mock_client.get_items.return_value = []
 
-        owned = await _get_owned_identifiers(mock_client)
+        owned = await get_owned_identifiers(mock_client)
 
         assert owned["dois"] == set()
         assert owned["pmids"] == set()
@@ -156,7 +156,7 @@ class TestGetOwnedIdentifiers:
         mock_client = AsyncMock()
         mock_client.get_items.side_effect = Exception("API Error")
 
-        owned = await _get_owned_identifiers(mock_client)
+        owned = await get_owned_identifiers(mock_client)
 
         assert owned["dois"] == set()
         assert owned["pmids"] == set()
@@ -168,22 +168,22 @@ class TestGetOwnedIdentifiers:
         mock_client = AsyncMock()
         mock_client.get_items.return_value = []
 
-        await _get_owned_identifiers(mock_client, limit=100)
+        await get_owned_identifiers(mock_client, limit=100)
 
         mock_client.get_items.assert_called_once_with(limit=100)
 
 
 class TestIsOwned:
-    """Tests for _is_owned function."""
+    """Tests for is_owned function."""
 
     def test_doi_match(self):
         """Test DOI matching."""
         article = {"doi": "10.1234/test"}
         owned = {"dois": {"10.1234/test"}, "pmids": set(), "titles": set()}
 
-        is_owned, reason = _is_owned(article, owned)
+        owned_flag, reason = is_owned(article, owned)
 
-        assert is_owned is True
+        assert owned_flag is True
         assert "DOI" in reason
 
     def test_pmid_match(self):
@@ -191,9 +191,9 @@ class TestIsOwned:
         article = {"pmid": "12345678"}
         owned = {"dois": set(), "pmids": {"12345678"}, "titles": set()}
 
-        is_owned, reason = _is_owned(article, owned)
+        owned_flag, reason = is_owned(article, owned)
 
-        assert is_owned is True
+        assert owned_flag is True
         assert "PMID" in reason
 
     def test_title_fuzzy_match(self):
@@ -201,9 +201,9 @@ class TestIsOwned:
         article = {"title": "A study of machine learning"}
         owned = {"dois": set(), "pmids": set(), "titles": {"a study of machine learning"}}
 
-        is_owned, reason = _is_owned(article, owned)
+        owned_flag, reason = is_owned(article, owned)
 
-        assert is_owned is True
+        assert owned_flag is True
         assert "Title" in reason
 
     def test_title_similar_match(self):
@@ -211,19 +211,19 @@ class TestIsOwned:
         article = {"title": "A Study of Machine Learning in Healthcare"}
         owned = {"dois": set(), "pmids": set(), "titles": {"a study of machine learning in health"}}
 
-        is_owned, reason = _is_owned(article, owned)
+        owned_flag, reason = is_owned(article, owned)
 
         # Should match due to high similarity
-        assert is_owned is True or is_owned is False  # Depends on threshold
+        assert owned_flag is True or owned_flag is False  # Depends on threshold
 
     def test_not_owned(self):
         """Test article that is not owned."""
         article = {"doi": "10.9999/new", "pmid": "99999999", "title": "Brand New Article"}
         owned = {"dois": {"10.1234/old"}, "pmids": {"12345678"}, "titles": {"old article"}}
 
-        is_owned, reason = _is_owned(article, owned)
+        owned_flag, reason = is_owned(article, owned)
 
-        assert is_owned is False
+        assert owned_flag is False
         assert reason == ""
 
     def test_empty_owned(self):
@@ -231,17 +231,17 @@ class TestIsOwned:
         article = {"title": "Any Article"}
         owned = {"dois": set(), "pmids": set(), "titles": set()}
 
-        is_owned, reason = _is_owned(article, owned)
+        owned_flag, reason = is_owned(article, owned)
 
-        assert is_owned is False
+        assert owned_flag is False
 
 
 class TestFormatSearchResults:
-    """Tests for _format_search_results function."""
+    """Tests for format_search_results function."""
 
     def test_empty_results(self):
         """Test formatting empty results."""
-        result = _format_search_results([])
+        result = format_search_results([])
         assert result == "No results found."
 
     def test_basic_formatting(self):
@@ -257,7 +257,7 @@ class TestFormatSearchResults:
             }
         ]
 
-        result = _format_search_results(results)
+        result = format_search_results(results)
 
         assert "Test Article" in result
         assert "12345678" in result
@@ -278,7 +278,7 @@ class TestFormatSearchResults:
             }
         ]
 
-        result = _format_search_results(results)
+        result = format_search_results(results)
 
         assert "Smith J et al." in result
 
@@ -294,7 +294,7 @@ class TestFormatSearchResults:
             }
         ]
 
-        result = _format_search_results(results)
+        result = format_search_results(results)
 
         assert "Unknown" in result
 
@@ -305,7 +305,7 @@ class TestFormatSearchResults:
             {"pmid": "2", "title": "New", "_is_owned": False, "authors": [], "journal": "", "year": ""},
         ]
 
-        result = _format_search_results(results, show_owned=True)
+        result = format_search_results(results, show_owned=True)
 
         assert "📚" in result
         assert "🆕" in result
@@ -323,9 +323,8 @@ class TestIsSearchToolsAvailable:
 class TestRegisterSearchTools:
     """Tests for register_search_tools function."""
 
-    def test_skips_when_pubmed_unavailable(self):
-        """Test that PubMed tools are skipped when PubMed not available.
-        advanced_search is always registered regardless."""
+    def test_registers_advanced_search_when_pubmed_unavailable(self):
+        """Test that advanced_search is still registered when PubMed not available."""
         from zotero_mcp.infrastructure.mcp.search_tools import register_search_tools
 
         mock_mcp = MagicMock()
@@ -336,14 +335,38 @@ class TestRegisterSearchTools:
                 return func
 
             return wrapper
+            return wrapper
 
         mock_mcp.tool = MagicMock(side_effect=tool_decorator)
 
         with patch("zotero_mcp.infrastructure.mcp.search_tools.pubmed_integration_available", return_value=False):
             register_search_tools(mock_mcp, mock_client)
 
-        # advanced_search is always registered (1 call)
-        assert mock_mcp.tool.call_count == 1
+        assert mock_mcp.tool.call_count == 2
+
+    def test_registers_check_articles_owned_when_pubmed_unavailable(self):
+        """Test that local PMID ownership checks remain available without PubMed bridge."""
+        from zotero_mcp.infrastructure.mcp.search_tools import register_search_tools
+
+        mock_mcp = MagicMock()
+        mock_client = MagicMock()
+        registered_tools = {}
+
+        def tool_decorator():
+            def wrapper(func):
+                registered_tools[func.__name__] = func
+                return func
+
+            return wrapper
+
+        mock_mcp.tool = tool_decorator
+
+        with patch("zotero_mcp.infrastructure.mcp.search_tools.pubmed_integration_available", return_value=False):
+            register_search_tools(mock_mcp, mock_client)
+
+        assert "advanced_search" in registered_tools
+        assert "check_articles_owned" in registered_tools
+        assert "search_pubmed_exclude_owned" not in registered_tools
 
     @patch("zotero_mcp.infrastructure.mcp.search_tools.pubmed_integration_available", return_value=True)
     def test_registers_tools_when_available(self, _mock_available):
@@ -365,6 +388,29 @@ class TestRegisterSearchTools:
         register_search_tools(mock_mcp, mock_client)
 
         # Function should complete without error
+
+    def test_registers_legacy_bridge_only_when_enabled(self):
+        """Test legacy PubMed search bridge is opt-in."""
+        from zotero_mcp.infrastructure.mcp.search_tools import register_search_tools
+
+        mock_mcp = MagicMock()
+        mock_client = MagicMock()
+        registered_tools = {}
+
+        def tool_decorator():
+            def wrapper(func):
+                registered_tools[func.__name__] = func
+                return func
+
+            return wrapper
+
+        mock_mcp.tool = tool_decorator
+
+        with patch("zotero_mcp.infrastructure.mcp.search_tools.pubmed_integration_available", return_value=True):
+            register_search_tools(mock_mcp, mock_client, enable_pubmed_bridge_tools=True)
+
+        assert "search_pubmed_exclude_owned" in registered_tools
+        assert "check_articles_owned" in registered_tools
 
 
 class TestTitleMatchThreshold:

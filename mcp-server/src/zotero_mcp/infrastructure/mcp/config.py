@@ -8,6 +8,14 @@ import os
 from dataclasses import dataclass, field
 
 
+def _env_flag(name: str, default: bool = False) -> bool:
+    """Parse boolean-like environment flags."""
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 @dataclass
 class ZoteroConfig:
     """Zotero connection configuration"""
@@ -36,38 +44,54 @@ class McpServerConfig:
     """MCP Server configuration"""
 
     name: str = "Zotero Keeper"
-    version: str = "1.2.0"
+    version: str = "1.12.0"
 
     # Zotero connection
     zotero: ZoteroConfig = field(default_factory=ZoteroConfig)
+
+    # Compatibility mode for legacy PubMed bridge tools.
+    # Default OFF to avoid duplicating pubmed-search-mcp's public tool surface.
+    enable_legacy_pubmed_tools: bool = field(
+        default_factory=lambda: _env_flag("ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS", False)
+    )
 
     # Server instructions for AI agents
     instructions: str = """
 Zotero Keeper - MCP Server for managing local Zotero libraries.
 
-## 🔧 AVAILABLE TOOLS
+## Tool Ownership
 
-### Read Operations (via Zotero Local API)
-- `search_items(query, limit)` - Search references by title/author/year
-- `get_item(key)` - Get detailed metadata for a specific item
+- pubmed-search-mcp owns search, discovery, export, and citation-metrics tools
+- zotero-keeper owns Zotero library reads, collection selection, duplicate checks, and import/persist into Zotero
+- Default mode is collaboration-safe: legacy PubMed bridge tools are hidden unless
+    `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1`
+
+## Recommended Tools
+
+### Library Query
+- `search_items(query, limit)` - Search existing Zotero items
+- `advanced_search(...)` - Multi-condition Zotero search
+- `get_item(key)` - Get a Zotero item by key
 - `list_items(limit, collection_key)` - List recent items
-- `list_collections()` - List all collections (folders)
-- `list_tags()` - List all tags
-- `get_item_types()` - Get available item types (journalArticle, book, etc.)
+- `list_collections()` - List available collections before import
+- `run_saved_search(key)` - Execute a saved Zotero search
 
-### Write Operations (via Zotero Connector API)
-- `add_reference(...)` - Add a new bibliographic reference
-- `create_item(item_type, title, ...)` - Create item with full metadata
+### Import & Persist
+- `import_articles(articles=..., ris_text=..., collection_name=...)` - Single import gateway
+- `interactive_save(...)` - Manual save with elicitation and optional metadata fetch
+- `quick_save(...)` - Manual save without prompts
+- `check_articles_owned(pmids=[...])` - Check whether PubMed records already exist locally
 
-## 📋 RECOMMENDED WORKFLOW
+## Recommended Collaboration Workflow
 
-1. Search existing references: `search_items("machine learning")`
-2. Check if reference exists before adding
-3. Add new reference: `add_reference(title="...", item_type="journalArticle", ...)`
+1. Use pubmed-search-mcp to search and enrich articles
+2. Use zotero-keeper `check_articles_owned()` if local duplicate filtering is needed
+3. Use zotero-keeper `list_collections()` to choose a target collection
+4. Use zotero-keeper `import_articles()` to persist results into Zotero
 
-## ⚠️ NOTES
+## Notes
 
-- All operations are local (no cloud sync required)
+- All operations are local to Zotero
 - Zotero must be running for operations to work
 - Use `check_connection()` to verify connectivity
 """

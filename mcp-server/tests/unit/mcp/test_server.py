@@ -104,6 +104,86 @@ class TestZoteroKeeperServer:
 
         assert server._config == config
 
+    @patch("zotero_mcp.infrastructure.mcp.server.register_unified_import_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_analytics_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_search_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_collection_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_basic_read_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_saved_search_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_interactive_save_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_batch_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_pubmed_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
+    @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
+    def test_legacy_pubmed_tools_disabled_by_default(
+        self,
+        mock_client,
+        mock_mcp,
+        mock_register_pubmed,
+        mock_register_batch,
+        mock_resources,
+        mock_interactive,
+        mock_saved_search,
+        mock_basic_read,
+        mock_collection,
+        mock_search,
+        mock_analytics,
+        mock_unified_import,
+    ):
+        """Test default server mode hides legacy PubMed bridge tools."""
+        config = McpServerConfig()
+
+        ZoteroKeeperServer(config)
+
+        mock_search.assert_called_once()
+        _, kwargs = mock_search.call_args
+        assert kwargs["enable_pubmed_bridge_tools"] is False
+        mock_register_pubmed.assert_not_called()
+        mock_register_batch.assert_not_called()
+
+    @patch("zotero_mcp.infrastructure.mcp.server.is_batch_import_available", return_value=True)
+    @patch("zotero_mcp.infrastructure.mcp.server.is_pubmed_available", return_value=True)
+    @patch("zotero_mcp.infrastructure.mcp.server.register_unified_import_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_analytics_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_search_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_collection_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_basic_read_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_saved_search_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_interactive_save_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_batch_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.register_pubmed_tools")
+    @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
+    @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
+    def test_legacy_pubmed_tools_can_be_enabled_explicitly(
+        self,
+        mock_client,
+        mock_mcp,
+        mock_register_pubmed,
+        mock_register_batch,
+        mock_resources,
+        mock_interactive,
+        mock_saved_search,
+        mock_basic_read,
+        mock_collection,
+        mock_search,
+        mock_analytics,
+        mock_unified_import,
+        mock_is_pubmed_available,
+        mock_is_batch_import_available,
+    ):
+        """Test legacy PubMed bridge tools require explicit opt-in."""
+        config = McpServerConfig(enable_legacy_pubmed_tools=True)
+
+        ZoteroKeeperServer(config)
+
+        mock_search.assert_called_once()
+        _, kwargs = mock_search.call_args
+        assert kwargs["enable_pubmed_bridge_tools"] is True
+        mock_register_pubmed.assert_called_once()
+        mock_register_batch.assert_called_once()
+
 
 class TestGetServer:
     """Tests for get_server function."""

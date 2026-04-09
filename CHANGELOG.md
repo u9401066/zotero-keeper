@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.12.0] - 2026-04-08
+
+### 🛡️ Collaboration-Safe Defaults & Production Hardening
+
+This release hardens the keeper ↔ pubmed-search-mcp integration for production use.
+
+### Added
+
+- **Collaboration-Safe Tool Surface** ⭐:
+  - Legacy PubMed bridge tools (`search_pubmed_exclude_owned`, `import_ris_to_zotero`, `import_from_pmids`, `quick_import_pmids`, `batch_import_from_pubmed`) are **hidden by default**
+  - Prevents tool duplication with pubmed-search-mcp
+  - Opt-in via `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1`
+  - Default public surface: `advanced_search`, `check_articles_owned`, `import_articles`
+
+- **Server Instructions for AI Agents**:
+  - Clear tool ownership: pubmed-search-mcp owns search/discovery/export/citation-metrics; keeper owns library reads/collection/duplicate-check/import
+  - Recommended collaboration workflow documented in `McpServerConfig.instructions`
+
+- **Environment Variable Documentation**:
+  - `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS` — toggle legacy bridge tools
+  - `ZOTERO_HOST` / `ZOTERO_PORT` / `ZOTERO_TIMEOUT` — Zotero connection
+  - `NCBI_EMAIL` / `NCBI_API_KEY` — PubMed API credentials
+  - `PUBMED_SEARCH_PATH` — override submodule path
+
+### Changed
+
+- **`import_articles` duplicate detection upgraded**:
+  - Now uses `batch_check_identifiers()` for PMID + DOI full-library matching
+  - Previously only checked first 10 items by DOI search (N+1 queries)
+  - Consistent with `batch_tools` quality
+
+- **`fetch_pubmed_articles()` async safety**:
+  - Converted to an async helper and awaited end-to-end across keeper callers
+  - Matches `pubmed-search-mcp` v0.5.2's async `PubMedClient.fetch_details()` contract
+  - Removes the old sync wrapper that leaked blocking/coroutine risk into MCP tool paths
+
+- **`check_articles_owned` graceful fallback**:
+  - When pubmed-search-mcp is not installed, falls back to local PMID matching only
+  - Previously would fail if the PubMed integration was unavailable
+
+### Fixed
+
+- **RIS parser DRY violation**: Unified `_parse_ris_to_articles()` in `unified_import_tools.py`; legacy `_parse_ris_to_zotero_items()` in `pubmed_tools.py` now delegates to shared logic
+- **`import_articles` no input size limit**: Added `max_articles=100` guard with batch hint
+- **`import_articles` partial failure handling**: Added per-batch error tracking (50 items per batch)
+- **`check_articles_owned` creates new PubMedClient per call**: Replaced with the shared cached client and now threads `NCBI_API_KEY` consistently
+
+### Architecture
+
+- Collaboration-safe default: keeper focuses on Zotero library management; pubmed-search-mcp owns search
+- `import_articles` is the single public import gateway
+- Legacy tools remain available but require explicit opt-in
+
+---
+
 ## [0.5.16] - 2026-03-04
 
 ### 🤖 Research Agent + PubMed 0.4.4

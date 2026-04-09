@@ -33,24 +33,42 @@ Copy `.env.example` to `.env` and configure:
 # Local Zotero (default)
 ZOTERO_HOST=localhost
 ZOTERO_PORT=23119
+ZOTERO_TIMEOUT=30
 
 # Remote Zotero
 ZOTERO_HOST=<your-zotero-ip>
 ZOTERO_PORT=23119
+
+# Optional: PubMed API credentials for higher NCBI rate limits
+NCBI_EMAIL=your.email@example.com
+# NCBI_API_KEY=your_api_key_here
+
+# Optional: re-enable legacy PubMed bridge/import tools
+ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1
+
+# Optional: development override for a local pubmed-search-mcp checkout
+# PUBMED_SEARCH_PATH=../external/pubmed-search-mcp
 ```
+
+- `ZOTERO_TIMEOUT` controls Zotero API request timeout in seconds.
+- `NCBI_EMAIL` and optional `NCBI_API_KEY` are passed through to pubmed-search-mcp for fetch and ownership-check workflows.
+- `PUBMED_SEARCH_PATH` is only for local development when you want keeper to import a checked-out pubmed-search-mcp instead of the installed package.
+
+By default, zotero-keeper runs in a collaboration-safe mode: PubMed search/discovery/export stays in pubmed-search-mcp, while zotero-keeper exposes the Zotero-side import and library tools.
 
 ## MCP Tools
 
-### 🌟 Unified Import (NEW in v0.5.14)
+### 🌟 Unified Import (Updated in v1.12.0)
 
 | Tool | Description |
-|------|-------------|
+| ---- | ----------- |
 | `import_articles` | **⭐ One tool for ALL imports** - accepts articles from any pubmed-search-mcp tool |
 
 **Workflow:**
+
 ```python
 # Step 1: Search with pubmed-search-mcp
-results = unified_search("CRISPR gene therapy", limit=10)
+results = unified_search("CRISPR gene therapy", limit=10, output_format="json")
 
 # Step 2: Import to Zotero (ANY source works!)
 import_articles(
@@ -62,28 +80,34 @@ import_articles(
 
 **Supported sources:** PubMed, Europe PMC, CORE, CrossRef, OpenAlex, Semantic Scholar, RIS
 
-### Core Tools
+### Public Tool Surface
+
 | Tool | Description |
-|------|-------------|
+| ---- | ----------- |
 | `check_connection` | Test Zotero connectivity |
-| `search_items` | Search references by keyword |
+| `search_items` | Search local references by keyword |
+| `advanced_search` | Multi-condition Zotero search |
 | `get_item` | Get item details by key |
 | `list_items` | List recent items |
-| `add_reference` | Add new reference (simple) |
-| `create_item` | Create with full metadata |
+| `list_collections` | List available collections |
+| `get_collection_items` | Get items in a collection |
+| `check_articles_owned` | Check PubMed IDs against the local library |
+| `import_articles` | Collaboration-safe PubMed -> Zotero import handoff |
+| `interactive_save` | Guided manual save with duplicate and collection checks |
+| `quick_save` | Direct manual save when the target collection is already known |
 
-### Smart Tools 🧠
-| Tool | Description |
-|------|-------------|
-| `smart_add_reference` | Validate + duplicate check + add |
-| `smart_add_with_collection` | Smart add + auto-classify to collection |
-| `suggest_collections` | Suggest collections based on title/tags |
-| `check_duplicate` | Check if reference exists |
-| `validate_reference` | Validate before adding |
+### Smart Save Behavior
+
+Duplicate detection, validation, and collection suggestion are built into `interactive_save` and `quick_save`.
+
+### Legacy PubMed Bridge (Opt-in)
+
+Set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` only if you intentionally want the older keeper-only PubMed bridge tools such as `search_pubmed_exclude_owned`, `import_from_pmids`, or `batch_import_from_pubmed`.
 
 ### Collection Tools
+
 | Tool | Description |
-|------|-------------|
+| ---- | ----------- |
 | `list_collections` | List all collections |
 | `get_collection` | Get collection by key |
 | `get_collection_items` | Get items in a collection |
@@ -91,15 +115,17 @@ import_articles(
 | `find_collection` | Find collection by name |
 
 ### Saved Search Tools 🌟 (Local API Exclusive!)
+
 | Tool | Description |
-|------|-------------|
+| ---- | ----------- |
 | `list_saved_searches` | List all saved searches |
 | `run_saved_search` | Execute a saved search |
 | `get_saved_search_details` | Get search conditions |
 
 ### Other Tools
+
 | Tool | Description |
-|------|-------------|
+| ---- | ----------- |
 | `list_tags` | List all tags |
 | `get_item_types` | Get available item types |
 
@@ -111,31 +137,34 @@ AI can suggest appropriate collections based on title, abstract, and tags!
 
 ### Workflow Options
 
-**Option 1: Ask before saving**
-```
+#### Option 1: Ask before saving
+
+```text
 User: "Which collection should this AI paper go to?"
-AI: suggest_collections(title="AI in Anesthesiology")
-    → Suggests: "AI Research" (score: 85)
+AI: interactive_save(item_type="journalArticle", title="AI in Anesthesiology")
+    → Shows collections and suggested matches interactively
 
 User: "Add it to AI Research"
-AI: add_reference(..., collections=["ABC123KEY"])
+AI: quick_save(item_type="journalArticle", title="AI in Anesthesiology", collection_name="AI Research")
 ```
 
-**Option 2: Auto-classify**
-```
-User: "Add this paper and auto-classify"
-AI: smart_add_with_collection(
+#### Option 2: Save directly when collection is known
+
+```text
+User: "Add this paper to AI Research"
+AI: quick_save(
+        item_type="journalArticle",
         title="AI in Anesthesiology",
-        auto_suggest_collection=True
+        collection_name="AI Research"
     )
-    → Automatically added to "AI Research"
 ```
 
-**Option 3: Specify by name**
-```
-User: "Add to 'Machine Learning' collection"
-AI: smart_add_with_collection(
-        title="...",
+#### Option 3: Import structured PubMed results
+
+```text
+User: "Import these PubMed results to 'Machine Learning'"
+AI: import_articles(
+        articles=results["articles"],
         collection_name="Machine Learning"
     )
 ```
@@ -143,6 +172,7 @@ AI: smart_add_with_collection(
 ### ⚠️ Important Note
 
 Since Local API cannot create collections:
+
 1. **Create collection structure in Zotero first**
 2. **Let AI classify into existing collections**
 
@@ -169,7 +199,7 @@ This is a **unique feature** only available via Local API - Web API cannot execu
 
 #### Step 2: Use via AI
 
-```
+```text
 AI: "Which papers don't have PDFs?"
 → run_saved_search(search_name="Missing PDF")
 
@@ -182,7 +212,7 @@ AI: "What did I add this week?"
 Create these once, use forever:
 
 | Name | Conditions | Use Case |
-|------|------------|----------|
+| ---- | ---------- | -------- |
 | **Missing PDF** | `Attachment File Type` `is not` `PDF` | Find papers without PDF |
 | **Missing DOI** | `DOI` `is` *(empty)* | Find incomplete metadata |
 | **Missing Abstract** | `Abstract` `is` *(empty)* | Find items without abstract |
@@ -194,7 +224,7 @@ Create these once, use forever:
 ### Condition Reference
 
 | Field | Operators | Example Values |
-|-------|-----------|----------------|
+| ----- | --------- | -------------- |
 | Title | contains, is, is not | "machine learning" |
 | Creator | contains, is | "Zhang" |
 | Date | is, is after, is before | "2024-01-01" |

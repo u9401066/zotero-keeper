@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 # Flag to track configuration status
 _configured = False
 _use_submodule = False  # True if using submodule, False if using installed package
+_pubmed_client = None
+_pubmed_client_signature: tuple[str, str | None] | None = None
 
 
 def _find_submodule_path() -> Path | None:
@@ -138,6 +140,8 @@ def get_pubmed_client():
     Raises:
         ImportError: If pubmed-search cannot be imported
     """
+    global _pubmed_client, _pubmed_client_signature
+
     if not _configure_pubmed_search():
         raise ImportError(
             "Cannot import pubmed_search. "
@@ -151,7 +155,13 @@ def get_pubmed_client():
     email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
     api_key = os.environ.get("NCBI_API_KEY")
 
-    return PubMedClient(email=email, api_key=api_key)
+    signature = (email, api_key)
+    if _pubmed_client is not None and _pubmed_client_signature == signature:
+        return _pubmed_client
+
+    _pubmed_client = PubMedClient(email=email, api_key=api_key)
+    _pubmed_client_signature = signature
+    return _pubmed_client
 
 
 def is_using_submodule() -> bool:
@@ -182,6 +192,9 @@ async def fetch_pubmed_articles(pmids: list[str]) -> list[dict]:
         ImportError: If pubmed-search cannot be imported
         Exception: If fetch fails
     """
+    if not pmids:
+        return []
+
     client = get_pubmed_client()
     return await client.fetch_details(pmids)
 

@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 TITLE_MATCH_THRESHOLD = 85
 
 
-def normalize_title(title: str) -> str:
+def normalize_title(title: str | None) -> str:
     """Normalize title for comparison."""
     if not title:
         return ""
@@ -29,7 +29,7 @@ def normalize_title(title: str) -> str:
     return title.strip()
 
 
-def extract_pmid_from_extra(extra: str) -> str | None:
+def extract_pmid_from_extra(extra: str | None) -> str | None:
     """Extract PMID from Zotero extra field."""
     if not extra:
         return None

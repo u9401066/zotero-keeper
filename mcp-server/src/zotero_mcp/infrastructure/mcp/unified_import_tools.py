@@ -12,7 +12,8 @@ Architecture Decision (2026-01-12):
     making it easy to import from any source that MCP supports.
 
 Supported Sources:
-    - PubMed and other academic sources (via unified_search / article detail tools)
+    - PubMed / Europe PMC / CORE / OpenAlex (via unified_search)
+    - Detailed article metadata (via fetch_article_details)
     - CrossRef (via DOI lookup)
     - OpenAlex (via openalex_id lookup)
     - Semantic Scholar (via s2_id lookup)
@@ -25,8 +26,8 @@ Workflow:
     3. Articles are converted to Zotero format and saved
 
 Example:
-    # From pubmed-search-mcp search result
-    articles = await unified_search(query="CRISPR", limit=5)
+    # From pubmed-search-mcp structured search result
+    articles = [...]  # extracted from unified_search(..., output_format="json")
 
     # Import to Zotero
     result = await import_articles(
@@ -40,9 +41,125 @@ import logging
 import re
 from typing import Any
 
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+
 from .collection_support import apply_collection_and_tags, attach_saved_to_info, resolve_collection_target
 
 logger = logging.getLogger(__name__)
+
+MAX_IMPORT_ARTICLES = 100
+SAVE_BATCH_SIZE = 50
+
+
+class ArticleAuthorPayload(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    name: str | None = None
+    full_name: str | None = None
+    display_name: str | None = None
+    family_name: str | None = None
+    given_name: str | None = None
+    lastName: str | None = None
+    firstName: str | None = None
+
+
+class ArticleIdentifierPayload(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    doi: str | int | None = None
+    pmid: str | int | None = None
+    pmc: str | int | None = None
+    core_id: str | int | None = None
+    openalex_id: str | int | None = None
+    s2_id: str | int | None = None
+    arxiv_id: str | int | None = None
+
+
+class ArticleImportPayload(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    title: str
+    authors: list[str | ArticleAuthorPayload] = Field(default_factory=list)
+    identifiers: ArticleIdentifierPayload = Field(default_factory=ArticleIdentifierPayload)
+    citation_metrics: dict[str, Any] = Field(default_factory=dict)
+    urls: dict[str, str] = Field(default_factory=dict)
+    keywords: list[str] = Field(default_factory=list)
+    mesh_terms: list[str] = Field(default_factory=list)
+    abstract: str | None = None
+    abstractNote: str | None = None
+    journal: str | None = None
+    publicationTitle: str | None = None
+    volume: str | int | None = None
+    issue: str | int | None = None
+    pages: str | None = None
+    year: str | int | None = None
+    date: str | int | None = None
+    publication_date: str | None = None
+    doi: str | int | None = None
+    DOI: str | int | None = None
+    pmid: str | int | None = None
+    pmc: str | int | None = None
+    pmcid: str | int | None = None
+    uid: str | int | None = None
+    url: str | None = None
+    language: str | None = None
+    primary_source: str | None = None
+    source: str | None = None
+    article_type: str | None = None
+
+    @field_validator("title", mode="before")
+    @classmethod
+    def _normalize_title(cls, value: Any) -> str:
+        if value is None:
+            raise ValueError("title is required")
+        title = str(value).strip()
+        if not title:
+            raise ValueError("title must not be empty")
+        return title
+
+    @field_validator("authors", "keywords", "mesh_terms", mode="before")
+    @classmethod
+    def _normalize_optional_lists(cls, value: Any) -> Any:
+        return [] if value is None else value
+
+    @field_validator("identifiers", "citation_metrics", "urls", mode="before")
+    @classmethod
+    def _normalize_optional_dicts(cls, value: Any) -> Any:
+        return {} if value is None else value
+
+
+def _format_validation_error(error: ValidationError) -> str:
+    first_error = error.errors(include_url=False)[0]
+    location = ".".join(str(part) for part in first_error.get("loc", ()))
+    message = first_error.get("msg", "Invalid article payload")
+    return f"{location}: {message}" if location else message
+
+
+def _validate_article_payload(article: Any) -> dict[str, Any]:
+    if not isinstance(article, dict):
+        raise TypeError("article must be an object/dict")
+
+    validated_article = ArticleImportPayload.model_validate(article)
+    return validated_article.model_dump(mode="python", exclude_none=True)
+
+
+def _extract_article_pmid(article: dict[str, Any]) -> str | None:
+    """Extract a normalized PMID from unified or legacy article formats."""
+    identifiers = article.get("identifiers", {})
+    if not isinstance(identifiers, dict):
+        identifiers = {}
+
+    pmid = identifiers.get("pmid") or article.get("pmid") or article.get("uid")
+    if pmid is None:
+        return None
+
+    pmid_text = str(pmid).strip()
+    return pmid_text or None
+
+
+def _chunk_items(items: list[dict[str, Any]], chunk_size: int) -> list[list[dict[str, Any]]]:
+    """Split import payloads into stable connector-sized batches."""
+    return [items[index:index + chunk_size] for index in range(0, len(items), chunk_size)]
 
 
 def _unified_article_to_zotero(article: dict[str, Any]) -> dict[str, Any]:
@@ -60,8 +177,21 @@ def _unified_article_to_zotero(article: dict[str, Any]) -> dict[str, Any]:
         Zotero item dict ready for save_items()
     """
     # Initialize Zotero item
+    item_type_map = {
+        "journal-article": "journalArticle",
+        "book": "book",
+        "book-chapter": "bookSection",
+        "conference-paper": "conferencePaper",
+        "thesis": "thesis",
+        "report": "report",
+        "webpage": "webpage",
+        "document": "document",
+    }
+    article_type = article.get("article_type")
+    if not isinstance(article_type, str):
+        article_type = ""
     item: dict[str, Any] = {
-        "itemType": "journalArticle",
+        "itemType": item_type_map.get(article_type, "journalArticle"),
     }
 
     # Title (required)
@@ -74,33 +204,43 @@ def _unified_article_to_zotero(article: dict[str, Any]) -> dict[str, Any]:
     for author in authors:
         if isinstance(author, str):
             # Simple string format: "John Smith" or "Smith J"
-            parts = author.split()
-            if len(parts) >= 2:
-                # Assume "FirstName LastName" or "LastName Initials"
-                if len(parts[-1]) <= 2:  # Likely "Smith J" format
-                    creators.append(
-                        {
-                            "lastName": " ".join(parts[:-1]),
-                            "firstName": parts[-1],
-                            "creatorType": "author",
-                        }
-                    )
-                else:  # Likely "John Smith" format
-                    creators.append(
-                        {
-                            "firstName": parts[0],
-                            "lastName": " ".join(parts[1:]),
-                            "creatorType": "author",
-                        }
-                    )
-            else:
+            if "," in author:
+                family, given = author.split(",", 1)
                 creators.append(
                     {
-                        "lastName": author,
-                        "firstName": "",
+                        "lastName": family.strip(),
+                        "firstName": given.strip(),
                         "creatorType": "author",
                     }
                 )
+            else:
+                parts = author.split()
+                if len(parts) >= 2:
+                    # Assume "FirstName LastName" or "LastName Initials"
+                    if len(parts[-1]) <= 2:  # Likely "Smith J" format
+                        creators.append(
+                            {
+                                "lastName": " ".join(parts[:-1]),
+                                "firstName": parts[-1],
+                                "creatorType": "author",
+                            }
+                        )
+                    else:  # Likely "John Smith" format
+                        creators.append(
+                            {
+                                "firstName": parts[0],
+                                "lastName": " ".join(parts[1:]),
+                                "creatorType": "author",
+                            }
+                        )
+                else:
+                    creators.append(
+                        {
+                            "lastName": author,
+                            "firstName": "",
+                            "creatorType": "author",
+                        }
+                    )
         elif isinstance(author, dict):
             # Dict format from UnifiedArticle
             name = author.get("name") or author.get("full_name") or author.get("display_name", "")
@@ -387,8 +527,7 @@ def register_unified_import_tools(mcp, zotero_client):
 
         🔗 INTEGRATION WITH pubmed-search-mcp:
         Articles from these tools can be directly imported:
-        - unified_search() → articles
-        - fetch_article_details() → article details
+        - unified_search(..., output_format="json") → articles
         - fetch_article_details() → article
         - prepare_export(format="ris") → ris_text
 
@@ -417,7 +556,7 @@ def register_unified_import_tools(mcp, zotero_client):
 
         Example - From PubMed search:
             # Step 1: Search with pubmed-search-mcp
-            results = await unified_search(query="machine learning anesthesia", limit=10)
+            results = await unified_search("machine learning anesthesia", output_format="json")
 
             # Step 2: Import to Zotero
             await import_articles(
@@ -427,7 +566,7 @@ def register_unified_import_tools(mcp, zotero_client):
             )
 
         Example - From multi-source search:
-            results = await unified_search(query="CRISPR", sources="pubmed,europe_pmc")
+            results = await unified_search("CRISPR", output_format="json")
             await import_articles(articles=results["articles"], collection_name="CRISPR OA")
 
         Example - From RIS text:
@@ -446,7 +585,7 @@ def register_unified_import_tools(mcp, zotero_client):
             # === Step 1: Validate input ===
             if not articles and not ris_text:
                 result["error"] = "Must provide either 'articles' or 'ris_text'"
-                result["hint"] = "Use unified_search or article detail tools to get articles, then pass them here"
+                result["hint"] = "Use unified_search(..., output_format=\"json\") or fetch_article_details() to get articles, then pass them here"
                 return result
 
             # === Step 2: Parse RIS if provided ===
@@ -456,6 +595,13 @@ def register_unified_import_tools(mcp, zotero_client):
                     result["error"] = "No valid articles found in RIS text"
                     return result
                 logger.info(f"Parsed {len(articles)} articles from RIS text")
+
+            articles = articles or []
+
+            if len(articles) > MAX_IMPORT_ARTICLES:
+                result["error"] = f"Too many articles provided ({len(articles)}). Maximum supported per import is {MAX_IMPORT_ARTICLES}."
+                result["hint"] = f"Split the import into batches of {MAX_IMPORT_ARTICLES} articles or fewer."
+                return result
 
             resolution = await resolve_collection_target(
                 zotero_client,
@@ -470,48 +616,74 @@ def register_unified_import_tools(mcp, zotero_client):
             target_name = resolution["target_name"]
 
             # === Step 4: Convert articles to Zotero format ===
-            zotero_items = []
-            for article in articles:
+            converted_items: list[tuple[dict[str, Any], dict[str, Any]]] = []
+            for article_index, article in enumerate(articles, start=1):
                 try:
-                    zotero_item = _unified_article_to_zotero(article)
-                    zotero_items.append(apply_collection_and_tags(zotero_item, collection_key=target_key, tags=tags))
+                    validated_article = _validate_article_payload(article)
+                    zotero_item = _unified_article_to_zotero(validated_article)
+
+                    converted_items.append(
+                        (
+                            validated_article,
+                            apply_collection_and_tags(zotero_item, collection_key=target_key, tags=tags),
+                        )
+                    )
+                except ValidationError as e:
+                    article_title = article.get("title", "Unknown")[:50] if isinstance(article, dict) else "Unknown"
+                    result["errors"].append(
+                        {
+                            "article": article_index,
+                            "title": article_title,
+                            "error": f"Invalid article schema: {_format_validation_error(e)}",
+                        }
+                    )
+                except TypeError as e:
+                    result["errors"].append(
+                        {
+                            "article": article_index,
+                            "title": "Unknown",
+                            "error": f"Invalid article schema: {e}",
+                        }
+                    )
                 except Exception as e:
                     result["errors"].append(
                         {
-                            "title": article.get("title", "Unknown")[:50],
+                            "article": article_index,
+                            "title": article.get("title", "Unknown")[:50] if isinstance(article, dict) else "Unknown",
                             "error": str(e),
                         }
                     )
 
-            if not zotero_items:
+            if not converted_items:
                 result["error"] = "No valid articles to import"
                 return result
 
             # === Step 5: Duplicate check (optional) ===
-            items_to_import = zotero_items
+            items_to_import = [item for _, item in converted_items]
             skipped_count = 0
 
             if skip_duplicates:
-                # Get existing items to check for duplicates
-                # This is a simplified check - just compare titles
                 try:
-                    # We'll use DOI and PMID for duplicate detection if available
-                    existing_dois = set()
-                    _existing_pmids = set()
+                    pmids_to_check = [pmid for article, _ in converted_items if (pmid := _extract_article_pmid(article))]
+                    dois_to_check = [
+                        doi.lower().strip()
+                        for _, item in converted_items
+                        if (doi := item.get("DOI"))
+                    ]
 
-                    # Search for potential duplicates
-                    for item in zotero_items[:10]:  # Limit initial check
-                        if item.get("DOI"):
-                            search_results = await zotero_client.search_items(query=item["DOI"], limit=5)
-                            for r in search_results:
-                                if r.get("data", {}).get("DOI"):
-                                    existing_dois.add(r["data"]["DOI"].lower())
+                    duplicate_check = await zotero_client.batch_check_identifiers(
+                        pmids=pmids_to_check,
+                        dois=dois_to_check,
+                    )
+                    existing_pmids = set(duplicate_check.get("existing_pmids", set()))
+                    existing_dois = set(duplicate_check.get("existing_dois", set()))
 
-                    # Filter out duplicates
                     filtered_items = []
-                    for item in zotero_items:
-                        doi = item.get("DOI", "").lower()
-                        if doi and doi in existing_dois:
+                    for article, item in converted_items:
+                        pmid = _extract_article_pmid(article)
+                        doi = item.get("DOI", "").lower().strip()
+
+                        if (pmid and pmid in existing_pmids) or (doi and doi in existing_dois):
                             skipped_count += 1
                             continue
                         filtered_items.append(item)
@@ -521,15 +693,43 @@ def register_unified_import_tools(mcp, zotero_client):
                     logger.warning(f"Duplicate check failed, importing all: {e}")
 
             # === Step 6: Save to Zotero ===
+            saved_items: list[dict[str, Any]] = []
+            batch_failures = 0
             if items_to_import:
-                await zotero_client.save_items(items_to_import)
+                for batch_index, batch in enumerate(_chunk_items(items_to_import, SAVE_BATCH_SIZE), start=1):
+                    try:
+                        await zotero_client.save_items(batch)
+                        saved_items.extend(batch)
+                    except Exception as e:
+                        batch_failures += 1
+                        logger.error(f"Import batch {batch_index} failed: {e}")
+                        result["errors"].append(
+                            {
+                                "batch": batch_index,
+                                "count": len(batch),
+                                "items": [item.get("title", "Untitled")[:50] for item in batch],
+                                "error": str(e),
+                            }
+                        )
 
             # === Step 7: Build response ===
-            result["success"] = True
-            result["imported"] = len(items_to_import)
+            result["imported"] = len(saved_items)
             result["skipped"] = skipped_count
-            result["items"] = [item.get("title", "Untitled")[:50] for item in items_to_import]
-            result["message"] = f"Successfully imported {len(items_to_import)} articles to Zotero"
+            result["items"] = [item.get("title", "Untitled")[:50] for item in saved_items]
+
+            if batch_failures:
+                result["success"] = False
+                if saved_items:
+                    result["partial_success"] = True
+                    result["error"] = f"Imported {len(saved_items)} articles, but {batch_failures} batch(es) failed"
+                    result["message"] = result["error"]
+                else:
+                    result["error"] = "Failed to import articles to Zotero"
+                    result["message"] = result["error"]
+                    return result
+            else:
+                result["success"] = True
+                result["message"] = f"Successfully imported {len(saved_items)} articles to Zotero"
 
             if skipped_count > 0:
                 result["message"] += f" ({skipped_count} duplicates skipped)"

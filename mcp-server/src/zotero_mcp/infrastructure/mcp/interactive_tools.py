@@ -242,6 +242,11 @@ def register_interactive_save_tools(mcp, zotero_client):
         When DOI or PMID is provided, this tool will **automatically fetch**
         complete article metadata from external APIs (CrossRef/PubMed).
 
+        🤝 MCP COLLABORATION NOTE:
+        This auto-fetch path is intended for manual DOI/PMID entry.
+        If metadata already comes from pubmed-search-mcp, prefer `import_articles()`
+        to avoid refetching the same PubMed record.
+
         Args:
             item_type: Type (journalArticle, book, etc.)
             title: Reference title (required)
@@ -367,6 +372,11 @@ def register_interactive_save_tools(mcp, zotero_client):
         🔒 DATA INTEGRITY:
         When DOI or PMID is provided, this tool will **automatically fetch**
         complete article metadata from external APIs (CrossRef/PubMed).
+
+        🤝 MCP COLLABORATION NOTE:
+        This auto-fetch path is intended for manual DOI/PMID entry.
+        If metadata already comes from pubmed-search-mcp, prefer `import_articles()`
+        to avoid refetching the same PubMed record.
 
         Args:
             item_type: Type (journalArticle, book, etc.)

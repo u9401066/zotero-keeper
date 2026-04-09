@@ -99,7 +99,7 @@ class TestMcpServerConfig:
         config = McpServerConfig()
 
         assert config.name == "Zotero Keeper"
-        assert config.version == "1.2.0"
+        assert config.version == "1.12.0"
         assert config.zotero is not None
 
     def test_mcp_server_config_instructions(self):
@@ -110,7 +110,10 @@ class TestMcpServerConfig:
 
         assert "Zotero Keeper" in config.instructions
         assert "search_items" in config.instructions
-        assert "add_reference" in config.instructions
+        assert "import_articles" in config.instructions
+        assert "check_articles_owned" in config.instructions
+        assert "ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1" in config.instructions
+        assert "add_reference" not in config.instructions
 
     def test_mcp_server_config_has_zotero_config(self):
         """Test McpServerConfig contains ZoteroConfig."""

@@ -95,7 +95,7 @@ async def fetch_metadata_from_doi(doi: str) -> dict | None:
         data = response.json().get("message", {})
 
         # Convert CrossRef format to Zotero format
-        item = {
+        item: dict[str, object] = {
             "itemType": "journalArticle",
             "title": " ".join(data.get("title", [])),
             "DOI": doi,

@@ -1,16 +1,12 @@
 """
-Batch Import Tools for Zotero Keeper
+Legacy batch PubMed import tools for Zotero Keeper.
 
-High-performance batch import with complete metadata preservation.
-Uses direct Python import from pubmed-search library (submodule).
+This module is kept for compatibility, but its public tool is disabled by default in
+collaboration-safe mode because pubmed-search-mcp already owns PubMed search,
+discovery, and citation-metrics workflows.
 
-Architecture:
-- zotero-keeper directly imports pubmed-search as Python library
-- Data flows: pubmed-search → mapper → Zotero
-- No Agent intermediary - complete metadata preserved!
-
-Tools:
-- batch_import_from_pubmed: Primary batch import (PMID → complete metadata → Zotero)
+Preferred path:
+    pubmed-search-mcp search/enrich/export -> zotero-keeper import_articles
 """
 
 import logging
@@ -74,10 +70,10 @@ def register_batch_tools(mcp, zotero_client):
         skip_duplicates: bool = True,
         collection_key: str | None = None,
         collection_name: str | None = None,
-        include_citation_metrics: bool = True,
+        include_citation_metrics: bool = False,
     ) -> dict[str, Any]:
         """
-        📦 Batch import PubMed articles to Zotero with complete metadata
+        📦 Legacy batch import PubMed articles to Zotero with complete metadata
 
         批次匯入 PubMed 文獻到 Zotero，保留完整的 metadata！
 
@@ -88,7 +84,7 @@ def register_batch_tools(mcp, zotero_client):
         - ✅ Batch duplicate detection (by PMID/DOI)
         - ✅ Detailed result reporting
         - ✅ Collection validation (防呆機制!)
-        - ✅ Citation metrics (RCR, percentile) → extra field (default ON!)
+        - ✅ Optional citation metrics (RCR, percentile) → extra field
 
         ⚠️ IMPORTANT - 防呆提醒:
         - 使用 collection_name 參數 (推薦!) 可自動驗證名稱是否存在
@@ -102,8 +98,9 @@ def register_batch_tools(mcp, zotero_client):
             skip_duplicates: Skip if exact PMID or DOI match found (default: True)
             collection_key: Zotero collection key (⚠️ 不建議直接使用，容易出錯)
             collection_name: Collection name (推薦! 自動驗證並解析為 key)
-            include_citation_metrics: If True (default), fetch RCR/percentile from iCite
-                                      and add to extra field
+            include_citation_metrics: If True, fetch RCR/percentile from iCite
+                                      and add to extra field. Prefer calling
+                                      pubmed-search-mcp `get_citation_metrics()` upstream.
 
         Returns:
             Detailed import result:
@@ -122,22 +119,21 @@ def register_batch_tools(mcp, zotero_client):
 
         Example:
             # ✅ 推薦：使用 collection_name (會自動驗證!)
-            # RCR 預設會自動取得並存入 extra 欄位
             batch_import_from_pubmed(
                 pmids="38353755,37864754",
                 collection_name="test1"
             )
 
-            # 如果不需要 RCR (較快)
+            # 如果需要 RCR，請明確打開
             batch_import_from_pubmed(
                 pmids="38353755,37864754",
                 collection_name="test1",
-                include_citation_metrics=False
+                include_citation_metrics=True
             )
 
         Workflow:
             1. (可選) zotero-keeper: list_collections() → 確認目標 collection 名稱
-            2. pubmed-search: unified_search(query="AI anesthesia") → PMIDs / articles
+            2. pubmed-search: unified_search("AI anesthesia") → get_session_pmids()
             3. zotero-keeper: batch_import_from_pubmed(pmids, collection_name="xxx")
         """
         if not BATCH_IMPORT_AVAILABLE:
@@ -198,7 +194,7 @@ def register_batch_tools(mcp, zotero_client):
 
             logger.info(f"Fetched {len(articles)} articles from PubMed")
 
-            # 2.5. Fetch citation metrics if requested
+            # 2.5. Fetch citation metrics only when explicitly requested
             citation_metrics = {}
             if include_citation_metrics:
                 try:
@@ -234,9 +230,9 @@ def register_batch_tools(mcp, zotero_client):
                         article["apt"] = metrics.get("apt")
 
             # 3. Check for duplicates (batch)
-            existing_identifiers = {"existing_pmids": set(), "existing_dois": set()}
-            pmid_to_key = {}
-            doi_to_key = {}
+            existing_identifiers: dict[str, Any] = {"existing_pmids": set(), "existing_dois": set()}
+            pmid_to_key: dict[str, str] = {}
+            doi_to_key: dict[str, str] = {}
 
             if skip_duplicates:
                 # Extract DOIs from articles

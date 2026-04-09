@@ -1,17 +1,24 @@
 """
-Zotero Keeper MCP Server
+Zotero Keeper MCP Server.
 
 A Model Context Protocol server for managing local Zotero libraries.
 Provides read operations via Zotero Local API and write operations via Connector API.
 
-Usage:
-    # Development mode with MCP inspector
-    mcp dev src/zotero_mcp/infrastructure/mcp/server.py
+Responsibility split when collaborating with pubmed-search-mcp:
+        - pubmed-search-mcp owns search, discovery, export, and citation metrics
+        - zotero-keeper owns local library queries, collection choice, duplicate checks,
+            and importing articles into Zotero
+        - legacy PubMed bridge tools remain available only via
+            ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1
 
-    # Direct execution (stdio transport, localhost)
+Usage:
+        # Development mode with MCP inspector
+        mcp dev src/zotero_mcp/infrastructure/mcp/server.py
+
+        # Direct execution (stdio transport, localhost)
     uv run python -m zotero_mcp
 
-    # With remote Zotero host
+        # With remote Zotero host
     ZOTERO_HOST=<your-zotero-ip> uv run python -m zotero_mcp
 """
 
@@ -95,27 +102,36 @@ class ZoteroKeeperServer:
         register_saved_search_tools(self._mcp, self._zotero)
         logger.info("Saved Search tools enabled (list_saved_searches, run_saved_search) 🌟 Local API exclusive!")
 
-        # Register Integrated Search tools
-        register_search_tools(self._mcp, self._zotero)
-        logger.info("Search tools enabled (advanced_search)")
-        if is_search_tools_available():
-            logger.info("PubMed integration enabled (search_pubmed_exclude_owned, check_articles_owned)")
+        # Register search tools. Default mode keeps PubMed search/discovery in pubmed-search-mcp.
+        register_search_tools(
+            self._mcp,
+            self._zotero,
+            enable_pubmed_bridge_tools=self._config.enable_legacy_pubmed_tools,
+        )
+        logger.info("Search tools enabled (advanced_search, check_articles_owned)")
+        if self._config.enable_legacy_pubmed_tools:
+            if is_search_tools_available():
+                logger.info("Legacy PubMed bridge enabled (search_pubmed_exclude_owned)")
+            else:
+                logger.info("Legacy PubMed bridge requested but pubmed extra is unavailable")
         else:
-            logger.info("PubMed integration disabled (run: uv sync --extra pubmed)")
+            logger.info("Collaboration-safe mode: PubMed search/discovery stays in pubmed-search-mcp")
 
-        # Register PubMed tools if available
-        if is_pubmed_available():
-            register_pubmed_tools(self._mcp, self._zotero)
-            logger.info("PubMed import enabled (import_ris_to_zotero, import_from_pmids)")
-        else:
-            logger.info("PubMed integration disabled (run: uv sync --extra pubmed)")
+        # Register legacy PubMed import tools only when explicitly requested.
+        if self._config.enable_legacy_pubmed_tools:
+            if is_pubmed_available():
+                register_pubmed_tools(self._mcp, self._zotero)
+                logger.info("Legacy PubMed import bridge enabled (import_ris_to_zotero, import_from_pmids, quick_import_pmids)")
+            else:
+                logger.info("Legacy PubMed import bridge requested but pubmed extra is unavailable")
 
-        # Register Batch Import tools
-        if is_batch_import_available():
-            register_batch_tools(self._mcp, self._zotero)
-            logger.info("Batch import enabled (batch_import_from_pubmed)")
+            if is_batch_import_available():
+                register_batch_tools(self._mcp, self._zotero)
+                logger.info("Legacy batch PubMed import enabled (batch_import_from_pubmed)")
+            else:
+                logger.info("Legacy batch PubMed import requested but pubmed-search backend is unavailable")
         else:
-            logger.info("Batch import disabled (pubmed-search submodule not available)")
+            logger.info("Legacy PubMed import tools disabled by default; use import_articles for PubMed → Zotero handoff")
 
         # Register Analytics tools (library stats, orphan detection)
         register_analytics_tools(self._mcp, self._zotero)
@@ -123,7 +139,7 @@ class ZoteroKeeperServer:
 
         # Register Unified Import tool (single entry point for all imports)
         register_unified_import_tools(self._mcp, self._zotero)
-        logger.info("Unified import enabled (import_articles) ⭐ One tool for all sources!")
+        logger.info("Unified import enabled (import_articles) ⭐ Single public PubMed → Zotero import entry")
 
         # Register Attachment & Fulltext tools (PDF access)
         register_attachment_tools(self._mcp, self._zotero)
@@ -163,7 +179,7 @@ class ZoteroKeeperServer:
     def run(self, transport: Literal["stdio", "sse", "streamable-http"] = "stdio"):
         """Run the MCP server"""
         logger.info(f"Starting Zotero Keeper MCP Server ({transport} transport)")
-        self._mcp.run(transport=transport)
+        self._mcp.run(transport=cast("Literal['stdio', 'sse', 'streamable-http']", transport))
 
 
 # =============================================================================
@@ -206,9 +222,10 @@ def main():
     if "--transport" in sys.argv:
         idx = sys.argv.index("--transport")
         if idx + 1 < len(sys.argv):
-            candidate = sys.argv[idx + 1]
-            if candidate in {"stdio", "sse", "streamable-http"}:
-                transport = cast(Literal["stdio", "sse", "streamable-http"], candidate)
+            requested_transport = sys.argv[idx + 1]
+            if requested_transport not in {"stdio", "sse", "streamable-http"}:
+                raise ValueError(f"Unsupported transport: {requested_transport}")
+            transport = cast("Literal['stdio', 'sse', 'streamable-http']", requested_transport)
 
     get_server().run(transport)
 
