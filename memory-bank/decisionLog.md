@@ -101,6 +101,45 @@
   - 成功時回傳 `saved_to` 資訊確認
 - **修改工具**: import_ris_to_zotero, import_from_pmids, quick_import_pmids, import_articles
 
+### DEC-017: keeper 採 collaboration-safe 預設工具面
+- **決策**: 當 zotero-keeper 與 pubmed-search-mcp 協作時，keeper 預設不再公開重複的 PubMed bridge/import 工具
+- **理由**:
+  1. 避免兩個 MCP 同時暴露 PubMed 搜尋/匯入橋接工具，讓 Agent 選錯責任邊界
+  2. keeper 已有 `import_articles` 可作為單一 PubMed → Zotero handoff
+  3. `search_pubmed_exclude_owned`、`quick_import_pmids`、`batch_import_from_pubmed` 會讓工具面再次碎片化
+  4. 預設收斂可減少重複 citation-metrics / PubMed metadata 工作流
+- **實作**:
+  - `McpServerConfig` 新增 `enable_legacy_pubmed_tools`
+  - 環境變數：`ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1`
+  - 預設只保留 `advanced_search`、`check_articles_owned`、`import_articles`
+  - legacy 模式才註冊 `search_pubmed_exclude_owned`、`import_ris_to_zotero`、`import_from_pmids`、`quick_import_pmids`、`batch_import_from_pubmed`
+  - README / server instructions 同步改寫責任分界
+- **工作流**: `pubmed-search-mcp (search/enrich/export) → zotero-keeper check_articles_owned/import_articles`
+
+### DEC-018: 以跨 repo 契約測試與 docs guard 固化 collaboration-safe 工作流
+- **決策**: keeper / pubmed-search 的整合不只靠文件約定，也要用自動化測試與 CI guard 固化
+- **理由**:
+  1. `UnifiedArticle.to_dict()` 是兩個 repo 之間的真正資料契約，單靠各自單元測試不足以防 drift
+  2. README / 設計文件 / agent workflow 很容易在後續修改時回流到舊版 keeper PubMed bridge 語言
+  3. production-grade 整合需要同時鎖定 runtime 契約與文件表面
+- **實作**:
+  - `test_unified_import_tools.py` 新增跨 repo 契約測試
+  - `scripts/check_collaboration_safe_docs.py` 檢查 canonical docs 與 agent workflow
+  - `ci.yml` checkout submodules 並執行 docs guard
+- **限制**:
+  - external submodule 的 dirty state 仍需靠 submodule repo 內 commit 或 revert 才能清除
+
+### DEC-019: submodule research agent 變更採 upstream commit，而非在主 repo 保留 dirty state
+
+- **決策**: `external/pubmed-search-mcp/.github/agents/research.agent.md` 的 collaboration-safe workflow 變更直接提交到 pubmed-search-mcp 上游，再由主 repo 更新 submodule pointer
+- **理由**:
+  1. 如果只讓主 repo 指向一個本地 dirty submodule，release 不可重現
+  2. root repo 的 docs guard 與 VSIX bundled repo-assets 已依賴這份 agent workflow 的新內容
+  3. 先把 submodule commit 推到遠端，主 repo 才能安全記錄新的 gitlink
+- **實作**:
+  - submodule upstream commit: `23fb483` (`docs: align research agent with collaboration-safe import workflow`)
+  - 下一步由主 repo 記錄新的 `external/pubmed-search-mcp` pointer
+
 ---
 
 ## 2025-12-16

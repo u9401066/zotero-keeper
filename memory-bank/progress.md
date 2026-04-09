@@ -1,169 +1,27 @@
-# Progress (Updated: 2026-03-09)
+# Progress (Updated: 2026-04-09)
 
 ## Done
 
-### 2026-03-18 - Extension tool/runtime recovery hardening
-
-- ✅ 找出 extension 仍安裝舊 `pubmed-search-mcp>=0.3.8` 與過舊 PyPI `zotero-keeper==1.11.0` 是使用者持續撞到舊 tool bug 的主因
-- ✅ `vscode-extension/src/uvPythonManager.ts` 改為：
-	- 安裝 GitHub tarball `zotero-keeper`（tag `v0.5.19-ext`, package version `0.5.16`）
-	- `pubmed-search-mcp` 最低版本升到 `0.4.5`
-- ✅ `UvPythonManager` 新增 Python 3.12 版本驗證與 invalid venv recreate 邏輯
-- ✅ 補上 `install-state.json` 遷移機制：舊 PyPI 環境會在升級後自動刷新一次，之後不會每次開資料夾都重裝
-- ✅ `vscode-extension/src/mcpProvider.ts` server version metadata 同步到 `zotero-keeper 0.5.16` / `pubmed-search-mcp 0.4.5`
-- ✅ `npm test` 通過（47 passing）
-- ✅ `uv run python tests/test_mac_compatibility.py` 通過（48 passed）
-- ✅ 乾淨 venv smoke test 通過：
-	- `batch_import_from_pubmed` 成功
-	- `import_from_pmids` 成功
-	- 未再出現 coroutine / iterable 類錯誤
-
-### 2026-03-18 - 驗證補充說明
-
-- ℹ️ `vscode-extension/tests/test_python_env_edge_cases.py` 目前仍有 5 個 raw-uv 行為假設失敗，屬於測試腳本對 `uv venv` 覆寫語義的舊假設，非本次修正路徑的回歸失敗
-- ℹ️ 本次以 extension 單測 + cross-platform 靜態檢查 + 乾淨 venv runtime smoke test 作為修正驗證主體
-
-### 2026-03-09 - VS Code Extension v0.5.18 release verification
-
-- ✅ `npm run compile` 通過（vscode-extension）
-- ✅ `uv run python tests/test_mac_compatibility.py` 通過（46 passed）
-- ✅ `uv run python tests/test_python_env_edge_cases.py` 通過（20/20 passed）
-- ✅ 驗證覆蓋 fresh install / upgrade / uninstall-reinstall / corrupted python recovery / cleanup-reinstall / idempotent install
-- ✅ `scripts/check_version_sync.py` 通過，版本同步為 `0.5.18`
-- ✅ `test_mac_compatibility.py` 的 recursive scandir helper 已清理 `ResourceWarning` 噪音
-
-### 2026-03-09 - 第五輪結構清理 (Shared saved_to helper)
-
-- ✅ `collection_support.py` 新增 `attach_saved_to_info()`
-- ✅ `pubmed_tools.py` / `unified_import_tools.py` 共用同一套 `saved_to` / root warning 組裝
-- ✅ `uv run pytest tests/unit/mcp/test_collection_support.py tests/unit/mcp/test_pubmed_tools.py -q` 通過（34 passed）
-
-### 2026-03-09 - Reuse audit
-
-- ✅ 確認 `pubmed_tools.py::_fetch_pubmed_details()` 原本重複了 `infrastructure/pubmed/__init__.py::fetch_pubmed_articles()` 的 wrapper 責任
-- ✅ 已改為直接重用 `fetch_pubmed_articles()`，避免在 MCP tool 層重建 client fetch wrapper
-- ✅ `uv run pytest tests/unit/mcp/test_pubmed_tools.py -q` 通過（25 passed）
-
-### 2026-03-09 - Full PubMed wrapper convergence
-
-- ✅ `infrastructure/pubmed/__init__.py` 新增 shared helpers：`is_pubmed_available()`、`search_pubmed_raw()`
-- ✅ `pubmed_tools.py` 與 `search_tools.py` 全面改走 shared pubmed integration wrapper
-- ✅ `mcp-server/src/zotero_mcp/infrastructure/mcp/*.py` 已無 direct `PubMedClient` import / instantiation
-- ✅ `uv run pytest tests/unit/mcp/test_pubmed_tools.py tests/unit/mcp/test_search_tools.py -q` 通過（62 passed）
-
-### 2026-03-09 - 第四輪結構清理 (PubMed import helpers)
-
-- ✅ `pubmed_tools.py` 抽出共用 helper：`_fetch_pubmed_details()`
-- ✅ `pubmed_tools.py` 抽出共用 helper：`_attach_saved_to_info()`
-- ✅ `pubmed_tools.py` 抽出共用 helper：`_build_article_import_items()`
-- ✅ 移除 `import_ris_to_zotero` / `import_from_pmids` / `quick_import_pmids` 內重複的 saved_to 與 PMID detail fetch 邏輯
-- ✅ `PubMedClient` 匯入失敗時明確設為 `None`，消除未綁定風險
-- ✅ `uv run pytest tests/unit/mcp/test_pubmed_tools.py -q` 通過（27 passed）
-
-### 2026-03-09 - 第三輪結構清理 (Collection resolution)
-
-- ✅ 新增共享模組 `collection_support.py`
-- ✅ 統一 `pubmed_tools.py` / `unified_import_tools.py` / `batch_tools.py` 的 collection resolution
-- ✅ `batch_tools._parse_pmids("last")` 改為明確拋出 `ValueError`
-- ✅ 相關單元測試通過（61 passed）
-
-### 2026-03-09 - 第二輪結構清理 (MCP entrypoint cleanup)
-
-- ✅ `server.py` module-level `mcp` export 修正為真實 `FastMCP` instance
-- ✅ 移除死碼 `register_smart_tools()` 包裝層
-- ✅ transport typing 收斂為 `Literal["stdio", "sse", "streamable-http"]`
-
-### 2026-03-09 - 第一輪結構清理 (Repo hygiene + docs sync)
-
-- ✅ 移除提交進 repo 的測試輸出與 pre-commit artifacts
-- ✅ README / README.zh-TW / mcp-server README 全面同步為 uv-first workflow
-- ✅ 文件改為官方 VS Code Marketplace-only 發布流程
-
-### v0.5.15 - Critical Bug Fixes + Zotero 8 + PubMed 0.4.4 (2026-03-04)
-
-- ✅ **CRITICAL**: 修復 12 處 async/await 遺漏（PubMed import 工具全壞）
-- ✅ **CRITICAL**: 修復 `list_collections()` → `get_collections()` (8 處)
-- ✅ **CRITICAL**: 修復 Collection name resolution `col["data"]["name"]` (3 處)
-- ✅ TCP Port Exhaustion Fix (httpx 共享 client)
-- ✅ Zotero 8 annotation filtering (6 files)
-- ✅ pubmed-search-mcp 0.3.8 → 0.4.4 (submodule + dependency)
-- ✅ VS Code Extension v0.5.15 (Zotero 8 docs, npm updates)
-- ✅ `.vscode/mcp.json` 開發設定
-- ✅ E2E 測試通過: 5 個 MCP tools 驗證
-
-### v0.5.14 - Attachment Tools + Version Unification (2025-06-27)
-
-- ✅ `get_item_attachments` + `get_item_fulltext` MCP tools (2 new)
-- ✅ DAL: `client_read.py` 新增 `get_item_fulltext()` + `resolve_attachment_path()`
-- ✅ 15 unit tests for attachment tools
-- ✅ VS Code test infrastructure (Mocha + Sinon, 5 modules)
-- ✅ Structured logging (`logging_config.py` + `logger.ts`)
-- ✅ Pre-commit quality gate (ruff, pytest, trailing whitespace)
-- ✅ Version unification: MCP Server 1.x → 0.5.14
-- ✅ Zotero Plugin Spec (HTTP Bridge design)
-- ✅ Total MCP tools: 32
-
-### v0.5.13 - EPERM Fix + Python 3.12 (2025-06-26)
-
-- ✅ EPERM error handling (kill Python processes before reinstall)
-- ✅ NCBI email auto-detect (git config user.email)
-- ✅ Python 3.12 support
-- ✅ Pre-commit hooks
-
-### v0.5.12 - 關鍵 Bug 修復 + PubMed MCP v0.3.8 (2025-06-25)
-
-- ✅ **CRITICAL**: 修復版本檢查無限升級迴圈（`__version__` → `importlib.metadata`）
-- ✅ 修復損壞 Python binary 導致 WinError 216 崩潰
-- ✅ 強化 `checkReadySync()` 和 `needsUpgradeOnly()` 實際驗證 binary
-- ✅ PubMed Search MCP 更新至 v0.3.8（`search_literature` → `unified_search`）
-- ✅ 全面移除 pip，只使用 uv
-- ✅ 新增 pytest-xdist 多核測試
-- ✅ 新增 uv-enforcer skill
-- ✅ 20 項 edge case 測試全部通過（兩輪驗證）
-- ✅ Copilot instructions 和 research-workflow 更新
-
-### v0.5.11 - PubMed Search MCP v0.2.7 (2026-01-28)
-
-- ✅ 版本同步更新
-
-### v0.5.9 - VS Code Extension 修復 (2026-01-27)
-
-- ✅ 修復 uv venv 沒有 pip 的問題
-- ✅ pythonEnvironment.ts 自動偵測並使用 uv pip
-
-### v0.5.8 - PubMed Search MCP v0.2.5 更新 (2026-01-27)
-
-- ✅ 更新 pubmed-search-mcp 子模組到 v0.2.5
-- ✅ 修復 server 啟動 bug (session manager 變數名稱)
-
-### v0.5.6 - Marketplace 驗證修復 (2026-01-27)
-
-- ✅ 修復 Marketplace 驗證失敗問題
-- ✅ 排除不必要的 AI skill 資料夾 (.agent/, .claude/, .cursor/ 等)
-- ✅ 套件大小從 601 檔案 (674KB) 減少到 20 檔案 (46KB)
-
-### v0.5.4 - 安全性與相容性更新 (2026-01-27)
-
-- ✅ 修復 4 個 npm 安全漏洞 (diff, lodash, qs, undici)
-- ✅ 新增 32-bit Windows (win32-ia32) 平台支援
-- ✅ 更新 pubmed-search-mcp 到 v0.2.4
-
-### v0.5.3 - 更新 pubmed-search-mcp v0.2.3 (2026-01-27)
-
-- ✅ 更新 zotero-keeper MCP 到 v1.11.0
-
-### v0.1.25 - OpenURL / 機構訂閱整合 (2026-01-12)
-
-- ✅ 實作 OpenURL/機構訂閱整合功能
-- ✅ 新增 `sources/openurl.py` 模組 - OpenURL 建構器
-- ✅ 整合 OpenURL 到 `unified_search` 輸出
+- 已將 `external/pubmed-search-mcp/.github/agents/research.agent.md` 提交到 submodule 上游 `origin/master`（commit `23fb483`），解除 dirty submodule blocker
+- 已在本地整理出 4 個待整合提交：
+  - `chore(submodule): advance pubmed-search pointer`
+  - `fix(mcp-server): harden collaboration-safe import workflow`
+  - `docs(collaboration): sync workflow and guardrails`
+  - `feat(vscode-extension): package official copilot assets`
+- keeper collaboration-safe 匯入路徑補強完成：duplicate check、async fetch、schema 驗證、batch import、legacy bridge 共用 client / API key
+- 跨 repo 契約測試與 docs guard 已補齊，文件已同步到 collaboration-safe 工作流
+- extension 官方 repo assets 打包流程已完成，auto mode 會刷新受管 assets，VSIX 也已排除 `.pytest_cache`
+- 發版前驗證已完成：docs guard 通過、`mcp-server` 全量 pytest 369/369 通過、extension lint 成功、VSIX package 成功
+- 已建立備援分支 `backup/release-120ef8f`
 
 ## Doing
 
-- 第六輪候選：評估 `pubmed_tools.py` 與 `unified_import_tools.py` 的 article conversion / title summary 是否值得再抽共享 helper
+- 正在把上述 4 個本地提交 rebase 到 `origin/main`
+- 正在對齊 Memory Bank 與遠端主線目前的版本狀態（遠端 HEAD: `2e7e4ec` / `v0.5.19-ext`）
 
 ## Next
 
-- v0.6.0: Tool Consolidation (28 → 22 tools)
-- 解決 Marketplace Repository signing 問題
-- Zotero Plugin (HTTP Bridge) 實作
+- 完成 rebase，確認所有本地提交都乾淨套用
+- 重新檢查 keeper / extension 版本同步
+- 決定新的 extension tag（必須大於 `v0.5.19-ext`）與對應 release 順序
+- push 主線並推送新 tag 觸發自動發布
