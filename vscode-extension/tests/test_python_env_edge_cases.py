@@ -31,13 +31,33 @@ from typing import Optional
 # ======================================================================
 UV_VERSION = "0.5.14"
 PYTHON_VERSION = "3.12"
-ZOTERO_KEEPER_PACKAGE = (
+REPO_ROOT = Path(__file__).resolve().parents[2]
+LOCAL_MCP_SERVER = REPO_ROOT / "mcp-server"
+DEFAULT_RELEASE_ZOTERO_KEEPER_PACKAGE = (
     "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/"
-    "v0.5.19-ext.tar.gz#subdirectory=mcp-server"
+    "v0.5.20-ext.tar.gz#subdirectory=mcp-server"
 )
+
+
+def resolve_zotero_keeper_package() -> tuple[str, str]:
+    """Use the local mcp-server during pre-release testing, or allow an explicit override."""
+    override = os.environ.get("ZOTERO_KEEPER_PACKAGE_SOURCE")
+    if override:
+        return override, f"env override: {override}"
+
+    if LOCAL_MCP_SERVER.exists():
+        return str(LOCAL_MCP_SERVER), f"local path: {LOCAL_MCP_SERVER}"
+
+    return (
+        DEFAULT_RELEASE_ZOTERO_KEEPER_PACKAGE,
+        "release archive (local mcp-server checkout not found)",
+    )
+
+
+ZOTERO_KEEPER_PACKAGE, ZOTERO_KEEPER_PACKAGE_SOURCE = resolve_zotero_keeper_package()
 REQUIRED_PACKAGES = [
     ZOTERO_KEEPER_PACKAGE,
-    "pubmed-search-mcp>=0.4.5",
+    "pubmed-search-mcp>=0.5.2",
 ]
 
 # Test directory - use temp
@@ -106,11 +126,18 @@ def run_cmd(
     cmd: list[str], env: Optional[dict] = None, timeout: int = 120
 ) -> subprocess.CompletedProcess:
     """Run a command with timeout and return result."""
-    merged_env = {**os.environ, **(env or {})}
+    merged_env = {
+        **os.environ,
+        "NO_COLOR": "1",
+        "PYTHONUTF8": "1",
+        **(env or {}),
+    }
     return subprocess.run(
         cmd,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=timeout,
         env=merged_env,
     )
@@ -142,8 +169,57 @@ class TestPythonEnvEdgeCases:
             return venv_dir / "Scripts" / "python.exe"
         return venv_dir / "bin" / "python"
 
+    def _get_python_version_output(self, python_path: Path) -> Optional[str]:
+        """Return Python version output if the interpreter is runnable."""
+        if not python_path.exists():
+            return None
+
+        try:
+            result = run_cmd([str(python_path), "--version"], timeout=30)
+        except (OSError, subprocess.SubprocessError):
+            return None
+
+        output = (result.stdout or result.stderr).strip()
+        if result.returncode == 0 and output:
+            return output
+        return None
+
+    def _has_required_python_version(self, version_output: str) -> bool:
+        """Mirror the manager's Python 3.12+ requirement."""
+        if not version_output.startswith("Python "):
+            return False
+
+        version_text = version_output.split(" ", 1)[1]
+        parts = version_text.split(".")
+        if len(parts) < 2:
+            return False
+
+        try:
+            major = int(parts[0])
+            minor = int(parts[1])
+        except ValueError:
+            return False
+
+        return major > 3 or (major == 3 and minor >= 12)
+
     def _create_venv(self, venv_dir: Path) -> bool:
-        """Create venv using uv."""
+        """Create or recreate a venv following UvPythonManager's compatibility checks."""
+        python = self._get_python_in_venv(venv_dir)
+
+        if venv_dir.exists():
+            version_output = self._get_python_version_output(python)
+            if version_output and self._has_required_python_version(version_output):
+                log(f"Reusing existing compatible venv: {version_output}")
+                return True
+
+            if version_output:
+                log(
+                    f"Existing venv has {version_output}; recreating for Python {PYTHON_VERSION}+"
+                )
+            else:
+                log("Existing venv is incomplete or corrupted; recreating")
+            shutil.rmtree(venv_dir, ignore_errors=True)
+
         result = run_cmd(
             [self.uv, "venv", str(venv_dir), "--python", PYTHON_VERSION],
             env={"UV_PYTHON_DOWNLOADS": "automatic"},
@@ -681,8 +757,8 @@ class TestPythonEnvEdgeCases:
         issues = []
         _all_ok = True
         for pkg_name, import_name, min_ver in [
-            ("zotero-keeper", "zotero_mcp", "0.5.16"),
-            ("pubmed-search-mcp", "pubmed_search", "0.4.5"),
+            ("zotero-keeper", "zotero_mcp", "1.12.0"),
+            ("pubmed-search-mcp", "pubmed_search", "0.5.2"),
         ]:
             attr_ver = self._check_package_version(venv_dir, import_name)
             pip_ver = self._check_installed_version_via_pip(venv_dir, pkg_name)
@@ -1097,7 +1173,7 @@ print("OK")
                 "--upgrade",
                 "--python",
                 python,
-                "pubmed-search-mcp>=0.4.5",
+                "pubmed-search-mcp>=0.5.2",
             ],
             env={"VIRTUAL_ENV": str(venv_dir)},
             timeout=120,
@@ -1151,6 +1227,7 @@ def main():
         f"Platform: {sys.platform}-{os.uname().machine if hasattr(os, 'uname') else 'x64'}"
     )
     print(f"System Python: {sys.version}")
+    print(f"Zotero Keeper source: {ZOTERO_KEEPER_PACKAGE_SOURCE}")
 
     tester = TestPythonEnvEdgeCases()
 

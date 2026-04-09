@@ -2,6 +2,30 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.20] - 2026-04-09
+
+### Added
+
+- **Bundled official Copilot assets**
+  - Package the keeper and pubmed-search-mcp user-facing instructions, workflow guides, research agent, and collaboration hook scripts directly inside the VSIX
+  - Added `sync-copilot-assets.mjs` so packaging, publishing, and test preparation always refresh the bundled asset tree before build output is produced
+
+### Changed
+
+- **Collaboration-safe workspace install flow**
+  - Extension activation now installs or updates official Copilot assets from the bundled repo-assets tree while preserving custom user-authored files
+  - Legacy simplified skill files are migrated to the new official keeper and pubmed-search-mcp asset layout
+
+- **Embedded package version alignment**
+  - Embedded environment now upgrades against the `v0.5.20-ext` source archive, `zotero-keeper 1.12.0`, and `pubmed-search-mcp 0.5.2`
+  - MCP server definition versions and release-facing docs now match the collaboration-safe import workflow release line
+
+### Test
+
+- `npm run lint`
+- `npm run package`
+- `uv run python tests/test_python_env_edge_cases.py`
+
 ## [0.5.19] - 2026-03-18
 
 ### Fixed

@@ -177,12 +177,12 @@ describe('ZoteroMcpServerProvider', () => {
             // Zotero Keeper
             assert.strictEqual(servers[0].command, mockPythonPath);
             assert.deepStrictEqual(servers[0].args, ['-m', 'zotero_mcp']);
-            assert.strictEqual(servers[0].version, '0.5.16');
+            assert.strictEqual(servers[0].version, '1.12.0');
 
             // PubMed Search
             assert.strictEqual(servers[1].command, mockPythonPath);
             assert.deepStrictEqual(servers[1].args, ['-m', 'pubmed_search.presentation.mcp_server']);
-            assert.strictEqual(servers[1].version, '0.4.5');
+            assert.strictEqual(servers[1].version, '0.5.2');
         });
 
         it('should return empty when pythonPath is empty', () => {

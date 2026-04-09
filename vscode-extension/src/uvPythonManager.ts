@@ -59,21 +59,21 @@ const PYTHON_VERSION = '3.12';
 // Install from the tagged GitHub source archive so users get the fixed async/tool behavior
 // without requiring git on macOS, Linux, or Windows.
 const ZOTERO_KEEPER_PACKAGE =
-    'zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.5.19-ext.tar.gz#subdirectory=mcp-server';
+    'zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.5.20-ext.tar.gz#subdirectory=mcp-server';
 
 // Required packages with minimum versions
 // IMPORTANT: Update these when extension depends on new package features
 // Python 3.12+ required for new core module features
 const REQUIRED_PACKAGES = [
     ZOTERO_KEEPER_PACKAGE,
-    'pubmed-search-mcp>=0.4.5',
+    'pubmed-search-mcp>=0.5.2',
 ];
 
 // Minimum versions for verification (extracted from REQUIRED_PACKAGES)
 // IMPORTANT: Keep in sync with REQUIRED_PACKAGES above!
 const MIN_VERSIONS: Record<string, string> = {
-    'zotero_mcp': '0.5.16',
-    'pubmed_search': '0.4.5',
+    'zotero_mcp': '1.12.0',
+    'pubmed_search': '0.5.2',
 };
 
 // Timeout constants (in milliseconds)

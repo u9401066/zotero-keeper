@@ -1,12 +1,22 @@
 /**
- * Test setup — ensure 'vscode' module resolves to our mock.
+ * Test setup — ensure 'vscode' resolves to our compiled mock directory.
  *
- * The __mocks__/vscode/ directory is added to NODE_PATH via the test script
- * so that `require('vscode')` / `import 'vscode'` resolves to mock-vscode.
- *
- * This file can be used for additional global test setup if needed.
+ * This is done here instead of in the npm script so the test runner stays
+ * cross-platform and does not depend on shell-specific environment syntax.
  */
 
-// Intentionally empty — the mock is resolved via NODE_PATH
-// configured in the npm test script.
+import Module from 'module';
+import * as path from 'path';
+
+const mockPath = path.resolve(__dirname, '__mocks__');
+process.env.NODE_PATH = process.env.NODE_PATH
+	? `${mockPath}${path.delimiter}${process.env.NODE_PATH}`
+	: mockPath;
+
+type ModuleLoaderWithInitPaths = typeof Module & {
+	_initPaths(): void;
+};
+
+(Module as ModuleLoaderWithInitPaths)._initPaths();
+
 export {};

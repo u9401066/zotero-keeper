@@ -2,12 +2,11 @@
 
 🔬 **AI-powered research assistant** - Integrates Zotero reference management and PubMed literature search with GitHub Copilot.
 
-## ✨ What's New in v0.5.19
+## ✨ What's New in v0.5.20
 
-- **🔄 One-time Upgrade Migration**: 舊版 embedded Python 環境會在升級後自動刷新一次，遷移到修正版安裝來源
-- **🧱 Environment Reuse**: 改為每台環境重用同一份 global storage 安裝，不會每開一個資料夾都重裝
-- **🧪 Verified Recovery Logic**: 補強壞掉 venv / 舊 Python / 過時 install-state 的偵測與重建流程
-- **🔍 PubMed Search MCP v0.4.5**: 版本門檻與文件同步到目前實際要求
+- **📦 Official Copilot Assets Bundled**: extension 會隨套件帶入 keeper / pubmed-search-mcp 的正式 Copilot 指令、workflow、agent 與 hook scripts
+- **🛡️ Collaboration-safe Workflow Refresh**: 內建文件改為預設引導 Search → Review → Ask Collection → Import，避免直接暴露舊版 legacy PubMed 匯入路徑
+- **🔄 Embedded Package Upgrade Path**: embedded Python 會升級到 zotero-keeper 1.12.0 與 pubmed-search-mcp 0.5.2，並透過新 tag 的 source archive 觸發乾淨更新
 
 ## Features
 
@@ -22,7 +21,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 - **Library analytics** (stats, orphan detection)
 - **PDF attachment access** (list attachments, get indexed fulltext)
 
-### 🔍 PubMed Search (v0.4.5)
+### 🔍 PubMed Search (v0.5.2)
 
 - **`unified_search`** - 統一搜尋入口，自動合併去重多來源結果
 - **Multi-source search** (PubMed, Europe PMC, CORE)
@@ -67,7 +66,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
    - Create an isolated Python 3.12 environment
    - Install required packages (`zotero-keeper`, `pubmed-search-mcp`)
    - Register MCP servers with VS Code
-   - **Install Copilot instructions, research workflow guides, and `@research` agent**
+   - **Install official Copilot instructions, workflow guides, `@research` agent, and collaboration hook assets**
 
 ## Usage
 
@@ -97,7 +96,7 @@ The extension installs workflow guides that teach Copilot:
 3. Use cached articles to save API quota
 4. Check for duplicates before importing
 
-Run `Zotero MCP: Install Copilot Research Skills` to manually install/update.
+Run `Zotero MCP: Install Official Copilot Assets` to manually install/update.
 
 ## Extension Settings
 
@@ -118,7 +117,7 @@ Run `Zotero MCP: Install Copilot Research Skills` to manually install/update.
 | `Zotero MCP: Show Statistics` | View usage statistics |
 | `Zotero MCP: Show API Status` | View connected APIs |
 | `Zotero MCP: Check Zotero Connection` | Verify Zotero is accessible |
-| `Zotero MCP: Install Copilot Research Skills` | Install workflow guides |
+| `Zotero MCP: Install Official Copilot Assets` | Install or refresh the bundled official Copilot assets |
 | `Zotero MCP: Reinstall Python Environment` | Reinstall uv and Python packages |
 | `Zotero MCP: Show Status` | Show full extension status |
 | `Zotero MCP: Open Settings` | Open extension settings |
@@ -148,7 +147,7 @@ The Python environment is completely isolated from your system Python.
 3. Restart VS Code
 
 ### Copilot not using tools correctly
-1. Run `Zotero MCP: Install Copilot Research Skills` to update workflow guides
+1. Run `Zotero MCP: Install Official Copilot Assets` to update workflow guides
 2. The guides teach Copilot the correct order of operations
 
 ### uv download failed
