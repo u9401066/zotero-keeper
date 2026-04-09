@@ -2,7 +2,21 @@
 
 > **版本**: 1.3.0
 > **日期**: 2026-01-12
-> **狀態**: 研究完成，待實作
+> **狀態**: 已由 unified_search 落地；本文件保留研究脈絡
+
+## Current Status (2026-04-09)
+
+The search-side unification described in this document is now implemented around `unified_search`.
+
+The current collaboration-safe workflow across the two MCPs is:
+
+`pubmed-search-mcp unified_search(..., output_format="json") -> zotero-keeper check_articles_owned(...) -> import_articles(...)`
+
+Current production guidance:
+
+- `unified_search` is the public search entry point
+- source-specific search tools should be treated as internal or historical references unless explicitly exposed for a special use case
+- keeper should not be documented as the default PubMed search owner; it owns local duplicate checks and import/persist into Zotero
 
 ---
 
@@ -24,7 +38,7 @@
 
 ### 問題陳述
 
-現有的 `pubmed-search-mcp` 提供 35+ 個 MCP 工具，每個工具對應一個資料源或功能。這種設計的問題：
+在研究階段，`pubmed-search-mcp` 曾經有較分散的搜尋入口。這種設計的問題是：
 
 ```
 ❌ 當前設計（分散式）
@@ -77,6 +91,7 @@
 | 資料源選擇 | 後端自動分流 | 像 Google，不需用戶懂技術 |
 | 結果格式 | 統一 Article 物件 | 跨來源一致性 |
 | OA 連結 | 自動附加 | 每篇文章自動查 Unpaywall |
+| Keeper handoff | `check_articles_owned` + `import_articles` | 維持 collaboration-safe 分工 |
 
 ---
 

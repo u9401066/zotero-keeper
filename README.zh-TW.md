@@ -19,7 +19,7 @@
 - 🔍 **搜尋文獻**：「幫我找 2024 年關於 CRISPR 的論文」
 - 📖 **查看細節**：「這篇文章的摘要是什麼？」
 - ➕ **新增文獻**：「把這篇 DOI 加到我的 Zotero」（自動取得完整 metadata！）
-- 🔄 **整合 PubMed**：「搜尋 PubMed 並排除我已有的文獻」
+- 🤝 **協作式 PubMed 工作流**：先用 pubmed-search-mcp 搜尋，再用 keeper 檢查重複與匯入
 - 📁 **互動式存檔**：列出所有收藏夾讓你選擇！
 
 不用自己開 Zotero、手動搜尋、複製貼上。直接用自然語言告訴 AI，它會幫你完成！
@@ -101,9 +101,27 @@ uv run python -m zotero_mcp
 }
 ```
 
+### 常用環境變數
+
+如果你是直接啟動 server，建議透過 `.env` 或 MCP 啟動設定提供以下變數：
+
+```bash
+ZOTERO_HOST=localhost
+ZOTERO_PORT=23119
+ZOTERO_TIMEOUT=30
+NCBI_EMAIL=your.email@example.com
+# NCBI_API_KEY=your_api_key_here
+# ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1
+# PUBMED_SEARCH_PATH=/path/to/pubmed-search-mcp
+```
+
+- `NCBI_EMAIL` 與可選的 `NCBI_API_KEY` 可提高 NCBI / PubMed API 的請求額度。
+- `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` 只應在你刻意要啟用 keeper 舊版 PubMed bridge / import 工具時設定。
+- `PUBMED_SEARCH_PATH` 只用於本地開發，讓 keeper 載入你 checkout 下來的 `pubmed-search-mcp` 原始碼，而不是已安裝套件。
+
 ---
 
-## 🔧 可用工具 (共 22 個)
+## 🔧 可用工具 (預設公開面共 20 個)
 
 > 💡 **提示**：大部分讀取操作也可透過 [MCP Resources](#-mcp-resources-可瀏覽的資料) 完成，不需呼叫 Tool。
 
@@ -147,23 +165,48 @@ uv run python -m zotero_mcp
 | `run_saved_search` | 執行 Saved Search | 「哪些論文還沒下載 PDF？」 |
 | `get_saved_search_details` | 取得搜尋條件 | 「『缺少 PDF』的條件是什麼？」 |
 
-### 🔍 進階搜尋 & PubMed 整合 (search_tools.py - 3 工具)
+### 🔍 進階搜尋與擁有狀態檢查 (search_tools.py - 2 個公開工具)
 
 | 工具 | 說明 | 範例問法 |
 |------|------|----------|
 | `advanced_search` ⭐ | 多條件搜尋 (itemType, tag, qmode) | 「找出所有標記為 AI 的期刊論文」 |
-| `search_pubmed_exclude_owned` | 搜尋 PubMed 新文獻 | 「找 CRISPR 論文，排除我已有的」 |
 | `check_articles_owned` | 檢查 PMID 是否已有 | 「這些 PMID 我有嗎？」 |
 
-### 📥 匯入工具 (pubmed_tools.py - 2 工具, batch_tools.py - 1 工具)
+### 📥 匯入工具 (單一公開 handoff)
 
-> 📊 **RCR 預設開啟**：所有 PubMed 匯入工具預設都會自動取得 RCR
+> 🤝 **collaboration-safe 預設**：PubMed 搜尋、探索與匯出由 pubmed-search-mcp 負責；Zotero Keeper 提供單一公開匯入入口 `import_articles`。
 
 | 工具 | 說明 | 範例問法 |
 |------|------|----------|
-| `import_ris_to_zotero` | 匯入 RIS 格式 | 「匯入這段 RIS」 |
-| `import_from_pmids` | 用 PMID 匯入 + 自動 RCR | 「匯入 PMID 12345678」 |
-| `batch_import_from_pubmed` ⭐ | 批次匯入 + 自動 RCR | 「匯入這些 PMID: 123,456,789」 |
+| `import_articles` ⭐ | 單一公開匯入入口，可接 JSON articles 或 RIS 文字 | 「把這批 PubMed 結果存到 AI Research」 |
+
+#### Legacy PubMed bridge 工具
+
+舊版 keeper PubMed bridge / import 工具現在都預設隱藏，避免和 pubmed-search-mcp 重複暴露同一類 PubMed 工作流。
+
+只有在你刻意要使用舊版 keeper 單機橋接模式時，才設定 `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1`。
+
+#### 推薦的 PubMed → Zotero 工作流
+
+```python
+# 1. 用 pubmed-search-mcp 搜尋
+results = unified_search("anesthesia AI", output_format="json")
+
+# 需要納入預印本時
+results = unified_search("anesthesia AI", output_format="json", options="preprints")
+
+# 需要保留非同行審查內容時
+results = unified_search("anesthesia AI", output_format="json", options="all_types")
+
+# 2. 可選：先對本地 Zotero 做重複檢查
+owned = check_articles_owned([article["identifiers"]["pmid"] for article in results["articles"] if article.get("identifiers", {}).get("pmid")])
+
+# 3. 匯入到 Zotero
+import_articles(
+  articles=results["articles"],
+  collection_name="AI Research"
+)
+```
 
 #### advanced_search 使用範例
 
@@ -282,16 +325,21 @@ Zotero 支援**巢狀收藏夾**。建議的組織方式：
 你: 「幫我找 2024 年麻醉 AI 的新論文，我還沒有的」
 
 AI 執行:
-1. search_pubmed_exclude_owned("anesthesia AI", min_year=2024)
-   → 找到 30 篇，你已有 5 篇，回傳 25 篇新的
+1. pubmed-search-mcp: unified_search("anesthesia AI", min_year=2024, output_format="json")
+  → 找到 30 篇候選文獻
 
-2. batch_import_from_pubmed(pmids="12345,67890,...")
-   → 批次匯入，完整保留 abstract、作者、DOI
+2. zotero-keeper: check_articles_owned([...pmids...])
+  → 找出哪些 PMID 已經在本地 Zotero
+
+3. zotero-keeper: import_articles(articles=selected_articles, collection_name="AI Research")
+  → 匯入選定文獻，保留 abstract、作者、DOI 與引用指標
 
 你: 收到！Zotero 已經有 25 篇新論文了
 ```
 
-### 安裝 PubMed 整合
+### 安裝可選的 keeper 本地 PubMed bridge
+
+預設的 collaboration-safe 模式，是讓 keeper 與獨立的 pubmed-search-mcp server 協作。只有當你真的需要 keeper 內建的舊版本地 PubMed bridge 時，才安裝這個 extra：
 
 ```bash
 uv pip install -e ".[pubmed]"
@@ -332,36 +380,29 @@ netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=23119 conn
 ## 🏗️ 架構圖
 
 ```
-┌─────────────────────────────────────────────────┐
-│           AI Agent (VS Code / Claude)           │
-└──────────────────────┬──────────────────────────┘
-                       │ MCP Protocol
-                       │ ├── Tools (22 個)
-                       │ ├── Resources (10 個 URI)
-                       │ └── Elicitation (互動輸入)
-                       ▼
-┌─────────────────────────────────────────────────┐
-│              Zotero Keeper MCP Server           │
-│  ┌───────────────────────────────────────────┐  │
-│  │  MCP Layer                                │  │
-│  │  ├── server.py (11 工具: 6 核心 + 5 Collection)  │  │
-│  │  ├── resources.py (10 URIs, 含 Collection)  │  │
-│  │  ├── interactive_tools.py (2 存檔工具)    │  │
-│  │  ├── saved_search_tools.py (3 工具)       │  │
-│  │  ├── search_tools.py (3 工具)             │  │
-│  │  ├── pubmed_tools.py (2 工具)             │  │
-│  │  ├── batch_tools.py (1 工具)              │  │
-│  │  └── smart_tools.py (helpers only)        │  │
-│  └───────────────────────────────────────────┘  │
-└──────────────────────┬──────────────────────────┘
-                       │ HTTP (port 23119)
-                       ▼
-┌─────────────────────────────────────────────────┐
-│              Zotero Desktop Client              │
-│  ├── Local API (/api/...) → 讀取              │
-│  └── Connector API (/connector/...) → 寫入    │
-└─────────────────────────────────────────────────┘
+┌────────────────────────────┐    ┌────────────────────────────┐
+│     pubmed-search-mcp      │    │       zotero-keeper       │
+│   (搜尋 / 探索 / 匯出)      │    │  (本地 Zotero 管理 / 匯入) │
+│                            │    │                            │
+│  • unified_search          │───▶│  • check_articles_owned    │
+│  • fetch_article_details   │    │  • list_collections        │
+│  • prepare_export          │    │  • import_articles         │
+│  • parse_pico              │    │  • interactive_save        │
+│  • get_citation_metrics    │    │  • quick_save              │
+└────────────────────────────┘    └──────────────┬─────────────┘
+                                                 │
+                                                 ▼
+                                    ┌────────────────────────────┐
+                                    │    Zotero Desktop Client   │
+                                    │  Local API + Connector API │
+                                    └────────────────────────────┘
 ```
+
+預設公開面是 collaboration-safe：
+
+- pubmed-search-mcp 負責搜尋、探索、匯出與引用指標
+- keeper 負責本地書庫查詢、collection 選擇、重複檢查與匯入
+- 舊版 keeper PubMed bridge 工具只在 `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` 時才會註冊
 
 ---
 

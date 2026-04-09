@@ -3,31 +3,51 @@
 > **Version**: 1.5  
 > **Date**: 2025-12-12  
 > **Target Release**: v1.7.0  
-> **Status**: ✅ Ready for Implementation
+> **Status**: Historical design record
+
+## Current Status (2026-04-09)
+
+This document is now a historical design record.
+
+The current collaboration-safe workflow is:
+
+`pubmed-search-mcp unified_search(..., output_format="json") -> zotero-keeper check_articles_owned(...) -> import_articles(...)`
+
+Current production guidance:
+
+- Use `unified_search` as the public search entry
+- Use `check_articles_owned` only for local duplicate filtering
+- Use `import_articles` as the single public PubMed -> Zotero handoff
+- Treat `batch_import_from_pubmed`, `import_from_pmids`, and related keeper-only PubMed bridge tools as legacy compatibility tools gated by `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1`
 
 ---
 
-## 🚀 Architecture Decision: Direct Library Import
+## 🚀 Current Architecture Decision: Collaboration-Safe Handoff
 
-### Key Insight: MCP 之間可以直接呼叫！
+### Key Insight: structured article handoff is the default public contract
 
-pubmed-search-mcp 已經是 **git submodule**，zotero-keeper 可以直接 import 它作為 Python library：
+Public MCP responsibility is intentionally split:
 
 ```python
-# zotero-keeper 直接 import pubmed-search 的 client
-from pubmed_search.client import PubMedClient
+# 1. Search with pubmed-search-mcp
+results = unified_search("remimazolam ICU sedation", output_format="json")
 
-# 直接使用，資料不經過 Agent，完整無遺漏！
-articles = PubMedClient().fetch_details(pmid_list)
+# 2. Optionally filter against local Zotero
+owned = check_articles_owned([...pmids...])
+
+# 3. Persist selected records in Zotero
+import_articles(articles=results["articles"], collection_name="ICU Sedation")
 ```
 
-### 為什麼這樣更好？
+The older keeper-only direct library import path still exists for compatibility, but it is not the recommended public workflow.
+
+### 為什麼現在這樣更好？
 
 | 方式 | 資料完整性 | 效率 | 複雜度 |
 |------|-----------|------|--------|
-| ❌ 透過 Agent 傳遞 | ⚠️ 可能被截斷 | 慢 (序列化) | 簡單 |
-| ❌ 共享檔案 | ✅ 完整 | 中 | 中等 |
-| ✅ **直接 import library** | ✅ **完整** | **最快** | 簡單 |
+| ❌ keeper / pubmed-search 都公開自己的 PubMed bridge | ⚠️ Agent 易選錯工具 | 中 | 高 |
+| ❌ 以 keeper-only batch bridge 當成預設 | ⚠️ 職責混雜 | 中 | 中 |
+| ✅ **collaboration-safe handoff** | ✅ **完整** | ✅ | **低** |
 
 ---
 
@@ -94,21 +114,19 @@ zotero-keeper (MCP tool):    直接呼叫 pubmed-search → 重複檢測 → 寫
 
 | Functionality | Responsible MCP | Tool/Library | Notes |
 |--------------|-----------------|--------------|-------|
-| **Literature Search** | pubmed-search | `search_literature` | MCP tool (Agent 呼叫) |
-| **Fetch Complete Metadata** | pubmed-search | `PubMedClient.fetch_details()` | **Library (keeper 直接 import)** |
+| **Literature Search** | pubmed-search | `unified_search` | Public MCP tool |
+| **Structured Article Contract** | pubmed-search | `UnifiedArticle.to_dict()` | Public JSON payload |
 | **MeSH/Synonym Expansion** | pubmed-search | `generate_search_queries` | MCP tool |
-| **Fulltext Availability Check** | pubmed-search | `analyze_fulltext_access` | MCP tool |
-| **Fulltext URLs** | pubmed-search | `get_article_fulltext_links` | MCP tool |
+| **Article Detail Fetch** | pubmed-search | `fetch_article_details` | MCP tool |
 | **Citation Metrics** | pubmed-search | `get_citation_metrics` | MCP tool |
-| **Batch Import to Zotero** | zotero-keeper | `batch_import_from_pubmed` | NEW in v1.7.0 |
-| **RIS Import** | zotero-keeper | `import_ris_to_zotero` | NEW in v1.7.0 |
-| **Download & Attach PDFs** | zotero-keeper | `attach_pmc_pdfs` | NEW in v1.7.0 |
-| **Duplicate Detection** | zotero-keeper | `check_duplicate`, `smart_add_reference` | Already exists |
-| **Collection Management** | zotero-keeper | `create_collection`, `list_collections` | NEW/Existing |
+| **Duplicate Detection** | zotero-keeper | `check_articles_owned` | Public MCP tool |
+| **Batch / JSON / RIS Import** | zotero-keeper | `import_articles` | Single public import entry |
+| **Collection Management** | zotero-keeper | `list_collections`, `get_collection_items` | Public MCP tools |
 
-**Principle:
-- pubmed-search 作為 **library** 被 keeper 直接 import
-- pubmed-search 同時也是獨立 MCP，Agent 可以直接呼叫搜尋功能**
+**Principle:**
+- pubmed-search-mcp owns search, discovery, export, and citation metrics
+- zotero-keeper owns local duplicate checks, collection choice, and persistence into Zotero
+- keeper-only PubMed bridge tools remain legacy compatibility paths, not the default public surface
 
 ---
 

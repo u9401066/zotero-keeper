@@ -117,6 +117,24 @@ Add to `claude_desktop_config.json`:
 
 > 💡 Use absolute paths and ensure [uv](https://docs.astral.sh/uv/) is installed.
 
+### Common Environment Variables
+
+If you run the server directly, these are the main settings you may want to provide via `.env` or your MCP launcher configuration:
+
+```bash
+ZOTERO_HOST=localhost
+ZOTERO_PORT=23119
+ZOTERO_TIMEOUT=30
+NCBI_EMAIL=your.email@example.com
+# NCBI_API_KEY=your_api_key_here
+# ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1
+# PUBMED_SEARCH_PATH=/path/to/pubmed-search-mcp
+```
+
+- Use `NCBI_EMAIL` and optional `NCBI_API_KEY` for higher NCBI/PubMed rate limits.
+- Use `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` only if you intentionally want keeper's older PubMed bridge/import tools.
+- Use `PUBMED_SEARCH_PATH` only during local development when you want keeper to import a checked-out `pubmed-search-mcp` tree instead of the installed package.
+
 ---
 
 ## 🔧 Available Tools (25 Total)
@@ -163,24 +181,26 @@ Add to `claude_desktop_config.json`:
 | `run_saved_search` | Execute a saved search | "Which papers have no PDF?" |
 | `get_saved_search_details` | Get search conditions | "What's in 'Missing PDF' search?" |
 
-### 🔍 Advanced Search & PubMed Integration (search_tools.py - 3 tools)
+### 🔍 Advanced Search & Ownership Check (search_tools.py - 2 public tools)
 
 | Tool | Description | Example |
 |------|-------------|---------|
 | `advanced_search` ⭐ | Multi-condition search (itemType, tag, qmode) | "Find all journal articles tagged with AI" |
-| `search_pubmed_exclude_owned` | Search PubMed, exclude owned | "Find CRISPR papers I don't have" |
 | `check_articles_owned` | Check if PMIDs exist in Zotero | "Do I have these PMIDs?" |
 
-### 📥 Import Tools (pubmed_tools.py - 3 tools, batch_tools.py - 1 tool)
+### 📥 Import Tools (single public handoff)
 
-> 📊 **RCR Default ON**: All PubMed import tools automatically fetch RCR by default
+> 🤝 **Collaboration-safe default**: PubMed search/discovery/export lives in pubmed-search-mcp. Zotero Keeper exposes one public import handoff: `import_articles`.
 
 | Tool | Description | Example |
 |------|-------------|--------|
-| `quick_import_pmids` ⭐ | Simplest one-step import | "Import these PMIDs" |
-| `import_ris_to_zotero` | Import RIS citations | "Import this RIS text" |
-| `import_from_pmids` | Import by PMID + auto RCR | "Import PMID 12345678" |
-| `batch_import_from_pubmed` | Batch import + validation + RCR | "Import PMIDs to 'AI Research'" |
+| `import_articles` ⭐ | Single public import entry for JSON articles or RIS text | "Import these PubMed results to AI Research" |
+
+#### Legacy PubMed bridge tools
+
+`search_pubmed_exclude_owned`, `quick_import_pmids`, `import_ris_to_zotero`, `import_from_pmids`, and `batch_import_from_pubmed` are now hidden by default to avoid duplicating pubmed-search-mcp.
+
+If you intentionally want the old standalone keeper behavior, set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` before starting the server.
 
 ### 📊 Analytics Tools (analytics_tools.py - 2 tools) ⭐ NEW!
 
@@ -189,21 +209,20 @@ Add to `claude_desktop_config.json`:
 | `get_library_stats` | Library statistics (year/author/journal) | "Show my library statistics" |
 | `find_orphan_items` | Find unorganized items | "Which papers need organizing?" |
 
-#### batch_import_from_pubmed Features
+#### Recommended PubMed → Zotero workflow
 
 ```python
-# ✅ Simple: just provide PMIDs and collection
-# RCR is automatically fetched by default!
-batch_import_from_pubmed(
-    pmids="38353755,37864754",
-    collection_name="AI Research"  # Auto-validates name
-)
+# 1. Search with pubmed-search-mcp
+results = unified_search("anesthesia AI", output_format="json")
 
-# Zotero extra 欄位會包含:
-# PMID: 38353755
-# RCR: 5.23
-# NIH Percentile: 85.2
-# Citations: 127
+# 2. Optional: filter against local Zotero
+owned = check_articles_owned([article["pmid"] for article in results["articles"] if article.get("pmid")])
+
+# 3. Import selected records into Zotero
+import_articles(
+  articles=results["articles"],
+  collection_name="AI Research"
+)
 ```
 
 #### advanced_search Examples
@@ -323,11 +342,14 @@ Works seamlessly with [pubmed-search-mcp](https://github.com/u9401066/pubmed-sea
 You: "Find new anesthesia AI papers from 2024 that I don't have"
 
 AI executes:
-1. search_pubmed_exclude_owned("anesthesia AI", min_year=2024)
-   → Found 30, you own 5, returns 25 new ones
+1. pubmed-search-mcp: unified_search("anesthesia AI", min_year=2024, output_format="json")
+  → Found 30 candidate articles
 
-2. batch_import_from_pubmed(pmids="12345,67890,...")
-   → Batch imports with complete abstracts, authors, DOI
+2. zotero-keeper: check_articles_owned([...pmids...])
+  → Detects which PMIDs already exist locally
+
+3. zotero-keeper: import_articles(articles=selected_articles, collection_name="AI Research")
+  → Imports the selected records into Zotero
 
 You: Done! 25 new papers in Zotero
 ```

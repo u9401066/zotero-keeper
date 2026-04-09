@@ -79,15 +79,22 @@ Zotero Keeper is designed to work alongside `pubmed-search-mcp` for a complete l
 │   pubmed-search-mcp        │    │      zotero-keeper         │
 │   (Literature Discovery)   │    │   (Reference Management)   │
 │                            │    │                            │
-│  • search_literature       │    │  • search_items            │
-│  • prepare_export (RIS)    │───▶│  • import_ris_to_zotero    │
-│  • fetch_article_details   │    │  • batch_import_from_pubmed│
+│  • unified_search          │    │  • search_items            │
+│  • prepare_export (RIS)    │───▶│  • import_articles         │
+│  • fetch_article_details   │    │  • check_articles_owned    │
 │  • parse_pico              │    │  • interactive_save        │
-│  • merge_search_results    │    │  • quick_save              │
+│  • get_citation_metrics    │    │  • quick_save              │
 └────────────────────────────┘    └────────────────────────────┘
 ```
 
-**Simple Workflow (Integrated Search):**
+**Recommended Workflow (Collaboration-safe):**
+```
+1. [pubmed-search] unified_search("CRISPR") → structured articles
+2. [zotero-keeper] check_articles_owned(pmids=[...]) → filter owned
+3. [zotero-keeper] import_articles(articles=..., collection_name="CRISPR") → Zotero
+```
+
+**Legacy Workflow (requires ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1):**
 ```
 1. [zotero-keeper] search_pubmed_exclude_owned("CRISPR") → Only NEW papers
 2. [zotero-keeper] batch_import_from_pubmed(pmids, tags=["CRISPR"]) → Zotero
@@ -96,24 +103,35 @@ Zotero Keeper is designed to work alongside `pubmed-search-mcp` for a complete l
 **Advanced Workflow (Strategy Building):**
 ```
 1. [pubmed-search] generate_search_queries("CRISPR") → MeSH terms
-2. [zotero-keeper] search_pubmed_exclude_owned(query='"CRISPR-Cas"[MeSH]')
-3. [zotero-keeper] batch_import_from_pubmed(pmids) → Zotero
+2. [pubmed-search] unified_search(query='"CRISPR-Cas"[MeSH]') → structured articles
+3. [zotero-keeper] check_articles_owned(pmids=[...]) → filter owned
+4. [zotero-keeper] import_articles(articles=..., collection_name="CRISPR") → Zotero
 ```
 
 ---
 
 ## MCP Interface
 
-### Tools (21 Total)
+### Tools (Default Public Surface)
 
 | File | Count | Tools |
 |------|-------|-------|
-| server.py | 11 | `check_connection`, `search_items`, `get_item`, `list_items`, `list_collections`, `get_collection`, `get_collection_items`, `get_collection_tree`, `find_collection`, `list_tags`, `get_item_types` |
-| interactive_tools.py | 2 | `interactive_save`, `quick_save` |
+| server.py | 1 | `check_connection` |
+| basic_read_tools.py | 5 | `search_items`, `get_item`, `list_items`, `list_tags`, `get_item_types` |
+| collection_tools.py | 4 | `list_collections`, `get_collection`, `get_collection_items`, `get_collection_tree` |
 | saved_search_tools.py | 3 | `list_saved_searches`, `run_saved_search`, `get_saved_search_details` |
-| search_tools.py | 2 | `search_pubmed_exclude_owned`, `check_articles_owned` |
+| search_tools.py | 2 | `advanced_search`, `check_articles_owned` |
+| interactive_tools.py | 2 | `interactive_save`, `quick_save` |
+| unified_import_tools.py | 1 | `import_articles` ⭐ Single public import entry |
+| analytics_tools.py | 2 | `get_library_stats`, `find_orphan_items` |
+
+### Legacy Tools (opt-in via ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1)
+
+| File | Count | Tools |
+|------|-------|-------|
+| search_tools.py | 1 | `search_pubmed_exclude_owned` |
 | pubmed_tools.py | 2 | `import_ris_to_zotero`, `import_from_pmids` |
-| batch_tools.py | 1 | `batch_import_from_pubmed` (+ collection_name防呆 + include_citation_metrics) |
+| batch_tools.py | 1 | `batch_import_from_pubmed` |
 
 ### Resources (10 URIs)
 

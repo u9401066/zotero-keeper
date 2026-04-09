@@ -2,20 +2,92 @@
 
 > 本文件分析 `pubmed-search-mcp` 套件各工具的回傳格式，為設計標準化文章交換格式 (StandardArticle) 提供依據。
 
+## Current Status (2026-04-09)
+
+The current public contract used by keeper is `UnifiedArticle.to_dict()` from `unified_search(..., output_format="json")`.
+
+This means the canonical PubMed -> Zotero handoff payload is the structured JSON article list returned by pubmed-search-mcp, not the older raw `search_literature`-style display output.
+
+Current collaboration-safe workflow:
+
+`pubmed-search-mcp unified_search(..., output_format="json") -> zotero-keeper check_articles_owned(...) -> import_articles(...)`
+
+The source-specific sections below are still useful as low-level normalization notes, but they should be read as historical/source-analysis material rather than the current public MCP contract.
+
 ---
 
 ## 目錄
 
-1. [search_literature - PubMed 搜尋結果](#1-search_literature---pubmed-搜尋結果)
-2. [search_europe_pmc - Europe PMC 搜尋結果](#2-search_europe_pmc---europe-pmc-搜尋結果)
-3. [search_core - CORE 搜尋結果](#3-search_core---core-搜尋結果)
-4. [fetch_article_details - 文章詳情](#4-fetch_article_details---文章詳情)
-5. [prepare_export - RIS 匯出格式](#5-prepare_export---ris-匯出格式)
-6. [標準化文章交換格式設計 (StandardArticle)](#6-標準化文章交換格式設計-standardarticle)
+1. [Current Public Contract - unified_search JSON](#1-current-public-contract---unified_search-json)
+2. [Historical Raw Source Notes - PubMed 搜尋結果](#2-historical-raw-source-notes---pubmed-搜尋結果)
+3. [search_europe_pmc - Europe PMC 搜尋結果](#3-search_europe_pmc---europe-pmc-搜尋結果)
+4. [search_core - CORE 搜尋結果](#4-search_core---core-搜尋結果)
+5. [fetch_article_details - 文章詳情](#5-fetch_article_details---文章詳情)
+6. [prepare_export - RIS 匯出格式](#6-prepare_export---ris-匯出格式)
+7. [標準化文章交換格式設計 (StandardArticle)](#7-標準化文章交換格式設計-standardarticle)
 
 ---
 
-## 1. search_literature - PubMed 搜尋結果
+## 1. Current Public Contract - unified_search JSON
+
+### Canonical producer
+
+- Public MCP tool: `unified_search(..., output_format="json")`
+- Canonical serializer: `UnifiedArticle.to_dict()`
+- Keeper consumer: `import_articles(articles=results["articles"], ...)`
+
+### Canonical payload shape
+
+```python
+{
+    "title": "Machine Learning in Anesthesiology",
+    "primary_source": "pubmed",
+    "identifiers": {
+        "pmid": "38123456",
+        "doi": "10.1016/j.bja.2024.01.015",
+        "pmc": "PMC10987654",
+        "openalex_id": None,
+        "s2_id": None,
+        "core_id": None,
+        "arxiv_id": None,
+    },
+    "authors": [
+        {"name": "John Smith", "orcid": None},
+        {"name": "Li Wang", "orcid": None},
+    ],
+    "author_string": "Smith J, Wang L",
+    "abstract": "Background: ...",
+    "journal": "British Journal of Anaesthesia",
+    "journal_abbrev": "Br J Anaesth",
+    "volume": "132",
+    "issue": "3",
+    "pages": "425-437",
+    "year": 2024,
+    "publication_date": "2024-03-15",
+    "article_type": "journal-article",
+    "keywords": ["machine learning"],
+    "mesh_terms": ["Anesthesiology"],
+    "urls": {
+        "pubmed": "https://pubmed.ncbi.nlm.nih.gov/38123456/",
+        "doi": "https://doi.org/10.1016/j.bja.2024.01.015",
+        "pmc": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10987654/",
+    },
+    "citation_metrics": {
+        "citation_count": 15,
+        "rcr": 1.72,
+        "percentile": 82.4,
+        "apt": 0.31,
+        "impact_level": "medium",
+    },
+    "sources": ["pubmed"],
+}
+```
+
+### Keeper-facing implication
+
+Keeper should validate and consume this canonical JSON contract instead of treating the older raw source outputs as the primary integration boundary.
+
+## 2. Historical Raw Source Notes - PubMed 搜尋結果
 
 ### 來源位置
 - Tool: `src/pubmed_search/mcp/tools/discovery.py::search_literature()`
