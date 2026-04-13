@@ -9,14 +9,15 @@
   - Pytest：`uv run pytest tests/ -v --tb=short` ❌（缺少 `external/pubmed-search-mcp/src` 導致 1 failed；其餘 412 passed）
 - 確認工作樹乾淨，準備撰寫文件與 README 更新
 - 新增 `docs/COLLABORATION_WORKFLOW.md` 並在 README / README.zh-TW 加入 collaboration-safe 摘要與一鍵安裝入口、工具數同步
+- 已建立 PR #3（docs 更新），parallel_validation 工具不可用已註記
 
 ## Doing
 
-- 準備 PR 描述與檢查清單，整理驗證紀錄（parallel_validation 工具不可用）
-- 更新 Memory Bank 後建立 PR
+- 等待並追蹤 PR #3 的 review
+- 如 reviewer 要求驗證，依需求補充並記錄
 
 ## Next
 
-- 建立 PR 並跟進 review 意見
+- 回應 review 並同步 Memory Bank
 - 視需要補充驗證說明，保持既有測試基線記錄
-- 回應後續意見並同步 Memory Bank
+- 合併後清理 / 更新相關文件（如有）
