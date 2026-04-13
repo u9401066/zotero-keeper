@@ -137,7 +137,7 @@ NCBI_EMAIL=your.email@example.com
 
 ---
 
-## 🔧 Available Tools (25 Total)
+## 🔧 Available Tools (23 Public Tools)
 
 > 💡 **Tip**: Most read operations can also be done via [MCP Resources](#-mcp-resources-browsable-data) without calling tools.
 
@@ -202,12 +202,21 @@ NCBI_EMAIL=your.email@example.com
 
 If you intentionally want the old standalone keeper behavior, set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` before starting the server.
 
-### 📊 Analytics Tools (analytics_tools.py - 2 tools) ⭐ NEW!
+### 📊 Analytics Tools (analytics_tools.py - 2 tools)
 
 | Tool | Description | Example |
 |------|-------------|--------|
 | `get_library_stats` | Library statistics (year/author/journal) | "Show my library statistics" |
 | `find_orphan_items` | Find unorganized items | "Which papers need organizing?" |
+
+### 📎 Attachment & Fulltext Tools (attachment_tools.py - 2 tools)
+
+> 🗂️ **PDF Access**: List attached PDFs and read Zotero-indexed fulltext. Requires `ZOTERO_DATA_DIR` for file paths.
+
+| Tool | Description | Example |
+|------|-------------|--------|
+| `get_item_attachments` | List PDFs/snapshots for an item | "What attachments does key:X42A7DEE have?" |
+| `get_item_fulltext` | Get Zotero-indexed fulltext content | "Read the full text of key:X42A7DEE" |
 
 #### Recommended PubMed → Zotero workflow
 
@@ -572,6 +581,8 @@ uv pip install -e ".[pubmed]"
 - [ARCHITECTURE](ARCHITECTURE.md) - Technical architecture
 - [CONTRIBUTING](CONTRIBUTING.md) - How to contribute
 - [ROADMAP](ROADMAP.md) - Development roadmap
+- [docs/tools-reference.md](docs/tools-reference.md) - Full MCP tools parameter reference
+- [docs/faq.md](docs/faq.md) - Frequently asked questions
 - [pubmed-search-mcp](https://github.com/u9401066/pubmed-search-mcp) - PubMed search (Apache 2.0)
 
 ---
