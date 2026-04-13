@@ -12,11 +12,11 @@
 
 ## Doing
 
-- 自檢文件與 README 文字、連結與格式，整理 PR 內容
-- 規劃最終回報（parallel_validation、Memory Bank 更新、PR 建立）
+- 準備 PR 描述與檢查清單，整理驗證紀錄（parallel_validation 工具不可用）
+- 更新 Memory Bank 後建立 PR
 
 ## Next
 
-- 確認交叉連結與說明清楚後提交 PR
+- 建立 PR 並跟進 review 意見
 - 視需要補充驗證說明，保持既有測試基線記錄
-- 執行 parallel_validation 並更新 PR 描述 / Memory Bank
+- 回應後續意見並同步 Memory Bank
