@@ -53,7 +53,7 @@ Yes. Zotero Keeper is a standard [MCP server](https://modelcontextprotocol.io/).
    ```
    Expected response: `Zotero is running`
 3. Make sure no firewall is blocking port `23119`
-4. On Windows, check that Zotero's local server is enabled under **Edit → Preferences → Advanced → Allow other applications to communicate with Zotero**
+4. On Windows, check that Zotero's local server is enabled under **Edit > Preferences > Advanced > Allow other applications to communicate with Zotero**
 
 ---
 
@@ -161,8 +161,8 @@ Yes, using `get_item_fulltext`. This returns text that Zotero has already indexe
 Zotero's local API is **read-only** for most operations. The Connector API (used by Zotero Keeper for writing) only supports **creating new items**; it cannot update, delete, or move them. See the [API Limitations section in the README](../README.md#️-zotero-api-limitations-important).
 
 **Workarounds:**
-- Delete duplicates: Zotero → Tools → **Merge Duplicates**
-- Move items: drag and drop in Zotero's GUI
+- Delete duplicates: Zotero > Tools > **Merge Duplicates**
+- Move items: **drag and drop** in Zotero's GUI
 - Bulk operations: [Zutilo](https://github.com/wshanks/Zutilo) or [Zotero Actions & Tags](https://github.com/windingwind/zotero-actions-tags) plugins
 
 ---

@@ -555,6 +555,6 @@ ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1
 | `ZOTERO_TIMEOUT` | `30` | API request timeout (seconds) |
 | `ZOTERO_DATA_DIR` | `""` | Path to Zotero data directory (for attachment file paths) |
 | `NCBI_EMAIL` | `""` | Email for NCBI/PubMed API (higher rate limits) |
-| `NCBI_API_KEY` | `""` | NCBI API key (optional, even higher limits) |
+| `NCBI_API_KEY` | `""` | NCBI API key (optional; raises rate limit from 3 to 10 requests/second) |
 | `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS` | `0` | Enable legacy PubMed bridge tools |
 | `PUBMED_SEARCH_PATH` | `""` | Override pubmed-search-mcp path (dev only) |
