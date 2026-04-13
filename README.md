@@ -225,6 +225,13 @@ import_articles(
 )
 ```
 
+### 🤝 Collaboration-Safe Setup (Summary)
+
+- pubmed-search-mcp runs search/discovery/export; zotero-keeper handles duplicate checks and the single `import_articles` handoff.
+- Ensure pubmed-search-mcp is installed or the submodule is present; set `PUBMED_SEARCH_PATH` if you rely on a local checkout.
+- Keep legacy PubMed bridge tools disabled unless you set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` intentionally.
+- Full checklist: see `docs/COLLABORATION_WORKFLOW.md`.
+
 #### advanced_search Examples
 
 ```python

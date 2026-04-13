@@ -12,6 +12,17 @@
 
 ---
 
+## 🚀 一鍵安裝 (VS Code)
+
+> **前置作業**：必須先啟動 [Zotero 7 或 8](https://www.zotero.org/download/)
+
+<a href="vscode:mcp/install?%7B%22name%22%3A%22zotero-keeper%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22zotero-keeper%22%5D%7D"><img src="https://img.shields.io/badge/VS%20Code-%E5%AE%89%E8%A3%9D%20MCP%20Server-007ACC?style=for-the-badge&logo=visualstudiocode" alt="Install in VS Code"></a>
+<a href="vscode-insiders:mcp/install?%7B%22name%22%3A%22zotero-keeper%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22zotero-keeper%22%5D%7D"><img src="https://img.shields.io/badge/VS%20Code%20Insiders-%E5%AE%89%E8%A3%9D%20MCP%20Server-24bfa5?style=for-the-badge&logo=visualstudiocode" alt="Install in VS Code Insiders"></a>
+
+> 💡 **需要 [uv](https://docs.astral.sh/uv/getting-started/installation/)** - 點擊後會自動透過 `uvx zotero-keeper` 安裝
+
+---
+
 ## ✨ 這是什麼？
 
 **Zotero Keeper** 是一個 [MCP 伺服器](https://modelcontextprotocol.io/)，讓你的 AI 助手可以：
@@ -121,7 +132,7 @@ NCBI_EMAIL=your.email@example.com
 
 ---
 
-## 🔧 可用工具 (預設公開面共 20 個)
+## 🔧 可用工具 (預設公開面共 25 個)
 
 > 💡 **提示**：大部分讀取操作也可透過 [MCP Resources](#-mcp-resources-可瀏覽的資料) 完成，不需呼叫 Tool。
 
@@ -207,6 +218,13 @@ import_articles(
   collection_name="AI Research"
 )
 ```
+
+### 🤝 collaboration-safe 設定摘要
+
+- pubmed-search-mcp 負責搜尋 / 探索 / 匯出，zotero-keeper 只處理重複檢查與單一 `import_articles` 匯入。
+- 確保已安裝 pubmed-search-mcp 或同步 submodule；若使用本地原始碼可設定 `PUBMED_SEARCH_PATH`。
+- 除非真的需要，請不要開啟 legacy PubMed 工具（需設定 `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1`）。
+- 完整檢查清單請見 `docs/COLLABORATION_WORKFLOW.md`。
 
 #### advanced_search 使用範例
 
