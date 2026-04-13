@@ -137,7 +137,18 @@ NCBI_EMAIL=your.email@example.com
 
 ---
 
-## 🔧 Available Tools (25 Total)
+## 📚 Documentation Map
+
+- [README.zh-TW.md](README.zh-TW.md) — Traditional Chinese overview
+- [mcp-server/README.md](mcp-server/README.md) — focused server usage and tool reference
+- [vscode-extension/README.md](vscode-extension/README.md) — VS Code extension setup and UX
+- [docs/ZOTERO_LOCAL_API.md](docs/ZOTERO_LOCAL_API.md) — Zotero API capability notes and limitations
+- [ARCHITECTURE.md](ARCHITECTURE.md) — component and layering overview
+- [CONTRIBUTING.md](CONTRIBUTING.md) — development workflow and contribution guide
+
+---
+
+## 🔧 Available Tools (23 default public + 5 legacy opt-in)
 
 > 💡 **Tip**: Most read operations can also be done via [MCP Resources](#-mcp-resources-browsable-data) without calling tools.
 
@@ -208,6 +219,13 @@ If you intentionally want the old standalone keeper behavior, set `ZOTERO_KEEPER
 |------|-------------|--------|
 | `get_library_stats` | Library statistics (year/author/journal) | "Show my library statistics" |
 | `find_orphan_items` | Find unorganized items | "Which papers need organizing?" |
+
+### 📎 Attachment Tools (attachment_tools.py - 2 tools)
+
+| Tool | Description | Example |
+|------|-------------|---------|
+| `get_item_attachments` | List attachment metadata and file paths | "Show attachments for key:ABC123" |
+| `get_item_fulltext` | Read Zotero-indexed PDF/EPUB full text | "Open the full text for key:ABC123" |
 
 #### Recommended PubMed → Zotero workflow
 
@@ -357,7 +375,8 @@ You: Done! 25 new papers in Zotero
 ### Install PubMed Integration
 
 ```bash
-uv pip install -e ".[pubmed]"
+cd mcp-server
+uv sync --extra pubmed
 ```
 
 ---
@@ -519,28 +538,19 @@ Zotero team is working on **Local API write support**:
 
 ---
 
-## 🚧 Future: One-Click Installation
+## 📦 Installation & Distribution Paths
 
-We understand that **most users are researchers, not developers**. Installing Python, uv, and configuring MCP can be daunting.
+We support both developer-oriented and researcher-friendly entry points today, while keeping room for simpler packaging later.
 
-### 🎯 Planned Improvements
+| Path | Status | Best for |
+|------|--------|----------|
+| VS Code extension | ✅ Available now | Researchers who want guided setup inside VS Code |
+| Source checkout + `uv sync` | ✅ Available now | Contributors and local development |
+| Direct MCP registration via `uvx zotero-keeper` | ✅ Available now | Existing MCP-capable clients |
+| Standalone executable | 🚧 Planned | Users who do not want to install Python/uv |
+| Homebrew / Chocolatey | 🚧 Planned | OS-level package manager workflows |
 
-| Current | Future |
-|----------------|---------------|
-| Python 3.12+ with `uv` | Standalone executable (.exe / .app) |
-| MCP server install via CLI | One-click installer for non-technical users |
-| VS Code extension already available | Broader desktop distribution |
-| Manual config outside VS Code | More guided setup for Claude/Desktop tools |
-
-### 📦 Planned Distribution Methods
-
-1. **PyPI Package**: `uv pip install zotero-keeper-mcp` (simplified)
-2. **Standalone Executable**: PyInstaller bundle (no Python needed)
-3. **VS Code Extension**: Already available on the VS Code Marketplace
-4. **Homebrew/Chocolatey**: Package manager support
-
-> 💡 **Want to help?** We welcome contributions to simplify installation!
-> See [CONTRIBUTING.md](CONTRIBUTING.md) for how to help.
+> 💡 Want to help improve installation? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
@@ -561,7 +571,8 @@ We understand that **most users are researchers, not developers**. Installing Py
 ### PubMed features missing?
 
 ```bash
-uv pip install -e ".[pubmed]"
+cd mcp-server
+uv sync --extra pubmed
 ```
 
 ---
