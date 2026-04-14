@@ -2,11 +2,11 @@
 
 🔬 **AI-powered research assistant** - Integrates Zotero reference management and PubMed literature search with GitHub Copilot.
 
-## ✨ What's New in v0.5.20
+## ✨ What's New in v0.5.21
 
-- **📦 Official Copilot Assets Bundled**: extension 會隨套件帶入 keeper / pubmed-search-mcp 的正式 Copilot 指令、workflow、agent 與 hook scripts
-- **🛡️ Collaboration-safe Workflow Refresh**: 內建文件改為預設引導 Search → Review → Ask Collection → Import，避免直接暴露舊版 legacy PubMed 匯入路徑
-- **🔄 Embedded Package Upgrade Path**: embedded Python 會升級到 zotero-keeper 1.12.0 與 pubmed-search-mcp 0.5.2，並透過新 tag 的 source archive 觸發乾淨更新
+- **🩹 PubMed Search Hotfix Rollup**: embedded Python 會升級到 pubmed-search-mcp 0.5.3，帶入 formatting 階段不再卡住 cancel 的 hotfix
+- **🧭 Route / Path Failure Degradation**: PubTator autocomplete 404 會 fail-open，不再重複撞不存在的 endpoint 導致工具體驗變差
+- **🔄 Embedded Package Refresh**: extension 會透過新的 `v0.5.21-ext` source archive 重新驗證 keeper / PubMed 套件版本，確保既有環境也會被升級
 
 ## Features
 
@@ -21,7 +21,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 - **Library analytics** (stats, orphan detection)
 - **PDF attachment access** (list attachments, get indexed fulltext)
 
-### 🔍 PubMed Search (v0.5.2)
+### 🔍 PubMed Search (v0.5.3)
 
 - **`unified_search`** - 統一搜尋入口，自動合併去重多來源結果
 - **Multi-source search** (PubMed, Europe PMC, CORE)

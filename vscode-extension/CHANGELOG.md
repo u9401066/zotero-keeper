@@ -2,6 +2,26 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.21] - 2026-04-14
+
+### Changed
+
+- **PubMed Search baseline upgraded to 0.5.3**
+  - Embedded environment now requires `pubmed-search-mcp>=0.5.3`
+  - MCP server definition metadata now reports PubMed Search `0.5.3`
+
+### Fixed
+
+- **Tool cancellation after formatting**
+  - Extension now refreshes to the pubmed-search-mcp hotfix that stops waiting on background clinical-trials work after `Formatting output...`
+- **Fail-open handling for missing autocomplete route**
+  - Extension now refreshes to the pubmed-search-mcp hotfix that disables the broken PubTator autocomplete route after the first 404 instead of retrying it repeatedly
+
+### Test
+
+- `npm run compile`
+- `npm run package`
+
 ## [0.5.20] - 2026-04-09
 
 ### Added
