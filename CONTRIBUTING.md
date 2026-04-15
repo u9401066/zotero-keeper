@@ -56,7 +56,7 @@ We love PRs! Here's how to contribute code:
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.12+
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) (required package manager)
 - Zotero 7 or 8 (for testing)
 - Git
@@ -66,27 +66,21 @@ We love PRs! Here's how to contribute code:
 ```bash
 # 1. Fork and clone
 git clone https://github.com/YOUR_USERNAME/zotero-keeper.git
-cd zotero-keeper
+cd zotero-keeper/mcp-server
 
-# 2. Create virtual environment with uv
-cd mcp-server
-uv venv
-source .venv/bin/activate  # Linux/Mac
-# or: .venv\Scripts\activate  # Windows
+# 2. Install development dependencies (uv manages the virtualenv)
+uv sync --extra dev --extra all
 
-# 3. Install in development mode
-uv pip install -e ".[dev]"
-
-# 4. Copy environment config
+# 3. Copy environment config
 cp ../.env.example .env
 # Edit .env with your Zotero settings
 
-# 5. Run tests
-pytest
+# 4. Run tests
+uv run pytest tests/ -v --tb=short
 
-# 6. Run linting
-ruff check src/
-mypy src/
+# 5. Run linting / type checks
+uv run ruff check src/
+uv run mypy src/ --ignore-missing-imports
 ```
 
 ### Testing with Zotero
@@ -99,7 +93,7 @@ mypy src/
    ```
 3. Run the test script:
    ```bash
-   python test_mcp_tools.py
+   uv run python scripts/test_mcp_tools.py
    ```
 
 ---
@@ -109,8 +103,9 @@ mypy src/
 ### Before Submitting
 
 - [ ] Code follows project style guidelines
-- [ ] Tests pass locally (`pytest`)
-- [ ] Linting passes (`ruff check src/`)
+- [ ] Tests pass locally (`uv run pytest tests/ -v --tb=short`)
+- [ ] Linting passes (`uv run ruff check src/`)
+- [ ] Docs guard passes when documentation changes (`uv run python ../scripts/check_collaboration_safe_docs.py`)
 - [ ] Documentation updated if needed
 - [ ] CHANGELOG.md updated for notable changes
 

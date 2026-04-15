@@ -80,21 +80,9 @@ import_articles(
 
 **Supported sources:** PubMed, Europe PMC, CORE, CrossRef, OpenAlex, Semantic Scholar, RIS
 
-### Public Tool Surface
+### Public Tool Surface (23 default tools)
 
-| Tool | Description |
-| ---- | ----------- |
-| `check_connection` | Test Zotero connectivity |
-| `search_items` | Search local references by keyword |
-| `advanced_search` | Multi-condition Zotero search |
-| `get_item` | Get item details by key |
-| `list_items` | List recent items |
-| `list_collections` | List available collections |
-| `get_collection_items` | Get items in a collection |
-| `check_articles_owned` | Check PubMed IDs against the local library |
-| `import_articles` | Collaboration-safe PubMed -> Zotero import handoff |
-| `interactive_save` | Guided manual save with duplicate and collection checks |
-| `quick_save` | Direct manual save when the target collection is already known |
+The default public surface combines connection, read, collection, save, search, import, analytics, and attachment access tools.
 
 ### Smart Save Behavior
 
@@ -122,7 +110,29 @@ Set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` only if you intentionally want 
 | `run_saved_search` | Execute a saved search |
 | `get_saved_search_details` | Get search conditions |
 
-### Other Tools
+### Search & Import Tools
+
+| Tool | Description |
+| ---- | ----------- |
+| `advanced_search` | Multi-condition Zotero search |
+| `check_articles_owned` | Check PubMed IDs against the local library |
+| `import_articles` | Collaboration-safe PubMed -> Zotero import handoff |
+
+### Analytics Tools
+
+| Tool | Description |
+| ---- | ----------- |
+| `get_library_stats` | Summaries by year, author, and journal |
+| `find_orphan_items` | Find items that are not organized into collections |
+
+### Attachment & Fulltext Tools
+
+| Tool | Description |
+| ---- | ----------- |
+| `get_item_attachments` | List attachment metadata and resolved file paths |
+| `get_item_fulltext` | Read Zotero-indexed full text for PDF/EPUB attachments |
+
+### Other Read Helpers
 
 | Tool | Description |
 | ---- | ----------- |

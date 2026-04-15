@@ -121,7 +121,18 @@ NCBI_EMAIL=your.email@example.com
 
 ---
 
-## 🔧 可用工具 (預設公開面共 20 個)
+## 📚 文件導覽
+
+- [README.md](README.md) — 英文總覽
+- [mcp-server/README.md](mcp-server/README.md) — server 使用方式與工具說明
+- [vscode-extension/README.md](vscode-extension/README.md) — VS Code 擴充功能安裝與使用體驗
+- [docs/ZOTERO_LOCAL_API.md](docs/ZOTERO_LOCAL_API.md) — Zotero API 能力與限制整理
+- [ARCHITECTURE.md](ARCHITECTURE.md) — 元件與分層架構
+- [CONTRIBUTING.md](CONTRIBUTING.md) — 開發與貢獻流程
+
+---
+
+## 🔧 可用工具 (預設公開面 23 個 + legacy opt-in 5 個)
 
 > 💡 **提示**：大部分讀取操作也可透過 [MCP Resources](#-mcp-resources-可瀏覽的資料) 完成，不需呼叫 Tool。
 
@@ -179,6 +190,20 @@ NCBI_EMAIL=your.email@example.com
 | 工具 | 說明 | 範例問法 |
 |------|------|----------|
 | `import_articles` ⭐ | 單一公開匯入入口，可接 JSON articles 或 RIS 文字 | 「把這批 PubMed 結果存到 AI Research」 |
+
+### 📊 分析工具 (analytics_tools.py - 2 工具)
+
+| 工具 | 說明 | 範例問法 |
+|------|------|----------|
+| `get_library_stats` | 顯示年份 / 作者 / 期刊統計 | 「顯示我的文獻庫統計」 |
+| `find_orphan_items` | 找出未放入收藏夾的文獻 | 「哪些文獻還沒整理？」 |
+
+### 📎 附件工具 (attachment_tools.py - 2 工具)
+
+| 工具 | 說明 | 範例問法 |
+|------|------|----------|
+| `get_item_attachments` | 列出附件資訊與檔案路徑 | 「列出 key:ABC123 的附件」 |
+| `get_item_fulltext` | 讀取 Zotero 已索引的 PDF/EPUB 全文 | 「打開 key:ABC123 的全文」 |
 
 #### Legacy PubMed bridge 工具
 
@@ -342,7 +367,8 @@ AI 執行:
 預設的 collaboration-safe 模式，是讓 keeper 與獨立的 pubmed-search-mcp server 協作。只有當你真的需要 keeper 內建的舊版本地 PubMed bridge 時，才安裝這個 extra：
 
 ```bash
-uv pip install -e ".[pubmed]"
+cd mcp-server
+uv sync --extra pubmed
 ```
 
 ---
@@ -497,28 +523,19 @@ Zotero 團隊正在開發 **Local API 寫入功能**：
 
 ---
 
-## 🚧 未來計畫：一鍵安裝
+## 📦 安裝與發佈路徑
 
-我們理解**大多數使用者是研究人員，不是開發者**。安裝 Python、uv、設定 MCP 可能讓人卻步。
+目前已同時提供開發者導向與研究者導向的入口，後續再逐步補齊更簡化的封裝方式。
 
-### 🎯 改進計畫
+| 路徑 | 狀態 | 適合對象 |
+|------|------|----------|
+| VS Code 擴充功能 | ✅ 已提供 | 想在 VS Code 內走引導式安裝的研究者 |
+| 原始碼 checkout + `uv sync` | ✅ 已提供 | 貢獻者與本地開發 |
+| 直接用 `uvx zotero-keeper` 註冊 MCP | ✅ 已提供 | 已有 MCP client 的使用者 |
+| 獨立執行檔 | 🚧 規劃中 | 不想自行安裝 Python / uv 的使用者 |
+| Homebrew / Chocolatey | 🚧 規劃中 | 偏好 OS 套件管理器的使用者 |
 
-| 目前 (v1.x) | 未來 (v2.x) |
-|-------------|-------------|
-| 需要 Python 3.12+ | 獨立執行檔 (.exe / .app) |
-| 需要 `uv pip install` | 一鍵安裝程式 |
-| 手動設定 `mcp.json` | 自動設定 VS Code/Claude |
-| 開發者友善 | 研究人員友善 |
-
-### 📦 計畫的發佈方式
-
-1. **PyPI 套件**：`uv pip install zotero-keeper-mcp`（簡化版）
-2. **獨立執行檔**：PyInstaller 打包（不需要 Python）
-3. **VS Code 擴充功能**：從 Marketplace 一鍵安裝（規劃中）
-4. **Homebrew/Chocolatey**：套件管理器支援
-
-> 💡 **想幫忙嗎？** 歡迎貢獻簡化安裝流程！
-> 參閱 [CONTRIBUTING.md](CONTRIBUTING.md) 了解如何幫忙。
+> 💡 想幫忙改善安裝體驗？請參考 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ---
 
@@ -539,7 +556,8 @@ Zotero 團隊正在開發 **Local API 寫入功能**：
 ### ❓ PubMed 功能沒出現？
 
 ```bash
-uv pip install -e ".[pubmed]"
+cd mcp-server
+uv sync --extra pubmed
 ```
 
 ---

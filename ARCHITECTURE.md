@@ -31,7 +31,7 @@ This document describes the system architecture of Zotero Keeper, a MCP server f
 │          └───────────────────┼───────────────────┘                        │
 │                              │                                            │
 │                              │ MCP Protocol (stdio/sse)                   │
-│                              │ ├── Tools (21)                             │
+│                              │ ├── Tools (23 default + 5 legacy opt-in)   │
 │                              │ ├── Resources (10 URIs)                    │
 │                              │ └── Elicitation (interactive input)        │
 │                              ▼                                            │
@@ -39,13 +39,17 @@ This document describes the system architecture of Zotero Keeper, a MCP server f
 │  │                    ZOTERO KEEPER MCP SERVER                        │   │
 │  │  ┌─────────────────────────────────────────────────────────────┐  │   │
 │  │  │  MCP Layer (src/zotero_mcp/infrastructure/mcp/)              │  │   │
-│  │  │  ├── server.py (11 core tools + setup)                       │  │   │
-│  │  │  ├── resources.py (10 Resource URIs)                         │  │   │
+│  │  │  ├── server.py (connection tool + setup)                     │  │   │
+│  │  │  ├── basic_read_tools.py (5 tools)                           │  │   │
+│  │  │  ├── collection_tools.py (5 tools)                           │  │   │
 │  │  │  ├── interactive_tools.py (2 tools + elicitation)            │  │   │
 │  │  │  ├── saved_search_tools.py (3 tools)                         │  │   │
-│  │  │  ├── search_tools.py (2 tools)                               │  │   │
-│  │  │  ├── pubmed_tools.py (2 tools)                               │  │   │
-│  │  │  ├── batch_tools.py (1 tool + collection防呆 + RCR)          │  │   │
+│  │  │  ├── search_tools.py (2 public + 1 legacy tool)              │  │   │
+│  │  │  ├── unified_import_tools.py (1 tool)                        │  │   │
+│  │  │  ├── analytics_tools.py (2 tools)                            │  │   │
+│  │  │  ├── attachment_tools.py (2 tools)                           │  │   │
+│  │  │  ├── pubmed_tools.py / batch_tools.py (legacy import tools)  │  │   │
+│  │  │  ├── resources.py (10 Resource URIs)                         │  │   │
 │  │  │  └── smart_tools.py (helpers only, no tools)                 │  │   │
 │  │  └──────────────────────────┬──────────────────────────────────┘  │   │
 │  │                             │                                      │   │
@@ -118,12 +122,13 @@ Zotero Keeper is designed to work alongside `pubmed-search-mcp` for a complete l
 |------|-------|-------|
 | server.py | 1 | `check_connection` |
 | basic_read_tools.py | 5 | `search_items`, `get_item`, `list_items`, `list_tags`, `get_item_types` |
-| collection_tools.py | 4 | `list_collections`, `get_collection`, `get_collection_items`, `get_collection_tree` |
+| collection_tools.py | 5 | `list_collections`, `get_collection`, `get_collection_items`, `get_collection_tree`, `find_collection` |
 | saved_search_tools.py | 3 | `list_saved_searches`, `run_saved_search`, `get_saved_search_details` |
 | search_tools.py | 2 | `advanced_search`, `check_articles_owned` |
 | interactive_tools.py | 2 | `interactive_save`, `quick_save` |
 | unified_import_tools.py | 1 | `import_articles` ⭐ Single public import entry |
 | analytics_tools.py | 2 | `get_library_stats`, `find_orphan_items` |
+| attachment_tools.py | 2 | `get_item_attachments`, `get_item_fulltext` |
 
 ### Legacy Tools (opt-in via ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1)
 
@@ -178,13 +183,18 @@ result = await ctx.elicit(
 src/zotero_mcp/
 ├── infrastructure/
 │   ├── mcp/                    # MCP Server Layer
-│   │   ├── server.py           # 11 core tools + server setup
+│   │   ├── server.py           # Connection tool + server setup
+│   │   ├── basic_read_tools.py # 5 read tools
+│   │   ├── collection_tools.py # 5 collection tools
 │   │   ├── resources.py        # 10 Resource URIs
 │   │   ├── interactive_tools.py # 2 save tools with elicitation
 │   │   ├── saved_search_tools.py # 3 saved search tools
-│   │   ├── search_tools.py     # 2 PubMed integration tools
-│   │   ├── pubmed_tools.py     # 2 import tools
-│   │   ├── batch_tools.py      # 1 batch import tool
+│   │   ├── search_tools.py     # 2 public search tools + 1 legacy bridge
+│   │   ├── unified_import_tools.py # 1 collaboration-safe import tool
+│   │   ├── analytics_tools.py  # 2 analytics tools
+│   │   ├── attachment_tools.py # 2 attachment/fulltext tools
+│   │   ├── pubmed_tools.py     # 3 legacy import tools
+│   │   ├── batch_tools.py      # 1 legacy batch import tool
 │   │   ├── smart_tools.py      # Helper functions only (no tools)
 │   │   └── config.py           # Configuration
 │   └── zotero_client/          # Zotero HTTP Client
@@ -221,7 +231,7 @@ These functions are used by `interactive_tools.py` for:
 The main entry point that:
 1. Initializes FastMCP server
 2. Creates Zotero HTTP client
-3. Registers 11 core tools
+3. Registers the connection tool and shared resources
 4. Imports and registers tools from other modules
 5. Registers Resources from `resources.py`
 
