@@ -120,12 +120,14 @@ NCBI_EMAIL=your.email@example.com
 - `PUBMED_SEARCH_PATH` 只用於本地開發，讓 keeper 載入你 checkout 下來的 `pubmed-search-mcp` 原始碼，而不是已安裝套件。
 
 ---
-
+-
 ## 📚 文件導覽
 
 - [README.md](README.md) — 英文總覽
 - [mcp-server/README.md](mcp-server/README.md) — server 使用方式與工具說明
 - [vscode-extension/README.md](vscode-extension/README.md) — VS Code 擴充功能安裝與使用體驗
+- [docs/tools-reference.md](docs/tools-reference.md) — 公開工具參數與使用範例總表
+- [docs/faq.md](docs/faq.md) — 安裝、疑難排解與工作流 FAQ
 - [docs/ZOTERO_LOCAL_API.md](docs/ZOTERO_LOCAL_API.md) — Zotero API 能力與限制整理
 - [ARCHITECTURE.md](ARCHITECTURE.md) — 元件與分層架構
 - [CONTRIBUTING.md](CONTRIBUTING.md) — 開發與貢獻流程
@@ -258,6 +260,22 @@ advanced_search(
     direction="desc"
 )
 ```
+
+### 📊 分析工具 (analytics_tools.py - 2 工具)
+
+| 工具 | 說明 | 範例問法 |
+|------|------|----------|
+| `get_library_stats` | 文獻庫統計（年份/作者/期刊分布）| 「顯示我的文獻庫統計」 |
+| `find_orphan_items` | 找出未歸類文獻 | 「哪些論文還沒有整理？」 |
+
+### 📎 附件與全文工具 (attachment_tools.py - 2 工具)
+
+> 🗂️ **PDF 存取**：列出附件 PDF 並讀取 Zotero 索引全文。需設定 `ZOTERO_DATA_DIR` 才能取得檔案路徑。
+
+| 工具 | 說明 | 範例問法 |
+|------|------|----------|
+| `get_item_attachments` | 列出文獻的所有附件（PDF、快照等）| 「key:X42A7DEE 有哪些附件？」 |
+| `get_item_fulltext` | 取得 Zotero 索引的全文內容 | 「讀取 key:X42A7DEE 的全文」 |
 
 ---
 
@@ -568,6 +586,8 @@ uv sync --extra pubmed
 - [ARCHITECTURE](ARCHITECTURE.md) - 技術架構
 - [CONTRIBUTING](CONTRIBUTING.md) - 貢獻指南
 - [ROADMAP](ROADMAP.md) - 開發路線圖
+- [docs/tools-reference.md](docs/tools-reference.md) - 完整 MCP 工具參數參考
+- [docs/faq.md](docs/faq.md) - 常見問題解答
 - [pubmed-search-mcp](https://github.com/u9401066/pubmed-search-mcp) - PubMed 搜尋 (Apache 2.0)
 
 ---

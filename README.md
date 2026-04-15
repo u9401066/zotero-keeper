@@ -136,12 +136,14 @@ NCBI_EMAIL=your.email@example.com
 - Use `PUBMED_SEARCH_PATH` only during local development when you want keeper to import a checked-out `pubmed-search-mcp` tree instead of the installed package.
 
 ---
-
+-
 ## 📚 Documentation Map
 
 - [README.zh-TW.md](README.zh-TW.md) — Traditional Chinese overview
 - [mcp-server/README.md](mcp-server/README.md) — focused server usage and tool reference
 - [vscode-extension/README.md](vscode-extension/README.md) — VS Code extension setup and UX
+- [docs/tools-reference.md](docs/tools-reference.md) — parameter reference and examples for public tools
+- [docs/faq.md](docs/faq.md) — installation, troubleshooting, and workflow FAQ
 - [docs/ZOTERO_LOCAL_API.md](docs/ZOTERO_LOCAL_API.md) — Zotero API capability notes and limitations
 - [ARCHITECTURE.md](ARCHITECTURE.md) — component and layering overview
 - [CONTRIBUTING.md](CONTRIBUTING.md) — development workflow and contribution guide
@@ -213,19 +215,21 @@ NCBI_EMAIL=your.email@example.com
 
 If you intentionally want the old standalone keeper behavior, set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` before starting the server.
 
-### 📊 Analytics Tools (analytics_tools.py - 2 tools) ⭐ NEW!
+### 📊 Analytics Tools (analytics_tools.py - 2 tools)
 
 | Tool | Description | Example |
 |------|-------------|--------|
 | `get_library_stats` | Library statistics (year/author/journal) | "Show my library statistics" |
 | `find_orphan_items` | Find unorganized items | "Which papers need organizing?" |
 
-### 📎 Attachment Tools (attachment_tools.py - 2 tools)
+### 📎 Attachment & Fulltext Tools (attachment_tools.py - 2 tools)
+
+> 🗂️ **PDF Access**: List attached PDFs and read Zotero-indexed fulltext. Requires `ZOTERO_DATA_DIR` for file paths.
 
 | Tool | Description | Example |
-|------|-------------|---------|
-| `get_item_attachments` | List attachment metadata and file paths | "Show attachments for key:ABC123" |
-| `get_item_fulltext` | Read Zotero-indexed PDF/EPUB full text | "Open the full text for key:ABC123" |
+|------|-------------|--------|
+| `get_item_attachments` | List PDFs/snapshots for an item | "What attachments does key:X42A7DEE have?" |
+| `get_item_fulltext` | Get Zotero-indexed fulltext content | "Read the full text of key:X42A7DEE" |
 
 #### Recommended PubMed → Zotero workflow
 
@@ -583,6 +587,8 @@ uv sync --extra pubmed
 - [ARCHITECTURE](ARCHITECTURE.md) - Technical architecture
 - [CONTRIBUTING](CONTRIBUTING.md) - How to contribute
 - [ROADMAP](ROADMAP.md) - Development roadmap
+- [docs/tools-reference.md](docs/tools-reference.md) - Full MCP tools parameter reference
+- [docs/faq.md](docs/faq.md) - Frequently asked questions
 - [pubmed-search-mcp](https://github.com/u9401066/pubmed-search-mcp) - PubMed search (Apache 2.0)
 
 ---
