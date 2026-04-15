@@ -261,7 +261,7 @@ describe('StatusBarManager', () => {
     });
 
     describe('getSupportedApis', () => {
-        it('should return all 8 supported APIs', () => {
+        it('should return all 9 supported APIs', () => {
             const ctx = createMockContext();
             const mockConfig = new MockWorkspaceConfiguration({
                 enablePubmedSearch: true,
@@ -269,18 +269,20 @@ describe('StatusBarManager', () => {
                 ncbiApiKey: '',
                 ncbiEmail: '',
                 coreApiKey: '',
+                openAlexApiKey: '',
                 semanticScholarApiKey: '',
             });
             (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
             manager.initialize(ctx as any);
 
             const apis = manager.getSupportedApis();
-            assert.strictEqual(apis.length, 8);
+            assert.strictEqual(apis.length, 9);
 
             const names = apis.map(a => a.name);
             assert.ok(names.includes('PubMed / NCBI E-utilities'));
             assert.ok(names.includes('Europe PMC'));
             assert.ok(names.includes('CORE (Open Access)'));
+            assert.ok(names.includes('OpenAlex'));
             assert.ok(names.includes('Zotero Local API'));
         });
 
@@ -346,6 +348,7 @@ describe('StatusBarManager', () => {
                 ncbiEmail: 'test@example.com',
                 ncbiApiKey: 'key123',
                 coreApiKey: 'core456',
+                openAlexApiKey: 'oa789',
                 semanticScholarApiKey: '',
                 httpProxy: '',
                 httpsProxy: '',
@@ -358,6 +361,7 @@ describe('StatusBarManager', () => {
             assert.ok(status.details.some(d => d.includes('NCBI Email configured')));
             assert.ok(status.details.some(d => d.includes('NCBI API Key')));
             assert.ok(status.details.some(d => d.includes('CORE API Key')));
+            assert.ok(status.details.some(d => d.includes('OpenAlex API Key')));
         });
     });
 

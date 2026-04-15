@@ -81,6 +81,7 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
             const ncbiEmail = config.get<string>('ncbiEmail', '');
             const ncbiApiKey = config.get<string>('ncbiApiKey', '');
             const coreApiKey = config.get<string>('coreApiKey', '');
+            const openAlexApiKey = config.get<string>('openAlexApiKey', '');
             const semanticScholarApiKey = config.get<string>('semanticScholarApiKey', '');
             const httpProxy = config.get<string>('httpProxy', '');
             const httpsProxy = config.get<string>('httpsProxy', '');
@@ -98,6 +99,9 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
             }
             if (coreApiKey) {
                 env['CORE_API_KEY'] = coreApiKey;
+            }
+            if (openAlexApiKey) {
+                env['OPENALEX_API_KEY'] = openAlexApiKey;
             }
             if (semanticScholarApiKey) {
                 env['S2_API_KEY'] = semanticScholarApiKey;

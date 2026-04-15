@@ -116,6 +116,7 @@ describe('ZoteroMcpServerProvider', () => {
                 ncbiEmail: 'test@example.com',
                 ncbiApiKey: 'key123',
                 coreApiKey: 'core456',
+                openAlexApiKey: 'oa789',
                 semanticScholarApiKey: 's2key',
                 httpProxy: '',
                 httpsProxy: '',
@@ -130,6 +131,7 @@ describe('ZoteroMcpServerProvider', () => {
             assert.strictEqual(pubmed.env?.NCBI_EMAIL, 'test@example.com');
             assert.strictEqual(pubmed.env?.NCBI_API_KEY, 'key123');
             assert.strictEqual(pubmed.env?.CORE_API_KEY, 'core456');
+            assert.strictEqual(pubmed.env?.OPENALEX_API_KEY, 'oa789');
             assert.strictEqual(pubmed.env?.S2_API_KEY, 's2key');
         });
 
@@ -182,7 +184,7 @@ describe('ZoteroMcpServerProvider', () => {
             // PubMed Search
             assert.strictEqual(servers[1].command, mockPythonPath);
             assert.deepStrictEqual(servers[1].args, ['-m', 'pubmed_search.presentation.mcp_server']);
-            assert.strictEqual(servers[1].version, '0.5.2');
+            assert.strictEqual(servers[1].version, '0.5.3');
         });
 
         it('should return empty when pythonPath is empty', () => {

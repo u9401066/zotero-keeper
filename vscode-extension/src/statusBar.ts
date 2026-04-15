@@ -221,6 +221,14 @@ export class StatusBarManager {
                 settingsKey: 'coreApiKey'
             },
             {
+                name: 'OpenAlex',
+                enabled: config.get<boolean>('enablePubmedSearch', true),
+                configured: true,
+                description: 'Citation graph and open-access discovery',
+                rateLimit: config.get<string>('openAlexApiKey', '') ? 'Authenticated' : 'Public / polite pool',
+                settingsKey: 'openAlexApiKey'
+            },
+            {
                 name: 'Semantic Scholar',
                 enabled: config.get<boolean>('enablePubmedSearch', true),
                 configured: !!config.get<string>('semanticScholarApiKey', ''),
@@ -487,6 +495,13 @@ export class StatusBarManager {
             hasApiKeys = true;
         } else {
             details.push('ℹ️ CORE API Key not set (100 req/day limit)');
+        }
+
+        if (config.get<string>('openAlexApiKey', '')) {
+            details.push('✅ OpenAlex API Key');
+            hasApiKeys = true;
+        } else {
+            details.push('ℹ️ OpenAlex API Key not set (public / polite pool mode)');
         }
 
         if (config.get<string>('semanticScholarApiKey', '')) {

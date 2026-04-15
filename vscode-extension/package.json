@@ -90,29 +90,35 @@
                     "markdownDescription": "CORE API Key for open access search (5000 req/day). [Get API Key](https://core.ac.uk/services/api)",
                     "order": 22
                 },
+                "zoteroMcp.openAlexApiKey": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "OpenAlex API Key for authenticated access and higher rate limits. Leave empty to use public/polite-pool mode.",
+                    "order": 23
+                },
                 "zoteroMcp.semanticScholarApiKey": {
                     "type": "string",
                     "default": "",
                     "markdownDescription": "Semantic Scholar API Key for AI-powered search. [Get API Key](https://www.semanticscholar.org/product/api)",
-                    "order": 23
+                    "order": 24
                 },
                 "zoteroMcp.httpProxy": {
                     "type": "string",
                     "default": "",
                     "markdownDescription": "HTTP proxy for API requests (e.g., `http://proxy:8080`)",
-                    "order": 24
+                    "order": 25
                 },
                 "zoteroMcp.httpsProxy": {
                     "type": "string",
                     "default": "",
                     "markdownDescription": "HTTPS proxy for API requests (e.g., `https://proxy:8080`)",
-                    "order": 25
+                    "order": 26
                 },
                 "zoteroMcp.openUrlResolver": {
                     "type": "string",
                     "default": "",
                     "markdownDescription": "Your institution's OpenURL link resolver URL for full-text access. Example: `https://resolver.library.edu/openurl`. Leave empty if you don't have institutional access.",
-                    "order": 26
+                    "order": 27
                 },
                 "zoteroMcp.openUrlPreset": {
                     "type": "string",
@@ -144,7 +150,7 @@
                         "Cambridge University"
                     ],
                     "markdownDescription": "Select your institution from presets. This will override the custom URL above.",
-                    "order": 27
+                    "order": 28
                 },
                 "zoteroMcp.enableZoteroKeeper": {
                     "type": "boolean",
