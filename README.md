@@ -136,12 +136,13 @@ NCBI_EMAIL=your.email@example.com
 - Use `PUBMED_SEARCH_PATH` only during local development when you want keeper to import a checked-out `pubmed-search-mcp` tree instead of the installed package.
 
 ---
--
+
 ## 📚 Documentation Map
 
 - [README.zh-TW.md](README.zh-TW.md) — Traditional Chinese overview
 - [mcp-server/README.md](mcp-server/README.md) — focused server usage and tool reference
 - [vscode-extension/README.md](vscode-extension/README.md) — VS Code extension setup and UX
+- [docs/COLLABORATION_WORKFLOW.md](docs/COLLABORATION_WORKFLOW.md) — collaboration-safe flow between pubmed-search-mcp and keeper
 - [docs/tools-reference.md](docs/tools-reference.md) — parameter reference and examples for public tools
 - [docs/faq.md](docs/faq.md) — installation, troubleshooting, and workflow FAQ
 - [docs/ZOTERO_LOCAL_API.md](docs/ZOTERO_LOCAL_API.md) — Zotero API capability notes and limitations
@@ -246,6 +247,13 @@ import_articles(
   collection_name="AI Research"
 )
 ```
+
+### 🤝 Collaboration-Safe Setup (Summary)
+
+- pubmed-search-mcp runs search/discovery/export; zotero-keeper handles duplicate checks and the single `import_articles` handoff.
+- Ensure pubmed-search-mcp is installed or the submodule is present; set `PUBMED_SEARCH_PATH` if you rely on a local checkout.
+- Keep legacy PubMed bridge tools disabled unless you set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` intentionally.
+- Full checklist: see `docs/COLLABORATION_WORKFLOW.md`.
 
 #### advanced_search Examples
 

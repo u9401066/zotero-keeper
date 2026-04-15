@@ -12,6 +12,17 @@
 
 ---
 
+## 🚀 一鍵安裝 (VS Code)
+
+> **前置作業**：必須先啟動 [Zotero 7 或 8](https://www.zotero.org/download/)
+
+<a href="vscode:mcp/install?%7B%22name%22%3A%22zotero-keeper%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22zotero-keeper%22%5D%7D"><img src="https://img.shields.io/badge/VS%20Code-%E5%AE%89%E8%A3%9D%20MCP%20Server-007ACC?style=for-the-badge&logo=visualstudiocode" alt="Install in VS Code"></a>
+<a href="vscode-insiders:mcp/install?%7B%22name%22%3A%22zotero-keeper%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22zotero-keeper%22%5D%7D"><img src="https://img.shields.io/badge/VS%20Code%20Insiders-%E5%AE%89%E8%A3%9D%20MCP%20Server-24bfa5?style=for-the-badge&logo=visualstudiocode" alt="Install in VS Code Insiders"></a>
+
+> 💡 **需要 [uv](https://docs.astral.sh/uv/getting-started/installation/)** - 點擊後會自動透過 `uvx zotero-keeper` 安裝
+
+---
+
 ## ✨ 這是什麼？
 
 **Zotero Keeper** 是一個 [MCP 伺服器](https://modelcontextprotocol.io/)，讓你的 AI 助手可以：
@@ -120,12 +131,13 @@ NCBI_EMAIL=your.email@example.com
 - `PUBMED_SEARCH_PATH` 只用於本地開發，讓 keeper 載入你 checkout 下來的 `pubmed-search-mcp` 原始碼，而不是已安裝套件。
 
 ---
--
+
 ## 📚 文件導覽
 
 - [README.md](README.md) — 英文總覽
 - [mcp-server/README.md](mcp-server/README.md) — server 使用方式與工具說明
 - [vscode-extension/README.md](vscode-extension/README.md) — VS Code 擴充功能安裝與使用體驗
+- [docs/COLLABORATION_WORKFLOW.md](docs/COLLABORATION_WORKFLOW.md) — pubmed-search-mcp 與 keeper 的 collaboration-safe 工作流
 - [docs/tools-reference.md](docs/tools-reference.md) — 公開工具參數與使用範例總表
 - [docs/faq.md](docs/faq.md) — 安裝、疑難排解與工作流 FAQ
 - [docs/ZOTERO_LOCAL_API.md](docs/ZOTERO_LOCAL_API.md) — Zotero API 能力與限制整理
@@ -234,6 +246,13 @@ import_articles(
   collection_name="AI Research"
 )
 ```
+
+### 🤝 collaboration-safe 設定摘要
+
+- pubmed-search-mcp 負責搜尋 / 探索 / 匯出，zotero-keeper 只處理重複檢查與單一 `import_articles` 匯入。
+- 確保已安裝 pubmed-search-mcp 或同步 submodule；若使用本地原始碼可設定 `PUBMED_SEARCH_PATH`。
+- 除非真的需要，請不要開啟 legacy PubMed 工具（需設定 `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1`）。
+- 完整檢查清單請見 `docs/COLLABORATION_WORKFLOW.md`。
 
 #### advanced_search 使用範例
 
