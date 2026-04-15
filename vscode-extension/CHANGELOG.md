@@ -2,6 +2,28 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.22] - 2026-04-15
+
+### Added
+
+- **OpenAlex authenticated access setting**
+  - Added `zoteroMcp.openAlexApiKey` so the extension can pass `OPENALEX_API_KEY` to the bundled PubMed Search MCP server
+
+### Changed
+
+- **Marketplace branding refresh**
+  - Replaced the keeper extension icon with a new series-aligned research workflow mark
+  - Added a dedicated VSX / Marketplace banner asset and wired it into the extension README
+
+- **Bundled PubMed assets synchronized**
+  - Refreshed bundled pubmed-search-mcp agents, hooks, and skills to match the latest checked-in upstream submodule state
+
+### Test
+
+- `npm run compile`
+- `npx mocha out/test/mcpProvider.test.js out/test/statusBar.test.js`
+- `npm run package`
+
 ## [0.5.21] - 2026-04-14
 
 ### Changed

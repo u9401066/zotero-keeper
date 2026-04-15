@@ -1,12 +1,14 @@
 # Zotero + PubMed MCP Extension for VS Code
 
+![Zotero + PubMed MCP banner](resources/branding/vsx-banner.png)
+
 🔬 **AI-powered research assistant** - Integrates Zotero reference management and PubMed literature search with GitHub Copilot.
 
-## ✨ What's New in v0.5.21
+## ✨ What's New in v0.5.22
 
-- **🩹 PubMed Search Hotfix Rollup**: embedded Python 會升級到 pubmed-search-mcp 0.5.3，帶入 formatting 階段不再卡住 cancel 的 hotfix
-- **🧭 Route / Path Failure Degradation**: PubTator autocomplete 404 會 fail-open，不再重複撞不存在的 endpoint 導致工具體驗變差
-- **🔄 Embedded Package Refresh**: extension 會透過新的 `v0.5.21-ext` source archive 重新驗證 keeper / PubMed 套件版本，確保既有環境也會被升級
+- **🎨 Marketplace Branding Refresh**: keeper icon 與 VSX banner 改為新的系列化品牌視覺，對齊 Academic Figures MCP / MedPaper Assistant 的產品語言
+- **🔐 OpenAlex API Key Support**: extension 新增 `zoteroMcp.openAlexApiKey` 設定，會將 `OPENALEX_API_KEY` 傳給 PubMed Search MCP
+- **🔄 Bundled Asset Refresh**: extension 重新同步最新 pubmed-search-mcp agents / hooks / skills，讓內建 collaboration assets 與目前主線一致
 
 ## Features
 
