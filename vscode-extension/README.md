@@ -4,11 +4,11 @@
 
 🔬 **AI-powered research assistant** - Integrates Zotero reference management and PubMed literature search with GitHub Copilot.
 
-## ✨ What's New in v0.5.22
+## ✨ What's New in v0.5.23
 
-- **🎨 Marketplace Branding Refresh**: keeper icon 與 VSX banner 改為新的系列化品牌視覺，對齊 Academic Figures MCP / MedPaper Assistant 的產品語言
-- **🔐 OpenAlex API Key Support**: extension 新增 `zoteroMcp.openAlexApiKey` 設定，會將 `OPENALEX_API_KEY` 傳給 PubMed Search MCP
-- **🔄 Bundled Asset Refresh**: extension 重新同步最新 pubmed-search-mcp agents / hooks / skills，讓內建 collaboration assets 與目前主線一致
+- **🩹 PubMed startup workaround**: extension 會傳入 `PUBMED_WORKSPACE_DIR`，避開 `pubmed-search-mcp 0.5.4` PyPI 版在 VS Code 內的啟動回歸
+- **📦 Fixed PubMed package source**: embedded / manual 安裝改用已修正的 upstream commit snapshot，而不是直接安裝有問題的 `0.5.4` PyPI 發行版
+- **🔄 Bundled PubMed refresh**: extension 重新同步最新 pubmed-search-mcp agents / hooks / skills，並更新到修正 `os` import 的 upstream commit `a849f2a`
 
 ## Features
 
@@ -23,7 +23,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 - **Library analytics** (stats, orphan detection)
 - **PDF attachment access** (list attachments, get indexed fulltext)
 
-### 🔍 PubMed Search (v0.5.3)
+### 🔍 PubMed Search
 
 - **`unified_search`** - 統一搜尋入口，自動合併去重多來源結果
 - **Multi-source search** (PubMed, Europe PMC, CORE)
@@ -66,7 +66,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 2. The extension will automatically:
    - Download [uv](https://github.com/astral-sh/uv) (fast Python package manager, ~10MB)
    - Create an isolated Python 3.12 environment
-   - Install required packages (`zotero-keeper`, `pubmed-search-mcp`)
+   - Install required packages (`zotero-keeper`, fixed `pubmed-search-mcp` snapshot)
    - Register MCP servers with VS Code
    - **Install official Copilot instructions, workflow guides, `@research` agent, and collaboration hook assets**
 
@@ -130,7 +130,7 @@ This extension uses [uv](https://github.com/astral-sh/uv) from Astral to manage 
 
 1. **First Run**: Downloads uv binary (~10MB) to extension storage
 2. **Environment Setup**: Creates isolated venv with Python 3.12
-3. **Package Install**: Installs `zotero-keeper` and `pubmed-search-mcp` (10-100x faster than pip)
+3. **Package Install**: Installs `zotero-keeper` and the fixed `pubmed-search-mcp` snapshot (10-100x faster than pip)
 4. **MCP Servers**: Starts both servers and registers with VS Code
 5. **Copilot Skills**: Installs research workflow guides to workspace
 

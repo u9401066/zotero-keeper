@@ -17,6 +17,7 @@ import * as https from 'https';
 import * as http from 'http';
 import { execSync } from 'child_process';
 import * as os from 'os';
+import { PUBMED_SEARCH_PACKAGE, PUBMED_SEARCH_VERSION } from './pubmedSearchPackage.js';
 
 // UV download URLs from GitHub releases
 // Using latest stable version
@@ -66,14 +67,14 @@ const ZOTERO_KEEPER_PACKAGE =
 // Python 3.12+ required for new core module features
 const REQUIRED_PACKAGES = [
     ZOTERO_KEEPER_PACKAGE,
-    'pubmed-search-mcp>=0.5.3',
+    PUBMED_SEARCH_PACKAGE,
 ];
 
 // Minimum versions for verification (extracted from REQUIRED_PACKAGES)
 // IMPORTANT: Keep in sync with REQUIRED_PACKAGES above!
 const MIN_VERSIONS: Record<string, string> = {
     'zotero_mcp': '1.12.0',
-    'pubmed_search': '0.5.3',
+    'pubmed_search': PUBMED_SEARCH_VERSION,
 };
 
 // Timeout constants (in milliseconds)
@@ -88,7 +89,7 @@ const INSTALL_STATE_FILE = 'install-state.json';
 type InstallState = {
     pythonVersion: string;
     zoteroKeeperPackage: string;
-    pubmedSearchMinVersion: string;
+    pubmedSearchPackage: string;
 };
 
 /**
@@ -171,7 +172,7 @@ export class UvPythonManager {
         return {
             pythonVersion: PYTHON_VERSION,
             zoteroKeeperPackage: ZOTERO_KEEPER_PACKAGE,
-            pubmedSearchMinVersion: MIN_VERSIONS.pubmed_search,
+            pubmedSearchPackage: PUBMED_SEARCH_PACKAGE,
         };
     }
 
@@ -197,7 +198,7 @@ export class UvPythonManager {
         const expected = this.getExpectedInstallState();
         return actual.pythonVersion === expected.pythonVersion
             && actual.zoteroKeeperPackage === expected.zoteroKeeperPackage
-            && actual.pubmedSearchMinVersion === expected.pubmedSearchMinVersion;
+            && actual.pubmedSearchPackage === expected.pubmedSearchPackage;
     }
 
     private writeInstallState(): void {

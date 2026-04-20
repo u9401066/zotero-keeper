@@ -9,10 +9,11 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
+import { PUBMED_SEARCH_PACKAGE, PUBMED_SEARCH_VERSION, compareDottedVersions } from './pubmedSearchPackage.js';
 
 const REQUIRED_PACKAGES = [
-    { name: 'zotero-keeper', importName: 'zotero_mcp', pipName: 'zotero-keeper' },
-    { name: 'pubmed-search-mcp', importName: 'pubmed_search', pipName: 'pubmed-search-mcp' },
+    { name: 'zotero-keeper', importName: 'zotero_mcp', pipName: 'zotero-keeper', minVersion: '1.12.0' },
+    { name: 'pubmed-search-mcp', importName: 'pubmed_search', pipName: PUBMED_SEARCH_PACKAGE, minVersion: PUBMED_SEARCH_VERSION },
 ];
 
 // Python 3.12+ required for:
@@ -296,7 +297,7 @@ export class PythonEnvironment {
         }
 
         for (const pkg of REQUIRED_PACKAGES) {
-            const installed = await this.checkPackage(pkg.importName);
+            const installed = await this.checkPackage(pkg.importName, pkg.name, pkg.minVersion);
             if (!installed) {
                 this.log(`Package ${pkg.name} is not installed`);
                 return false;
@@ -310,11 +311,28 @@ export class PythonEnvironment {
     /**
      * Check if a single package is installed
      */
-    private async checkPackage(importName: string): Promise<boolean> {
+    private async checkPackage(importName: string, packageName: string, minVersion: string): Promise<boolean> {
         return new Promise((resolve) => {
             cp.exec(
-                `"${this.pythonPath}" -c "import ${importName}"`,
-                (err) => resolve(!err)
+                `"${this.pythonPath}" -c "import ${importName}; from importlib.metadata import version; print(version('${packageName}'))"`,
+                (err, stdout) => {
+                    if (err) {
+                        resolve(false);
+                        return;
+                    }
+
+                    const installedVersion = stdout.trim();
+                    if (!installedVersion) {
+                        resolve(false);
+                        return;
+                    }
+
+                    const isValid = compareDottedVersions(installedVersion, minVersion) >= 0;
+                    if (!isValid) {
+                        this.log(`Package ${packageName} is too old: ${installedVersion} < ${minVersion}`);
+                    }
+                    resolve(isValid);
+                }
             );
         });
     }
@@ -341,7 +359,7 @@ export class PythonEnvironment {
         this.outputChannel.show();
         this.log('Installing required packages...');
 
-        const packages = REQUIRED_PACKAGES.map(p => p.pipName).join(' ');
+        const packages = REQUIRED_PACKAGES.map(p => `"${p.pipName}"`).join(' ');
 
         // Use uv for package installation (required)
         const uvPath = this.getUvPath();

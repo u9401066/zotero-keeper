@@ -2,6 +2,19 @@
 
 > 📝 重要架構和實作決策記錄
 
+## 2026-04-20
+
+### DEC-025: VS Code extension 對 PubMed 0.5.4 採固定 snapshot 安裝策略
+- **決策**: extension 不直接安裝 PyPI `pubmed-search-mcp==0.5.4`，改為固定到上游已修正 commit archive，並在 MCP 啟動時傳入 `PUBMED_WORKSPACE_DIR`
+- **理由**:
+  1. `0.5.4` 的 PyPI 發行版缺少啟動所需 import，會在 VS Code 內直接造成 PubMed MCP server 啟動失敗
+  2. extension 使用者需要可重現、可自動修復的安裝來源，不能依賴手動 hotfix
+  3. 以固定 commit archive 安裝可維持 `uv` 工作流與跨平台一致性，不需要額外 git 步驟
+- **實作**:
+  - `vscode-extension/src/pubmedSearchPackage.ts` 統一管理 PubMed package source / version / entrypoint
+  - `pythonEnvironment.ts` 與 `uvPythonManager.ts` 改安裝固定 snapshot 並做最小版本檢查
+  - `mcpProvider.ts` 傳入 `PUBMED_WORKSPACE_DIR` 讓 VS Code workspace 啟動路徑一致
+
 ## 2026-03-04
 
 ## 2026-03-18

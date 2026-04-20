@@ -2,6 +2,31 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [Unreleased]
+
+## [0.5.23] - 2026-04-20
+
+### Fixed
+
+- **PubMed Search startup regression workaround**
+  - Extension now passes `PUBMED_WORKSPACE_DIR` to the PubMed MCP server so the broken `0.5.4` PyPI startup path no longer crashes inside VS Code
+  - Embedded/manual package installs now use the fixed upstream commit archive instead of the broken PyPI `0.5.4` build
+
+### Changed
+
+- **PubMed submodule refresh**
+  - Updated `external/pubmed-search-mcp` to upstream commit `a849f2a` (`fix: add missing os import for MCP workspace env`)
+  - Re-synced bundled PubMed skills / hooks / agents from the refreshed submodule
+  - MCP server metadata now reports PubMed Search `0.5.4`
+
+### Test
+
+- `python scripts/check_version_sync.py`
+- `npm run lint`
+- `npm run compile`
+- `npx mocha out/test/mcpProvider.test.js out/test/pythonEnvironment.test.js`
+- `npm run package`
+
 ## [0.5.22] - 2026-04-15
 
 ### Added

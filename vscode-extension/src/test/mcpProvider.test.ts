@@ -2,6 +2,11 @@ import { describe, it, beforeEach } from 'mocha';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
 import { ZoteroMcpServerProvider } from '../mcpProvider.js';
+import {
+    PUBMED_SEARCH_ENTRYPOINT,
+    PUBMED_SEARCH_VERSION,
+    PUBMED_WORKSPACE_DIR_ENV,
+} from '../pubmedSearchPackage.js';
 
 // Use chai for assertions – install in next step if needed
 // For now we use Node.js built-in assert as fallback
@@ -15,6 +20,7 @@ describe('ZoteroMcpServerProvider', () => {
     beforeEach(() => {
         sinon.restore();
         provider = new ZoteroMcpServerProvider(mockPythonPath);
+        (vscode.workspace as any).workspaceFolders = undefined;
     });
 
     describe('constructor', () => {
@@ -183,8 +189,23 @@ describe('ZoteroMcpServerProvider', () => {
 
             // PubMed Search
             assert.strictEqual(servers[1].command, mockPythonPath);
-            assert.deepStrictEqual(servers[1].args, ['-m', 'pubmed_search.presentation.mcp_server']);
-            assert.strictEqual(servers[1].version, '0.5.3');
+            assert.deepStrictEqual(servers[1].args, ['-m', PUBMED_SEARCH_ENTRYPOINT]);
+            assert.strictEqual(servers[1].version, PUBMED_SEARCH_VERSION);
+        });
+
+        it('should pass workspace directory to PubMed server when a workspace is open', () => {
+            (vscode.workspace as any).workspaceFolders = [
+                { uri: { fsPath: '/mock/workspace' } },
+            ];
+            const mockConfig = new (vscode as any).MockWorkspaceConfiguration({
+                enableZoteroKeeper: false,
+                enablePubmedSearch: true,
+            });
+            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
+
+            const servers = provider.provideMcpServerDefinitions(mockToken) as vscode.McpStdioServerDefinition[];
+            assert.strictEqual(servers.length, 1);
+            assert.strictEqual(servers[0].env?.[PUBMED_WORKSPACE_DIR_ENV], '/mock/workspace');
         });
 
         it('should return empty when pythonPath is empty', () => {

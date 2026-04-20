@@ -37,6 +37,11 @@ DEFAULT_RELEASE_ZOTERO_KEEPER_PACKAGE = (
     "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/"
     "v0.5.20-ext.tar.gz#subdirectory=mcp-server"
 )
+PUBMED_SEARCH_FIXED_COMMIT = "a849f2ae01d85ba73c1fe219a36bcfb7fb4742d4"
+PUBMED_SEARCH_PACKAGE = (
+    "pubmed-search-mcp @ "
+    f"https://github.com/u9401066/pubmed-search-mcp/archive/{PUBMED_SEARCH_FIXED_COMMIT}.tar.gz"
+)
 
 
 def resolve_zotero_keeper_package() -> tuple[str, str]:
@@ -57,7 +62,7 @@ def resolve_zotero_keeper_package() -> tuple[str, str]:
 ZOTERO_KEEPER_PACKAGE, ZOTERO_KEEPER_PACKAGE_SOURCE = resolve_zotero_keeper_package()
 REQUIRED_PACKAGES = [
     ZOTERO_KEEPER_PACKAGE,
-    "pubmed-search-mcp>=0.5.2",
+    PUBMED_SEARCH_PACKAGE,
 ]
 
 # Test directory - use temp
@@ -1173,7 +1178,7 @@ print("OK")
                 "--upgrade",
                 "--python",
                 python,
-                "pubmed-search-mcp>=0.5.2",
+                PUBMED_SEARCH_PACKAGE,
             ],
             env={"VIRTUAL_ENV": str(venv_dir)},
             timeout=120,

@@ -1,10 +1,14 @@
 import { describe, it, beforeEach, afterEach } from 'mocha';
 import * as sinon from 'sinon';
-import * as cp from 'child_process';
-import * as fs from 'fs';
 import * as assert from 'assert';
 import { PythonEnvironment } from '../pythonEnvironment.js';
 import { createMockContext } from './mock-vscode.js';
+import {
+    PUBMED_SEARCH_FIXED_COMMIT,
+    PUBMED_SEARCH_PACKAGE,
+    PUBMED_SEARCH_VERSION,
+    compareDottedVersions,
+} from '../pubmedSearchPackage.js';
 
 describe('PythonEnvironment', () => {
     let env: PythonEnvironment;
@@ -51,6 +55,19 @@ describe('PythonEnvironment', () => {
         it('should return false when python path is not set', async () => {
             const result = await env.installPackages();
             assert.strictEqual(result, false);
+        });
+    });
+
+    describe('PubMed package policy', () => {
+        it('should pin PubMed installs to the fixed upstream commit archive', () => {
+            assert.ok(PUBMED_SEARCH_PACKAGE.includes(PUBMED_SEARCH_FIXED_COMMIT));
+            assert.ok(PUBMED_SEARCH_PACKAGE.startsWith('pubmed-search-mcp @ https://github.com/'));
+        });
+
+        it('should compare version baselines numerically', () => {
+            assert.strictEqual(compareDottedVersions('0.5.3', PUBMED_SEARCH_VERSION) < 0, true);
+            assert.strictEqual(compareDottedVersions(PUBMED_SEARCH_VERSION, '0.5.4'), 0);
+            assert.strictEqual(compareDottedVersions('0.5.5', PUBMED_SEARCH_VERSION) > 0, true);
         });
     });
 

@@ -6,6 +6,11 @@
 
 import * as vscode from 'vscode';
 import { execSync } from 'child_process';
+import {
+    PUBMED_SEARCH_ENTRYPOINT,
+    PUBMED_SEARCH_VERSION,
+    PUBMED_WORKSPACE_DIR_ENV,
+} from './pubmedSearchPackage.js';
 
 export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvider<vscode.McpStdioServerDefinition> {
 
@@ -119,14 +124,18 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
             if (openUrlResolver) {
                 env['OPENURL_RESOLVER'] = openUrlResolver;
             }
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+            if (workspaceFolder) {
+                env[PUBMED_WORKSPACE_DIR_ENV] = workspaceFolder;
+            }
 
             servers.push(
                 new vscode.McpStdioServerDefinition(
                     'PubMed Search',
                     this.pythonPath,
-                    ['-m', 'pubmed_search.presentation.mcp_server'],
+                    ['-m', PUBMED_SEARCH_ENTRYPOINT],
                     env,
-                    '0.5.3'
+                    PUBMED_SEARCH_VERSION
                 )
             );
         }
