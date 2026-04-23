@@ -4,6 +4,10 @@
 
 🔬 **AI-powered research assistant** - Integrates Zotero reference management and PubMed literature search with GitHub Copilot.
 
+## ✨ What's New in v0.5.25
+
+- **🚀 Ready-to-publish maintenance**: this release aligns VSIX metadata and installer source URL after the 0.5.24 hotfix.
+
 ## ✨ What's New in v0.5.24
 
 - **🎨 Marketplace Branding Refresh**: keeper icon 與 VSX banner 改為新的系列化品牌視覺，對齊 Academic Figures MCP / MedPaper Assistant 的產品語言

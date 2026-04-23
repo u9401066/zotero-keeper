@@ -35,7 +35,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 LOCAL_MCP_SERVER = REPO_ROOT / "mcp-server"
 DEFAULT_RELEASE_ZOTERO_KEEPER_PACKAGE = (
     "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/"
-    "v0.5.24-ext.tar.gz#subdirectory=mcp-server"
+    "v0.5.25-ext.tar.gz#subdirectory=mcp-server"
 )
 PUBMED_SEARCH_FIXED_COMMIT = "a849f2ae01d85ba73c1fe219a36bcfb7fb4742d4"
 PUBMED_SEARCH_PACKAGE = (

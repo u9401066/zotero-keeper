@@ -60,7 +60,7 @@ const PYTHON_VERSION = '3.12';
 // Install from the tagged GitHub source archive so users get the fixed async/tool behavior
 // without requiring git on macOS, Linux, or Windows.
 const ZOTERO_KEEPER_PACKAGE =
-    'zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.5.24-ext.tar.gz#subdirectory=mcp-server';
+    'zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.5.25-ext.tar.gz#subdirectory=mcp-server';
 
 // Required packages with minimum versions
 // IMPORTANT: Update these when extension depends on new package features

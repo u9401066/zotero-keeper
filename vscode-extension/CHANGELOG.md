@@ -2,6 +2,22 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.25] - 2026-04-23
+
+### Changed
+
+- Bumped extension patch release to `0.5.25` so VSIX publish can proceed after `v0.5.24-ext` was already uploaded.
+- Updated embedded `zotero-keeper` package source to `v0.5.25-ext`.
+- Synchronized package version references across `package.json`, lockfile, and status bar/manifest metadata.
+
+### Test
+
+- `python scripts/check_version_sync.py`
+- `npm run lint`
+- `npm run compile`
+- `npx mocha out/test/mcpProvider.test.js out/test/pythonEnvironment.test.js`
+- `npm run package`
+
 ## [0.5.24] - 2026-04-23
 
 ### Changed
