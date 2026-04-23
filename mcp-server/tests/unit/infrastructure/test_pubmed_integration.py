@@ -12,7 +12,7 @@ class TestFetchPubmedArticles:
     @pytest.mark.asyncio
     @patch("zotero_mcp.infrastructure.pubmed.get_pubmed_client")
     async def test_awaits_client_fetch_details(self, mock_get_client):
-        """The helper should await the v0.5.2 async PubMed client."""
+        """The helper should await the v0.5.4 async PubMed client."""
         mock_client = MagicMock()
         mock_client.fetch_details = AsyncMock(return_value=[{"pmid": "12345678"}])
         mock_get_client.return_value = mock_client

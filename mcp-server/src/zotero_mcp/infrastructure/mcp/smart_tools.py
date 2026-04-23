@@ -225,5 +225,3 @@ async def _find_duplicates(
                 )
 
     return duplicates
-
-

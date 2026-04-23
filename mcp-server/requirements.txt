@@ -15,4 +15,4 @@ pydantic-settings>=2.0.0
 rapidfuzz>=3.0.0
 
 # Optional: PubMed integration (uncomment to enable)
-# pubmed-search-mcp>=0.5.2
+# pubmed-search-mcp>=0.5.4

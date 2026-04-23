@@ -4,11 +4,13 @@
 
 🔬 **AI-powered research assistant** - Integrates Zotero reference management and PubMed literature search with GitHub Copilot.
 
-## ✨ What's New in v0.5.23
+## ✨ What's New in v0.5.24
 
-- **🩹 PubMed startup workaround**: extension 會傳入 `PUBMED_WORKSPACE_DIR`，避開 `pubmed-search-mcp 0.5.4` PyPI 版在 VS Code 內的啟動回歸
-- **📦 Fixed PubMed package source**: embedded / manual 安裝改用已修正的 upstream commit snapshot，而不是直接安裝有問題的 `0.5.4` PyPI 發行版
-- **🔄 Bundled PubMed refresh**: extension 重新同步最新 pubmed-search-mcp agents / hooks / skills，並更新到修正 `os` import 的 upstream commit `a849f2a`
+- **🎨 Marketplace Branding Refresh**: keeper icon 與 VSX banner 改為新的系列化品牌視覺，對齊 Academic Figures MCP / MedPaper Assistant 的產品語言
+- **🔐 OpenAlex API Key Support**: extension 新增 `zoteroMcp.openAlexApiKey` 設定，會將 `OPENALEX_API_KEY` 傳給 PubMed Search MCP
+- **🔄 Bundled Asset Refresh**: extension 重新同步最新 pubmed-search-mcp agents / hooks / skills，並更新到包含修正 `os` import 的版本
+- **PubMed Search baseline upgraded to 0.5.4**: embedded environment now requires `pubmed-search-mcp>=0.5.4`, and startup now injects `PUBMED_WORKSPACE_DIR` to avoid VS Code regressions.
+- **Fixed PubMed package source**: embedded/manual 安裝改用已修正的 upstream snapshot，避免直接安裝有問題的 `0.5.4` PyPI 套件
 
 ## Features
 
@@ -23,7 +25,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 - **Library analytics** (stats, orphan detection)
 - **PDF attachment access** (list attachments, get indexed fulltext)
 
-### 🔍 PubMed Search
+### 🔍 PubMed Search (v0.5.4)
 
 - **`unified_search`** - 統一搜尋入口，自動合併去重多來源結果
 - **Multi-source search** (PubMed, Europe PMC, CORE)

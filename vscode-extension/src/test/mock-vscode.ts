@@ -98,7 +98,7 @@ export function createMockContext(overrides: Partial<MockExtensionContext> = {})
             setKeysForSync: sinon.stub(),
         },
         extension: {
-            packageJSON: { version: '0.5.20' },
+            packageJSON: { version: '0.5.24' },
         },
         ...overrides,
     } as MockExtensionContext;

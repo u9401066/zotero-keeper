@@ -202,7 +202,7 @@ async function ensureDependencies(): Promise<void> {
 - 最低版本: 3.11
 - Required packages:
     - `zotero-keeper[all]>=1.12.0`
-    - `pubmed-search-mcp>=0.5.2`
+    - `pubmed-search-mcp>=0.5.4`
 
 ### External
 - Zotero 7 or 8 (running locally with API enabled)

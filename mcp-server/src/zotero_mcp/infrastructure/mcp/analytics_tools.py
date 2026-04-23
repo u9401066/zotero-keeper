@@ -233,12 +233,14 @@ def register_analytics_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
             total_no_collection = sum(
                 1
                 for item in items
-                if item.get("data", item).get("itemType") not in ("attachment", "note", "annotation") and not item.get("data", item).get("collections")
+                if item.get("data", item).get("itemType") not in ("attachment", "note", "annotation")
+                and not item.get("data", item).get("collections")
             )
             total_no_tags = sum(
                 1
                 for item in items
-                if item.get("data", item).get("itemType") not in ("attachment", "note", "annotation") and not item.get("data", item).get("tags")
+                if item.get("data", item).get("itemType") not in ("attachment", "note", "annotation")
+                and not item.get("data", item).get("tags")
             )
             total_completely_orphan = sum(
                 1

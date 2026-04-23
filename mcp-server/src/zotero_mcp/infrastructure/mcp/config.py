@@ -51,9 +51,7 @@ class McpServerConfig:
 
     # Compatibility mode for legacy PubMed bridge tools.
     # Default OFF to avoid duplicating pubmed-search-mcp's public tool surface.
-    enable_legacy_pubmed_tools: bool = field(
-        default_factory=lambda: _env_flag("ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS", False)
-    )
+    enable_legacy_pubmed_tools: bool = field(default_factory=lambda: _env_flag("ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS", False))
 
     # Server instructions for AI agents
     instructions: str = """

@@ -47,10 +47,7 @@ async def resolve_collection_target(
                 }
 
             collections = await zotero_client.get_collections()
-            available = [
-                {"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")}
-                for c in collections[:available_limit]
-            ]
+            available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:available_limit]]
             return {
                 "success": False,
                 "error": f"Collection key '{collection_key}' not found",
@@ -70,10 +67,7 @@ async def resolve_collection_target(
         }
 
     collections = await zotero_client.get_collections()
-    available = [
-        {"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")}
-        for c in collections[:available_limit]
-    ]
+    available = [{"name": c.get("data", {}).get("name", ""), "key": c.get("key", "")} for c in collections[:available_limit]]
     result: dict[str, Any] = {
         "success": False,
         "error": f"Collection '{collection_name}' not found",
@@ -83,9 +77,7 @@ async def resolve_collection_target(
 
     if include_similar and collection_name:
         similar = [
-            c.get("data", {}).get("name", "")
-            for c in collections
-            if collection_name.lower() in c.get("data", {}).get("name", "").lower()
+            c.get("data", {}).get("name", "") for c in collections if collection_name.lower() in c.get("data", {}).get("name", "").lower()
         ][:5]
         if similar:
             result["hint"] = f"Similar collections: {similar}"

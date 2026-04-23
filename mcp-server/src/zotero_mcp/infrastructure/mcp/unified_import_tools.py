@@ -159,7 +159,7 @@ def _extract_article_pmid(article: dict[str, Any]) -> str | None:
 
 def _chunk_items(items: list[dict[str, Any]], chunk_size: int) -> list[list[dict[str, Any]]]:
     """Split import payloads into stable connector-sized batches."""
-    return [items[index:index + chunk_size] for index in range(0, len(items), chunk_size)]
+    return [items[index : index + chunk_size] for index in range(0, len(items), chunk_size)]
 
 
 def _unified_article_to_zotero(article: dict[str, Any]) -> dict[str, Any]:
@@ -585,7 +585,9 @@ def register_unified_import_tools(mcp, zotero_client):
             # === Step 1: Validate input ===
             if not articles and not ris_text:
                 result["error"] = "Must provide either 'articles' or 'ris_text'"
-                result["hint"] = "Use unified_search(..., output_format=\"json\") or fetch_article_details() to get articles, then pass them here"
+                result["hint"] = (
+                    'Use unified_search(..., output_format="json") or fetch_article_details() to get articles, then pass them here'
+                )
                 return result
 
             # === Step 2: Parse RIS if provided ===
@@ -665,11 +667,7 @@ def register_unified_import_tools(mcp, zotero_client):
             if skip_duplicates:
                 try:
                     pmids_to_check = [pmid for article, _ in converted_items if (pmid := _extract_article_pmid(article))]
-                    dois_to_check = [
-                        doi.lower().strip()
-                        for _, item in converted_items
-                        if (doi := item.get("DOI"))
-                    ]
+                    dois_to_check = [doi.lower().strip() for _, item in converted_items if (doi := item.get("DOI"))]
 
                     duplicate_check = await zotero_client.batch_check_identifiers(
                         pmids=pmids_to_check,

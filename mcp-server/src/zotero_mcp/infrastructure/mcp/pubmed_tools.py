@@ -22,6 +22,7 @@ from .collection_support import apply_collection_and_tags, attach_saved_to_info,
 
 logger = logging.getLogger(__name__)
 
+
 def _parse_ris_to_zotero_items(ris_text: str) -> list[dict[str, Any]]:
     """
     Parse RIS format text to Zotero item format.

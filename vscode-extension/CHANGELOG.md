@@ -2,7 +2,29 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
-## [Unreleased]
+## [0.5.24] - 2026-04-23
+
+### Changed
+
+- **PubMed Search baseline upgraded to 0.5.4**
+  - Embedded environment now requires `pubmed-search-mcp>=0.5.4` and fixed workspace startup handling
+  - MCP server definition metadata now reports `0.5.4`
+  - Python package installer now points to `v0.5.24-ext` for the embedded `zotero-keeper` source archive
+  - PubMed package source moved to fixed upstream commit `a849f2a` snapshot for startup safety in VS Code
+
+### Added
+
+- **OpenAlex authenticated access**
+  - Added `zoteroMcp.openAlexApiKey` so OpenAlex calls pass `OPENALEX_API_KEY`
+
+### Test
+
+- `uv run python tests/test_python_env_edge_cases.py`
+- `npm run compile`
+- `python scripts/check_version_sync.py`
+- `npm run lint`
+- `npx mocha out/test/mcpProvider.test.js out/test/pythonEnvironment.test.js`
+- `npm run package`
 
 ## [0.5.23] - 2026-04-20
 
