@@ -2,6 +2,23 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.27] - 2026-04-24
+
+### Added
+
+- **Cline MCP auto-configuration**
+  - Extension now automatically writes `zotero-keeper` and `pubmed-search-mcp` STDIO server entries into Cline's `cline_mcp_settings.json` on activation
+  - Detects Cline installation by checking for its global storage directory (`saoudrizwan.claude-dev`)
+  - Settings file path derived from VS Code's `globalStorage` layout: `<globalStorage>/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
+  - Only manages servers that contain our module args (`-m zotero_mcp` / `-m pubmed_search.presentation.mcp_server`); user-defined servers with the same key are preserved
+  - Syncs Python path updates to Cline settings when switching between embedded/system Python
+  - Shows an info notification when Cline servers are configured for the first time
+
+### Changed
+
+- **McpProvider constructor** now accepts `ExtensionContext` to enable Cline sync on `setPythonPath()`
+- **Test fixtures** updated to pass a mock `ExtensionContext` to `ZoteroMcpServerProvider`
+
 ## [0.5.26] - 2026-04-24
 
 ### Changed

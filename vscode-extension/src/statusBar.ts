@@ -38,7 +38,7 @@ export interface ApiInfo {
 export class StatusBarManager {
     private statusBarItem: vscode.StatusBarItem;
     private context: vscode.ExtensionContext | undefined;
-    private version: string = '0.5.26';
+    private version: string = '0.5.27';
 
     constructor() {
         this.statusBarItem = vscode.window.createStatusBarItem(

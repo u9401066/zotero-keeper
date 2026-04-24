@@ -19,7 +19,7 @@ describe('ZoteroMcpServerProvider', () => {
 
     beforeEach(() => {
         sinon.restore();
-        provider = new ZoteroMcpServerProvider(mockPythonPath);
+        provider = new ZoteroMcpServerProvider(mockPythonPath, {} as vscode.ExtensionContext);
         (vscode.workspace as any).workspaceFolders = undefined;
     });
 
@@ -209,7 +209,7 @@ describe('ZoteroMcpServerProvider', () => {
         });
 
         it('should return empty when pythonPath is empty', () => {
-            const emptyProvider = new ZoteroMcpServerProvider('');
+            const emptyProvider = new ZoteroMcpServerProvider('', {} as vscode.ExtensionContext);
             const servers = emptyProvider.provideMcpServerDefinitions(mockToken) as vscode.McpStdioServerDefinition[];
             assert.strictEqual(servers.length, 0);
         });

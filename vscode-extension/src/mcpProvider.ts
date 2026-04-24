@@ -11,6 +11,7 @@ import {
     PUBMED_SEARCH_VERSION,
     PUBMED_WORKSPACE_DIR_ENV,
 } from './pubmedSearchPackage.js';
+import { installClineMcpServers } from './clineMcpConfig';
 
 export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvider<vscode.McpStdioServerDefinition> {
 
@@ -18,16 +19,24 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
     readonly onDidChangeMcpServerDefinitions = this._onDidChangeMcpServerDefinitions.event;
 
     private pythonPath: string;
+    private context: vscode.ExtensionContext;
 
-    constructor(pythonPath: string) {
+    constructor(pythonPath: string, context: vscode.ExtensionContext) {
         this.pythonPath = pythonPath;
+        this.context = context;
     }
 
     /**
-     * Update Python path (used when switching between system/embedded)
+     * Update Python path (used when switching between system/embedded).
+     * Also syncs the new path to Cline's MCP settings if Cline is installed.
      */
     setPythonPath(pythonPath: string): void {
         this.pythonPath = pythonPath;
+        try {
+            installClineMcpServers(this.context, pythonPath);
+        } catch (error) {
+            console.error('Failed to sync Python path to Cline MCP settings:', error);
+        }
         this.refresh();
     }
 

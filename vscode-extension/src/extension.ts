@@ -14,6 +14,7 @@ import { PythonEnvironment } from './pythonEnvironment';
 import { UvPythonManager } from './uvPythonManager';
 import { ZoteroMcpServerProvider } from './mcpProvider';
 import { StatusBarManager } from './statusBar';
+import { installClineMcpServers, removeClineMcpServers, isClineInstalled } from './clineMcpConfig';
 
 let pythonEnv: PythonEnvironment;
 let uvPython: UvPythonManager;
@@ -103,7 +104,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         await vscode.commands.executeCommand('setContext', CONTEXT_PACKAGES_READY, true);
 
         // Step 3: Register MCP server provider
-        mcpProvider = new ZoteroMcpServerProvider(resolvedPythonPath);
+        mcpProvider = new ZoteroMcpServerProvider(resolvedPythonPath, context);
 
         const providerDisposable = vscode.lm.registerMcpServerDefinitionProvider(
             'zotero-mcp.servers',
@@ -117,7 +118,23 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         // Step 5: Install official Copilot/Cline assets if needed
         await installCopilotInstructions(context);
 
-        // Step 6: Update status
+        // Step 6: Configure Cline MCP servers (if Cline is installed)
+        if (isClineInstalled(context)) {
+            try {
+                const updated = installClineMcpServers(context, resolvedPythonPath);
+                if (updated) {
+                    console.log('Cline MCP servers configured/updated');
+                    vscode.window.showInformationMessage(
+                        'Zotero + PubMed MCP servers have been added to Cline. Restart Cline to use them.',
+                        'OK'
+                    );
+                }
+            } catch (error) {
+                console.error('Failed to configure Cline MCP servers:', error);
+            }
+        }
+
+        // Step 7: Update status
         statusBar.setStatus('ready', 'Zotero MCP: Ready');
 
         // Show walkthrough on first activation
@@ -830,7 +847,7 @@ async function runSetupWizard(): Promise<void> {
     if (progress) {
         // Re-initialize MCP provider if needed
         if (!mcpProvider && resolvedPythonPath) {
-            mcpProvider = new ZoteroMcpServerProvider(resolvedPythonPath);
+            mcpProvider = new ZoteroMcpServerProvider(resolvedPythonPath, extensionContext);
             const providerDisposable = vscode.lm.registerMcpServerDefinitionProvider(
                 'zotero-mcp.servers',
                 mcpProvider
