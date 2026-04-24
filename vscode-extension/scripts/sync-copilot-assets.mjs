@@ -20,6 +20,29 @@ const pubmedUserSkillNames = [
     'pipeline-persistence',
 ];
 
+const keeperClineRuleFiles = [
+    '00-zotero-project.md',
+    '10-zotero-python.md',
+    '20-zotero-vscode-extension.md',
+    '30-zotero-research-workflow.md',
+    '40-zotero-release.md',
+    'workflows/zotero-full-check.md',
+    'workflows/zotero-mcp-setup.md',
+    'workflows/zotero-release-publish.md',
+    'workflows/zotero-skills-audit.md',
+];
+
+const pubmedClineRuleFiles = [
+    '50-pubmed-project.md',
+    '60-pubmed-python.md',
+    '70-pubmed-mcp-tools.md',
+    '80-pubmed-release.md',
+    'workflows/pubmed-full-check.md',
+    'workflows/pubmed-mcp-setup.md',
+    'workflows/pubmed-release-publish.md',
+    'workflows/pubmed-skills-audit.md',
+];
+
 const mappings = [
     {
         source: path.join(repoRoot, '.github', 'copilot-user-instructions.md'),
@@ -29,6 +52,14 @@ const mappings = [
         source: path.join(repoRoot, '.github', 'zotero-research-workflow.md'),
         target: path.join(assetRoot, 'keeper', '.github', 'zotero-research-workflow.md'),
     },
+    {
+        source: path.join(repoRoot, '.cline', 'skills', 'zotero-keeper-harness'),
+        target: path.join(assetRoot, 'keeper', '.cline', 'skills', 'zotero-keeper-harness'),
+    },
+    ...keeperClineRuleFiles.map((ruleFile) => ({
+        source: path.join(repoRoot, '.clinerules', ruleFile),
+        target: path.join(assetRoot, 'keeper', '.clinerules', ruleFile),
+    })),
     {
         source: path.join(repoRoot, 'external', 'pubmed-search-mcp', '.github', 'agents', 'research.agent.md'),
         target: path.join(assetRoot, 'pubmed-search-mcp', '.github', 'agents', 'research.agent.md'),
@@ -45,6 +76,14 @@ const mappings = [
         source: path.join(repoRoot, 'external', 'pubmed-search-mcp', 'scripts', 'hooks', 'copilot'),
         target: path.join(assetRoot, 'pubmed-search-mcp', 'scripts', 'hooks', 'copilot'),
     },
+    {
+        source: path.join(repoRoot, '.cline', 'skills', 'pubmed-search-mcp-harness'),
+        target: path.join(assetRoot, 'pubmed-search-mcp', '.cline', 'skills', 'pubmed-search-mcp-harness'),
+    },
+    ...pubmedClineRuleFiles.map((ruleFile) => ({
+        source: path.join(repoRoot, '.clinerules', ruleFile),
+        target: path.join(assetRoot, 'pubmed-search-mcp', '.clinerules', ruleFile),
+    })),
     ...pubmedUserSkillNames.map((skillName) => ({
         source: path.join(repoRoot, 'external', 'pubmed-search-mcp', '.claude', 'skills', skillName),
         target: path.join(assetRoot, 'pubmed-search-mcp', '.claude', 'skills', skillName),

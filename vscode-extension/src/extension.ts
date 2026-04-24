@@ -50,6 +50,15 @@ const PUBMED_USER_SKILL_NAMES: readonly string[] = [
 ];
 
 /**
+ * Official Cline harness skills installed from the bundled Zotero Keeper and
+ * PubMed Search MCP repository assets.
+ */
+const CLINE_HARNESS_SKILL_NAMES: readonly string[] = [
+    'zotero-keeper-harness',
+    'pubmed-search-mcp-harness',
+];
+
+/**
  * Extension activation
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -105,7 +114,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         // Step 4: Check Zotero connection (non-blocking)
         checkAndUpdateZoteroStatus();
 
-        // Step 5: Install official Copilot assets if needed
+        // Step 5: Install official Copilot/Cline assets if needed
         await installCopilotInstructions(context);
 
         // Step 6: Update status
@@ -460,7 +469,7 @@ function cleanupStaleSkills(
 }
 
 /**
- * Install official Copilot assets from bundled keeper/pubmed repository files.
+ * Install official assistant assets from bundled keeper/pubmed repository files.
  * IMPORTANT: Never overwrite existing user instructions automatically.
  */
 async function installCopilotInstructions(
@@ -478,6 +487,8 @@ async function installCopilotInstructions(
     const workspaceRoot = workspaceFolder.uri.fsPath;
     const githubDir = path.join(workspaceRoot, '.github');
     const skillsDir = path.join(workspaceRoot, '.claude', 'skills');
+    const clineSkillsDir = path.join(workspaceRoot, '.cline', 'skills');
+    const clineRulesDir = path.join(workspaceRoot, '.clinerules');
     const agentsDir = path.join(githubDir, 'agents');
     const hooksDir = path.join(githubDir, 'hooks');
     const copilotScriptsDir = path.join(workspaceRoot, 'scripts', 'hooks', 'copilot');
@@ -487,18 +498,25 @@ async function installCopilotInstructions(
 
     const keeperInstructions = getBundledAssetPath(context, 'keeper', '.github', 'copilot-instructions.md');
     const keeperWorkflow = getBundledAssetPath(context, 'keeper', '.github', 'zotero-research-workflow.md');
+    const keeperClineSkills = getBundledAssetPath(context, 'keeper', '.cline', 'skills');
+    const keeperClineRules = getBundledAssetPath(context, 'keeper', '.clinerules');
     const pubmedSkills = getBundledAssetPath(context, 'pubmed-search-mcp', '.claude', 'skills');
+    const pubmedClineSkills = getBundledAssetPath(context, 'pubmed-search-mcp', '.cline', 'skills');
+    const pubmedClineRules = getBundledAssetPath(context, 'pubmed-search-mcp', '.clinerules');
     const pubmedAgents = getBundledAssetPath(context, 'pubmed-search-mcp', '.github', 'agents');
     const pubmedHooks = getBundledAssetPath(context, 'pubmed-search-mcp', '.github', 'hooks');
     const pubmedCopilotScripts = getBundledAssetPath(context, 'pubmed-search-mcp', 'scripts', 'hooks', 'copilot');
 
     const summary = createInstallSummary();
     const managedAgentPath = path.join(agentsDir, 'research.agent.md');
-    const hasManagedAssets = fs.existsSync(workflowDest) || fs.existsSync(managedAgentPath);
+    const managedClineSkillPath = path.join(clineSkillsDir, CLINE_HARNESS_SKILL_NAMES[0], 'SKILL.md');
+    const hasManagedAssets = fs.existsSync(workflowDest)
+        || fs.existsSync(managedAgentPath)
+        || fs.existsSync(managedClineSkillPath);
 
     if (mode === 'manual') {
         const choice = await vscode.window.showInformationMessage(
-            'Install/update curated user-facing official Copilot assets from Zotero Keeper and PubMed Search MCP? Existing custom copilot-instructions.md will be preserved.',
+            'Install/update curated official Copilot and Cline assets from Zotero Keeper and PubMed Search MCP? Existing custom copilot-instructions.md will be preserved.',
             'Install',
             'Cancel'
         );
@@ -513,7 +531,7 @@ async function installCopilotInstructions(
 
     if (mode === 'auto' && hasCustomInstructions && !hasManagedAssets) {
         const choice = await vscode.window.showInformationMessage(
-            'Install curated user-facing Zotero + PubMed Copilot assets? Your existing copilot-instructions.md will be preserved.',
+            'Install curated user-facing Zotero + PubMed Copilot/Cline assets? Your existing copilot-instructions.md will be preserved.',
             'Yes',
             'No'
         );
@@ -576,6 +594,11 @@ async function installCopilotInstructions(
 
         syncSkillDirectories(pubmedSkills, skillsDir, summary, true);
 
+        syncSkillDirectories(keeperClineSkills, clineSkillsDir, summary, true);
+        syncSkillDirectories(pubmedClineSkills, clineSkillsDir, summary, true);
+        syncManagedDirectory(keeperClineRules, clineRulesDir, summary, true);
+        syncManagedDirectory(pubmedClineRules, clineRulesDir, summary, true);
+
         syncManagedDirectory(pubmedAgents, agentsDir, summary, true);
         syncManagedDirectory(pubmedHooks, hooksDir, summary, true);
         syncManagedDirectory(pubmedCopilotScripts, copilotScriptsDir, summary, true);
@@ -585,7 +608,7 @@ async function installCopilotInstructions(
         if (mode === 'manual') {
             if (summary.missingSources.length > 0) {
                 vscode.window.showWarningMessage(
-                    `Installed ${summary.installed} and updated ${summary.updated} Copilot asset(s), but ${summary.missingSources.length} bundled source path(s) were missing.`
+                    `Installed ${summary.installed} and updated ${summary.updated} assistant asset(s), but ${summary.missingSources.length} bundled source path(s) were missing.`
                 );
             } else if (summary.installed > 0 || summary.updated > 0) {
                 const details: string[] = [];
@@ -595,20 +618,20 @@ async function installCopilotInstructions(
 
                 const suffix = details.length > 0 ? ` (${details.join(', ')})` : '';
                 vscode.window.showInformationMessage(
-                    `Installed ${summary.installed} and updated ${summary.updated} official Copilot asset(s)${suffix}.`
+                    `Installed ${summary.installed} and updated ${summary.updated} official assistant asset(s)${suffix}.`
                 );
             } else if (summary.preserved > 0) {
                 vscode.window.showInformationMessage(
                     `No official assets changed. Preserved ${summary.preserved} custom file(s).`
                 );
             } else {
-                vscode.window.showInformationMessage('No official Copilot assets needed updating.');
+                vscode.window.showInformationMessage('No official assistant assets needed updating.');
             }
         }
     } catch (error) {
-        console.error('Failed to install official Copilot assets:', error);
+        console.error('Failed to install official assistant assets:', error);
         if (mode === 'manual') {
-            vscode.window.showErrorMessage(`Failed to install official Copilot assets: ${error}`);
+            vscode.window.showErrorMessage(`Failed to install official assistant assets: ${error}`);
         }
     }
 }
@@ -746,7 +769,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
         })
     );
 
-    // Install/Update official Copilot assets
+    // Install/update official Copilot and Cline assets
     context.subscriptions.push(
         vscode.commands.registerCommand('zoteroMcp.installSkills', async () => {
             await installCopilotInstructions(context, 'manual');

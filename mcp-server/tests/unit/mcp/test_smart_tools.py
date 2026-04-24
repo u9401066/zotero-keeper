@@ -5,7 +5,7 @@ Tests the internal helper functions for duplicate detection and collection sugge
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 from zotero_mcp.infrastructure.mcp.smart_tools import (
     _normalize_title,

@@ -1,5 +1,5 @@
-export const PUBMED_SEARCH_FIXED_COMMIT = 'a849f2ae01d85ba73c1fe219a36bcfb7fb4742d4';
-export const PUBMED_SEARCH_VERSION = '0.5.4';
+export const PUBMED_SEARCH_FIXED_COMMIT = '13292cb91215cff707a4380e955967e5e9b3e765';
+export const PUBMED_SEARCH_VERSION = '0.5.6';
 export const PUBMED_SEARCH_ENTRYPOINT = 'pubmed_search.presentation.mcp_server';
 export const PUBMED_WORKSPACE_DIR_ENV = 'PUBMED_WORKSPACE_DIR';
 export const PUBMED_SEARCH_PACKAGE =

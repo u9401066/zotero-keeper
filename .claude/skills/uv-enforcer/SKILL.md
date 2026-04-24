@@ -1,6 +1,6 @@
 ---
 name: uv-enforcer
-description: Enforce uv-only package management policy. Reject all pip usage in code, docs, CI. Triggers: UV, uv, pip, package, 套件, 安裝, install, 環境, environment, dependency, 依賴.
+description: "Enforce uv-only package management policy. Reject all pip usage in code, docs, CI. Triggers: UV, uv, pip, package, 套件, 安裝, install, 環境, environment, dependency, 依賴."
 ---
 
 # uv 唯一套件管理技能

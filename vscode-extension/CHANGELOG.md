@@ -2,6 +2,39 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.26] - 2026-04-24
+
+### Changed
+
+- **PubMed Search baseline upgraded to 0.5.6**
+  - Embedded environment now requires PubMed Search MCP `0.5.6`
+  - PubMed package source now pins upstream commit `13292cb` (`Stabilize Entrez runtime CI tests`) from the `v0.5.6` release
+  - MCP server definition metadata now reports `0.5.6`
+  - Keeper optional dependencies and lockfile now require `pubmed-search-mcp>=0.5.6`
+- **Embedded package source updated**
+  - Python package installer now points to `v0.5.26-ext` for the embedded `zotero-keeper` source archive
+
+### Fixed
+
+- **VSIX banner rendering**
+  - Extension README now uses the release-safe GitHub raw banner URL instead of a package-relative image path
+- **Cline skill loading**
+  - Quoted legacy `.claude/skills/*/SKILL.md` descriptions so strict YAML frontmatter parsing works in Cline
+  - Added strict Cline skill auditing for bundled Zotero/PubMed harness assets
+
+### Test
+
+- `python3 scripts/check_cline_skills.py`
+- `cd external/pubmed-search-mcp && python3 ../../scripts/check_cline_skills.py`
+- `cd external/pubmed-search-mcp && uv run ruff check .`
+- `cd external/pubmed-search-mcp && uv run pytest -q`
+- `cd mcp-server && uv run ruff check .`
+- `cd mcp-server && uv run pytest -q`
+- `cd vscode-extension && npm test`
+- `cd vscode-extension && uv run python tests/test_python_env_edge_cases.py`
+- `cd vscode-extension && npm run package`
+- VSIX README/banner/package install verification with VS Code Insiders CLI
+
 ## [0.5.25] - 2026-04-23
 
 ### Changed

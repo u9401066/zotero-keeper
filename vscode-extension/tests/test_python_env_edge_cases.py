@@ -35,9 +35,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 LOCAL_MCP_SERVER = REPO_ROOT / "mcp-server"
 DEFAULT_RELEASE_ZOTERO_KEEPER_PACKAGE = (
     "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/"
-    "v0.5.25-ext.tar.gz#subdirectory=mcp-server"
+    "v0.5.26-ext.tar.gz#subdirectory=mcp-server"
 )
-PUBMED_SEARCH_FIXED_COMMIT = "a849f2ae01d85ba73c1fe219a36bcfb7fb4742d4"
+PUBMED_SEARCH_FIXED_COMMIT = "13292cb91215cff707a4380e955967e5e9b3e765"
 PUBMED_SEARCH_PACKAGE = (
     "pubmed-search-mcp @ "
     f"https://github.com/u9401066/pubmed-search-mcp/archive/{PUBMED_SEARCH_FIXED_COMMIT}.tar.gz"
@@ -478,8 +478,9 @@ class TestPythonEnvEdgeCases:
 
         # Corrupt the binary
         log("Corrupting Python binary...")
-        with open(python, "wb") as f:
-            f.write(b"\x00\x00\x00CORRUPTED")
+        python.unlink()
+        python.write_bytes(b"\x00\x00\x00CORRUPTED")
+        python.chmod(0o755)
 
         # Verify it's broken (on Windows, running corrupted exe gives WinError 216)
         try:
@@ -763,7 +764,7 @@ class TestPythonEnvEdgeCases:
         _all_ok = True
         for pkg_name, import_name, min_ver in [
             ("zotero-keeper", "zotero_mcp", "1.12.0"),
-            ("pubmed-search-mcp", "pubmed_search", "0.5.4"),
+            ("pubmed-search-mcp", "pubmed_search", "0.5.6"),
         ]:
             attr_ver = self._check_package_version(venv_dir, import_name)
             pip_ver = self._check_installed_version_via_pip(venv_dir, pkg_name)

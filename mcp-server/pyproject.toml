@@ -39,10 +39,10 @@ Changelog = "https://github.com/u9401066/zotero-keeper/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 pubmed = [
-    "pubmed-search-mcp>=0.5.4",  # PubMed integration
+    "pubmed-search-mcp>=0.5.6",  # PubMed integration
 ]
 all = [
-    "pubmed-search-mcp>=0.5.4",
+    "pubmed-search-mcp>=0.5.6",
     "rapidfuzz>=3.0.0",
 ]
 dev = [

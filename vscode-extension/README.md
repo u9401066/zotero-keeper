@@ -1,8 +1,14 @@
 # Zotero + PubMed MCP Extension for VS Code
 
-![Zotero + PubMed MCP banner](resources/branding/vsx-banner.png)
+![Zotero + PubMed MCP banner](https://raw.githubusercontent.com/u9401066/zotero-keeper/main/vscode-extension/resources/branding/vsx-banner.png)
 
 🔬 **AI-powered research assistant** - Integrates Zotero reference management and PubMed literature search with GitHub Copilot.
+
+## ✨ What's New in v0.5.26
+
+- **PubMed Search 0.5.6 baseline**: updates the bundled PubMed Search MCP snapshot to the latest upstream tag with Entrez runtime stability fixes.
+- **Cline asset compatibility**: fixes strict YAML frontmatter for bundled skills and packages Zotero/PubMed Cline rules into the VSIX.
+- **Marketplace banner fix**: uses a GitHub raw image URL so the VSIX details page renders the banner correctly.
 
 ## ✨ What's New in v0.5.25
 
@@ -29,7 +35,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 - **Library analytics** (stats, orphan detection)
 - **PDF attachment access** (list attachments, get indexed fulltext)
 
-### 🔍 PubMed Search (v0.5.4)
+### 🔍 PubMed Search (v0.5.6)
 
 - **`unified_search`** - 統一搜尋入口，自動合併去重多來源結果
 - **Multi-source search** (PubMed, Europe PMC, CORE)
@@ -95,16 +101,16 @@ Click the status bar item to access:
 - **⚙️ Settings** - Quick access to configuration
 - **🧙 Setup Wizard** - One-click setup
 
-### 🎯 Copilot Research Skills
+### 🎯 Assistant Research Assets
 
-The extension installs workflow guides that teach Copilot:
+The extension installs workflow guides that teach Copilot and Cline:
 
 1. **Search → Review → Ask Collection → Import** workflow
 2. Use `get_session_pmids` instead of re-searching
 3. Use cached articles to save API quota
 4. Check for duplicates before importing
 
-Run `Zotero MCP: Install Official Copilot Assets` to manually install/update.
+Run `Zotero MCP: Install Official Assistant Assets` to manually install/update.
 
 ## Extension Settings
 
@@ -125,7 +131,7 @@ Run `Zotero MCP: Install Official Copilot Assets` to manually install/update.
 | `Zotero MCP: Show Statistics` | View usage statistics |
 | `Zotero MCP: Show API Status` | View connected APIs |
 | `Zotero MCP: Check Zotero Connection` | Verify Zotero is accessible |
-| `Zotero MCP: Install Official Copilot Assets` | Install or refresh the bundled official Copilot assets |
+| `Zotero MCP: Install Official Assistant Assets` | Install or refresh the bundled official Copilot and Cline assets |
 | `Zotero MCP: Reinstall Python Environment` | Reinstall uv and Python packages |
 | `Zotero MCP: Show Status` | Show full extension status |
 | `Zotero MCP: Open Settings` | Open extension settings |
@@ -138,7 +144,7 @@ This extension uses [uv](https://github.com/astral-sh/uv) from Astral to manage 
 2. **Environment Setup**: Creates isolated venv with Python 3.12
 3. **Package Install**: Installs `zotero-keeper` and the fixed `pubmed-search-mcp` snapshot (10-100x faster than pip)
 4. **MCP Servers**: Starts both servers and registers with VS Code
-5. **Copilot Skills**: Installs research workflow guides to workspace
+5. **Assistant Assets**: Installs research workflow guides to workspace
 
 The Python environment is completely isolated from your system Python.
 
@@ -155,7 +161,7 @@ The Python environment is completely isolated from your system Python.
 3. Restart VS Code
 
 ### Copilot not using tools correctly
-1. Run `Zotero MCP: Install Official Copilot Assets` to update workflow guides
+1. Run `Zotero MCP: Install Official Assistant Assets` to update workflow guides
 2. The guides teach Copilot the correct order of operations
 
 ### uv download failed
