@@ -15,7 +15,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { PUBMED_SEARCH_ENTRYPOINT, PUBMED_SEARCH_VERSION, PUBMED_WORKSPACE_DIR_ENV } from './pubmedSearchPackage.js';
+import { execSync } from 'child_process';
+import { PUBMED_SEARCH_ENTRYPOINT, PUBMED_WORKSPACE_DIR_ENV } from './pubmedSearchPackage.js';
 
 const CLINE_EXTENSION_ID = 'saoudrizwan.claude-dev';
 const CLINE_SETTINGS_SUBDIR = 'settings';
@@ -31,10 +32,23 @@ interface ClineMcpServerEntry {
     env?: Record<string, string>;
     alwaysAllow?: string[];
     disabled?: boolean;
+    [key: string]: unknown;
 }
 
 interface ClineMcpSettings {
     mcpServers: Record<string, ClineMcpServerEntry>;
+}
+
+function getGitEmail(): string {
+    try {
+        return execSync('git config user.email', {
+            encoding: 'utf-8',
+            stdio: 'pipe',
+            timeout: 5000,
+        }).trim();
+    } catch {
+        return '';
+    }
 }
 
 /**
@@ -65,6 +79,13 @@ function readClineSettings(settingsPath: string): ClineMcpSettings {
         }
         return parsed;
     } catch {
+        const backupPath = `${settingsPath}.invalid.${Date.now()}.bak`;
+        try {
+            fs.copyFileSync(settingsPath, backupPath);
+            console.warn(`Backed up invalid Cline MCP settings to: ${backupPath}`);
+        } catch (error) {
+            console.warn('Failed to back up invalid Cline MCP settings:', error);
+        }
         return { mcpServers: {} };
     }
 }
@@ -111,7 +132,7 @@ function buildZoteroEntry(pythonPath: string, config: vscode.WorkspaceConfigurat
 function buildPubmedEntry(pythonPath: string, config: vscode.WorkspaceConfiguration): ClineMcpServerEntry {
     const env: Record<string, string> = {};
 
-    const ncbiEmail = config.get<string>('ncbiEmail', '');
+    const ncbiEmail = config.get<string>('ncbiEmail', '') || getGitEmail();
     const ncbiApiKey = config.get<string>('ncbiApiKey', '');
     const coreApiKey = config.get<string>('coreApiKey', '');
     const openAlexApiKey = config.get<string>('openAlexApiKey', '');
@@ -144,6 +165,23 @@ function buildPubmedEntry(pythonPath: string, config: vscode.WorkspaceConfigurat
     };
 }
 
+function mergeManagedEntry(
+    existing: ClineMcpServerEntry | undefined,
+    next: ClineMcpServerEntry
+): ClineMcpServerEntry {
+    if (!existing || !isManagedByUs(existing)) {
+        return next;
+    }
+
+    return {
+        ...existing,
+        ...next,
+        // Preserve Cline-local user choices and Cline-specific metadata.
+        disabled: existing.disabled ?? next.disabled,
+        alwaysAllow: existing.alwaysAllow,
+    };
+}
+
 /**
  * Install or update our managed MCP servers in Cline's settings.
  *
@@ -153,6 +191,10 @@ export function installClineMcpServers(
     context: vscode.ExtensionContext,
     pythonPath: string
 ): boolean {
+    if (!isClineInstalled(context)) {
+        return false;
+    }
+
     const settingsPath = getClineMcpSettingsPath(context);
     if (!settingsPath) {
         console.warn('Could not determine Cline MCP settings path');
@@ -169,7 +211,7 @@ export function installClineMcpServers(
     // Zotero Keeper
     if (enableZotero) {
         const existing = settings.mcpServers[ZOTERO_SERVER_KEY];
-        const newEntry = buildZoteroEntry(pythonPath, config);
+        const newEntry = mergeManagedEntry(existing, buildZoteroEntry(pythonPath, config));
         if (!existing || (isManagedByUs(existing) && !entriesEqual(existing, newEntry))) {
             settings.mcpServers[ZOTERO_SERVER_KEY] = newEntry;
             changed = true;
@@ -182,7 +224,7 @@ export function installClineMcpServers(
     // PubMed Search
     if (enablePubmed) {
         const existing = settings.mcpServers[PUBMED_SERVER_KEY];
-        const newEntry = buildPubmedEntry(pythonPath, config);
+        const newEntry = mergeManagedEntry(existing, buildPubmedEntry(pythonPath, config));
         if (!existing || (isManagedByUs(existing) && !entriesEqual(existing, newEntry))) {
             settings.mcpServers[PUBMED_SERVER_KEY] = newEntry;
             changed = true;
@@ -245,6 +287,10 @@ export function removeClineMcpServers(context: vscode.ExtensionContext): boolean
  * Check whether Cline appears to be installed (extension global storage dir exists).
  */
 export function isClineInstalled(context: vscode.ExtensionContext): boolean {
+    if (vscode.extensions.getExtension(CLINE_EXTENSION_ID)) {
+        return true;
+    }
+
     const ourGlobalStorage = context.globalStorageUri.fsPath;
     const globalStorageDir = path.dirname(ourGlobalStorage);
     const clineExtensionDir = path.join(globalStorageDir, CLINE_EXTENSION_ID);
@@ -257,6 +303,7 @@ export function isClineInstalled(context: vscode.ExtensionContext): boolean {
 function entriesEqual(a: ClineMcpServerEntry, b: ClineMcpServerEntry): boolean {
     if (a.command !== b.command) { return false; }
     if (JSON.stringify(a.args) !== JSON.stringify(b.args)) { return false; }
+    if ((a.disabled ?? false) !== (b.disabled ?? false)) { return false; }
 
     const aEnv = a.env ?? {};
     const bEnv = b.env ?? {};

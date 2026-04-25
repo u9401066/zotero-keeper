@@ -14,13 +14,14 @@ import { PythonEnvironment } from './pythonEnvironment';
 import { UvPythonManager } from './uvPythonManager';
 import { ZoteroMcpServerProvider } from './mcpProvider';
 import { StatusBarManager } from './statusBar';
-import { installClineMcpServers, removeClineMcpServers, isClineInstalled } from './clineMcpConfig';
+import { installClineMcpServers, isClineInstalled } from './clineMcpConfig';
 
 let pythonEnv: PythonEnvironment;
 let uvPython: UvPythonManager;
 let mcpProvider: ZoteroMcpServerProvider;
 let statusBar: StatusBarManager;
 let extensionContext: vscode.ExtensionContext;
+let runtimeSyncListenersRegistered = false;
 
 // The resolved Python path (either system or embedded)
 let resolvedPythonPath: string | undefined;
@@ -55,6 +56,14 @@ const PUBMED_USER_SKILL_NAMES: readonly string[] = [
  * PubMed Search MCP repository assets.
  */
 const CLINE_HARNESS_SKILL_NAMES: readonly string[] = [
+    'zotero-keeper-harness',
+    'pubmed-search-mcp-harness',
+];
+
+/**
+ * Official Codex harness skills installed for Codex-enabled workspaces.
+ */
+const CODEX_HARNESS_SKILL_NAMES: readonly string[] = [
     'zotero-keeper-harness',
     'pubmed-search-mcp-harness',
 ];
@@ -103,14 +112,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         }
         await vscode.commands.executeCommand('setContext', CONTEXT_PACKAGES_READY, true);
 
-        // Step 3: Register MCP server provider
-        mcpProvider = new ZoteroMcpServerProvider(resolvedPythonPath, context);
-
-        const providerDisposable = vscode.lm.registerMcpServerDefinitionProvider(
-            'zotero-mcp.servers',
-            mcpProvider
-        );
-        context.subscriptions.push(providerDisposable);
+        // Step 3: Register MCP provider and synchronize external MCP consumers
+        syncRuntimeConsumers(context, resolvedPythonPath, true);
 
         // Step 4: Check Zotero connection (non-blocking)
         checkAndUpdateZoteroStatus();
@@ -118,23 +121,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         // Step 5: Install official Copilot/Cline assets if needed
         await installCopilotInstructions(context);
 
-        // Step 6: Configure Cline MCP servers (if Cline is installed)
-        if (isClineInstalled(context)) {
-            try {
-                const updated = installClineMcpServers(context, resolvedPythonPath);
-                if (updated) {
-                    console.log('Cline MCP servers configured/updated');
-                    vscode.window.showInformationMessage(
-                        'Zotero + PubMed MCP servers have been added to Cline. Restart Cline to use them.',
-                        'OK'
-                    );
-                }
-            } catch (error) {
-                console.error('Failed to configure Cline MCP servers:', error);
-            }
-        }
-
-        // Step 7: Update status
+        // Step 6: Update status
         statusBar.setStatus('ready', 'Zotero MCP: Ready');
 
         // Show walkthrough on first activation
@@ -153,8 +140,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
  * Ensure Python is available - uses uv-managed Python by default for consistency
  *
  * Priority (when useEmbeddedPython = true, the default):
- *   1. Use uv-managed Python 3.11 (guaranteed compatible, self-contained)
- *   2. Fall back to system Python only if uv fails
+ *   1. Use uv-managed Python 3.12 (guaranteed compatible, self-contained)
+ *   2. Fall back to system Python discovery only if uv setup fails
  *
  * Priority (when useEmbeddedPython = false):
  *   1. Use system Python (user's responsibility to ensure compatibility)
@@ -177,7 +164,8 @@ async function ensurePythonEnvironment(): Promise<string | undefined> {
         } catch (error) {
             console.error('Failed to set up Python with uv:', error);
 
-            // Fall back to system Python if uv fails
+            // Fall back to system Python discovery if uv setup fails. Package
+            // installs still use a writable extension-managed venv.
             console.log('Falling back to system Python...');
             const systemPython = await pythonEnv.ensurePython();
             if (systemPython) {
@@ -248,6 +236,7 @@ async function ensurePackagesInstalled(): Promise<boolean> {
         if (autoInstall) {
             statusBar.setStatus('installing', 'Zotero MCP: Installing packages...');
             packagesInstalled = await pythonEnv.installPackages();
+            resolvedPythonPath = pythonEnv.getPythonPath() || resolvedPythonPath;
         } else {
             const choice = await vscode.window.showInformationMessage(
                 'Zotero MCP requires Python packages (zotero-keeper, pubmed-search-mcp). Install now?',
@@ -256,11 +245,97 @@ async function ensurePackagesInstalled(): Promise<boolean> {
             if (choice === 'Install') {
                 statusBar.setStatus('installing', 'Zotero MCP: Installing packages...');
                 packagesInstalled = await pythonEnv.installPackages();
+                resolvedPythonPath = pythonEnv.getPythonPath() || resolvedPythonPath;
             }
         }
     }
 
     return packagesInstalled;
+}
+
+/**
+ * Register the native VS Code MCP provider once, then only update its Python
+ * interpreter when the install flow switches from system Python to a managed venv.
+ */
+function registerOrUpdateMcpProvider(
+    pythonPath: string,
+    context: vscode.ExtensionContext = extensionContext
+): void {
+    if (!mcpProvider) {
+        mcpProvider = new ZoteroMcpServerProvider(pythonPath, context);
+
+        const providerDisposable = vscode.lm.registerMcpServerDefinitionProvider(
+            'zotero-mcp.servers',
+            mcpProvider
+        );
+        context.subscriptions.push(providerDisposable);
+        return;
+    }
+
+    mcpProvider.setPythonPath(pythonPath);
+}
+
+function syncClineConfiguration(
+    context: vscode.ExtensionContext,
+    pythonPath: string,
+    notifyUser: boolean = false
+): void {
+    if (!isClineInstalled(context)) {
+        return;
+    }
+
+    try {
+        const updated = installClineMcpServers(context, pythonPath);
+        if (updated) {
+            console.log('Cline MCP servers configured/updated');
+            if (notifyUser) {
+                vscode.window.showInformationMessage(
+                    'Zotero + PubMed MCP servers have been added to Cline. Restart Cline to use them.',
+                    'OK'
+                );
+            }
+        }
+    } catch (error) {
+        console.error('Failed to configure Cline MCP servers:', error);
+    }
+}
+
+function syncRuntimeConsumers(
+    context: vscode.ExtensionContext,
+    pythonPath: string,
+    notifyCline: boolean = false
+): void {
+    registerOrUpdateMcpProvider(pythonPath, context);
+    syncClineConfiguration(context, pythonPath, notifyCline);
+    registerRuntimeSyncListeners(context);
+}
+
+function registerRuntimeSyncListeners(context: vscode.ExtensionContext): void {
+    if (runtimeSyncListenersRegistered) {
+        return;
+    }
+
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration((event) => {
+            if (!event.affectsConfiguration('zoteroMcp') || !resolvedPythonPath) {
+                return;
+            }
+
+            syncRuntimeConsumers(context, resolvedPythonPath);
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeWorkspaceFolders(() => {
+            if (!resolvedPythonPath) {
+                return;
+            }
+
+            syncRuntimeConsumers(context, resolvedPythonPath);
+        })
+    );
+
+    runtimeSyncListenersRegistered = true;
 }
 
 /**
@@ -334,6 +409,11 @@ function isKeeperInstructionsFile(content: string): boolean {
 function isKeeperWorkflowFile(content: string): boolean {
     return content.includes('# Research Workflow Guide for Copilot')
         && content.includes('Zotero + PubMed MCP tools');
+}
+
+function isKeeperCodexAgentsFile(content: string): boolean {
+    return content.includes('# Zotero + PubMed MCP Codex Harness')
+        && content.includes('PubMed Search MCP through the VS Code extension');
 }
 
 function copyBundledFile(sourcePath: string, destinationPath: string): boolean {
@@ -504,6 +584,7 @@ async function installCopilotInstructions(
     const workspaceRoot = workspaceFolder.uri.fsPath;
     const githubDir = path.join(workspaceRoot, '.github');
     const skillsDir = path.join(workspaceRoot, '.claude', 'skills');
+    const codexSkillsDir = path.join(workspaceRoot, '.codex', 'skills');
     const clineSkillsDir = path.join(workspaceRoot, '.cline', 'skills');
     const clineRulesDir = path.join(workspaceRoot, '.clinerules');
     const agentsDir = path.join(githubDir, 'agents');
@@ -512,12 +593,16 @@ async function installCopilotInstructions(
 
     const instructionsPath = path.join(githubDir, 'copilot-instructions.md');
     const workflowDest = path.join(githubDir, 'zotero-research-workflow.md');
+    const codexAgentsPath = path.join(workspaceRoot, 'AGENTS.md');
 
     const keeperInstructions = getBundledAssetPath(context, 'keeper', '.github', 'copilot-instructions.md');
     const keeperWorkflow = getBundledAssetPath(context, 'keeper', '.github', 'zotero-research-workflow.md');
+    const keeperCodexAgents = getBundledAssetPath(context, 'keeper', 'AGENTS.md');
+    const keeperCodexSkills = getBundledAssetPath(context, 'keeper', '.codex', 'skills');
     const keeperClineSkills = getBundledAssetPath(context, 'keeper', '.cline', 'skills');
     const keeperClineRules = getBundledAssetPath(context, 'keeper', '.clinerules');
     const pubmedSkills = getBundledAssetPath(context, 'pubmed-search-mcp', '.claude', 'skills');
+    const pubmedCodexSkills = getBundledAssetPath(context, 'pubmed-search-mcp', '.codex', 'skills');
     const pubmedClineSkills = getBundledAssetPath(context, 'pubmed-search-mcp', '.cline', 'skills');
     const pubmedClineRules = getBundledAssetPath(context, 'pubmed-search-mcp', '.clinerules');
     const pubmedAgents = getBundledAssetPath(context, 'pubmed-search-mcp', '.github', 'agents');
@@ -527,13 +612,16 @@ async function installCopilotInstructions(
     const summary = createInstallSummary();
     const managedAgentPath = path.join(agentsDir, 'research.agent.md');
     const managedClineSkillPath = path.join(clineSkillsDir, CLINE_HARNESS_SKILL_NAMES[0], 'SKILL.md');
+    const managedCodexSkillPath = path.join(codexSkillsDir, CODEX_HARNESS_SKILL_NAMES[0], 'SKILL.md');
     const hasManagedAssets = fs.existsSync(workflowDest)
         || fs.existsSync(managedAgentPath)
-        || fs.existsSync(managedClineSkillPath);
+        || fs.existsSync(managedClineSkillPath)
+        || fs.existsSync(managedCodexSkillPath)
+        || fs.existsSync(codexAgentsPath);
 
     if (mode === 'manual') {
         const choice = await vscode.window.showInformationMessage(
-            'Install/update curated official Copilot and Cline assets from Zotero Keeper and PubMed Search MCP? Existing custom copilot-instructions.md will be preserved.',
+            'Install/update curated official Copilot, Codex, and Cline assets from Zotero Keeper and PubMed Search MCP? Existing custom instructions will be preserved.',
             'Install',
             'Cancel'
         );
@@ -545,10 +633,12 @@ async function installCopilotInstructions(
 
     const existingInstructions = readUtf8IfExists(instructionsPath);
     const hasCustomInstructions = !!existingInstructions && !isKeeperInstructionsFile(existingInstructions);
+    const existingCodexAgents = readUtf8IfExists(codexAgentsPath);
+    const hasCustomCodexAgents = !!existingCodexAgents && !isKeeperCodexAgentsFile(existingCodexAgents);
 
-    if (mode === 'auto' && hasCustomInstructions && !hasManagedAssets) {
+    if (mode === 'auto' && (hasCustomInstructions || hasCustomCodexAgents) && !hasManagedAssets) {
         const choice = await vscode.window.showInformationMessage(
-            'Install curated user-facing Zotero + PubMed Copilot/Cline assets? Your existing copilot-instructions.md will be preserved.',
+            'Install curated user-facing Zotero + PubMed Copilot/Codex/Cline assets? Existing custom instructions will be preserved.',
             'Yes',
             'No'
         );
@@ -573,6 +663,31 @@ async function installCopilotInstructions(
             // the latest collaboration-safe workflow automatically.
             copyBundledFile(keeperInstructions, instructionsPath);
             summary.updated++;
+        } else {
+            summary.preserved++;
+        }
+
+        if (!fs.existsSync(keeperCodexAgents)) {
+            summary.missingSources.push(keeperCodexAgents);
+        } else if (!existingCodexAgents) {
+            copyBundledFile(keeperCodexAgents, codexAgentsPath);
+            summary.installed++;
+        } else if (isKeeperCodexAgentsFile(existingCodexAgents)) {
+            copyBundledFile(keeperCodexAgents, codexAgentsPath);
+            summary.updated++;
+        } else if (mode === 'manual') {
+            const choice = await vscode.window.showWarningMessage(
+                'AGENTS.md has been modified. Update it to the latest official Codex harness?',
+                'Update',
+                'Keep Mine'
+            );
+
+            if (choice === 'Update') {
+                copyBundledFile(keeperCodexAgents, codexAgentsPath);
+                summary.updated++;
+            } else {
+                summary.preserved++;
+            }
         } else {
             summary.preserved++;
         }
@@ -611,6 +726,8 @@ async function installCopilotInstructions(
 
         syncSkillDirectories(pubmedSkills, skillsDir, summary, true);
 
+        syncSkillDirectories(keeperCodexSkills, codexSkillsDir, summary, true);
+        syncSkillDirectories(pubmedCodexSkills, codexSkillsDir, summary, true);
         syncSkillDirectories(keeperClineSkills, clineSkillsDir, summary, true);
         syncSkillDirectories(pubmedClineSkills, clineSkillsDir, summary, true);
         syncManagedDirectory(keeperClineRules, clineRulesDir, summary, true);
@@ -654,26 +771,6 @@ async function installCopilotInstructions(
 }
 
 /**
- * Install research agent to .github/agents/
- */
-async function installResearchAgent(
-    context: vscode.ExtensionContext,
-    githubDir: string,
-    agentsDir: string,
-    agentDest: string
-): Promise<void> {
-    if (!fs.existsSync(agentsDir)) {
-        fs.mkdirSync(agentsDir, { recursive: true });
-    }
-
-    const sourceAgent = path.join(context.extensionPath, 'resources', 'agents', 'research.agent.md');
-    if (fs.existsSync(sourceAgent) && !fs.existsSync(agentDest)) {
-        fs.copyFileSync(sourceAgent, agentDest);
-        console.log('Installed research agent');
-    }
-}
-
-/**
  * Register extension commands
  */
 function registerCommands(context: vscode.ExtensionContext): void {
@@ -713,8 +810,14 @@ function registerCommands(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
         vscode.commands.registerCommand('zoteroMcp.installPackages', async () => {
             statusBar.setStatus('installing', 'Zotero MCP: Installing packages...');
-            const success = await pythonEnv.installPackages();
+            if (!resolvedPythonPath) {
+                resolvedPythonPath = await ensurePythonEnvironment();
+            }
+            const success = await ensurePackagesInstalled();
             if (success) {
+                if (resolvedPythonPath) {
+                    syncRuntimeConsumers(context, resolvedPythonPath, true);
+                }
                 statusBar.setStatus('ready', 'Zotero MCP: Ready');
                 await vscode.commands.executeCommand('setContext', CONTEXT_PACKAGES_READY, true);
                 vscode.window.showInformationMessage('✅ Python packages installed successfully!');
@@ -774,7 +877,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
 
                     if (newPath) {
                         resolvedPythonPath = newPath;
-                        mcpProvider?.setPythonPath(newPath);
+                        syncRuntimeConsumers(context, newPath, true);
                         statusBar.setStatus('ready', 'Zotero MCP: Ready');
                         vscode.window.showInformationMessage('✅ Python environment reinstalled successfully!');
                     }
@@ -845,14 +948,8 @@ async function runSetupWizard(): Promise<void> {
     );
 
     if (progress) {
-        // Re-initialize MCP provider if needed
-        if (!mcpProvider && resolvedPythonPath) {
-            mcpProvider = new ZoteroMcpServerProvider(resolvedPythonPath, extensionContext);
-            const providerDisposable = vscode.lm.registerMcpServerDefinitionProvider(
-                'zotero-mcp.servers',
-                mcpProvider
-            );
-            extensionContext.subscriptions.push(providerDisposable);
+        if (resolvedPythonPath) {
+            syncRuntimeConsumers(extensionContext, resolvedPythonPath, true);
         }
 
         // Refresh MCP provider

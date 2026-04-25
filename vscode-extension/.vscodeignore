@@ -35,6 +35,7 @@ tests/**
 !resources/repo-assets/**
 !resources/repo-assets/**/.github/**
 !resources/repo-assets/**/.claude/**
+!resources/repo-assets/**/.codex/**
 !resources/repo-assets/**/.cline/**
 !resources/repo-assets/**/.clinerules/**
 !resources/repo-assets/**/scripts/**

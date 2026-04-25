@@ -26,6 +26,10 @@ dist/
 .trae/
 .windsurf/
 
+# Bundled assistant harness assets shipped in the VSIX.
+!resources/repo-assets/**/.codex/
+!resources/repo-assets/**/.codex/**
+
 # OS
 .DS_Store
 Thumbs.db

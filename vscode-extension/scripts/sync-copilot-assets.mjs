@@ -7,6 +7,9 @@ const extensionRoot = path.resolve(scriptDir, '..');
 const repoRoot = path.resolve(extensionRoot, '..');
 const assetRoot = path.join(extensionRoot, 'resources', 'repo-assets');
 
+// Curated user-facing PubMed skills bundled into the VSIX. The upstream
+// repository contains additional maintainer/internal skills; these are
+// intentionally excluded from end-user installation.
 const pubmedUserSkillNames = [
     'pubmed-quick-search',
     'pubmed-systematic-search',
@@ -53,6 +56,14 @@ const mappings = [
         target: path.join(assetRoot, 'keeper', '.github', 'zotero-research-workflow.md'),
     },
     {
+        source: path.join(repoRoot, 'AGENTS.md'),
+        target: path.join(assetRoot, 'keeper', 'AGENTS.md'),
+    },
+    {
+        source: path.join(repoRoot, '.codex', 'skills', 'zotero-keeper-harness'),
+        target: path.join(assetRoot, 'keeper', '.codex', 'skills', 'zotero-keeper-harness'),
+    },
+    {
         source: path.join(repoRoot, '.cline', 'skills', 'zotero-keeper-harness'),
         target: path.join(assetRoot, 'keeper', '.cline', 'skills', 'zotero-keeper-harness'),
     },
@@ -79,6 +90,10 @@ const mappings = [
     {
         source: path.join(repoRoot, '.cline', 'skills', 'pubmed-search-mcp-harness'),
         target: path.join(assetRoot, 'pubmed-search-mcp', '.cline', 'skills', 'pubmed-search-mcp-harness'),
+    },
+    {
+        source: path.join(repoRoot, '.codex', 'skills', 'pubmed-search-mcp-harness'),
+        target: path.join(assetRoot, 'pubmed-search-mcp', '.codex', 'skills', 'pubmed-search-mcp-harness'),
     },
     ...pubmedClineRuleFiles.map((ruleFile) => ({
         source: path.join(repoRoot, '.clinerules', ruleFile),

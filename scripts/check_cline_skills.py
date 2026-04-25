@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Validate that project skills are discoverable by Cline.
+"""Validate that project assistant harness skills are discoverable.
 
 Checks skill directories under:
+- .codex/skills/
 - .cline/skills/
 - .clinerules/skills/
 - .claude/skills/
@@ -18,9 +19,34 @@ from pathlib import Path
 import yaml
 
 SKILL_ROOTS = (
+    Path(".codex/skills"),
     Path(".cline/skills"),
     Path(".clinerules/skills"),
     Path(".claude/skills"),
+    Path("vscode-extension/resources/repo-assets/keeper/.codex/skills"),
+    Path("vscode-extension/resources/repo-assets/keeper/.cline/skills"),
+    Path("vscode-extension/resources/repo-assets/pubmed-search-mcp/.codex/skills"),
+    Path("vscode-extension/resources/repo-assets/pubmed-search-mcp/.cline/skills"),
+    Path("vscode-extension/resources/repo-assets/pubmed-search-mcp/.claude/skills"),
+)
+
+REQUIRED_SKILL_DIRS = (
+    Path(".codex/skills/zotero-keeper-harness"),
+    Path(".codex/skills/pubmed-search-mcp-harness"),
+    Path(".cline/skills/zotero-keeper-harness"),
+    Path(".cline/skills/pubmed-search-mcp-harness"),
+    Path(
+        "vscode-extension/resources/repo-assets/keeper/.codex/skills/zotero-keeper-harness"
+    ),
+    Path(
+        "vscode-extension/resources/repo-assets/keeper/.cline/skills/zotero-keeper-harness"
+    ),
+    Path(
+        "vscode-extension/resources/repo-assets/pubmed-search-mcp/.codex/skills/pubmed-search-mcp-harness"
+    ),
+    Path(
+        "vscode-extension/resources/repo-assets/pubmed-search-mcp/.cline/skills/pubmed-search-mcp-harness"
+    ),
 )
 
 
@@ -99,13 +125,22 @@ def iter_skill_dirs(root: Path) -> list[Path]:
     if not root.is_dir():
         return []
     return sorted(
-        path for path in root.iterdir() if path.is_dir() and not path.name.startswith(".")
+        path
+        for path in root.iterdir()
+        if path.is_dir() and not path.name.startswith(".")
     )
 
 
 def main() -> int:
     errors: list[str] = []
     checked = 0
+
+    for required_dir in REQUIRED_SKILL_DIRS:
+        if not required_dir.is_dir():
+            errors.append(
+                f"{required_dir}: required assistant harness skill directory is missing"
+            )
+
     for root in SKILL_ROOTS:
         for skill_dir in iter_skill_dirs(root):
             checked += 1
@@ -113,7 +148,7 @@ def main() -> int:
 
     if checked == 0:
         print(
-            "No project skills found under .cline/skills/, .clinerules/skills/, or .claude/skills/"
+            "No project skills found under .codex/skills/, .cline/skills/, .clinerules/skills/, or .claude/skills/"
         )
         return 1
 
