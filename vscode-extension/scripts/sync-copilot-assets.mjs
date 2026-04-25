@@ -111,10 +111,7 @@ function ensureParentDirectory(targetPath) {
 
 /**
  * Normalize line endings for cross-platform compatibility.
- * - .sh files: force LF (CRLF breaks shebang on Linux/macOS)
- * - .ps1 files: force CRLF (PowerShell convention on Windows)
- * - .json files: force LF (RFC 8259, no BOM)
- * - .md files: keep as-is (CRLF is harmless)
+ * - Text assets: force LF so pre-commit and Linux CI agree with Windows sync
  * - All files: strip UTF-8 BOM if present
  */
 function normalizeLineEndings(targetPath) {
@@ -126,16 +123,10 @@ function normalizeLineEndings(targetPath) {
         ? raw.subarray(3)
         : raw;
 
-    if (ext === '.sh' || ext === '.json') {
-        // Force LF for shell scripts and JSON
+    if (['.md', '.json', '.sh', '.ps1'].includes(ext)) {
         const text = content.toString('utf8').replace(/\r\n/g, '\n');
         fs.writeFileSync(targetPath, text, 'utf8');
-    } else if (ext === '.ps1') {
-        // Force CRLF for PowerShell scripts (Windows convention)
-        const text = content.toString('utf8').replace(/\r\n/g, '\n').replace(/\n/g, '\r\n');
-        fs.writeFileSync(targetPath, text, 'utf8');
     }
-    // .md and other files: keep as-is (CRLF is harmless for markdown)
 }
 
 function copyRecursive(sourcePath, targetPath) {

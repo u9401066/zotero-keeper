@@ -27,6 +27,8 @@ dist/
 .windsurf/
 
 # Bundled assistant harness assets shipped in the VSIX.
+!resources/repo-assets/**/.claude/
+!resources/repo-assets/**/.claude/**
 !resources/repo-assets/**/.codex/
 !resources/repo-assets/**/.codex/**
 
