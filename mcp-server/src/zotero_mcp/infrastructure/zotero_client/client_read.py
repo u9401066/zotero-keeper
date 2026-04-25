@@ -138,9 +138,11 @@ class ZoteroReadMixin:
         """Get collections organized as a tree structure"""
         collections = await self.get_collections()
 
-        col_by_key: dict[str, dict] = {}
+        col_by_key: dict[str, dict[str, Any]] = {}
         for col in collections:
             key = col.get("key")
+            if not isinstance(key, str):
+                continue
             data = col.get("data", col)
             col_by_key[key] = {
                 "key": key,

@@ -39,8 +39,8 @@ repos:
 
   # ============================================================
   # 3. Python: type checking (mypy) — run manually, not in pre-commit
-  #    CI already runs: mypy src/ --ignore-missing-imports || true
-  #    Too many pre-existing type errors to block commits
+  #    CI uses a gating baseline command with selected legacy error-code
+  #    suppressions while the codebase is gradually typed.
   # ============================================================
 
   # ============================================================

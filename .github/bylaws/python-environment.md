@@ -47,7 +47,7 @@ project/
 ```
 
 ### 2.3 Python 版本
-- 新專案使用 Python 3.11+
+- 新專案使用 Python 3.12+
 - 版本在 `pyproject.toml` 中明確指定
 
 ---
@@ -66,7 +66,7 @@ requirements.txt     # 相容性匯出（可選，CI 用）
 [project]
 name = "my-project"
 version = "0.1.0"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.104.0",
     "sqlalchemy>=2.0.0",
@@ -129,7 +129,7 @@ uv init my-project
 cd my-project
 
 # 2. 設定 Python 版本
-uv python pin 3.11
+uv python pin 3.12
 
 # 3. 安裝開發依賴
 uv add --dev pytest ruff mypy
@@ -179,7 +179,7 @@ jobs:
           version: "latest"
 
       - name: Set up Python
-        run: uv python install 3.11
+        run: uv python install 3.12
 
       - name: Install dependencies
         run: uv sync --all-extras
@@ -190,7 +190,7 @@ jobs:
 
 ### 5.2 Docker 使用 uv
 ```dockerfile
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # 安裝 uv（從官方映像複製）
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv

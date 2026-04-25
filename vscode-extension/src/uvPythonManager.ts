@@ -17,7 +17,8 @@ import * as https from 'https';
 import * as http from 'http';
 import { execSync } from 'child_process';
 import * as os from 'os';
-import { PUBMED_SEARCH_PACKAGE, PUBMED_SEARCH_VERSION } from './pubmedSearchPackage.js';
+import { PUBMED_SEARCH_PACKAGE, PUBMED_SEARCH_SOURCE_URL, PUBMED_SEARCH_VERSION } from './pubmedSearchPackage.js';
+import { ZOTERO_KEEPER_PACKAGE, ZOTERO_KEEPER_SOURCE_URL, ZOTERO_KEEPER_VERSION } from './zoteroKeeperPackage.js';
 
 // UV download URLs from GitHub releases
 // Using latest stable version
@@ -56,12 +57,6 @@ const UV_DOWNLOADS: Record<string, { url: string; executable: string }> = {
 // Python 3.12+ required for type parameter syntax (PEP 695), TaskGroup, etc.
 const PYTHON_VERSION = '3.12';
 
-// PyPI's latest zotero-keeper release still lags behind the MCP tool fixes in this repo.
-// Install from the tagged GitHub source archive so users get the fixed async/tool behavior
-// without requiring git on macOS, Linux, or Windows.
-const ZOTERO_KEEPER_PACKAGE =
-    'zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.5.27-ext.tar.gz#subdirectory=mcp-server';
-
 // Required packages with minimum versions
 // IMPORTANT: Update these when extension depends on new package features
 // Python 3.12+ required for new core module features
@@ -73,8 +68,13 @@ const REQUIRED_PACKAGES = [
 // Minimum versions for verification (extracted from REQUIRED_PACKAGES)
 // IMPORTANT: Keep in sync with REQUIRED_PACKAGES above!
 const MIN_VERSIONS: Record<string, string> = {
-    'zotero_mcp': '1.12.0',
+    'zotero_mcp': ZOTERO_KEEPER_VERSION,
     'pubmed_search': PUBMED_SEARCH_VERSION,
+};
+
+const SOURCE_URLS: Record<string, string> = {
+    'zotero_mcp': ZOTERO_KEEPER_SOURCE_URL,
+    'pubmed_search': PUBMED_SEARCH_SOURCE_URL,
 };
 
 // Timeout constants (in milliseconds)
@@ -320,7 +320,7 @@ except ImportError as e:
 
 # Use importlib.metadata for accurate version detection
 # __version__ attributes can be stale/incorrect (known issue with some packages)
-from importlib.metadata import version as get_version, PackageNotFoundError
+from importlib.metadata import version as get_version, PackageNotFoundError, distribution
 
 # Map from module name to PyPI package name for metadata lookup
 _pkg_names = {
@@ -329,15 +329,23 @@ _pkg_names = {
 }
 
 min_versions = ${JSON.stringify(MIN_VERSIONS)}
+source_urls = ${JSON.stringify(SOURCE_URLS)}
 for mod_name, min_ver in min_versions.items():
     try:
-        actual_ver = get_version(_pkg_names.get(mod_name, mod_name))
+        pkg_name = _pkg_names.get(mod_name, mod_name)
+        actual_ver = get_version(pkg_name)
     except PackageNotFoundError:
         print(f"MISSING:Package metadata not found for {mod_name}")
         sys.exit(0)
     if Version(actual_ver) < Version(min_ver):
         print(f"OUTDATED:{mod_name}:{actual_ver}:<{min_ver}")
         sys.exit(0)
+    expected_source = source_urls.get(mod_name)
+    if expected_source:
+        direct_url = distribution(pkg_name).read_text("direct_url.json") or ""
+        if expected_source not in direct_url:
+            print(f"OUTDATED_SOURCE:{mod_name}")
+            sys.exit(0)
 print("OK")
 `;
             fs.writeFileSync(scriptPath, versionCheckScript, 'utf-8');
@@ -594,6 +602,7 @@ print("OK")
                     ? `found ${versionOutput}, need ${PYTHON_VERSION}+`
                     : 'existing environment is incomplete or corrupted';
                 this.log(`Removing existing venv before recreate: ${reason}`);
+                await this.killPythonProcesses();
                 await this.rmWithRetry(this.venvDir);
             }
         }
@@ -652,7 +661,7 @@ print("OK")
             onProgress?.(`Installing ${pkgName}...`);
 
             // Use --upgrade to ensure version requirements are met
-            const cmd = `"${this.uvPath}" pip install --upgrade --python "${this.pythonBinary}" "${pkg}"`;
+            const cmd = `"${this.uvPath}" pip install --upgrade --force-reinstall --python "${this.pythonBinary}" "${pkg}"`;
 
             try {
                 execSync(cmd, {
@@ -685,6 +694,9 @@ print("OK")
         this.log('Upgrading packages to meet version requirements...');
 
         try {
+            // Old VSIX installs may leave MCP server processes running from this
+            // venv. Stop them before replacing packages on Windows.
+            await this.killPythonProcesses();
             await this.installPackages((msg) => {
                 this.log(msg);
             });
@@ -804,6 +816,10 @@ print("OK")
         return null;
     }
 
+    private quotePowerShellSingleQuoted(value: string): string {
+        return `'${value.replace(/'/g, "''")}'`;
+    }
+
     /**
      * Kill any running processes that use the venv Python binary.
      * This is required on Windows where running .exe files cannot be deleted (EPERM).
@@ -846,8 +862,9 @@ print("OK")
                     try {
                         // As a fallback, try to kill any python.exe in our venv directory
                         // by checking if our python.exe is locked
+                        const venvPattern = this.quotePowerShellSingleQuoted(`${this.venvDir}*`);
                         execSync(
-                            `powershell -Command "Get-Process python -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '${this.venvDir.replace(/\\/g, '\\\\')}*' } | Stop-Process -Force"`,
+                            `powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Process python -ErrorAction SilentlyContinue | Where-Object { $_.Path -like ${venvPattern} } | Stop-Process -Force"`,
                             { encoding: 'utf-8', stdio: 'pipe', timeout: 10000 }
                         );
                         await new Promise(resolve => setTimeout(resolve, 1000));

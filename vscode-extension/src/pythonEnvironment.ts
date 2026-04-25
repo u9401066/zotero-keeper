@@ -9,11 +9,32 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { PUBMED_SEARCH_PACKAGE, PUBMED_SEARCH_VERSION, compareDottedVersions } from './pubmedSearchPackage.js';
+import { PUBMED_SEARCH_PACKAGE, PUBMED_SEARCH_SOURCE_URL, PUBMED_SEARCH_VERSION, compareDottedVersions } from './pubmedSearchPackage.js';
+import { ZOTERO_KEEPER_PACKAGE, ZOTERO_KEEPER_SOURCE_URL, ZOTERO_KEEPER_VERSION } from './zoteroKeeperPackage.js';
 
-const REQUIRED_PACKAGES = [
-    { name: 'zotero-keeper', importName: 'zotero_mcp', pipName: 'zotero-keeper', minVersion: '1.12.0' },
-    { name: 'pubmed-search-mcp', importName: 'pubmed_search', pipName: PUBMED_SEARCH_PACKAGE, minVersion: PUBMED_SEARCH_VERSION },
+interface RequiredPackage {
+    name: string;
+    importName: string;
+    pipName: string;
+    minVersion: string;
+    sourceUrl: string;
+}
+
+const REQUIRED_PACKAGES: RequiredPackage[] = [
+    {
+        name: 'zotero-keeper',
+        importName: 'zotero_mcp',
+        pipName: ZOTERO_KEEPER_PACKAGE,
+        minVersion: ZOTERO_KEEPER_VERSION,
+        sourceUrl: ZOTERO_KEEPER_SOURCE_URL,
+    },
+    {
+        name: 'pubmed-search-mcp',
+        importName: 'pubmed_search',
+        pipName: PUBMED_SEARCH_PACKAGE,
+        minVersion: PUBMED_SEARCH_VERSION,
+        sourceUrl: PUBMED_SEARCH_SOURCE_URL,
+    },
 ];
 
 // Python 3.12+ required for:
@@ -21,13 +42,18 @@ const REQUIRED_PACKAGES = [
 // - ExceptionGroup (PEP 654)
 // - asyncio.TaskGroup for structured concurrency
 const MIN_PYTHON_VERSION = [3, 12];
+const MANAGED_SYSTEM_VENV_DIR = 'system-python-venv';
+const VENV_CREATION_TIMEOUT_MS = 300000;
+const PACKAGE_INSTALL_TIMEOUT_MS = 300000;
 
 export class PythonEnvironment {
     private pythonPath: string | null = null;
     private outputChannel: vscode.OutputChannel;
+    private managedVenvDir: string;
 
     constructor(private context: vscode.ExtensionContext) {
         this.outputChannel = vscode.window.createOutputChannel('Zotero MCP');
+        this.managedVenvDir = path.join(context.globalStorageUri.fsPath, MANAGED_SYSTEM_VENV_DIR);
     }
 
     /**
@@ -208,7 +234,7 @@ export class PythonEnvironment {
                     return;
                 }
 
-                // Parse version like "Python 3.11.2"
+                // Parse version like "Python 3.12.2"
                 const match = stdout.match(/Python (\d+)\.(\d+)/);
                 if (!match) {
                     resolve(false);
@@ -255,7 +281,7 @@ export class PythonEnvironment {
      * Create virtual environment in extension storage
      */
     private async createVirtualEnvironment(): Promise<string | null> {
-        const venvDir = path.join(this.context.globalStorageUri.fsPath, 'venv');
+        const venvDir = this.managedVenvDir;
         const pythonInVenv = process.platform === 'win32'
             ? path.join(venvDir, 'Scripts', 'python.exe')
             : path.join(venvDir, 'bin', 'python');
@@ -297,7 +323,7 @@ export class PythonEnvironment {
         }
 
         for (const pkg of REQUIRED_PACKAGES) {
-            const installed = await this.checkPackage(pkg.importName, pkg.name, pkg.minVersion);
+            const installed = await this.checkPackage(pkg);
             if (!installed) {
                 this.log(`Package ${pkg.name} is not installed`);
                 return false;
@@ -311,27 +337,72 @@ export class PythonEnvironment {
     /**
      * Check if a single package is installed
      */
-    private async checkPackage(importName: string, packageName: string, minVersion: string): Promise<boolean> {
+    private async checkPackage(pkg: RequiredPackage): Promise<boolean> {
+        const pythonPath = this.pythonPath;
+        if (!pythonPath) {
+            return false;
+        }
+
         return new Promise((resolve) => {
-            cp.exec(
-                `"${this.pythonPath}" -c "import ${importName}; from importlib.metadata import version; print(version('${packageName}'))"`,
+            const script = `
+import json
+import sys
+try:
+    import ${pkg.importName}
+    from importlib.metadata import version, distribution
+    dist = distribution("${pkg.name}")
+    print(json.dumps({
+        "version": version("${pkg.name}"),
+        "direct_url": dist.read_text("direct_url.json") or ""
+    }))
+except Exception as exc:
+    print(str(exc), file=sys.stderr)
+    sys.exit(1)
+`;
+
+            cp.execFile(
+                pythonPath,
+                ['-c', script],
                 (err, stdout) => {
                     if (err) {
                         resolve(false);
                         return;
                     }
 
-                    const installedVersion = stdout.trim();
+                    const raw = stdout.trim();
+                    if (!raw) {
+                        resolve(false);
+                        return;
+                    }
+
+                    let parsed: { version?: string; direct_url?: string };
+                    try {
+                        parsed = JSON.parse(raw);
+                    } catch {
+                        resolve(false);
+                        return;
+                    }
+
+                    const installedVersion = parsed.version ?? '';
                     if (!installedVersion) {
                         resolve(false);
                         return;
                     }
 
-                    const isValid = compareDottedVersions(installedVersion, minVersion) >= 0;
+                    const isValid = compareDottedVersions(installedVersion, pkg.minVersion) >= 0;
                     if (!isValid) {
-                        this.log(`Package ${packageName} is too old: ${installedVersion} < ${minVersion}`);
+                        this.log(`Package ${pkg.name} is too old: ${installedVersion} < ${pkg.minVersion}`);
+                        resolve(false);
+                        return;
                     }
-                    resolve(isValid);
+
+                    if (!parsed.direct_url?.includes(pkg.sourceUrl)) {
+                        this.log(`Package ${pkg.name} is installed from an outdated source`);
+                        resolve(false);
+                        return;
+                    }
+
+                    resolve(true);
                 }
             );
         });
@@ -349,32 +420,161 @@ export class PythonEnvironment {
     }
 
     /**
-     * Install required packages
+     * Resolve uv from extension storage first, then PATH and common user install locations.
+     * This keeps manual/system-Python installs fast without relying on a global pip.
      */
-    async installPackages(): Promise<boolean> {
-        if (!this.pythonPath) {
-            return false;
+    private async resolveUvPath(): Promise<string | null> {
+        const embeddedUv = this.getUvPath();
+        if (embeddedUv) {
+            return embeddedUv;
         }
 
-        this.outputChannel.show();
-        this.log('Installing required packages...');
+        const home = os.homedir();
+        const uvExe = process.platform === 'win32' ? 'uv.exe' : 'uv';
+        const candidates = process.platform === 'win32'
+            ? [
+                path.join(home, 'AppData', 'Local', 'uv', 'bin', uvExe),
+                path.join(home, '.local', 'bin', uvExe),
+                path.join(home, '.cargo', 'bin', uvExe),
+                path.join(process.env.LOCALAPPDATA || '', 'uv', 'bin', uvExe),
+            ]
+            : [
+                path.join(home, '.local', 'bin', uvExe),
+                path.join(home, '.cargo', 'bin', uvExe),
+                '/opt/homebrew/bin/uv',
+                '/usr/local/bin/uv',
+            ];
 
-        const packages = REQUIRED_PACKAGES.map(p => `"${p.pipName}"`).join(' ');
-
-        // Use uv for package installation (required)
-        const uvPath = this.getUvPath();
-        if (!uvPath) {
-            this.log('❌ uv not found. Please install uv: https://docs.astral.sh/uv/getting-started/installation/');
-            return false;
+        for (const candidate of candidates) {
+            if (candidate && fs.existsSync(candidate) && await this.validateCommand(candidate, ['--version'])) {
+                return candidate;
+            }
         }
 
-        const cmd = `"${uvPath}" pip install --upgrade --python "${this.pythonPath}" ${packages}`;
-        this.log('Using uv for package installation');
+        const command = await this.resolveCommand('uv');
+        return command && await this.validateCommand(command, ['--version']) ? command : null;
+    }
 
+    private async resolveCommand(command: string): Promise<string | null> {
         return new Promise((resolve) => {
-            this.log(`Running: ${cmd}`);
+            const locator = process.platform === 'win32' ? 'where' : 'which';
+            cp.exec(`${locator} ${command}`, { env: this.getEnrichedEnv() }, (err, stdout) => {
+                if (err || !stdout.trim()) {
+                    resolve(null);
+                    return;
+                }
+                resolve(stdout.trim().split(/\r?\n/)[0].trim());
+            });
+        });
+    }
 
-            const proc = cp.exec(cmd, { maxBuffer: 10 * 1024 * 1024 });
+    private async validateCommand(command: string, args: string[]): Promise<boolean> {
+        return new Promise((resolve) => {
+            cp.execFile(command, args, { env: this.getEnrichedEnv(), timeout: 10000 }, (err) => {
+                resolve(!err);
+            });
+        });
+    }
+
+    private getManagedPythonPath(): string {
+        if (process.platform === 'win32') {
+            return path.join(this.managedVenvDir, 'Scripts', 'python.exe');
+        }
+        return path.join(this.managedVenvDir, 'bin', 'python');
+    }
+
+    private getVenvRootForPython(pythonPath: string): string | null {
+        const normalized = path.normalize(pythonPath);
+        const parent = path.dirname(normalized);
+        const venvRoot = process.platform === 'win32' && parent.toLowerCase().endsWith('scripts')
+            ? path.dirname(parent)
+            : parent.endsWith(`${path.sep}bin`)
+                ? path.dirname(parent)
+                : null;
+
+        if (!venvRoot) {
+            return null;
+        }
+
+        return fs.existsSync(path.join(venvRoot, 'pyvenv.cfg')) ? venvRoot : null;
+    }
+
+    private isWritableDirectory(dirPath: string): boolean {
+        try {
+            fs.accessSync(dirPath, fs.constants.W_OK);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    private quoteArg(value: string): string {
+        return `"${value.replace(/"/g, '\\"')}"`;
+    }
+
+    private async ensureWritablePackageEnvironment(uvPath: string): Promise<string | null> {
+        if (!this.pythonPath) {
+            return null;
+        }
+
+        const currentVenvRoot = this.getVenvRootForPython(this.pythonPath);
+        if (currentVenvRoot && this.isWritableDirectory(currentVenvRoot)) {
+            this.log(`Installing into existing virtual environment: ${currentVenvRoot}`);
+            return this.pythonPath;
+        }
+
+        const managedPython = this.getManagedPythonPath();
+        if (fs.existsSync(managedPython) && await this.validatePython(managedPython)) {
+            this.pythonPath = managedPython;
+            this.log(`Using managed package environment: ${managedPython}`);
+            return managedPython;
+        }
+
+        fs.mkdirSync(this.context.globalStorageUri.fsPath, { recursive: true });
+
+        if (fs.existsSync(this.managedVenvDir)) {
+            fs.rmSync(this.managedVenvDir, { recursive: true, force: true });
+        }
+
+        this.log(`Creating managed package environment at ${this.managedVenvDir}...`);
+        const cmd = [
+            this.quoteArg(uvPath),
+            'venv',
+            this.quoteArg(this.managedVenvDir),
+            '--python',
+            this.quoteArg(this.pythonPath),
+        ].join(' ');
+
+        const created = await this.execWithOutput(cmd, VENV_CREATION_TIMEOUT_MS, {
+            UV_PYTHON_DOWNLOADS: 'automatic',
+        });
+
+        if (!created || !await this.validatePython(managedPython)) {
+            this.log('Managed package environment creation failed');
+            return null;
+        }
+
+        this.pythonPath = managedPython;
+        this.log(`Managed package environment ready: ${managedPython}`);
+        return managedPython;
+    }
+
+    private async execWithOutput(
+        command: string,
+        timeout: number,
+        extraEnv: NodeJS.ProcessEnv = {}
+    ): Promise<boolean> {
+        return new Promise((resolve) => {
+            this.log(`Running: ${command}`);
+            const proc = cp.exec(command, {
+                maxBuffer: 10 * 1024 * 1024,
+                timeout,
+                env: {
+                    ...this.getEnrichedEnv(),
+                    HOME: process.env.HOME || os.homedir(),
+                    ...extraEnv,
+                },
+            });
 
             proc.stdout?.on('data', (data: string) => {
                 this.outputChannel.append(data);
@@ -386,14 +586,59 @@ export class PythonEnvironment {
 
             proc.on('close', (code) => {
                 if (code === 0) {
-                    this.log('✅ Packages installed successfully');
                     resolve(true);
-                } else {
-                    this.log(`❌ Installation failed with code ${code}`);
-                    resolve(false);
+                    return;
                 }
+
+                this.log(`Command failed with code ${code}`);
+                resolve(false);
+            });
+
+            proc.on('error', (error) => {
+                this.log(`Command failed: ${error.message}`);
+                resolve(false);
             });
         });
+    }
+
+    /**
+     * Install required packages
+     */
+    async installPackages(): Promise<boolean> {
+        if (!this.pythonPath) {
+            return false;
+        }
+
+        this.outputChannel.show();
+        this.log('Installing required packages...');
+
+        const packages = REQUIRED_PACKAGES.map(p => this.quoteArg(p.pipName)).join(' ');
+
+        // Use uv for package installation (required)
+        const uvPath = await this.resolveUvPath();
+        if (!uvPath) {
+            this.log('uv not found. Please install uv: https://docs.astral.sh/uv/getting-started/installation/');
+            return false;
+        }
+
+        const installPython = await this.ensureWritablePackageEnvironment(uvPath);
+        if (!installPython) {
+            return false;
+        }
+
+        const cmd = `${this.quoteArg(uvPath)} pip install --upgrade --force-reinstall --python ${this.quoteArg(installPython)} ${packages}`;
+        this.log('Using uv for package installation in an isolated environment');
+
+        const success = await this.execWithOutput(cmd, PACKAGE_INSTALL_TIMEOUT_MS, {
+            VIRTUAL_ENV: this.getVenvRootForPython(installPython) || this.managedVenvDir,
+        });
+        if (success) {
+            this.log('Packages installed successfully');
+            return true;
+        }
+
+        this.log('Installation failed');
+        return false;
     }
 
     /**

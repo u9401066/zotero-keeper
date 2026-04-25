@@ -65,7 +65,7 @@ build-backend = "hatchling.build"
 packages = ["src/zotero_mcp"]
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 140
 
 [tool.ruff.lint]
@@ -73,7 +73,7 @@ select = ["E", "F", "W"]
 ignore = ["E402", "E501"]  # Allow imports after sys.path and long lines
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = true
 
 [tool.pytest.ini_options]

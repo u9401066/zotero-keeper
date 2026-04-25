@@ -1,9 +1,11 @@
-export const PUBMED_SEARCH_FIXED_COMMIT = '13292cb91215cff707a4380e955967e5e9b3e765';
+export const PUBMED_SEARCH_FIXED_COMMIT = '13292cb91215cff707a4380e955967e5e9b3e765'; // pragma: allowlist secret
 export const PUBMED_SEARCH_VERSION = '0.5.6';
 export const PUBMED_SEARCH_ENTRYPOINT = 'pubmed_search.presentation.mcp_server';
 export const PUBMED_WORKSPACE_DIR_ENV = 'PUBMED_WORKSPACE_DIR';
+export const PUBMED_SEARCH_SOURCE_URL =
+    `https://github.com/u9401066/pubmed-search-mcp/archive/${PUBMED_SEARCH_FIXED_COMMIT}.tar.gz`;
 export const PUBMED_SEARCH_PACKAGE =
-    `pubmed-search-mcp @ https://github.com/u9401066/pubmed-search-mcp/archive/${PUBMED_SEARCH_FIXED_COMMIT}.tar.gz`;
+    `pubmed-search-mcp @ ${PUBMED_SEARCH_SOURCE_URL}`;
 
 export function compareDottedVersions(actual: string, expected: string): number {
     const actualParts = actual.split('.').map(part => Number.parseInt(part, 10));

@@ -7,6 +7,7 @@ and 'uv pip install' commands.
 """
 
 import re
+import subprocess
 import sys
 
 # Files that legitimately discuss pip (documentation, skills, etc.)
@@ -25,12 +26,23 @@ EXCLUDED_PATTERNS = [
 
 
 def main() -> int:
-    if len(sys.argv) < 2:
-        return 0
+    filepaths = sys.argv[1:]
+    if not filepaths:
+        try:
+            result = subprocess.run(
+                ["git", "ls-files"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            filepaths = [line for line in result.stdout.splitlines() if line.strip()]
+        except (OSError, subprocess.CalledProcessError) as exc:
+            print(f"ERROR: unable to list tracked files for pip usage scan: {exc}")
+            return 1
 
     matches: list[tuple[str, int, str]] = []
 
-    for filepath in sys.argv[1:]:
+    for filepath in filepaths:
         # Skip excluded files
         if any(re.search(pat, filepath) for pat in EXCLUDED_PATTERNS):
             continue
@@ -48,7 +60,7 @@ def main() -> int:
                 continue
             # Skip lines that are clearly uv pip (e.g., uvPath}" pip, uv pip, uv run pip)
             if re.search(
-                r'uv["\'\'\s}\)]+pip\s+install|uv\s+pip\s+install|uv\s+pip\s+uninstall|uv\s+run\s+pip|uvPath[}"\'\'\s]+\s*pip\s+install',
+                r'uv["\'\'\s}\)]+pip\s+install|uv\s+pip\s+install|uv\s+pip\s+uninstall|uv\s+run\s+pip|uvPath[}"\'\'\s]+\s*pip\s+install|quoteArg\(uvPath\).*pip\s+install',
                 line,
             ):
                 continue
