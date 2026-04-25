@@ -50,7 +50,7 @@ Extension 啟動時自動下載 portable Python：
 1. 檢查 extension storage 是否有 Python
 2. 若無，從 GitHub Release 下載 python-embed.zip
 3. 解壓縮到 extension storage
-4. 安裝 pip packages
+4. 安裝 packages into an extension-managed uv venv
 5. 就緒
 ```
 
@@ -99,9 +99,7 @@ zotero-mcp-server (Linux/macOS)
 ### 1. Python Embeddable Package
 
 使用官方 Python embeddable 版本：
-- Windows: `python-3.11.x-embed-amd64.zip` (~15MB)
-- Linux: 使用 `python-build-standalone` (~25MB)
-- macOS: 使用 `python-build-standalone` (~25MB)
+- Windows/Linux/macOS: uv-managed Python 3.12 in extension global storage
 
 下載來源：
 - https://www.python.org/ftp/python/ (Windows)

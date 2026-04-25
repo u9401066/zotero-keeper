@@ -6,7 +6,7 @@
 
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| Python | 3.11+ | Primary language |
+| Python | 3.12+ | Primary language |
 | FastMCP | 0.4.0+ | MCP SDK |
 | httpx | 0.27+ | Async HTTP client |
 | Pydantic | 2.0+ | Data validation |
@@ -26,7 +26,19 @@
 |-----------|---------------|
 | Zotero | 7.0+ (desktop client) |
 | OS | Linux/Windows/macOS |
-| Python | 3.11+ |
+| Python | 3.12+ |
+
+### VSIX Install Baseline
+
+- Extension release line: `0.5.28` / `v0.5.28-ext`.
+- Python baseline: 3.12+.
+- Package installation uses `uv` into extension-managed venvs, including
+  system/custom Python fallback paths.
+- Runtime package sources are pinned in `zoteroKeeperPackage.ts` and
+  `pubmedSearchPackage.ts` and verified with `direct_url.json`.
+- Assistant harness assets shipped in the VSIX include Copilot instructions,
+  root `AGENTS.md`, `.codex/skills`, `.cline/skills`, `.clinerules`, and the
+  curated PubMed Claude skills.
 
 ## Dependencies
 

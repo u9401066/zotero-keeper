@@ -2,6 +2,29 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.28] - 2026-04-25
+
+### Added
+
+- **Codex harness support**
+  - Bundles a root `AGENTS.md` workspace harness and installs it into target workspaces when no custom `AGENTS.md` exists
+  - Bundles `.codex/skills/zotero-keeper-harness` and `.codex/skills/pubmed-search-mcp-harness`
+  - Keeps Codex, Copilot, Cline, Claude skills, and `.clinerules` synchronized through the VSIX asset pipeline
+
+### Fixed
+
+- **Windows-safe fallback package installs**
+  - System/custom Python fallback now creates a writable extension-managed venv before running `uv pip install`
+  - Prevents permission failures when Windows Store or system Python resolves to protected locations such as `C:\Python314\Lib\site-packages`
+  - Package install command now syncs the resolved MCP Python path back to VS Code and Cline registrations
+- **Old VSIX upgrade path**
+  - Extension-managed install state now validates Python version, direct URL package sources, and package archive origins before reusing an environment
+  - Package refresh stops old venv-backed MCP processes before replacing files on Windows
+- **VSIX asset packaging**
+  - Release workflow now runs extension package/publish scripts so `sync-assets` cannot be skipped
+  - Removed the legacy bundled research agent copy that referenced hidden PubMed import tools
+  - Added package content checks for Codex/Cline/Copilot harness assets
+
 ## [0.5.27] - 2026-04-24
 
 ### Added
@@ -236,7 +259,7 @@ All notable changes to the "Zotero + PubMed MCP" extension will be documented in
   - Added `findFileRecursive()` fallback for tar extraction when `--strip-components` produces unexpected paths
   - Added `findMacPython()` to search well-known macOS Python paths (homebrew, pyenv, Python.framework, Xcode CLI tools)
   - Fixed `checkReadySync()` crash when `uvPath` is empty
-  - Fixed error messages referencing "Python 3.11+" → "Python 3.12+"
+  - Fixed legacy Python requirement messages so current install guidance consistently says "Python 3.12+"
 
 ### Added
 
@@ -316,7 +339,7 @@ All notable changes to the "Zotero + PubMed MCP" extension will be documented in
 
 ### Changed
 
-- **Python 3.11 → Python 3.12** - 環境升級
+- **Legacy Python baseline → Python 3.12** - 環境升級
   - `PYTHON_VERSION` 更新為 `'3.12'`
   - 更好的 async 效能和現代語法支持
 - **Pre-commit hooks** 加入開發流程
@@ -420,10 +443,10 @@ All notable changes to the "Zotero + PubMed MCP" extension will be documented in
 
 ### ✨ Features
 
-- **Full PubMed Integration** - All search and import tools now available:
-  - `search_pubmed_exclude_owned` - Search PubMed excluding articles already in Zotero
-  - `batch_import_from_pubmed` - Batch import with RCR citation metrics
-  - `quick_import_pmids` - Fast PMID import
+- **Full PubMed Integration** - Search and import workflows now available:
+  - Legacy owned-filter search workflow
+  - Legacy batch PMID import workflow with citation metrics
+  - Legacy quick PMID import workflow
   - `import_articles` - Unified import from multiple sources
 
 ### 🔒 Security
@@ -524,7 +547,7 @@ All notable changes to the "Zotero + PubMed MCP" extension will be documented in
 
 ```python
 # Type parameter syntax (PEP 695)
-async def gather_with_errors[T](*coros: Awaitable[T]) -> list[T]: ...
+async def gather_with_errors(*coros: Awaitable[T]) -> list[T]: ...
 
 # Frozen dataclass with slots
 @dataclass(frozen=True, slots=True)
@@ -646,7 +669,7 @@ Now there's just **one main entry point**: `unified_search`
 ### Fixed
 - **🐛 Critical: Python environment priority bug**
   - Previously, extension always used system Python first, ignoring `useEmbeddedPython` setting
-  - Now correctly prioritizes uv-managed Python 3.11 when `useEmbeddedPython=true` (default)
+  - Now correctly prioritizes uv-managed Python 3.12 when `useEmbeddedPython=true` (default)
   - This ensures consistent behavior regardless of user's system Python version
   - Users without Python installed can now use the extension out-of-box
   - Users with incompatible Python versions (e.g., 3.9, 3.14) won't encounter errors
@@ -679,8 +702,8 @@ Now there's just **one main entry point**: `unified_search`
 
 ### Changed
 - **Enhanced MCP Tool Descriptions**:
-  - `search_pubmed_exclude_owned`: Added complete workflow guidance
-  - `quick_import_pmids`: Emphasizes asking Collection first
+  - Legacy owned-filter search workflow: Added complete workflow guidance
+  - Legacy quick PMID import workflow: Emphasizes asking Collection first
   - `list_collections`: Marked as "must use before import"
   - `get_session_pmids`: Added avoid-repeat-search guidance
   - `get_cached_article`: Prioritize cache usage hint
@@ -696,7 +719,7 @@ Now there's just **one main entry point**: `unified_search`
 ### Changed
 - **Switched to uv for Python management** ⭐
   - Replaced embedded Python with uv-managed environment
-  - uv automatically downloads Python 3.11 if needed
+  - uv automatically downloads Python 3.12 if needed
   - 10-100x faster package installation
   - More reliable dependency resolution
   - Smaller extension size (~30KB, uv downloaded on first run ~10MB)
@@ -722,7 +745,7 @@ Now there's just **one main entry point**: `unified_search`
 ### Added
 - **Self-contained mode**: Extension can now download and manage its own Python environment
 - One-click setup wizard for non-technical users
-- Embedded Python support using python-build-standalone (Python 3.11)
+- Embedded Python support using uv-managed Python 3.12
 - Platform support: Windows x64, Linux x64, macOS x64/ARM64
 - New setting `zoteroMcp.useEmbeddedPython` (default: true)
 - New command `Zotero MCP: Reinstall Embedded Python`

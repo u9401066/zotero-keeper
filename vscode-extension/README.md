@@ -1,5 +1,11 @@
 # Zotero + PubMed MCP Extension for VS Code
 
+## What's New in v0.5.28
+
+- **Windows-safe installs and upgrades**: system/custom Python fallback now creates a writable extension-managed venv before `uv pip install`, avoiding protected paths such as `C:\Python314\Lib\site-packages`.
+- **Codex/Cline harness refresh**: VSIX installs Codex `AGENTS.md`, `.codex/skills`, Cline MCP settings, and curated assistant skills while preserving user customizations.
+- **VSIX release guards**: packaging, asset sync, version sync, and direct VSIX content checks now verify the shipped harness and package sources.
+
 ![Zotero + PubMed MCP banner](https://raw.githubusercontent.com/u9401066/zotero-keeper/main/vscode-extension/resources/branding/vsx-banner.png)
 
 🔬 **AI-powered research assistant** - Integrates Zotero reference management and PubMed literature search with GitHub Copilot.

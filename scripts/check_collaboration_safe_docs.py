@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-import sys
 
 
 @dataclass(frozen=True)
@@ -46,7 +45,39 @@ RULES = (
         ),
     ),
     DocRule(
-        path=ROOT / "external" / "pubmed-search-mcp" / ".github" / "agents" / "research.agent.md",
+        path=ROOT / ".github" / "agents" / "research.agent.md",
+        required=("import_articles", "check_articles_owned", "unified_search"),
+        forbidden=(
+            "search_pubmed_exclude_owned",
+            "quick_import_pmids",
+            "import_from_pmids",
+            "batch_import_from_pubmed",
+        ),
+    ),
+    DocRule(
+        path=ROOT
+        / "external"
+        / "pubmed-search-mcp"
+        / ".github"
+        / "agents"
+        / "research.agent.md",
+        required=("import_articles", "check_articles_owned", "unified_search"),
+        forbidden=(
+            "search_pubmed_exclude_owned",
+            "quick_import_pmids",
+            "import_from_pmids",
+            "batch_import_from_pubmed",
+        ),
+    ),
+    DocRule(
+        path=ROOT
+        / "vscode-extension"
+        / "resources"
+        / "repo-assets"
+        / "pubmed-search-mcp"
+        / ".github"
+        / "agents"
+        / "research.agent.md",
         required=("import_articles", "check_articles_owned", "unified_search"),
         forbidden=(
             "search_pubmed_exclude_owned",
@@ -70,7 +101,7 @@ RULES = (
         required=(
             "Current Status (2026-04-09)",
             "UnifiedArticle.to_dict()",
-            "unified_search(..., output_format=\"json\")",
+            'unified_search(..., output_format="json")',
         ),
     ),
     DocRule(
@@ -107,11 +138,15 @@ def main() -> int:
 
         for needle in rule.required:
             if needle not in text:
-                failures.append(f"{rule.path.relative_to(ROOT)} is missing required text: {needle}")
+                failures.append(
+                    f"{rule.path.relative_to(ROOT)} is missing required text: {needle}"
+                )
 
         for needle in rule.forbidden:
             if needle in text:
-                failures.append(f"{rule.path.relative_to(ROOT)} still contains forbidden text: {needle}")
+                failures.append(
+                    f"{rule.path.relative_to(ROOT)} still contains forbidden text: {needle}"
+                )
 
     if failures:
         print("Collaboration-safe documentation guard failed:")

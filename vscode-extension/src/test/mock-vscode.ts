@@ -98,7 +98,7 @@ export function createMockContext(overrides: Partial<MockExtensionContext> = {})
             setKeysForSync: sinon.stub(),
         },
         extension: {
-            packageJSON: { version: '0.5.26' },
+            packageJSON: { version: '0.5.28' },
         },
         ...overrides,
     } as MockExtensionContext;
@@ -157,6 +157,8 @@ export const workspace = {
     getConfiguration: sinon.stub().callsFake((_section?: string) => {
         return new MockWorkspaceConfiguration();
     }),
+    onDidChangeConfiguration: sinon.stub().returns(new Disposable(() => {})),
+    onDidChangeWorkspaceFolders: sinon.stub().returns(new Disposable(() => {})),
     workspaceFolders: undefined as unknown[] | undefined,
 };
 

@@ -1,5 +1,19 @@
 # Decision Log
 
+## 2026-04-25
+
+### DEC-026: VSIX v0.5.28 production install hardening
+- **Decision**: Treat the VSIX as the canonical installer for Zotero Keeper,
+  PubMed Search MCP, and assistant harness assets.
+- **Rationale**:
+  1. System/custom Python installs must use an extension-managed writable venv.
+  2. Package sources must be pinned direct URLs and validated through
+     `direct_url.json` plus `install-state.json`.
+  3. Codex support requires root `AGENTS.md` and packaged `.codex/skills`.
+  4. Release tags must be guarded by asset-sync, no-pip, version-sync, and VSIX
+     content checks.
+- **Release line**: `v0.5.28-ext`.
+
 > 📝 重要架構和實作決策記錄
 
 ## 2026-04-20
@@ -208,7 +222,7 @@
 - **決策**: v0.3.1 使用 uv 取代 embedded Python
 - **理由**:
   1. uv 比 pip 快 10-100x
-  2. 不需要預先安裝 Python - uv 自動下載 Python 3.11
+  2. 不需要預先安裝 Python - uv 自動下載 Python 3.12
   3. Extension 大小從 ~35MB 降到 ~30KB
   4. 解決 Windows 上的 pip 安裝問題
 - **檔案變更**: `embeddedPython.ts` → `uvPythonManager.ts`

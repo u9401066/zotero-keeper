@@ -269,7 +269,7 @@ This release marks the official PyPI publication and VS Code extension improveme
 - **New Python Manager Using uv** ⭐:
   - Replaced embedded Python with [uv](https://github.com/astral-sh/uv)
   - 10-100x faster package installation
-  - Automatic Python 3.11 download and management
+  - Automatic legacy Python download and management
   - Smaller extension size (~30KB, uv ~10MB on first run)
 
 - **Fixed**:
@@ -506,7 +506,7 @@ Comprehensive code quality improvements via ruff static analysis.
 
 - **Test Coverage**: 355 tests passing, 67% coverage
 - **Linter Status**: All critical errors resolved (only E501 line length warnings remain)
-- **Python**: Requires 3.11+ (modern syntax throughout)
+- **Python**: Requires the legacy pre-3.12 baseline used by that historical release
 
 ---
 

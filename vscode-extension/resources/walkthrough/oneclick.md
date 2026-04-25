@@ -5,12 +5,12 @@ This extension is designed for **researchers, physicians, and academics** - no p
 ## What happens when you click "Run Setup Wizard"?
 
 1. **Python Environment** (if needed)
-   - Downloads a self-contained Python environment (~35MB)
+   - Downloads `uv` (~10MB) and creates an isolated Python 3.12 environment
    - No system installation required
    - Completely isolated from other software
 
 2. **MCP Packages**
-   - Automatically installs `zotero-keeper` and `pubmed-search-mcp`
+   - Automatically installs the pinned `zotero-keeper` and `pubmed-search-mcp` package sources
    - These enable AI-powered literature search and reference management
 
 3. **Connection Check**

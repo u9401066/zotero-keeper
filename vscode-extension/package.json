@@ -2,7 +2,7 @@
     "name": "vscode-zotero-mcp",
     "displayName": "Zotero + PubMed MCP",
     "description": "AI-powered research assistant - integrates Zotero reference management and PubMed literature search with GitHub Copilot. One-click setup for researchers!",
-    "version": "0.5.27",
+    "version": "0.5.28",
     "publisher": "u9401066",
     "license": "Apache-2.0",
     "icon": "resources/icon.png",
@@ -287,6 +287,7 @@
     },
     "scripts": {
         "sync-assets": "node ./scripts/sync-copilot-assets.mjs",
+        "sync-assets:check": "node ./scripts/check-sync-assets.mjs",
         "vscode:prepublish": "npm run sync-assets && npm run compile",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",

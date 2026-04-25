@@ -38,7 +38,7 @@ export interface ApiInfo {
 export class StatusBarManager {
     private statusBarItem: vscode.StatusBarItem;
     private context: vscode.ExtensionContext | undefined;
-    private version: string = '0.5.27';
+    private version: string = '0.5.28';
 
     constructor() {
         this.statusBarItem = vscode.window.createStatusBarItem(
@@ -57,7 +57,7 @@ export class StatusBarManager {
 
         // Get version from package.json
         const packageJson = context.extension.packageJSON;
-        this.version = packageJson.version || '0.5.26';
+        this.version = packageJson.version || '0.5.28';
 
         // Register quick menu command
         context.subscriptions.push(

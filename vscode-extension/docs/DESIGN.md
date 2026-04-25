@@ -1,5 +1,7 @@
 # VS Code Extension for Zotero + PubMed MCP Servers
 
+> Current installer note (2026-04-25): the released VSIX uses `UvPythonManager` to download `uv`, create an isolated Python 3.12 venv in VS Code global storage, and install pinned GitHub archive sources for `zotero-keeper` and `pubmed-search-mcp`. Older notes below are historical design sketches and should not be read as the active install contract.
+
 ## 🎯 目標
 
 建立一個 VS Code Extension，讓使用者可以一鍵安裝並使用 Zotero Keeper + PubMed Search MCP servers。
@@ -80,8 +82,8 @@ async function ensureDependencies(): Promise<void> {
         );
 
         if (choice === 'Yes') {
-            // 3. Install via uv
-            await runTerminal(`uv pip install zotero-keeper[all] pubmed-search-mcp`);
+            // 3. Install via uv into an extension-managed venv, never system site-packages
+            await pythonEnv.installPackages();
         }
     }
 }
@@ -132,10 +134,10 @@ async function ensureDependencies(): Promise<void> {
 │                                                      │
 │  Setting up your research assistant...               │
 │                                                      │
-│  ✓ Python 3.11 detected                             │
+│  ✓ Python 3.12 environment ready                    │
 │  ⏳ Installing packages...                          │
-│    - zotero-keeper 1.8.2                            │
-│    - pubmed-search-mcp 0.1.14                       │
+│    - zotero-keeper 1.12.0                           │
+│    - pubmed-search-mcp fixed source snapshot 0.5.6  │
 │  ✓ MCP servers registered                           │
 │                                                      │
 │  Ready! Try asking Copilot:                          │
@@ -199,7 +201,7 @@ async function ensureDependencies(): Promise<void> {
 - 最低版本: 1.99.0 (for `McpServerDefinitionProvider` API)
 
 ### Python
-- 最低版本: 3.11
+- 最低版本: 3.12
 - Required packages:
     - `zotero-keeper[all]>=1.12.0`
     - Extension-managed `pubmed-search-mcp` fixed source snapshot `0.5.6`
