@@ -2,7 +2,7 @@
     "name": "vscode-zotero-mcp",
     "displayName": "Zotero + PubMed MCP",
     "description": "AI-powered research assistant - integrates Zotero reference management and PubMed literature search with GitHub Copilot. One-click setup for researchers!",
-    "version": "0.5.28",
+    "version": "0.5.29",
     "publisher": "u9401066",
     "license": "Apache-2.0",
     "icon": "resources/icon.png",
@@ -40,7 +40,9 @@
         "one-click",
         "self-contained"
     ],
-    "activationEvents": [],
+    "activationEvents": [
+        "onStartupFinished"
+    ],
     "main": "./out/extension.js",
     "contributes": {
         "mcpServerDefinitionProviders": [
@@ -167,6 +169,12 @@
                     "default": true,
                     "description": "Enable PubMed Search MCP server",
                     "order": 31
+                },
+                "zoteroMcp.installCodexConfig": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Force-install MCP servers into Codex CLI's `~/.codex/config.toml` even if `~/.codex` does not yet exist. By default, Codex configuration is only written when `~/.codex` is detected.",
+                    "order": 32
                 },
                 "zoteroMcp.autoInstallPackages": {
                     "type": "boolean",

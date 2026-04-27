@@ -1,5 +1,10 @@
 # Zotero + PubMed MCP Extension for VS Code
 
+## What's New in v0.5.29
+
+- **Codex MCP auto-configuration**: extension now writes `[mcp_servers.zotero-keeper]` and `[mcp_servers.pubmed-search-mcp]` into Codex CLI's `~/.codex/config.toml` automatically (parity with Cline). Honors `$CODEX_HOME`; preserves all unrelated user content.
+- **Cline auto-configuration now actually triggers**: added `onStartupFinished` activation event so Cline-only sessions reliably populate `cline_mcp_settings.json` instead of staying empty.
+
 ## What's New in v0.5.28
 
 - **Windows-safe installs and upgrades**: system/custom Python fallback now creates a writable extension-managed venv before `uv pip install`, avoiding protected paths such as `C:\Python314\Lib\site-packages`.

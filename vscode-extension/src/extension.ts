@@ -15,6 +15,7 @@ import { UvPythonManager } from './uvPythonManager';
 import { ZoteroMcpServerProvider } from './mcpProvider';
 import { StatusBarManager } from './statusBar';
 import { installClineMcpServers, isClineInstalled } from './clineMcpConfig';
+import { installCodexMcpServers, isCodexAvailable } from './codexMcpConfig';
 
 let pythonEnv: PythonEnvironment;
 let uvPython: UvPythonManager;
@@ -300,13 +301,38 @@ function syncClineConfiguration(
     }
 }
 
+function syncCodexConfiguration(
+    pythonPath: string,
+    notifyUser: boolean = false
+): void {
+    if (!isCodexAvailable()) {
+        return;
+    }
+
+    try {
+        const updated = installCodexMcpServers(pythonPath);
+        if (updated) {
+            console.log('Codex MCP servers configured/updated');
+            if (notifyUser) {
+                vscode.window.showInformationMessage(
+                    'Zotero + PubMed MCP servers have been added to Codex (~/.codex/config.toml). Restart Codex CLI to use them.',
+                    'OK'
+                );
+            }
+        }
+    } catch (error) {
+        console.error('Failed to configure Codex MCP servers:', error);
+    }
+}
+
 function syncRuntimeConsumers(
     context: vscode.ExtensionContext,
     pythonPath: string,
-    notifyCline: boolean = false
+    notifyExternal: boolean = false
 ): void {
     registerOrUpdateMcpProvider(pythonPath, context);
-    syncClineConfiguration(context, pythonPath, notifyCline);
+    syncClineConfiguration(context, pythonPath, notifyExternal);
+    syncCodexConfiguration(pythonPath, notifyExternal);
     registerRuntimeSyncListeners(context);
 }
 

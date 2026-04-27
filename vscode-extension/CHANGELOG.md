@@ -2,6 +2,24 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.29] - 2026-04-27
+
+### Added
+
+- **Codex MCP auto-configuration** (parity with Cline)
+  - Extension now automatically writes `[mcp_servers.zotero-keeper]` and `[mcp_servers.pubmed-search-mcp]` blocks into Codex CLI's `~/.codex/config.toml` on activation
+  - Honors `$CODEX_HOME`; falls back to `~/.codex/config.toml`
+  - Line-based block replacement preserves all unrelated user content (comments, other tables, custom MCP servers)
+  - New `zoteroMcp.installCodexConfig` setting force-installs Codex configuration even when `~/.codex` does not yet exist
+  - Atomic write (tmp + rename), idempotent updates, sorted env subtables
+  - Syncs Python path/env updates to Codex when switching between embedded/system Python
+
+### Fixed
+
+- **Cline MCP auto-configuration not actually triggering**
+  - Added `onStartupFinished` to `activationEvents` so the extension actually activates when only Cline is open (Cline does not use the VS Code MCP API and therefore never triggered our previous activation paths)
+  - Result: `cline_mcp_settings.json` is now reliably populated on first launch instead of silently staying empty
+
 ## [0.5.28] - 2026-04-25
 
 ### Added
