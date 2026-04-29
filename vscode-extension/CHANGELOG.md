@@ -2,6 +2,19 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.30] - 2026-04-29
+
+### Changed
+
+- Extension-managed Zotero Keeper installs now point at the `v0.5.30-ext` archive so VSIX users receive the current repository fixes.
+- Development dependencies now include PubMed Search MCP for the full Zotero Keeper test matrix on Python 3.13.
+
+### Fixed
+
+- PubMed citation metrics now tolerate both synchronous and asynchronous `pubmed-search-mcp` implementations.
+- Cline skill audits now resolve paths from the repository root, so they pass when invoked from subdirectories.
+- VSIX asset synchronization checks now normalize text line endings before hashing, preventing false failures on Windows checkouts.
+
 ## [0.5.29] - 2026-04-27
 
 ### Added

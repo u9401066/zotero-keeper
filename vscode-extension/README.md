@@ -1,5 +1,11 @@
 # Zotero + PubMed MCP Extension for VS Code
 
+## What's New in v0.5.30
+
+- **Release install stability**: pins the extension-managed Zotero Keeper install to the new `v0.5.30-ext` archive so users receive the latest runtime fixes.
+- **PubMed citation metrics compatibility**: accepts both sync and async PubMed Search MCP citation-metrics implementations.
+- **CI and VSIX asset checks**: fixes cross-directory Cline skill audits and Windows-safe asset synchronization checks.
+
 ## What's New in v0.5.29
 
 - **Codex MCP auto-configuration**: extension now writes `[mcp_servers.zotero-keeper]` and `[mcp_servers.pubmed-search-mcp]` into Codex CLI's `~/.codex/config.toml` automatically (parity with Cline). Honors `$CODEX_HOME`; preserves all unrelated user content.

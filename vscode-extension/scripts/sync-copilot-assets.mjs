@@ -72,7 +72,10 @@ const mappings = [
         target: path.join(assetRoot, 'keeper', '.clinerules', ruleFile),
     })),
     {
-        source: path.join(repoRoot, 'external', 'pubmed-search-mcp', '.github', 'agents', 'research.agent.md'),
+        // Use the curated cross-MCP research agent. The upstream PubMed
+        // submodule agent may reference optional local tool namespaces that
+        // are not guaranteed to exist in VS Code/Cline workspaces.
+        source: path.join(repoRoot, '.github', 'agents', 'research.agent.md'),
         target: path.join(assetRoot, 'pubmed-search-mcp', '.github', 'agents', 'research.agent.md'),
     },
     {

@@ -13,8 +13,9 @@ This allows both development with submodule and production with installed packag
 import logging
 import os
 import sys
+import inspect
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,13 @@ _configured = False
 _use_submodule = False  # True if using submodule, False if using installed package
 _pubmed_client = None
 _pubmed_client_signature: tuple[str, str | None] | None = None
+
+
+async def await_maybe(value: Any) -> Any:
+    """Await values from async PubMed clients while accepting sync implementations."""
+    if inspect.isawaitable(value):
+        return await value
+    return value
 
 
 def _find_submodule_path() -> Path | None:
@@ -251,7 +259,7 @@ async def fetch_citation_metrics(pmids: list[str]) -> dict[str, dict]:
         from pubmed_search import LiteratureSearcher  # type: ignore
 
         searcher = LiteratureSearcher(email=getattr(client, "email", "zotero@example.com"), api_key=getattr(client, "api_key", None))
-        metrics = await searcher.get_citation_metrics(pmids)
+        metrics = await await_maybe(searcher.get_citation_metrics(pmids))
         logger.info(f"Fetched citation metrics for {len(metrics)} articles")
         return metrics
 

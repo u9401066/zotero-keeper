@@ -18,6 +18,8 @@ from pathlib import Path
 
 import yaml
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
 SKILL_ROOTS = (
     Path(".codex/skills"),
     Path(".cline/skills"),
@@ -136,13 +138,13 @@ def main() -> int:
     checked = 0
 
     for required_dir in REQUIRED_SKILL_DIRS:
-        if not required_dir.is_dir():
+        if not (REPO_ROOT / required_dir).is_dir():
             errors.append(
                 f"{required_dir}: required assistant harness skill directory is missing"
             )
 
     for root in SKILL_ROOTS:
-        for skill_dir in iter_skill_dirs(root):
+        for skill_dir in iter_skill_dirs(REPO_ROOT / root):
             checked += 1
             errors.extend(validate_skill_dir(skill_dir))
 

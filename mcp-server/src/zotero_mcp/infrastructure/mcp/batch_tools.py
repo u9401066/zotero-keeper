@@ -29,7 +29,7 @@ from ..mappers.pubmed_mapper import (
 )
 
 # Import pubmed integration  # noqa: E402
-from ..pubmed import fetch_pubmed_articles, get_pubmed_client, is_using_submodule
+from ..pubmed import await_maybe, fetch_pubmed_articles, get_pubmed_client, is_using_submodule
 
 # Check if pubmed-search is available
 try:
@@ -208,7 +208,7 @@ def register_batch_tools(mcp, zotero_client):
                     searcher = LiteratureSearcher(
                         email=getattr(client, "email", "zotero@example.com"), api_key=getattr(client, "api_key", None)
                     )
-                    citation_metrics = await searcher.get_citation_metrics(pmid_list)
+                    citation_metrics = await await_maybe(searcher.get_citation_metrics(pmid_list))
                     logger.info(f"Fetched citation metrics for {len(citation_metrics)} articles")
                 except ImportError as e:
                     logger.warning(f"Cannot import LiteratureSearcher for citation metrics: {e}")

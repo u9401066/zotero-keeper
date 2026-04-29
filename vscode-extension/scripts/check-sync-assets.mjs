@@ -12,6 +12,19 @@ const syncScript = path.join(scriptDir, 'sync-copilot-assets.mjs');
 function snapshotDirectory(root) {
     const snapshot = new Map();
 
+    function normalizedContent(filePath) {
+        const raw = fs.readFileSync(filePath);
+        let content = raw[0] === 0xEF && raw[1] === 0xBB && raw[2] === 0xBF
+            ? raw.subarray(3)
+            : raw;
+
+        if (['.md', '.json', '.sh', '.ps1'].includes(path.extname(filePath).toLowerCase())) {
+            content = Buffer.from(content.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
+        }
+
+        return content;
+    }
+
     function walk(dir) {
         if (!fs.existsSync(dir)) {
             return;
@@ -31,7 +44,7 @@ function snapshotDirectory(root) {
             }
 
             const relativePath = path.relative(root, fullPath).replaceAll(path.sep, '/');
-            const digest = createHash('sha256').update(fs.readFileSync(fullPath)).digest('hex');
+            const digest = createHash('sha256').update(normalizedContent(fullPath)).digest('hex');
             snapshot.set(relativePath, digest);
         }
     }
