@@ -2,6 +2,7 @@
 
 from collections.abc import Awaitable, Callable
 from datetime import date
+import importlib.util
 from pathlib import Path
 import sys
 from typing import Any
@@ -18,15 +19,21 @@ ImportArticlesTool = Callable[..., Awaitable[dict[str, Any]]]
 def _build_pubmed_unified_article_payload() -> dict[str, Any]:
     """Build a payload from pubmed-search-mcp's canonical UnifiedArticle contract."""
     repo_root = Path(__file__).resolve().parents[4]
-    pubmed_src = repo_root / "external" / "pubmed-search-mcp" / "src"
-    if not pubmed_src.exists():
-        raise FileNotFoundError(f"Missing pubmed-search-mcp source tree: {pubmed_src}")
+    article_contract = repo_root / "external" / "pubmed-search-mcp" / "src" / "pubmed_search" / "domain" / "entities" / "article.py"
+    if not article_contract.exists():
+        raise FileNotFoundError(f"Missing pubmed-search-mcp article contract: {article_contract}")
 
-    pubmed_src_str = str(pubmed_src)
-    if pubmed_src_str not in sys.path:
-        sys.path.insert(0, pubmed_src_str)
+    spec = importlib.util.spec_from_file_location("pubmed_article_contract", article_contract)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load pubmed-search-mcp article contract: {article_contract}")
 
-    from pubmed_search.domain.entities.article import ArticleType, Author, CitationMetrics, UnifiedArticle
+    article_module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = article_module
+    spec.loader.exec_module(article_module)
+    ArticleType = article_module.ArticleType
+    Author = article_module.Author
+    CitationMetrics = article_module.CitationMetrics
+    UnifiedArticle = article_module.UnifiedArticle
 
     article = UnifiedArticle(
         title="Machine Learning for ICU Sedation",
@@ -210,10 +217,7 @@ class TestImportArticles:
         import_articles = _register_import_tool(mock_mcp, mock_client)
 
         result = await import_articles(
-            articles=[
-                {"title": f"Article {index}", "pmid": str(10000000 + index), "authors": [f"Author {index}"]}
-                for index in range(60)
-            ],
+            articles=[{"title": f"Article {index}", "pmid": str(10000000 + index), "authors": [f"Author {index}"]} for index in range(60)],
             skip_duplicates=False,
         )
 
