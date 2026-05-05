@@ -28,8 +28,10 @@ const keeperClineRuleFiles = [
     '10-zotero-python.md',
     '20-zotero-vscode-extension.md',
     '30-zotero-research-workflow.md',
+    '35-foam-llm-wiki.md',
     '40-zotero-release.md',
     'workflows/zotero-full-check.md',
+    'workflows/llm-wiki-build.md',
     'workflows/zotero-mcp-setup.md',
     'workflows/zotero-release-publish.md',
     'workflows/zotero-skills-audit.md',
@@ -46,6 +48,11 @@ const pubmedClineRuleFiles = [
     'workflows/pubmed-skills-audit.md',
 ];
 
+const keeperSkillNames = [
+    'zotero-keeper-harness',
+    'llm-wiki-builder',
+];
+
 const mappings = [
     {
         source: path.join(repoRoot, '.github', 'copilot-user-instructions.md'),
@@ -59,14 +66,14 @@ const mappings = [
         source: path.join(repoRoot, 'AGENTS.md'),
         target: path.join(assetRoot, 'keeper', 'AGENTS.md'),
     },
-    {
-        source: path.join(repoRoot, '.codex', 'skills', 'zotero-keeper-harness'),
-        target: path.join(assetRoot, 'keeper', '.codex', 'skills', 'zotero-keeper-harness'),
-    },
-    {
-        source: path.join(repoRoot, '.cline', 'skills', 'zotero-keeper-harness'),
-        target: path.join(assetRoot, 'keeper', '.cline', 'skills', 'zotero-keeper-harness'),
-    },
+    ...keeperSkillNames.map((skillName) => ({
+        source: path.join(repoRoot, '.codex', 'skills', skillName),
+        target: path.join(assetRoot, 'keeper', '.codex', 'skills', skillName),
+    })),
+    ...keeperSkillNames.map((skillName) => ({
+        source: path.join(repoRoot, '.cline', 'skills', skillName),
+        target: path.join(assetRoot, 'keeper', '.cline', 'skills', skillName),
+    })),
     ...keeperClineRuleFiles.map((ruleFile) => ({
         source: path.join(repoRoot, '.clinerules', ruleFile),
         target: path.join(assetRoot, 'keeper', '.clinerules', ruleFile),
