@@ -1,5 +1,11 @@
 # Zotero + PubMed MCP Extension for VS Code
 
+## What's New in v0.5.31
+
+- **Foam / LLM wiki workflow**: installs new Cline and Codex `llm-wiki-builder` skills for building citation-aware Foam-compatible Markdown note graphs.
+- **Wiki rendering rules**: bundles `.clinerules/35-foam-llm-wiki.md` with Foam wikilink, filename, citation, and evidence hygiene guardrails.
+- **End-to-end wiki build workflow**: adds `.clinerules/workflows/llm-wiki-build.md` to coordinate Zotero, PubMed, full-text/document tools, Markdown writes, and link validation.
+
 ## What's New in v0.5.30
 
 - **Release install stability**: pins the extension-managed Zotero Keeper install to the new `v0.5.30-ext` archive so users receive the latest runtime fixes.

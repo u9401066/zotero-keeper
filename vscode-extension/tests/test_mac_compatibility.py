@@ -474,7 +474,7 @@ class TestSourceCodePatterns(unittest.TestCase):
 
     def test_zotero_keeper_package_uses_extension_archive(self):
         """Zotero Keeper package should be pinned to the current extension archive."""
-        self.assertIn("v0.5.30-ext.tar.gz", self.zk_pkg_source)
+        self.assertIn("v0.5.31-ext.tar.gz", self.zk_pkg_source)
         self.assertIn("#subdirectory=mcp-server", self.zk_pkg_source)
 
     # ─── Cross-file consistency ───

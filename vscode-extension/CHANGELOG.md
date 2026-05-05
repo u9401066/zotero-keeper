@@ -2,6 +2,18 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.31] - 2026-05-05
+
+### Added
+
+- Added Foam-compatible LLM wiki assistant assets for Cline and Codex.
+- Added a complete `.clinerules/workflows/llm-wiki-build.md` workflow for building or refreshing citation-aware Markdown note graphs.
+- Bundled the new Foam/LLM wiki rules, workflow, and skills into the VSIX assistant asset installer.
+
+### Changed
+
+- Extension-managed Zotero Keeper installs now point at the `v0.5.31-ext` archive.
+
 ## [0.5.30] - 2026-04-29
 
 ### Changed
