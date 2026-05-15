@@ -1,5 +1,11 @@
 # Zotero + PubMed MCP Extension for VS Code
 
+## What's New in v0.5.32
+
+- **Zotero 9 readiness**: connection checks now surface Zotero version headers, Connector API version, and Local API read status separately.
+- **PubMed Search 0.5.12 baseline**: updates the managed PubMed Search MCP source pin and keeper dependency floor to the latest release.
+- **Zotero 7/8/9 docs**: setup copy, walkthroughs, and compatibility docs now reflect Zotero 7, 8, and 9 support.
+
 ## What's New in v0.5.31
 
 - **Foam / LLM wiki workflow**: installs new Cline and Codex `llm-wiki-builder` skills for building citation-aware Foam-compatible Markdown note graphs.
@@ -29,7 +35,7 @@
 
 ## ✨ What's New in v0.5.26
 
-- **PubMed Search 0.5.6 baseline**: updates the bundled PubMed Search MCP snapshot to the latest upstream tag with Entrez runtime stability fixes.
+- **PubMed Search 0.5.12 baseline**: updates the bundled PubMed Search MCP snapshot to the latest upstream tag with Entrez runtime stability fixes.
 - **Cline asset compatibility**: fixes strict YAML frontmatter for bundled skills and packages Zotero/PubMed Cline rules into the VSIX.
 - **Marketplace banner fix**: uses a GitHub raw image URL so the VSIX details page renders the banner correctly.
 
@@ -58,7 +64,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 - **Library analytics** (stats, orphan detection)
 - **PDF attachment access** (list attachments, get indexed fulltext)
 
-### 🔍 PubMed Search (v0.5.6)
+### 🔍 PubMed Search (v0.5.12)
 
 - **`unified_search`** - 統一搜尋入口，自動合併去重多來源結果
 - **Multi-source search** (PubMed, Europe PMC, CORE)
@@ -91,7 +97,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 ## Requirements
 
 - **VS Code** 1.99.0 or later
-- **Zotero 7 or 8** running locally (for Zotero features)
+- **Zotero 7, 8, or 9** running locally (for Zotero features)
 
 **Note**: Python is managed automatically by the extension using [uv](https://github.com/astral-sh/uv).
 

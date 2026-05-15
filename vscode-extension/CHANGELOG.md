@@ -2,6 +2,20 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.32] - 2026-05-15
+
+### Changed
+
+- Extension-managed installs now point at the `v0.5.32-ext` archive.
+- PubMed Search MCP is pinned to the `v0.5.12` release and keeper optional dependencies now require `pubmed-search-mcp>=0.5.12`.
+- Zotero-facing docs and setup copy now state compatibility with Zotero 7, 8, and 9.
+
+### Fixed
+
+- `check_connection()` now reports Zotero version headers, Connector API version, and Local API read status separately for clearer Zotero 9 diagnostics.
+- Zotero schema creator-type lookup now falls back to the alternate Local API endpoint when needed.
+- Keeper PubMed bridge helpers tolerate both async and synchronous/mock PubMed client methods.
+
 ## [0.5.31] - 2026-05-05
 
 ### Added
@@ -89,11 +103,11 @@ All notable changes to the "Zotero + PubMed MCP" extension will be documented in
 
 ### Changed
 
-- **PubMed Search baseline upgraded to 0.5.6**
-  - Embedded environment now requires PubMed Search MCP `0.5.6`
-  - PubMed package source now pins upstream commit `13292cb` (`Stabilize Entrez runtime CI tests`) from the `v0.5.6` release
-  - MCP server definition metadata now reports `0.5.6`
-  - Keeper optional dependencies and lockfile now require `pubmed-search-mcp>=0.5.6`
+- **PubMed Search baseline upgraded to 0.5.12**
+  - Embedded environment now requires PubMed Search MCP `0.5.12`
+  - PubMed package source now pins upstream commit `b19af38` from the `v0.5.12` release
+  - MCP server definition metadata now reports `0.5.12`
+  - Keeper optional dependencies and lockfile now require `pubmed-search-mcp>=0.5.12`
 - **Embedded package source updated**
   - Python package installer now points to `v0.5.26-ext` for the embedded `zotero-keeper` source archive
 

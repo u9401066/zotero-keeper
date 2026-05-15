@@ -14,8 +14,8 @@ When you activate the extension, it will automatically install these packages us
 ```bash
 uv venv <extension-storage>/venv --python 3.12
 uv pip install --upgrade --python <extension-storage>/venv/bin/python \
-  "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.5.31-ext.tar.gz#subdirectory=mcp-server" \
-  "pubmed-search-mcp @ https://github.com/u9401066/pubmed-search-mcp/archive/13292cb91215cff707a4380e955967e5e9b3e765.tar.gz"
+  "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.5.32-ext.tar.gz#subdirectory=mcp-server" \
+  "pubmed-search-mcp @ https://github.com/u9401066/pubmed-search-mcp/archive/b19af387b2cf2b67e369fe8f7e0329b223058cfe.tar.gz"
 ```
 
 On Windows the Python path is `<extension-storage>\venv\Scripts\python.exe`.

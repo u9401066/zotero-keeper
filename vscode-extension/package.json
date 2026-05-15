@@ -2,7 +2,7 @@
     "name": "vscode-zotero-mcp",
     "displayName": "Zotero + PubMed MCP",
     "description": "AI-powered research assistant - integrates Zotero reference management and PubMed literature search with GitHub Copilot. One-click setup for researchers!",
-    "version": "0.5.31",
+    "version": "0.5.32",
     "publisher": "u9401066",
     "license": "Apache-2.0",
     "icon": "resources/icon.png",
@@ -273,7 +273,7 @@
                     {
                         "id": "zotero",
                         "title": "Connect to Zotero",
-                        "description": "Make sure Zotero (7 or 8) is running on your computer.\n\n[Check Connection](command:zoteroMcp.checkConnection)\n\n[Download Zotero](https://www.zotero.org/download/)",
+                        "description": "Make sure Zotero (7, 8, or 9) is running on your computer.\n\n[Check Connection](command:zoteroMcp.checkConnection)\n\n[Download Zotero](https://www.zotero.org/download/)",
                         "media": {
                             "markdown": "resources/walkthrough/zotero.md"
                         },
