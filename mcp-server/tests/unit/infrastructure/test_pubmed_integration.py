@@ -12,7 +12,7 @@ class TestFetchPubmedArticles:
     @pytest.mark.asyncio
     @patch("zotero_mcp.infrastructure.pubmed.get_pubmed_client")
     async def test_awaits_client_fetch_details(self, mock_get_client):
-        """The helper should await the v0.5.6 async PubMed client."""
+        """The helper should await async PubMed clients."""
         mock_client = MagicMock()
         mock_client.fetch_details = AsyncMock(return_value=[{"pmid": "12345678"}])
         mock_get_client.return_value = mock_client
@@ -21,6 +21,19 @@ class TestFetchPubmedArticles:
 
         assert result == [{"pmid": "12345678"}]
         mock_client.fetch_details.assert_awaited_once_with(["12345678"])
+
+    @pytest.mark.asyncio
+    @patch("zotero_mcp.infrastructure.pubmed.get_pubmed_client")
+    async def test_accepts_sync_client_fetch_details(self, mock_get_client):
+        """The helper should tolerate older or mocked sync PubMed clients."""
+        mock_client = MagicMock()
+        mock_client.fetch_details.return_value = [{"pmid": "12345678"}]
+        mock_get_client.return_value = mock_client
+
+        result = await fetch_pubmed_articles(["12345678"])
+
+        assert result == [{"pmid": "12345678"}]
+        mock_client.fetch_details.assert_called_once_with(["12345678"])
 
     @pytest.mark.asyncio
     @patch("zotero_mcp.infrastructure.pubmed.get_pubmed_client")

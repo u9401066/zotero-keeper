@@ -1,5 +1,5 @@
-export const PUBMED_SEARCH_FIXED_COMMIT = '13292cb91215cff707a4380e955967e5e9b3e765'; // pragma: allowlist secret
-export const PUBMED_SEARCH_VERSION = '0.5.6';
+export const PUBMED_SEARCH_FIXED_COMMIT = 'b19af387b2cf2b67e369fe8f7e0329b223058cfe'; // pragma: allowlist secret
+export const PUBMED_SEARCH_VERSION = '0.5.12';
 export const PUBMED_SEARCH_ENTRYPOINT = 'pubmed_search.presentation.mcp_server';
 export const PUBMED_WORKSPACE_DIR_ENV = 'PUBMED_WORKSPACE_DIR';
 export const PUBMED_SEARCH_SOURCE_URL =

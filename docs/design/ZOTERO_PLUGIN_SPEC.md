@@ -29,7 +29,7 @@
 
 ### 1.1 一句話描述
 
-**Zotero Keeper Plugin** 是一個 Zotero 7/8 原生外掛，透過暴露 Zotero 完整內部 JavaScript API（包括檔案系統、全文索引、PDF 內容、附件管理等），為外部 AI Agent（如 MCP Server）提供一個高權限的 HTTP Bridge，徹底解決 Local API 的功能限制。
+**Zotero Keeper Plugin** 是一個 Zotero 7/8/9 原生外掛，透過暴露 Zotero 完整內部 JavaScript API（包括檔案系統、全文索引、PDF 內容、附件管理等），為外部 AI Agent（如 MCP Server）提供一個高權限的 HTTP Bridge，徹底解決 Local API 的功能限制。
 
 ### 1.2 核心價值
 
@@ -140,7 +140,7 @@ zotero-keeper 生態系完整圖:
 
 ## 3. 技術架構
 
-### 3.1 Zotero 7/8 Plugin 基礎架構
+### 3.1 Zotero 7/8/9 Plugin 基礎架構
 
 Zotero 7+ 使用 **bootstrapped plugin** 架構（非 WebExtension、非 XUL Overlay）：
 

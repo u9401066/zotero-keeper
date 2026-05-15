@@ -204,6 +204,30 @@ class TestZoteroClientRequest:
 
         assert result == "plain text response"
 
+    @pytest.mark.asyncio
+    async def test_request_raw_response_exposes_headers(self, mock_config):
+        """Raw requests expose Zotero version headers for capability probes."""
+        from zotero_mcp.infrastructure.zotero_client.client import ZoteroClient
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.text = "<!DOCTYPE html><html><body>Zotero is running</body></html>"
+        mock_response.headers = {
+            "X-Zotero-Version": "9.0.3",
+            "X-Zotero-Connector-API-Version": "3",
+        }
+
+        mock_http = AsyncMock()
+        mock_http.request.return_value = mock_response
+
+        client = ZoteroClient(config=mock_config)
+        client._client = mock_http
+
+        response = await client._request_raw("GET", "/connector/ping")
+
+        assert response is mock_response
+        assert response.headers["X-Zotero-Version"] == "9.0.3"
+
 
 class TestZoteroClientPing:
     """Test ZoteroClient ping method."""
@@ -232,6 +256,68 @@ class TestZoteroClientPing:
             result = await client.ping()
 
         assert result is False
+
+    @pytest.mark.asyncio
+    async def test_get_capabilities_reports_zotero_9_headers_and_local_api(self, mock_config):
+        """Capability probe distinguishes connector and Local API status for Zotero 9."""
+        from zotero_mcp.infrastructure.zotero_client.client import ZoteroClient
+
+        ping_response = Mock()
+        ping_response.status_code = 200
+        ping_response.text = "<!DOCTYPE html><html><body>Zotero is running</body></html>"
+        ping_response.headers = {
+            "X-Zotero-Version": "9.0.3",
+            "X-Zotero-Connector-API-Version": "3",
+        }
+
+        local_response = Mock()
+        local_response.status_code = 200
+        local_response.text = "[]"
+        local_response.headers = {"Zotero-API-Version": "3"}
+
+        client = ZoteroClient(config=mock_config)
+
+        with patch.object(client, "_request_raw", side_effect=[ping_response, local_response]) as mock_raw:
+            capabilities = await client.get_capabilities()
+
+        assert capabilities["connected"] is True
+        assert capabilities["zotero_version"] == "9.0.3"
+        assert capabilities["connector_api_version"] == "3"
+        assert capabilities["local_api_readable"] is True
+        assert capabilities["local_api_version"] == "3"
+        assert capabilities["supports_zotero_major_versions"] == [7, 8, 9]
+        mock_raw.assert_any_call("GET", "/connector/ping")
+        mock_raw.assert_any_call("GET", "/api/users/0/items", params={"limit": 1})
+
+    @pytest.mark.asyncio
+    async def test_get_capabilities_reports_connector_and_local_api_separately(self, mock_config):
+        """Connector ping can succeed even when Local API is disabled or blocked."""
+        from zotero_mcp.infrastructure.zotero_client.client import ZoteroClient, ZoteroAPIError
+
+        ping_response = Mock()
+        ping_response.status_code = 200
+        ping_response.text = "Zotero is running"
+        ping_response.headers = {
+            "X-Zotero-Version": "9.0.3",
+            "X-Zotero-Connector-API-Version": "3",
+        }
+
+        client = ZoteroClient(config=mock_config)
+
+        with patch.object(
+            client,
+            "_request_raw",
+            side_effect=[
+                ping_response,
+                ZoteroAPIError("Local API is not enabled", status_code=403, response_text="Local API is not enabled"),
+            ],
+        ):
+            capabilities = await client.get_capabilities()
+
+        assert capabilities["connected"] is True
+        assert capabilities["local_api_readable"] is False
+        assert capabilities["local_api_status_code"] == 403
+        assert "Local API is not enabled" in capabilities["local_api_message"]
 
 
 class TestZoteroClientItems:
@@ -419,6 +505,32 @@ class TestZoteroClientSavedSearches:
 
         assert len(result) == 1
         mock_req.assert_called_with("GET", "/api/users/0/searches/SRCH001/items", params={"limit": 50})
+
+
+class TestZoteroClientSchema:
+    """Test Zotero schema endpoint compatibility."""
+
+    @pytest.mark.asyncio
+    async def test_get_creator_types_falls_back_to_legacy_endpoint(self, mock_config):
+        """Zotero schema lookup falls back if itemTypeCreatorTypes is unavailable."""
+        from zotero_mcp.infrastructure.zotero_client.client import ZoteroAPIError, ZoteroClient
+
+        client = ZoteroClient(config=mock_config)
+        expected = [{"creatorType": "author"}]
+
+        with patch.object(
+            client,
+            "_request",
+            side_effect=[
+                ZoteroAPIError("No endpoint found", status_code=404, response_text="No endpoint found"),
+                expected,
+            ],
+        ) as mock_req:
+            result = await client.get_creator_types("journalArticle")
+
+        assert result == expected
+        assert mock_req.call_args_list[0].args == ("GET", "/api/itemTypeCreatorTypes")
+        assert mock_req.call_args_list[1].args == ("GET", "/api/creatorTypes")
 
 
 class TestZoteroClientWrite:

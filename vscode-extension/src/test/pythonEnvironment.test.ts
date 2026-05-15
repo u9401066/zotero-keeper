@@ -80,9 +80,9 @@ describe('PythonEnvironment', () => {
         });
 
         it('should compare version baselines numerically', () => {
-            assert.strictEqual(compareDottedVersions('0.5.5', PUBMED_SEARCH_VERSION) < 0, true);
-            assert.strictEqual(compareDottedVersions(PUBMED_SEARCH_VERSION, '0.5.6'), 0);
-            assert.strictEqual(compareDottedVersions('0.5.7', PUBMED_SEARCH_VERSION) > 0, true);
+            assert.strictEqual(compareDottedVersions('0.5.11', PUBMED_SEARCH_VERSION) < 0, true);
+            assert.strictEqual(compareDottedVersions(PUBMED_SEARCH_VERSION, '0.5.12'), 0);
+            assert.strictEqual(compareDottedVersions('0.5.13', PUBMED_SEARCH_VERSION) > 0, true);
         });
     });
 

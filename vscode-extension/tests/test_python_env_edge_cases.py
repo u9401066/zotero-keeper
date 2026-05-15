@@ -37,7 +37,7 @@ DEFAULT_RELEASE_ZOTERO_KEEPER_PACKAGE = (
     "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/"
     "v0.5.28-ext.tar.gz#subdirectory=mcp-server"
 )
-PUBMED_SEARCH_FIXED_COMMIT = "13292cb91215cff707a4380e955967e5e9b3e765"
+PUBMED_SEARCH_FIXED_COMMIT = "b19af387b2cf2b67e369fe8f7e0329b223058cfe"
 PUBMED_SEARCH_PACKAGE = (
     "pubmed-search-mcp @ "
     f"https://github.com/u9401066/pubmed-search-mcp/archive/{PUBMED_SEARCH_FIXED_COMMIT}.tar.gz"
@@ -764,7 +764,7 @@ class TestPythonEnvEdgeCases:
         _all_ok = True
         for pkg_name, import_name, min_ver in [
             ("zotero-keeper", "zotero_mcp", "1.12.0"),
-            ("pubmed-search-mcp", "pubmed_search", "0.5.6"),
+            ("pubmed-search-mcp", "pubmed_search", "0.5.12"),
         ]:
             attr_ver = self._check_package_version(venv_dir, import_name)
             pip_ver = self._check_installed_version_via_pip(venv_dir, pkg_name)

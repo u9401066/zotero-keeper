@@ -15,6 +15,8 @@ import os
 from pathlib import Path
 from typing import Any
 
+from .client_base import ZoteroAPIError
+
 logger = logging.getLogger(__name__)
 
 
@@ -219,11 +221,22 @@ class ZoteroReadMixin:
 
     async def get_creator_types(self, item_type: str) -> list[dict[str, Any]]:
         """Get creator types for a specific item type"""
-        return await self._request(
-            "GET",
-            "/api/itemTypeCreatorTypes",
-            params={"itemType": item_type},
-        )
+        params = {"itemType": item_type}
+        try:
+            return await self._request(
+                "GET",
+                "/api/itemTypeCreatorTypes",
+                params=params,
+            )
+        except ZoteroAPIError as e:
+            if e.status_code not in {404, 501}:
+                raise
+            logger.debug("Falling back to Zotero creatorTypes schema endpoint")
+            return await self._request(
+                "GET",
+                "/api/creatorTypes",
+                params=params,
+            )
 
     # ==================== Attachments & Fulltext ====================
 

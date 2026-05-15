@@ -95,10 +95,28 @@ class ZoteroClientBase:
         self,
         method: str,
         path: str,
-        json_data: dict | None = None,
-        params: dict | None = None,
+        json_data: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
     ) -> Any:
         """Make HTTP request to Zotero API"""
+        response = await self._request_raw(method, path, json_data=json_data, params=params)
+
+        # Parse JSON response
+        if response.text:
+            try:
+                return response.json()
+            except json.JSONDecodeError:
+                return response.text
+        return None
+
+    async def _request_raw(
+        self,
+        method: str,
+        path: str,
+        json_data: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+    ) -> httpx.Response:
+        """Make HTTP request and return the raw response for header-aware probes."""
         client = await self._get_client()
 
         try:
@@ -117,13 +135,7 @@ class ZoteroClientBase:
                     response_text=response.text,
                 )
 
-            # Parse JSON response
-            if response.text:
-                try:
-                    return response.json()
-                except json.JSONDecodeError:
-                    return response.text
-            return None
+            return response
 
         except httpx.ConnectError as e:
             # Close and reset client on connection failure to prevent stale connections
@@ -147,3 +159,72 @@ class ZoteroClientBase:
             return "Zotero is running" in str(result)
         except Exception:
             return False
+
+    @staticmethod
+    def _header_value(headers: Any, name: str) -> str | None:
+        """Read a response header from httpx.Headers or a plain dict."""
+        if not headers:
+            return None
+        value = headers.get(name)
+        if value is not None:
+            return str(value)
+        lower_name = name.lower()
+        for key, header_value in headers.items():
+            if str(key).lower() == lower_name:
+                return str(header_value)
+        return None
+
+    async def get_capabilities(self) -> dict[str, Any]:
+        """
+        Probe Zotero's local HTTP capabilities without mutating the library.
+
+        Zotero 7/8/9 expose useful version metadata on the connector ping response,
+        while Local API read access can be disabled independently. Keep those
+        statuses separate so callers can diagnose Zotero 9 security/port changes.
+        """
+        capabilities: dict[str, Any] = {
+            "connected": False,
+            "endpoint": self.config.base_url,
+            "zotero_version": None,
+            "connector_api_version": None,
+            "local_api_readable": False,
+            "local_api_version": None,
+            "connector_save_available": None,
+            "supports_zotero_major_versions": [7, 8, 9],
+        }
+
+        try:
+            ping_response = await self._request_raw("GET", "/connector/ping")
+        except ZoteroAPIError as e:
+            capabilities.update(
+                {
+                    "connector_status_code": e.status_code,
+                    "message": e.response_text or str(e),
+                }
+            )
+            return capabilities
+
+        capabilities["zotero_version"] = self._header_value(ping_response.headers, "X-Zotero-Version")
+        capabilities["connector_api_version"] = self._header_value(
+            ping_response.headers,
+            "X-Zotero-Connector-API-Version",
+        )
+        capabilities["connected"] = "Zotero is running" in ping_response.text
+
+        if not capabilities["connected"]:
+            capabilities["message"] = "Zotero responded but returned unexpected content"
+            return capabilities
+
+        capabilities["message"] = "Zotero is running"
+
+        try:
+            local_response = await self._request_raw("GET", "/api/users/0/items", params={"limit": 1})
+            capabilities["local_api_readable"] = True
+            capabilities["local_api_version"] = self._header_value(local_response.headers, "Zotero-API-Version")
+        except ZoteroAPIError as e:
+            capabilities["local_api_status_code"] = e.status_code
+            capabilities["local_api_message"] = e.response_text or str(e)
+        except Exception as e:
+            capabilities["local_api_message"] = str(e)
+
+        return capabilities

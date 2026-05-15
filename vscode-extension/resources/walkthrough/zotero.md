@@ -1,10 +1,10 @@
 # Connect to Zotero
 
-The extension communicates with **Zotero** (7 or 8) running on your computer.
+The extension communicates with **Zotero** (7, 8, or 9) running on your computer.
 
 ## Requirements
 
-1. **Zotero 7 or 8** must be installed and running
+1. **Zotero 7, 8, or 9** must be installed and running
 2. The built-in API server must be enabled (default: port 23119)
 
 ## Download Zotero

@@ -159,14 +159,24 @@ class ZoteroKeeperServer:
                 Connection status and endpoint info
             """
             try:
-                is_running = await self._zotero.ping()
+                capabilities = await self._zotero.get_capabilities()
+                is_running = bool(capabilities.get("connected"))
                 result: dict[str, Any] = {
                     "connected": is_running,
                     "endpoint": self._zotero.config.base_url,
-                    "message": "Zotero is running" if is_running else "Cannot connect to Zotero",
+                    "message": capabilities.get("message") or ("Zotero is running" if is_running else "Cannot connect to Zotero"),
+                    "zotero_version": capabilities.get("zotero_version"),
+                    "connector_api_version": capabilities.get("connector_api_version"),
+                    "local_api_readable": capabilities.get("local_api_readable", False),
+                    "local_api_version": capabilities.get("local_api_version"),
+                    "capabilities": capabilities,
                 }
                 if not is_running:
-                    result["hint"] = "Zotero responded but returned unexpected content. Make sure Zotero 7 is running (not just Zotero 6)."
+                    result["hint"] = "Zotero responded but returned unexpected content. Make sure Zotero 7, 8, or 9 is running."
+                elif not result["local_api_readable"]:
+                    result["hint"] = (
+                        "Connector ping works, but Zotero Local API reads are unavailable. Check Zotero's local API setting and port/security configuration."
+                    )
                 return result
             except ZoteroConnectionError as e:
                 return {

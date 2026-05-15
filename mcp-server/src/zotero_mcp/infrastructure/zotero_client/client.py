@@ -27,7 +27,7 @@ class ZoteroClient(ZoteroClientBase, ZoteroReadMixin, ZoteroWriteMixin):
     """
     HTTP Client for Zotero Local API
 
-    Uses Zotero 7's built-in Local API for read operations
+    Uses Zotero 7/8/9's built-in Local API for read operations
     and Connector API for write operations.
 
     Composed from:

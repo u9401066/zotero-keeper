@@ -15,7 +15,7 @@ import os
 import sys
 import inspect
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 logger = logging.getLogger(__name__)
 
@@ -183,7 +183,7 @@ def is_pubmed_available() -> bool:
     return _configure_pubmed_search()
 
 
-async def fetch_pubmed_articles(pmids: list[str]) -> list[dict]:
+async def fetch_pubmed_articles(pmids: list[str]) -> list[dict[str, Any]]:
     """
     Fetch complete article details from PubMed.
 
@@ -204,7 +204,7 @@ async def fetch_pubmed_articles(pmids: list[str]) -> list[dict]:
         return []
 
     client = get_pubmed_client()
-    return await client.fetch_details(pmids)
+    return cast(list[dict[str, Any]], await await_maybe(client.fetch_details(pmids)))
 
 
 async def search_pubmed_raw(
@@ -217,18 +217,23 @@ async def search_pubmed_raw(
     date_to: Optional[str] = None,
     article_type: Optional[str] = None,
     strategy: str = "relevance",
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Run a raw PubMed search through the shared pubmed integration wrapper."""
     client = get_pubmed_client()
-    return await client.search_raw(
-        query=query,
-        limit=limit,
-        min_year=min_year,
-        max_year=max_year,
-        date_from=date_from,
-        date_to=date_to,
-        article_type=article_type,
-        strategy=strategy,
+    return cast(
+        list[dict[str, Any]],
+        await await_maybe(
+            client.search_raw(
+                query=query,
+                limit=limit,
+                min_year=min_year,
+                max_year=max_year,
+                date_from=date_from,
+                date_to=date_to,
+                article_type=article_type,
+                strategy=strategy,
+            )
+        ),
     )
 
 

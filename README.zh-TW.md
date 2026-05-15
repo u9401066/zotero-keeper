@@ -5,7 +5,7 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![MCP SDK](https://img.shields.io/badge/MCP-FastMCP-green.svg)](https://github.com/modelcontextprotocol/python-sdk)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Zotero 7/8](https://img.shields.io/badge/Zotero-7%20%2F%208-red.svg)](https://www.zotero.org/)
+[![Zotero 7/8/9](https://img.shields.io/badge/Zotero-7%20%2F%208%20%2F%209-red.svg)](https://www.zotero.org/)
 [![CI](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml/badge.svg)](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml)
 
 > 🌐 **[English](README.md)** | **繁體中文**
@@ -14,7 +14,7 @@
 
 ## 🚀 一鍵安裝 (VS Code)
 
-> **前置作業**：必須先啟動 [Zotero 7 或 8](https://www.zotero.org/download/)
+> **前置作業**：必須先啟動 [Zotero 7、8 或 9](https://www.zotero.org/download/)
 
 <a href="vscode:mcp/install?%7B%22name%22%3A%22zotero-keeper%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22zotero-keeper%22%5D%7D"><img src="https://img.shields.io/badge/VS%20Code-%E5%AE%89%E8%A3%9D%20MCP%20Server-007ACC?style=for-the-badge&logo=visualstudiocode" alt="Install in VS Code"></a>
 <a href="vscode-insiders:mcp/install?%7B%22name%22%3A%22zotero-keeper%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22zotero-keeper%22%5D%7D"><img src="https://img.shields.io/badge/VS%20Code%20Insiders-%E5%AE%89%E8%A3%9D%20MCP%20Server-24bfa5?style=for-the-badge&logo=visualstudiocode" alt="Install in VS Code Insiders"></a>
@@ -57,7 +57,7 @@
 ### 你需要準備
 
 - ✅ [Python 3.12+](https://www.python.org/downloads/)
-- ✅ [Zotero 7 or 8](https://www.zotero.org/download/) (要先執行)
+- ✅ [Zotero 7、8 或 9](https://www.zotero.org/download/) (要先執行)
 - ✅ [VS Code](https://code.visualstudio.com/) + GitHub Copilot，或 [Claude Desktop](https://claude.ai/)
 - ✅ [uv](https://docs.astral.sh/uv/getting-started/installation/) 套件管理工具 (推薦)
 

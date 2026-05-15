@@ -11,7 +11,7 @@
 ## Setup Checklist
 
 1. **Prerequisites**
-   - Zotero 7/8 is running on the same machine (`localhost:23119`).
+   - Zotero 7/8/9 is running on the same machine (`localhost:23119`).
    - Python 3.12+ with `uv` installed (no `pip` usage).
 2. **pubmed-search-mcp available**
    - If you work in this monorepo: `git submodule update --init --recursive` to populate `external/pubmed-search-mcp`.
