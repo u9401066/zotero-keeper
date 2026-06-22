@@ -15,14 +15,16 @@
 - [x] 執行 `vscode-extension` 的 `sync-assets`、`compile` 與 focused unit tests (2026-04-15)
 - [x] 推送 `main` 並刪除已 merged 的遠端分支 (2026-04-15)
 - [x] 完成 PubMed Search 啟動回歸修復的 release 前驗證，包含 lint、compile、focused mocha tests 與 VSIX package (2026-04-20)
+- [x] 確認 `pubmed-search-mcp v0.5.17` GitHub release commit 與 PyPI resolver 皆可用 (2026-06-22)
+- [x] 將 `external/pubmed-search-mcp` 更新到 `v0.5.17` commit `60ea753` (2026-06-22)
 
 ## Doing
-- [ ] 準備發布 VS Code extension v0.5.23
+- [ ] 準備發布 VS Code extension v0.5.33
 
 ## Next
 - [ ] 建立 release commit 並推送 `main`
-- [ ] 推送 `v0.5.23-ext` tag 觸發 Marketplace 發布
-- [ ] 視需要處理 `external/pubmed-search-mcp` stash `pre-sync-2026-04-15-uvlock`
+- [ ] 推送 `v0.5.33-ext` tag 觸發 Marketplace/VSIX 發布
+- [ ] 驗證 GitHub Actions release/publish workflow 結果
 
 ## Blocked
 - [ ] 無

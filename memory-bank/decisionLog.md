@@ -1,5 +1,20 @@
 # Decision Log
 
+## 2026-06-22
+
+### DEC-027: VSIX v0.5.33 upgrades managed PubMed Search to v0.5.17
+- **Decision**: Keep extension-managed PubMed Search installs on a fixed GitHub
+  commit archive, but advance the baseline from `0.5.12` to `0.5.17`.
+- **Rationale**:
+  1. `pubmed-search-mcp v0.5.17` fixes source API contact email propagation for
+     OpenAlex, CrossRef, Unpaywall, and fulltext downloader fallbacks.
+  2. The VSIX installer must remain reproducible and refresh when direct URL
+     package sources change, so `pubmedSearchPackage.ts` continues to pin a
+     specific upstream commit archive.
+  3. Keeper optional/dev dependency metadata should accept the PyPI `0.5.17`
+     release while the extension package path keeps the exact commit source.
+- **Release line**: `v0.5.33-ext`.
+
 ## 2026-04-25
 
 ### DEC-026: VSIX v0.5.28 production install hardening

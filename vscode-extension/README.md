@@ -1,5 +1,11 @@
 # Zotero + PubMed MCP Extension for VS Code
 
+## What's New in v0.5.33
+
+- **PubMed Search 0.5.17 baseline**: updates the managed PubMed Search MCP source pin, bundled assistant assets, and keeper dependency floor to the latest contact-email fallback release.
+- **Managed install refresh**: extension-managed installs now point at the `v0.5.33-ext` archive and the `pubmed-search-mcp` `v0.5.17` commit archive.
+- **Fulltext source contact fix**: managed PubMed installs now inherit the runtime contact email for OpenAlex, CrossRef, Unpaywall, and fulltext downloader fallbacks.
+
 ## What's New in v0.5.32
 
 - **Zotero 9 readiness**: connection checks now surface Zotero version headers, Connector API version, and Local API read status separately.
@@ -64,7 +70,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 - **Library analytics** (stats, orphan detection)
 - **PDF attachment access** (list attachments, get indexed fulltext)
 
-### 🔍 PubMed Search (v0.5.12)
+### 🔍 PubMed Search (v0.5.17)
 
 - **`unified_search`** - 統一搜尋入口，自動合併去重多來源結果
 - **Multi-source search** (PubMed, Europe PMC, CORE)

@@ -30,12 +30,15 @@
 
 ### VSIX Install Baseline
 
-- Extension release line: `0.5.28` / `v0.5.28-ext`.
+- Extension release line: `0.5.33` / `v0.5.33-ext`.
 - Python baseline: 3.12+.
 - Package installation uses `uv` into extension-managed venvs, including
   system/custom Python fallback paths.
 - Runtime package sources are pinned in `zoteroKeeperPackage.ts` and
   `pubmedSearchPackage.ts` and verified with `direct_url.json`.
+- Managed PubMed Search MCP baseline: `0.5.17` pinned to upstream commit
+  `60ea753fcfd8fd8e49f6907c5a71bbcd220a288d`; keeper optional/dev dependency
+  floor: `pubmed-search-mcp>=0.5.17`.
 - Assistant harness assets shipped in the VSIX include Copilot instructions,
   root `AGENTS.md`, `.codex/skills`, `.cline/skills`, `.clinerules`, and the
   curated PubMed Claude skills.

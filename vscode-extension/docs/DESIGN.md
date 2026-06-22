@@ -137,7 +137,7 @@ async function ensureDependencies(): Promise<void> {
 │  ✓ Python 3.12 environment ready                    │
 │  ⏳ Installing packages...                          │
 │    - zotero-keeper 1.12.0                           │
-│    - pubmed-search-mcp fixed source snapshot 0.5.12 │
+│    - pubmed-search-mcp fixed source snapshot 0.5.17 │
 │  ✓ MCP servers registered                           │
 │                                                      │
 │  Ready! Try asking Copilot:                          │
@@ -204,8 +204,8 @@ async function ensureDependencies(): Promise<void> {
 - 最低版本: 3.12
 - Required packages:
     - `zotero-keeper[all]>=1.12.0`
-    - Extension-managed `pubmed-search-mcp` fixed source snapshot `0.5.12`
-    - PyPI optional dependency floor: `pubmed-search-mcp>=0.5.12`
+    - Extension-managed `pubmed-search-mcp` fixed source snapshot `0.5.17`
+    - PyPI optional dependency floor: `pubmed-search-mcp>=0.5.17`
 
 ### External
 - Zotero 7, 8, or 9 (running locally with API enabled)
