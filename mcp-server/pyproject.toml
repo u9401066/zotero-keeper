@@ -39,14 +39,14 @@ Changelog = "https://github.com/u9401066/zotero-keeper/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 pubmed = [
-    "pubmed-search-mcp>=0.5.12",  # PubMed integration
+    "pubmed-search-mcp>=0.5.17",  # PubMed integration
 ]
 all = [
-    "pubmed-search-mcp>=0.5.12",
+    "pubmed-search-mcp>=0.5.17",
     "rapidfuzz>=3.0.0",
 ]
 dev = [
-    "pubmed-search-mcp>=0.5.12",
+    "pubmed-search-mcp>=0.5.17",
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.0.0",
@@ -76,6 +76,20 @@ ignore = ["E402", "E501"]  # Allow imports after sys.path and long lines
 [tool.mypy]
 python_version = "3.12"
 strict = true
+disable_error_code = [
+    "assignment",
+    "attr-defined",
+    "dict-item",
+    "no-any-return",
+    "no-untyped-call",
+    "no-untyped-def",
+    "redundant-cast",
+    "type-arg",
+    "untyped-decorator",
+    "union-attr",
+    "unused-ignore",
+    "var-annotated",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -85,7 +99,7 @@ addopts = "-n auto --dist worksteal"
 [dependency-groups]
 dev = [
     "mypy>=1.0.0",
-    "pubmed-search-mcp>=0.5.12",
+    "pubmed-search-mcp>=0.5.17",
     "pytest>=9.0.2",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.0.0",

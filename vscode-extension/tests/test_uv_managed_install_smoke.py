@@ -21,7 +21,7 @@ PYTHON_VERSION = "3.12"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MCP_SERVER = REPO_ROOT / "mcp-server"
 PUBMED_SEARCH_FIXED_COMMIT = (
-    "b19af387b2cf2b67e369fe8f7e0329b223058cfe"  # pragma: allowlist secret
+    "60ea753fcfd8fd8e49f6907c5a71bbcd220a288d"  # pragma: allowlist secret
 )
 PUBMED_SEARCH_PACKAGE = (
     "pubmed-search-mcp @ "
