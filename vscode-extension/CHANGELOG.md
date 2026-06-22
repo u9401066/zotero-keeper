@@ -2,6 +2,19 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.33] - 2026-06-22
+
+### Changed
+
+- Extension-managed installs now point at the `v0.5.33-ext` archive.
+- PubMed Search MCP is pinned to the `v0.5.17` release commit and keeper optional dependencies now require `pubmed-search-mcp>=0.5.17`.
+- Bundled PubMed Search assistant assets were refreshed from the `v0.5.17` submodule snapshot.
+
+### Fixed
+
+- Managed PubMed Search installs now include the runtime contact-email propagation fix for OpenAlex, CrossRef, Unpaywall, and fulltext downloader fallbacks.
+- Local Zotero server mypy configuration now matches the CI error-code baseline so the documented release check runs consistently.
+
 ## [0.5.32] - 2026-05-15
 
 ### Changed
