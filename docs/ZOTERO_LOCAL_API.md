@@ -60,10 +60,14 @@ Zotero 提供**三種** API，各有不同的能力和限制：
 | 刪除文獻 | ❌ | ❌ | ✅ |
 | 加入 Collection | ❌ | ⚠️¹ | ✅ |
 | 移除 Collection | ❌ | ❌ | ✅ |
-| 上傳附件 | ❌ | ❌ | ✅ |
+| 上傳附件 (新建項目) | ❌ | ✅² | ✅ |
+| 上傳附件 (現有項目) | ❌ | ❌ | ✅ |
 | 需要設定 | 無 | 無 | API Key |
 
 > ¹ Connector API 只能在**新增時**指定 collection，無法修改現有文獻
+>
+> ² Connector API 可透過 `/connector/saveAttachment` 與 `/connector/saveStandaloneAttachment`
+> 上傳本機 PDF（無需 API Key），但只能掛到**同一個 session 內新建的項目**，無法掛到現有文獻
 
 ---
 
@@ -165,6 +169,44 @@ Zotero 提供**三種** API，各有不同的能力和限制：
   "items": [...]  // 儲存的項目（但不包含新 key！）
 }
 ```
+
+#### 上傳附件 (PDF) — 無需 API Key
+
+> 🔑 **重點**：Connector API 可上傳本機 PDF，完全在 Local/Connector 架構內，不需要 Web API key。
+> zotero-keeper 的 `import_pdf` 工具即基於此。
+
+| 端點 | 方法 | 說明 | Body |
+|------|------|------|------|
+| `/connector/saveAttachment` | POST | 把檔案掛到 session 內既有父項目 | 原始檔案位元組 |
+| `/connector/saveStandaloneAttachment` | POST | 存成獨立附件並自動辨識 metadata | 原始檔案位元組 |
+
+附件流程（metadata 模式）：
+
+1. `POST /connector/saveItems`，body 帶 `sessionID` 與 `items:[{ "id": "<connector key>", ... }]` → 建立父項目。
+2. `POST /connector/saveAttachment`，header 帶 `Content-Type`（如 `application/pdf`）、`X-Metadata`，body 為原始 PDF 位元組。
+
+```text
+POST /connector/saveAttachment
+Content-Type: application/pdf
+X-Metadata: {"sessionID":"<同上>","parentItemID":"<connector key>","title":"Full Text PDF","url":"https://doi.org/..."}
+
+<原始 PDF bytes>
+```
+
+獨立附件 + 自動辨識（auto-recognize）：
+
+```text
+POST /connector/saveStandaloneAttachment
+Content-Type: application/pdf
+X-Metadata: {"sessionID":"<uuid>","title":"paper","url":"file:///path/paper.pdf"}
+
+<原始 PDF bytes>
+```
+
+> ⚠️ `X-Metadata` 必須是 ASCII-safe 的 JSON（`json.dumps` 預設 `ensure_ascii=True`），
+> 否則含中文標題的 header 無法以 latin-1 編碼。Zotero 端會把 `\uXXXX` 還原回 Unicode。
+>
+> ⚠️ 回應 `201` 表示成功；`200` 且 body 含「not editable」表示該 library 不可寫入檔案。
 
 ---
 

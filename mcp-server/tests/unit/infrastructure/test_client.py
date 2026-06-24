@@ -8,6 +8,8 @@ import pytest
 from unittest.mock import AsyncMock, Mock, patch
 import json
 
+import httpx
+
 
 class TestZoteroClientInit:
     """Test ZoteroClient initialization."""
@@ -101,6 +103,302 @@ class TestZoteroClientHttp:
         await client.close()
 
         assert client._client is None
+
+
+class TestZoteroConnectorAttachments:
+    """Test Connector API attachment write operations."""
+
+    @pytest.mark.asyncio
+    async def test_save_attachment_posts_binary_with_metadata(self, mock_config):
+        """save_attachment should POST raw bytes with an X-Metadata header."""
+        from zotero_mcp.infrastructure.zotero_client.client import ZoteroClient
+
+        client = ZoteroClient(config=mock_config)
+        fake_response = Mock(status_code=201, text="")
+        client._request_raw = AsyncMock(return_value=fake_response)
+
+        result = await client.save_attachment(
+            file_bytes=b"%PDF-1.7 fake",
+            content_type="application/pdf",
+            title="Full Text PDF",
+            url="https://doi.org/10.1/x",
+            parent_item_id="zk-abc",
+            session_id="sess-123",
+        )
+
+        assert result["success"] is True
+        assert result["status_code"] == 201
+
+        call = client._request_raw.await_args
+        assert call.args[0] == "POST"
+        assert call.args[1] == "/connector/saveAttachment"
+        assert call.kwargs["content"] == b"%PDF-1.7 fake"
+        headers = call.kwargs["headers"]
+        assert headers["Content-Type"] == "application/pdf"
+        metadata = json.loads(headers["X-Metadata"])
+        assert metadata == {
+            "sessionID": "sess-123",
+            "parentItemID": "zk-abc",
+            "title": "Full Text PDF",
+            "url": "https://doi.org/10.1/x",
+        }
+
+    @pytest.mark.asyncio
+    async def test_save_standalone_attachment_reports_recognition(self, mock_config):
+        """save_standalone_attachment should parse the canRecognize JSON body."""
+        from zotero_mcp.infrastructure.zotero_client.client import ZoteroClient
+
+        client = ZoteroClient(config=mock_config)
+        fake_response = Mock(status_code=201, text='{"canRecognize": true}')
+        client._request_raw = AsyncMock(return_value=fake_response)
+
+        result = await client.save_standalone_attachment(
+            file_bytes=b"%PDF-1.7 fake",
+            content_type="application/pdf",
+            title="paper",
+            url="file:///tmp/paper.pdf",
+            session_id="sess-xyz",
+        )
+
+        assert result["success"] is True
+        assert result["data"] == {"canRecognize": True}
+        call = client._request_raw.await_args
+        assert call.args[1] == "/connector/saveStandaloneAttachment"
+        metadata = json.loads(call.kwargs["headers"]["X-Metadata"])
+        assert metadata == {"sessionID": "sess-xyz", "title": "paper", "url": "file:///tmp/paper.pdf"}
+
+    @pytest.mark.asyncio
+    async def test_x_metadata_header_is_ascii_safe_for_unicode_titles(self, mock_config):
+        """Unicode titles must be escaped so the X-Metadata header stays latin-1 safe."""
+        from zotero_mcp.infrastructure.zotero_client.client import ZoteroClient
+
+        client = ZoteroClient(config=mock_config)
+        client._request_raw = AsyncMock(return_value=Mock(status_code=201, text=""))
+
+        await client.save_attachment(
+            file_bytes=b"x",
+            content_type="application/pdf",
+            title="深度學習",
+            url="file:///x.pdf",
+            parent_item_id="zk-1",
+            session_id="s1",
+        )
+
+        header_value = client._request_raw.await_args.kwargs["headers"]["X-Metadata"]
+        # Must be ASCII-encodable (latin-1 header safe) and decode back to the title
+        header_value.encode("latin-1")
+        assert json.loads(header_value)["title"] == "深度學習"
+
+    @pytest.mark.asyncio
+    async def test_non_editable_library_is_reported_as_failure(self, mock_config):
+        """A 200 'not editable' response should be treated as a failure."""
+        from zotero_mcp.infrastructure.zotero_client.client import ZoteroClient
+
+        client = ZoteroClient(config=mock_config)
+        client._request_raw = AsyncMock(return_value=Mock(status_code=200, text="Library files are not editable."))
+
+        result = await client.save_attachment(
+            file_bytes=b"x",
+            content_type="application/pdf",
+            title="t",
+            url="file:///x.pdf",
+            parent_item_id="zk-1",
+            session_id="s1",
+        )
+
+        assert result["success"] is False
+        assert "editable" in result["message"].lower()
+
+    @pytest.mark.asyncio
+    async def test_save_items_includes_session_id_when_provided(self, mock_config):
+        """save_items should forward sessionID so attachments can reference the parent."""
+        from zotero_mcp.infrastructure.zotero_client.client import ZoteroClient
+
+        client = ZoteroClient(config=mock_config)
+        client._request = AsyncMock(return_value={"ok": True})
+
+        await client.save_items([{"itemType": "document", "title": "x", "id": "zk-1"}], session_id="sess-9")
+
+        payload = client._request.await_args.kwargs["json_data"]
+        assert payload["sessionID"] == "sess-9"
+
+    @pytest.mark.asyncio
+    async def test_save_items_omits_session_id_by_default(self, mock_config):
+        """save_items without a session must not include sessionID (back-compat)."""
+        from zotero_mcp.infrastructure.zotero_client.client import ZoteroClient
+
+        client = ZoteroClient(config=mock_config)
+        client._request = AsyncMock(return_value={"ok": True})
+
+        await client.save_items([{"itemType": "document", "title": "x"}])
+
+        payload = client._request.await_args.kwargs["json_data"]
+        assert "sessionID" not in payload
+
+
+class TestZoteroConnectorAttachmentsWire:
+    """
+    Wire-level tests: run the REAL client (real _request_raw + real httpx
+    request construction) against a simulated Zotero via httpx.MockTransport.
+
+    This validates the actual HTTP request matches the Zotero Connector
+    contract (method, path, headers, body) — not just that a method was called.
+    """
+
+    def _client_with_handler(self, handler):
+        from zotero_mcp.infrastructure.zotero_client.client import ZoteroClient, ZoteroConfig
+
+        client = ZoteroClient(config=ZoteroConfig(host="localhost", port=23119))
+        # Inject a fake Zotero server. Replicate the production default header so
+        # we prove the per-request Content-Type override actually reaches the wire.
+        client._client = httpx.AsyncClient(
+            base_url=client.config.base_url,
+            headers={"Content-Type": "application/json"},
+            transport=httpx.MockTransport(handler),
+        )
+        return client
+
+    @pytest.mark.asyncio
+    async def test_save_attachment_produces_correct_request(self):
+        """The real saveAttachment request must carry the PDF body + headers."""
+        captured: dict = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured["method"] = request.method
+            captured["path"] = request.url.path
+            captured["content_type"] = request.headers.get("content-type")
+            captured["x_metadata"] = request.headers.get("x-metadata")
+            captured["body"] = request.content
+            return httpx.Response(201, text="")
+
+        client = self._client_with_handler(handler)
+        try:
+            result = await client.save_attachment(
+                file_bytes=b"%PDF-1.7 body",
+                content_type="application/pdf",
+                title="Full Text PDF",
+                url="https://doi.org/10.1/x",
+                parent_item_id="zk-1",
+                session_id="s1",
+            )
+        finally:
+            await client.close()
+
+        assert result["success"] is True
+        assert captured["method"] == "POST"
+        assert captured["path"] == "/connector/saveAttachment"
+        # Per-request Content-Type must override the client's application/json default
+        assert captured["content_type"] == "application/pdf"
+        assert captured["body"] == b"%PDF-1.7 body"
+        meta = json.loads(captured["x_metadata"])
+        assert meta == {
+            "sessionID": "s1",
+            "parentItemID": "zk-1",
+            "title": "Full Text PDF",
+            "url": "https://doi.org/10.1/x",
+        }
+
+    @pytest.mark.asyncio
+    async def test_standalone_attachment_parses_can_recognize(self):
+        """saveStandaloneAttachment must hit the right path and parse the JSON body."""
+        captured: dict = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured["path"] = request.url.path
+            captured["content_type"] = request.headers.get("content-type")
+            return httpx.Response(201, json={"canRecognize": True})
+
+        client = self._client_with_handler(handler)
+        try:
+            result = await client.save_standalone_attachment(
+                file_bytes=b"%PDF",
+                content_type="application/pdf",
+                title="paper",
+                url="file:///tmp/paper.pdf",
+                session_id="s2",
+            )
+        finally:
+            await client.close()
+
+        assert captured["path"] == "/connector/saveStandaloneAttachment"
+        assert captured["content_type"] == "application/pdf"
+        assert result["success"] is True
+        assert result["data"] == {"canRecognize": True}
+
+    @pytest.mark.asyncio
+    async def test_unicode_title_is_wire_safe(self):
+        """A Unicode (CJK) title must survive the X-Metadata header round-trip."""
+        captured: dict = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured["x_metadata"] = request.headers.get("x-metadata")
+            return httpx.Response(201, text="")
+
+        client = self._client_with_handler(handler)
+        try:
+            # If the header were not ASCII-escaped, httpx would raise here.
+            await client.save_attachment(
+                file_bytes=b"x",
+                content_type="application/pdf",
+                title="深度學習在麻醉學的應用",
+                url="file:///x.pdf",
+                parent_item_id="zk-1",
+                session_id="s1",
+            )
+        finally:
+            await client.close()
+
+        # Header value reached the wire and decodes back to the original title
+        captured["x_metadata"].encode("latin-1")  # must not raise
+        assert json.loads(captured["x_metadata"])["title"] == "深度學習在麻醉學的應用"
+
+    @pytest.mark.asyncio
+    async def test_non_editable_library_reported_as_failure_over_wire(self):
+        """A real 200 'not editable' response is surfaced as a failure."""
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, text="Library files are not editable.")
+
+        client = self._client_with_handler(handler)
+        try:
+            result = await client.save_attachment(
+                file_bytes=b"x",
+                content_type="application/pdf",
+                title="t",
+                url="file:///x.pdf",
+                parent_item_id="zk-1",
+                session_id="s1",
+            )
+        finally:
+            await client.close()
+
+        assert result["success"] is False
+        assert "editable" in result["message"].lower()
+
+    @pytest.mark.asyncio
+    async def test_save_items_session_request_is_json(self):
+        """save_items(session_id=...) must POST JSON with sessionID + item id."""
+        captured: dict = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured["path"] = request.url.path
+            captured["content_type"] = request.headers.get("content-type")
+            captured["body"] = json.loads(request.content)
+            return httpx.Response(201, json={"items": []})
+
+        client = self._client_with_handler(handler)
+        try:
+            await client.save_items(
+                [{"itemType": "document", "title": "x", "id": "zk-1"}],
+                session_id="s9",
+            )
+        finally:
+            await client.close()
+
+        assert captured["path"] == "/connector/saveItems"
+        assert captured["content_type"] == "application/json"
+        assert captured["body"]["sessionID"] == "s9"
+        assert captured["body"]["items"][0]["id"] == "zk-1"
 
 
 class TestZoteroClientRequest:

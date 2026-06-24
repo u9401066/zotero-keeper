@@ -115,17 +115,33 @@ class ZoteroClientBase:
         path: str,
         json_data: dict[str, Any] | None = None,
         params: dict[str, Any] | None = None,
+        content: bytes | None = None,
+        headers: dict[str, str] | None = None,
     ) -> httpx.Response:
-        """Make HTTP request and return the raw response for header-aware probes."""
+        """Make HTTP request and return the raw response for header-aware probes.
+
+        When ``content`` is provided the request is sent as a raw binary body
+        (used by the Connector attachment endpoints) and ``headers`` may override
+        per-request values such as ``Content-Type`` and ``X-Metadata``.
+        """
         client = await self._get_client()
 
         try:
-            response = await client.request(
-                method=method,
-                url=path,
-                json=json_data,
-                params=params,
-            )
+            if content is not None:
+                response = await client.request(
+                    method=method,
+                    url=path,
+                    content=content,
+                    params=params,
+                    headers=headers,
+                )
+            else:
+                response = await client.request(
+                    method=method,
+                    url=path,
+                    json=json_data,
+                    params=params,
+                )
 
             # Check for error responses
             if response.status_code >= 400:
