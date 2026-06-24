@@ -39,10 +39,17 @@ Example:
 
 import logging
 import re
+from datetime import datetime, timezone
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
+from ..mappers.zotero_schema import (
+    CONTAINER_FIELD,
+    ZOTERO_PRIMARY_CREATOR,
+    detect_item_type,
+    finalize_item_for_schema,
+)
 from .collection_support import apply_collection_and_tags, attach_saved_to_info, resolve_collection_target
 
 logger = logging.getLogger(__name__)
@@ -162,6 +169,42 @@ def _chunk_items(items: list[dict[str, Any]], chunk_size: int) -> list[list[dict
     return [items[index : index + chunk_size] for index in range(0, len(items), chunk_size)]
 
 
+def _coerce_creator(value: Any, creator_type: str = "author") -> dict[str, str] | None:
+    """
+    Convert a string or dict author/editor value into a Zotero creator dict.
+
+    Handles "John Smith", "Smith, John", "Smith J" string forms and dict forms
+    with family_name/given_name (or lastName/firstName, or a combined name).
+    Returns None when no usable name can be extracted.
+    """
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        if "," in text:
+            family, given = text.split(",", 1)
+            return {"lastName": family.strip(), "firstName": given.strip(), "creatorType": creator_type}
+        parts = text.split()
+        if len(parts) >= 2:
+            if len(parts[-1]) <= 2:  # "Smith J" (trailing initials)
+                return {"lastName": " ".join(parts[:-1]), "firstName": parts[-1], "creatorType": creator_type}
+            return {"firstName": parts[0], "lastName": " ".join(parts[1:]), "creatorType": creator_type}
+        return {"lastName": text, "firstName": "", "creatorType": creator_type}
+
+    if isinstance(value, dict):
+        family = value.get("family_name") or value.get("lastName") or value.get("last_name") or ""
+        given = value.get("given_name") or value.get("firstName") or value.get("first_name") or ""
+        if family or given:
+            return {"lastName": family, "firstName": given, "creatorType": creator_type}
+        name = value.get("name") or value.get("full_name") or value.get("display_name") or ""
+        if name:
+            parts = name.split()
+            if len(parts) >= 2:
+                return {"firstName": parts[0], "lastName": " ".join(parts[1:]), "creatorType": creator_type}
+            return {"lastName": name, "firstName": "", "creatorType": creator_type}
+    return None
+
+
 def _unified_article_to_zotero(article: dict[str, Any]) -> dict[str, Any]:
     """
     Convert unified article format to Zotero item format.
@@ -170,28 +213,22 @@ def _unified_article_to_zotero(article: dict[str, Any]) -> dict[str, Any]:
     - UnifiedArticle.to_dict() output from pubmed-search-mcp
     - Direct search result format (legacy compatibility)
 
+    The target Zotero item type is detected automatically (journal article,
+    book, book chapter, conference paper, thesis, report, web page, preprint,
+    software/repository, dataset, ...) and fields are routed to the schema that
+    is valid for that type. Any field not valid for the detected type is
+    preserved in the ``extra`` field rather than being dropped.
+
     Args:
         article: Article dict from pubmed-search-mcp or similar format
 
     Returns:
         Zotero item dict ready for save_items()
     """
-    # Initialize Zotero item
-    item_type_map = {
-        "journal-article": "journalArticle",
-        "book": "book",
-        "book-chapter": "bookSection",
-        "conference-paper": "conferencePaper",
-        "thesis": "thesis",
-        "report": "report",
-        "webpage": "webpage",
-        "document": "document",
-    }
-    article_type = article.get("article_type")
-    if not isinstance(article_type, str):
-        article_type = ""
+    # Detect the most appropriate Zotero item type for this record.
+    item_type = detect_item_type(article)
     item: dict[str, Any] = {
-        "itemType": item_type_map.get(article_type, "journalArticle"),
+        "itemType": item_type,
     }
 
     # Title (required)
@@ -275,6 +312,20 @@ def _unified_article_to_zotero(article: dict[str, Any]) -> dict[str, Any]:
                         }
                     )
 
+    # === Editors / additional contributors ===
+    for editor in article.get("editors", []) or []:
+        creator = _coerce_creator(editor, "editor")
+        if creator:
+            creators.append(creator)
+
+    # Remap the primary creator role for the detected item type
+    # (e.g. software/repository items use "programmer" instead of "author").
+    primary_creator = ZOTERO_PRIMARY_CREATOR.get(item_type)
+    if primary_creator:
+        for creator in creators:
+            if creator.get("creatorType") == "author":
+                creator["creatorType"] = primary_creator
+
     if creators:
         item["creators"] = creators
 
@@ -347,10 +398,58 @@ def _unified_article_to_zotero(article: dict[str, Any]) -> dict[str, Any]:
     if abstract:
         item["abstractNote"] = abstract
 
-    # Journal
-    journal = article.get("journal") or article.get("publicationTitle")
-    if journal:
-        item["publicationTitle"] = journal
+    # Container title (journal / proceedings / book title) routed by item type
+    container = article.get("journal") or article.get("publicationTitle") or article.get("container_title") or article.get("venue")
+    if container:
+        container_field = CONTAINER_FIELD.get(item_type, "publicationTitle")
+        item[container_field] = container
+
+    # Journal abbreviation
+    journal_abbrev = article.get("journal_abbrev") or article.get("journalAbbreviation")
+    if journal_abbrev:
+        item["journalAbbreviation"] = journal_abbrev
+
+    # ISSN
+    issn = article.get("issn") or article.get("ISSN")
+    if issn:
+        item["ISSN"] = issn
+
+    # === Type-specific bibliographic fields ===
+    # Set whenever present; finalize_item_for_schema() keeps only the fields
+    # valid for the detected item type and preserves the rest in `extra`.
+    optional_fields = {
+        "publisher": article.get("publisher"),
+        "place": article.get("place") or article.get("publisher_location") or article.get("location"),
+        "ISBN": article.get("isbn") or article.get("ISBN"),
+        "edition": article.get("edition"),
+        "series": article.get("series"),
+        "seriesNumber": article.get("series_number") or article.get("seriesNumber"),
+        "numPages": article.get("num_pages") or article.get("numPages") or article.get("page_count"),
+        "bookTitle": article.get("book_title") or article.get("bookTitle"),
+        "conferenceName": article.get("conference_name") or article.get("conferenceName") or article.get("event"),
+        "proceedingsTitle": article.get("proceedings_title") or article.get("proceedingsTitle"),
+        "institution": article.get("institution"),
+        "university": article.get("university"),
+        "thesisType": article.get("thesis_type") or article.get("degree"),
+        "reportNumber": article.get("report_number") or article.get("reportNumber"),
+        "reportType": article.get("report_type") or article.get("reportType"),
+        "repository": article.get("repository") or article.get("repo"),
+        "versionNumber": article.get("version") or article.get("versionNumber"),
+        "programmingLanguage": article.get("programming_language") or article.get("programmingLanguage"),
+        "system": article.get("system"),
+        "company": article.get("company"),
+        "websiteTitle": article.get("website_title") or article.get("websiteTitle") or article.get("site_name"),
+        "websiteType": article.get("website_type") or article.get("websiteType"),
+    }
+    for field_name, field_value in optional_fields.items():
+        if field_value and field_name not in item:
+            item[field_name] = field_value
+
+    # arXiv preprints: record the repository + archive identifier
+    arxiv_identifier = identifiers.get("arxiv_id") or article.get("arxiv_id")
+    if item_type == "preprint" and arxiv_identifier:
+        item.setdefault("repository", "arXiv")
+        item.setdefault("archiveID", f"arXiv:{arxiv_identifier}")
 
     # Volume, Issue, Pages
     if article.get("volume"):
@@ -379,6 +478,27 @@ def _unified_article_to_zotero(article: dict[str, Any]) -> dict[str, Any]:
     if url:
         item["url"] = url
 
+    # === Access date ===
+    item["accessDate"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    # === Library catalog ===
+    source = primary_source or ""
+    source_lower = source.lower() if source else ""
+    if "pubmed" in source_lower or pmid:
+        item["libraryCatalog"] = "PubMed"
+    elif "openalex" in source_lower:
+        item["libraryCatalog"] = "OpenAlex"
+    elif "semantic_scholar" in source_lower or s2_id:
+        item["libraryCatalog"] = "Semantic Scholar"
+    elif "core" in source_lower or core_id:
+        item["libraryCatalog"] = "CORE"
+    elif "europe_pmc" in source_lower:
+        item["libraryCatalog"] = "Europe PMC"
+    elif "crossref" in source_lower:
+        item["libraryCatalog"] = "Crossref"
+    elif doi:
+        item["libraryCatalog"] = "DOI.org (Crossref)"
+
     # === Tags ===
     # Combine keywords and MeSH terms
     tags = []
@@ -394,29 +514,54 @@ def _unified_article_to_zotero(article: dict[str, Any]) -> dict[str, Any]:
     if article.get("language"):
         item["language"] = article["language"]
 
-    return item
+    # Keep only fields valid for the detected item type; preserve the rest in `extra`.
+    return finalize_item_for_schema(item)
 
 
 def _parse_ris_to_articles(ris_text: str) -> list[dict[str, Any]]:
     """
     Parse RIS format text to article dicts.
 
-    This reuses the existing RIS parser but returns unified format.
+    Captures bibliographic fields across item types (journal articles, books,
+    book chapters, conference papers, theses, reports, web pages, software,
+    datasets) including publisher, place, ISBN/ISSN, edition, series, editors
+    and book/proceedings titles so the importer can build complete records.
     """
-    articles = []
+    articles: list[dict[str, Any]] = []
     current_article: dict[str, Any] = {}
     current_authors: list[str] = []
+    current_editors: list[str] = []
     current_keywords: list[str] = []
 
-    # RIS type to article type mapping
+    # RIS reference type -> unified article type
     type_map = {
         "JOUR": "journal-article",
         "BOOK": "book",
         "CHAP": "book-chapter",
         "CONF": "conference-paper",
+        "CPAPER": "conference-paper",
         "THES": "thesis",
         "RPRT": "report",
+        "ELEC": "webpage",
+        "WEB": "webpage",
+        "COMP": "computer-program",
+        "DATA": "dataset",
+        "MGZN": "magazine-article",
+        "NEWS": "newspaper-article",
+        "MANSCPT": "manuscript",
+        "UNPB": "manuscript",
+        "GEN": "document",
     }
+
+    def _flush() -> None:
+        if current_article and current_article.get("title"):
+            if current_authors:
+                current_article["authors"] = list(current_authors)
+            if current_editors:
+                current_article["editors"] = list(current_editors)
+            if current_keywords:
+                current_article["keywords"] = list(current_keywords)
+            articles.append(current_article)
 
     for line in ris_text.strip().split("\n"):
         line = line.strip()
@@ -431,36 +576,36 @@ def _parse_ris_to_articles(ris_text: str) -> list[dict[str, Any]]:
         value = value.strip()
 
         if tag == "TY":
-            if current_article and current_article.get("title"):
-                if current_authors:
-                    current_article["authors"] = current_authors
-                if current_keywords:
-                    current_article["keywords"] = current_keywords
-                articles.append(current_article)
+            _flush()
             current_article = {
                 "primary_source": "ris",
                 "article_type": type_map.get(value, "journal-article"),
             }
             current_authors = []
+            current_editors = []
             current_keywords = []
         elif tag == "ER":
-            if current_article and current_article.get("title"):
-                if current_authors:
-                    current_article["authors"] = current_authors
-                if current_keywords:
-                    current_article["keywords"] = current_keywords
-                articles.append(current_article)
+            _flush()
             current_article = {}
             current_authors = []
+            current_editors = []
             current_keywords = []
         elif tag in ("TI", "T1"):
             current_article["title"] = value
         elif tag in ("AU", "A1"):
             current_authors.append(value)
-        elif tag in ("PY", "Y1"):
-            current_article["year"] = value.split("/")[0]
+        elif tag in ("A2", "ED"):
+            current_editors.append(value)
+        elif tag in ("PY", "Y1", "DA"):
+            if "year" not in current_article:
+                current_article["year"] = value.split("/")[0]
         elif tag in ("JO", "JF", "T2"):
             current_article["journal"] = value
+        elif tag in ("BT",):
+            # Whole-work title: a chapter's book title (fallback when no T2)
+            current_article["book_title"] = value
+        elif tag == "T3":
+            current_article["series"] = value
         elif tag == "VL":
             current_article["volume"] = value
         elif tag == "IS":
@@ -472,6 +617,18 @@ def _parse_ris_to_articles(ris_text: str) -> list[dict[str, Any]]:
                 current_article["pages"] += f"-{value}"
             else:
                 current_article["pages"] = value
+        elif tag == "PB":
+            current_article["publisher"] = value
+        elif tag in ("CY", "PP"):
+            current_article["place"] = value
+        elif tag == "ET":
+            current_article["edition"] = value
+        elif tag == "SN":
+            # Serial number: ISSN (####-####) vs ISBN (everything else)
+            if re.match(r"^\d{4}-\d{3}[\dxX]$", value):
+                current_article["issn"] = value
+            else:
+                current_article["isbn"] = value
         elif tag == "DO":
             current_article["doi"] = value
         elif tag == "AB":
@@ -480,6 +637,8 @@ def _parse_ris_to_articles(ris_text: str) -> list[dict[str, Any]]:
             current_keywords.append(value)
         elif tag == "UR":
             current_article["url"] = value
+        elif tag == "LA":
+            current_article["language"] = value
         elif tag == "N1":
             # Notes - often contains PMID
             if "PMID:" in value or value.isdigit():
@@ -487,13 +646,8 @@ def _parse_ris_to_articles(ris_text: str) -> list[dict[str, Any]]:
                 if pmid_match:
                     current_article["pmid"] = pmid_match.group(1)
 
-    # Don't forget last article
-    if current_article and current_article.get("title"):
-        if current_authors:
-            current_article["authors"] = current_authors
-        if current_keywords:
-            current_article["keywords"] = current_keywords
-        articles.append(current_article)
+    # Don't forget the last article
+    _flush()
 
     return articles
 

@@ -10,7 +10,11 @@ from typing import Any
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from zotero_mcp.infrastructure.mcp.unified_import_tools import register_unified_import_tools
+from zotero_mcp.infrastructure.mcp.unified_import_tools import (
+    _parse_ris_to_articles,
+    _unified_article_to_zotero,
+    register_unified_import_tools,
+)
 
 
 ImportArticlesTool = Callable[..., Awaitable[dict[str, Any]]]
@@ -123,6 +127,9 @@ class TestImportArticles:
             "Conscious Sedation",
             "Intensive Care Units",
         }
+        # New metadata completeness fields
+        assert saved_item["accessDate"].endswith("Z")
+        assert saved_item["libraryCatalog"] == "PubMed"
 
     @pytest.mark.asyncio
     async def test_skips_duplicates_using_batch_identifier_check(self):
@@ -226,3 +233,184 @@ class TestImportArticles:
         assert result["imported"] == 50
         assert mock_client.save_items.await_count == 2
         assert any(error.get("batch") == 2 for error in result["errors"])
+
+
+class TestTypeAwareMapping:
+    """The mapper should produce schema-correct items for non-journal types."""
+
+    def test_book_maps_publisher_place_isbn(self):
+        article = {
+            "title": "Clinical Anesthesia",
+            "article_type": "book",
+            "authors": ["Paul Barash"],
+            "publisher": "Wolters Kluwer",
+            "place": "Philadelphia",
+            "isbn": "978-1-4963-3700-9",
+            "edition": "8th",
+            "year": 2017,
+        }
+        item = _unified_article_to_zotero(article)
+
+        assert item["itemType"] == "book"
+        assert item["publisher"] == "Wolters Kluwer"
+        assert item["place"] == "Philadelphia"
+        assert item["ISBN"] == "978-1-4963-3700-9"
+        assert item["edition"] == "8th"
+        # book has no publicationTitle field
+        assert "publicationTitle" not in item
+
+    def test_book_chapter_maps_book_title(self):
+        article = {
+            "title": "Airway Management",
+            "article_type": "book-chapter",
+            "journal": "Miller's Anesthesia",
+            "pages": "1373-1412",
+            "isbn": "978-0-323-59604-6",
+        }
+        item = _unified_article_to_zotero(article)
+
+        assert item["itemType"] == "bookSection"
+        assert item["bookTitle"] == "Miller's Anesthesia"
+        assert item["pages"] == "1373-1412"
+        assert "publicationTitle" not in item
+
+    def test_conference_paper_maps_proceedings_and_conference(self):
+        article = {
+            "title": "Deep Learning for Sedation",
+            "article_type": "conference-paper",
+            "journal": "Proceedings of NeurIPS 2024",
+            "conference_name": "NeurIPS 2024",
+            "pages": "100-110",
+            "doi": "10.1000/conf.2024",
+        }
+        item = _unified_article_to_zotero(article)
+
+        assert item["itemType"] == "conferencePaper"
+        assert item["proceedingsTitle"] == "Proceedings of NeurIPS 2024"
+        assert item["conferenceName"] == "NeurIPS 2024"
+        assert item["DOI"] == "10.1000/conf.2024"
+
+    def test_webpage_routes_invalid_fields_to_extra(self):
+        article = {
+            "title": "Anesthesia Guidelines",
+            "article_type": "webpage",
+            "website_title": "ASA Society",
+            "url": "https://asahq.org/guidelines",
+            "volume": "5",  # invalid for webpage -> extra
+        }
+        item = _unified_article_to_zotero(article)
+
+        assert item["itemType"] == "webpage"
+        assert item["websiteTitle"] == "ASA Society"
+        assert item["url"] == "https://asahq.org/guidelines"
+        assert "volume" not in item
+        assert "Volume: 5" in item["extra"]
+
+    def test_repository_maps_to_computer_program_with_programmer(self):
+        article = {
+            "title": "zotero-keeper",
+            "authors": ["Jane Doe"],
+            "url": "https://github.com/owner/zotero-keeper",
+            "version": "2.1.0",
+            "programming_language": "Python",
+        }
+        item = _unified_article_to_zotero(article)
+
+        assert item["itemType"] == "computerProgram"
+        assert item["versionNumber"] == "2.1.0"
+        assert item["programmingLanguage"] == "Python"
+        assert item["creators"][0]["creatorType"] == "programmer"
+
+    def test_preprint_records_arxiv_repository(self):
+        article = {
+            "title": "A New Transformer",
+            "article_type": "preprint",
+            "identifiers": {"arxiv_id": "2401.12345", "doi": "10.48550/arXiv.2401.12345"},
+        }
+        item = _unified_article_to_zotero(article)
+
+        assert item["itemType"] == "preprint"
+        assert item["repository"] == "arXiv"
+        assert item["archiveID"] == "arXiv:2401.12345"
+
+    def test_incomplete_record_falls_back_to_document(self):
+        # Old scanned item with only a title and a note -> document, nothing lost
+        article = {"title": "Untitled Scanned Monograph 1897"}
+        item = _unified_article_to_zotero(article)
+
+        assert item["itemType"] == "document"
+        assert item["title"] == "Untitled Scanned Monograph 1897"
+
+    def test_journal_article_unaffected(self):
+        article = {
+            "title": "AI in Anesthesia",
+            "article_type": "journal-article",
+            "journal": "Anesthesiology",
+            "volume": "140",
+            "issue": "2",
+            "pages": "100-110",
+            "issn": "0003-3022",
+            "pmid": "12345678",
+        }
+        item = _unified_article_to_zotero(article)
+
+        assert item["itemType"] == "journalArticle"
+        assert item["publicationTitle"] == "Anesthesiology"
+        assert item["volume"] == "140"
+        assert item["ISSN"] == "0003-3022"
+        assert "PMID: 12345678" in item["extra"]
+
+
+class TestRisTypeAwareParsing:
+    """The RIS parser should capture fields for books, conferences and web pages."""
+
+    def test_parse_book_with_publisher_place_isbn(self):
+        ris = (
+            "TY  - BOOK\n"
+            "TI  - Clinical Anesthesia\n"
+            "AU  - Barash, Paul\n"
+            "ED  - Cullen, Bruce\n"
+            "PB  - Wolters Kluwer\n"
+            "CY  - Philadelphia\n"
+            "ET  - 8th\n"
+            "SN  - 978-1-4963-3700-9\n"
+            "PY  - 2017\n"
+            "ER  - \n"
+        )
+        articles = _parse_ris_to_articles(ris)
+        assert len(articles) == 1
+        book = articles[0]
+        assert book["article_type"] == "book"
+        assert book["publisher"] == "Wolters Kluwer"
+        assert book["place"] == "Philadelphia"
+        assert book["edition"] == "8th"
+        assert book["isbn"] == "978-1-4963-3700-9"
+        assert book["editors"] == ["Cullen, Bruce"]
+
+        item = _unified_article_to_zotero(book)
+        assert item["itemType"] == "book"
+        assert item["ISBN"] == "978-1-4963-3700-9"
+        assert any(c["creatorType"] == "editor" for c in item["creators"])
+
+    def test_parse_conference_paper(self):
+        ris = (
+            "TY  - CONF\n"
+            "TI  - Neural Sedation Monitoring\n"
+            "AU  - Smith, John\n"
+            "T2  - Proceedings of NeurIPS\n"
+            "SP  - 100\n"
+            "EP  - 110\n"
+            "DO  - 10.1000/conf.1\n"
+            "ER  - \n"
+        )
+        articles = _parse_ris_to_articles(ris)
+        item = _unified_article_to_zotero(articles[0])
+        assert item["itemType"] == "conferencePaper"
+        assert item["proceedingsTitle"] == "Proceedings of NeurIPS"
+        assert item["pages"] == "100-110"
+
+    def test_parse_webpage_distinguishes_issn_isbn(self):
+        ris = "TY  - JOUR\nTI  - A Journal Article\nSN  - 1234-5678\nER  - \n"
+        articles = _parse_ris_to_articles(ris)
+        assert articles[0]["issn"] == "1234-5678"
+        assert "isbn" not in articles[0]
