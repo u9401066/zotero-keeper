@@ -22,12 +22,17 @@
 - [x] 讓 `_unified_article_to_zotero` 與 RIS parser 具備型別感知（書本/章節/研討會/網頁/軟體/資料集 + editors）(2026-06-24)
 - [x] 新增型別感知測試（test_zotero_schema + 匯入/RIS），mcp-server 單元測試 464 passing (2026-06-24)
 - [x] bump：mcp-server `1.13.0`、extension `0.5.34`、keeper archive 指向 `v0.5.34-ext`，mcpProvider 改用 `ZOTERO_KEEPER_VERSION` 常數 (2026-06-24)
+- [x] 從 Zotero 原始碼確認 Connector API 可上傳檔案（saveAttachment / saveStandaloneAttachment），無需 Web API key (2026-06-24)
+- [x] 新增 `import_pdf` 工具：metadata 模式（save_items session + save_attachment）與 auto-recognize 模式（standalone）(2026-06-24)
+- [x] 新增 client 二進位/附件支援（_request_raw content+headers、save_attachment、save_standalone_attachment、save_items session_id）(2026-06-24)
+- [x] 完整測試：wire-level（httpx MockTransport）+ 端到端 + 錯誤分支 + 真實 FastMCP 註冊，494 passing；import_pdf 與附件方法 100% 覆蓋 (2026-06-24)
+- [x] bump：mcp-server `1.14.0`、extension `0.5.35`、keeper archive 指向 `v0.5.35-ext` (2026-06-24)
 
 ## Doing
-- [ ] 發布 VS Code extension v0.5.34 / Zotero Keeper 1.13.0（型別感知 metadata 匯入）
+- [ ] 發布 VS Code extension v0.5.35 / Zotero Keeper 1.14.0（PDF 匯入）
 
 ## Next
-- [ ] 推送 `main` 並推送 `v0.5.34-ext` tag 觸發 Marketplace/VSIX 發布
+- [ ] 推送 `main` 並推送 `v0.5.35-ext` tag 觸發 Marketplace/VSIX 發布
 - [ ] 驗證 GitHub Actions release/publish workflow 結果
 
 ## Blocked

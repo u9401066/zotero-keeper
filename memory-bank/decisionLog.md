@@ -2,6 +2,23 @@
 
 ## 2026-06-24
 
+### DEC-029: PDF import via Connector API (Keeper 1.14.0 / VSIX v0.5.35)
+- **Decision**: Support importing local PDF files into Zotero entirely within
+  the Local/Connector architecture (no Web API key), via a new `import_pdf` tool.
+- **Rationale**:
+  1. Zotero's Connector API exposes `/connector/saveAttachment` and
+     `/connector/saveStandaloneAttachment` (confirmed from server_connector.js),
+     which accept the file as the raw request body with an `X-Metadata` header —
+     no Web API key needed, matching the existing architecture.
+  2. Metadata mode reuses the type-aware `_unified_article_to_zotero` mapping
+     (save_items with a session + connector key, then save_attachment);
+     auto-recognize mode lets Zotero build the parent from the PDF.
+  3. `X-Metadata` is ASCII-escaped JSON so non-ASCII (CJK) titles stay
+     header-safe; a 200 "not editable" body is treated as a failure.
+- **Limitation**: cannot attach to a pre-existing library item (Connector
+  sessions only know items created in that session).
+- **Release line**: `v0.5.35-ext` (bundled keeper `1.14.0`).
+
 ### DEC-028: Type-aware Zotero metadata mapping (Keeper 1.13.0 / VSIX v0.5.34)
 - **Decision**: Make the PubMed/RIS → Zotero importer detect the correct Zotero
   item type and route fields to that type's schema, instead of forcing every

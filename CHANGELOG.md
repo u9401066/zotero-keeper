@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.14.0] - 2026-06-24
+
+### 📎 PDF Import via the Connector API (no Web API key)
+
+Adds the ability to import local PDF files into Zotero entirely within the
+existing Local/Connector API architecture — no Zotero Web API key required.
+
+### Added
+
+- **`import_pdf` tool**: import a local PDF into Zotero with two modes:
+  - *Metadata mode*: build a parent item from an article dict (or a bare title),
+    save it in a Connector session, then attach the PDF to it.
+  - *Auto-recognize mode* (default when no metadata): save the PDF as a
+    standalone attachment and let Zotero extract the DOI/title and build the
+    parent item automatically.
+- **Connector attachment client methods**: `save_attachment` and
+  `save_standalone_attachment` POST raw file bytes to
+  `/connector/saveAttachment` and `/connector/saveStandaloneAttachment`, with
+  an ASCII-escaped `X-Metadata` header (so non-ASCII titles stay header-safe).
+  `save_items` gained an optional `session_id` so uploads can be linked to the
+  parent created in the same session, and `_request_raw` now supports raw
+  binary bodies with per-request headers.
+
+### Notes
+
+- Attaching to a *pre-existing* library item is not supported by the Connector
+  API (it is session-scoped); `import_pdf` creates the parent itself or uses
+  standalone auto-recognition.
+- `mcp-server` package version is now `1.14.0`.
+
+### Tests
+
+- Added wire-level tests (real client via `httpx.MockTransport`) and end-to-end
+  `import_pdf` flow tests covering both modes, all error branches, and real
+  `FastMCP` registration. Full unit suite: 494 passing.
+
+---
+
 ## [1.13.0] - 2026-06-24
 
 ### 📚 Type-Aware, Complete Zotero Metadata Import

@@ -2,6 +2,16 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.35] - 2026-06-24
+
+### Added
+
+- **PDF import** 📎: bundled Zotero Keeper now exposes `import_pdf`, which imports a local PDF into Zotero through the Connector API (no Web API key). Metadata mode attaches the PDF to a parent built from an article dict; auto-recognize mode lets Zotero extract the metadata from a standalone PDF.
+
+### Changed
+
+- Extension-managed installs now point at the `v0.5.35-ext` archive and bundle Zotero Keeper `1.14.0`.
+
 ## [0.5.34] - 2026-06-24
 
 ### Changed

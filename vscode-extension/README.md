@@ -1,5 +1,10 @@
 # Zotero + PubMed MCP Extension for VS Code
 
+## What's New in v0.5.35
+
+- **Import PDF files into Zotero** 📎: a new `import_pdf` tool imports a local PDF entirely within the Local/Connector architecture (no Web API key). Two modes — attach the PDF to a parent built from PubMed metadata, or drop a PDF and let Zotero auto-recognize it (extract the DOI/title and build the item).
+- **Bundled Zotero Keeper 1.14.0** with the new Connector attachment upload support.
+
 ## What's New in v0.5.34
 
 - **Complete, type-aware Zotero metadata**: imports now detect the correct Zotero item type (journal article, book, book chapter, conference paper, thesis, report, web page, preprint, software/repository, dataset, …) and route every field to that type's schema, so books keep ISBN/publisher/edition, chapters keep the book title, conferences keep the conference/proceedings name, and repositories become software items.
