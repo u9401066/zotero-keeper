@@ -29,6 +29,21 @@ def normalize_title(title: str | None) -> str:
     return title.strip()
 
 
+def extract_pmid_from_item(data: dict) -> str | None:
+    """Extract PMID from a Zotero item, checking native field then extra."""
+    # Check native PMID field first (Zotero 6+)
+    native_pmid = data.get("PMID", "")
+    if native_pmid:
+        return str(native_pmid).strip()
+
+    # Fall back to extra field
+    extra = data.get("extra", "")
+    if not extra:
+        return None
+    match = re.search(r"PMID:\s*(\d+)", extra, re.IGNORECASE)
+    return match.group(1) if match else None
+
+
 def extract_pmid_from_extra(extra: str | None) -> str | None:
     """Extract PMID from Zotero extra field."""
     if not extra:
@@ -65,9 +80,8 @@ async def get_owned_identifiers(zotero_client, limit: int = 500) -> dict[str, se
             if doi:
                 owned["dois"].add(doi.lower().strip())
 
-            # PMID from extra field
-            extra = data.get("extra", "")
-            pmid = extract_pmid_from_extra(extra)
+            # PMID - check native field and extra field
+            pmid = extract_pmid_from_item(data)
             if pmid:
                 owned["pmids"].add(pmid)
 

@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from zotero_mcp.infrastructure.mcp.search_helpers import (
     normalize_title,
     extract_pmid_from_extra,
+    extract_pmid_from_item,
     get_owned_identifiers,
     is_owned,
     format_search_results,
@@ -97,6 +98,34 @@ class TestExtractPmidFromExtra:
         assert extract_pmid_from_extra("Pmid: 12345678") == "12345678"
 
 
+class TestExtractPmidFromItem:
+    """Tests for extract_pmid_from_item function."""
+
+    def test_native_pmid_field(self):
+        """Test extraction from native PMID field."""
+        data = {"PMID": "38353755"}
+        assert extract_pmid_from_item(data) == "38353755"
+
+    def test_extra_field_fallback(self):
+        """Test fallback to extra field when no native PMID."""
+        data = {"extra": "PMID: 12345678"}
+        assert extract_pmid_from_item(data) == "12345678"
+
+    def test_native_takes_priority(self):
+        """Test native PMID takes priority over extra."""
+        data = {"PMID": "11111111", "extra": "PMID: 22222222"}
+        assert extract_pmid_from_item(data) == "11111111"
+
+    def test_empty_data(self):
+        """Test with empty data dict."""
+        assert extract_pmid_from_item({}) is None
+
+    def test_no_pmid_anywhere(self):
+        """Test when no PMID in either field."""
+        data = {"extra": "Some other content", "DOI": "10.1234/test"}
+        assert extract_pmid_from_item(data) is None
+
+
 class TestGetOwnedIdentifiers:
     """Tests for get_owned_identifiers function."""
 
@@ -125,6 +154,18 @@ class TestGetOwnedIdentifiers:
         owned = await get_owned_identifiers(mock_client)
 
         assert "12345678" in owned["pmids"]
+
+    @pytest.mark.asyncio
+    async def test_extracts_native_pmids(self):
+        """Test PMID extraction from native PMID field (Zotero 6+)."""
+        mock_client = AsyncMock()
+        mock_client.get_items.return_value = [
+            {"data": {"PMID": "38353755", "title": "Test Native PMID"}},
+        ]
+
+        owned = await get_owned_identifiers(mock_client)
+
+        assert "38353755" in owned["pmids"]
 
     @pytest.mark.asyncio
     async def test_extracts_titles(self):

@@ -128,6 +128,42 @@ class TestMapPubmedToZotero:
 
         assert result["language"] == "eng"
 
+    def test_map_url_from_doi(self, mock_pubmed_article):
+        """Test URL is generated from DOI."""
+        from zotero_mcp.infrastructure.mappers.pubmed_mapper import map_pubmed_to_zotero
+
+        result = map_pubmed_to_zotero(mock_pubmed_article)
+
+        assert result["url"] == "https://doi.org/10.1234/janesth.2024.001"
+
+    def test_map_url_fallback_to_pubmed(self):
+        """Test URL falls back to PubMed URL when no DOI."""
+        from zotero_mcp.infrastructure.mappers.pubmed_mapper import map_pubmed_to_zotero
+
+        article = {"title": "Test", "pmid": "12345678"}
+        result = map_pubmed_to_zotero(article)
+
+        assert result["url"] == "https://pubmed.ncbi.nlm.nih.gov/12345678/"
+
+    def test_map_access_date(self, mock_pubmed_article):
+        """Test accessDate is set to current date."""
+        from zotero_mcp.infrastructure.mappers.pubmed_mapper import map_pubmed_to_zotero
+
+        result = map_pubmed_to_zotero(mock_pubmed_article)
+
+        assert "accessDate" in result
+        # Should be ISO format: YYYY-MM-DDTHH:MM:SSZ
+        assert result["accessDate"].endswith("Z")
+        assert "T" in result["accessDate"]
+
+    def test_map_library_catalog(self, mock_pubmed_article):
+        """Test libraryCatalog is set to PubMed."""
+        from zotero_mcp.infrastructure.mappers.pubmed_mapper import map_pubmed_to_zotero
+
+        result = map_pubmed_to_zotero(mock_pubmed_article)
+
+        assert result["libraryCatalog"] == "PubMed"
+
     def test_map_extra_field(self, mock_pubmed_article):
         """Test mapping extra field with PMID, PMCID, etc."""
         from zotero_mcp.infrastructure.mappers.pubmed_mapper import map_pubmed_to_zotero
@@ -423,6 +459,22 @@ class TestExtractPmidFromZoteroItem:
         item = {"extra": "PMID: 12345678"}
 
         assert extract_pmid_from_zotero_item(item) == "12345678"
+
+    def test_extract_pmid_native_field(self):
+        """Test extracting PMID from native Zotero PMID field (Zotero 6+)."""
+        from zotero_mcp.infrastructure.mappers.pubmed_mapper import extract_pmid_from_zotero_item
+
+        item = {"data": {"PMID": "38353755"}}
+
+        assert extract_pmid_from_zotero_item(item) == "38353755"
+
+    def test_extract_pmid_native_field_takes_priority(self):
+        """Test native PMID field takes priority over extra field."""
+        from zotero_mcp.infrastructure.mappers.pubmed_mapper import extract_pmid_from_zotero_item
+
+        item = {"data": {"PMID": "11111111", "extra": "PMID: 22222222"}}
+
+        assert extract_pmid_from_zotero_item(item) == "11111111"
 
 
 class TestExtractDoiFromZoteroItem:

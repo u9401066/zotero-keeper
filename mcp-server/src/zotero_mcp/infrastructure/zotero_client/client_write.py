@@ -168,15 +168,23 @@ class ZoteroWriteMixin:
                     existing_dois.add(item_doi_lower)
                     doi_to_key[item_doi_lower] = key
 
-            # Check PMID in extra field
-            extra = data.get("extra", "")
-            if extra:
-                pmid_match = re.search(r"PMID:\s*(\d+)", extra, re.IGNORECASE)
-                if pmid_match:
-                    item_pmid = pmid_match.group(1)
-                    if item_pmid in pmids_set:
-                        existing_pmids.add(item_pmid)
-                        pmid_to_key[item_pmid] = key
+            # Check PMID - native field first (Zotero 6+), then extra
+            item_pmid = data.get("PMID", "")
+            if item_pmid:
+                item_pmid = str(item_pmid).strip()
+                if item_pmid in pmids_set:
+                    existing_pmids.add(item_pmid)
+                    pmid_to_key[item_pmid] = key
+
+            if not item_pmid:
+                extra = data.get("extra", "")
+                if extra:
+                    pmid_match = re.search(r"PMID:\s*(\d+)", extra, re.IGNORECASE)
+                    if pmid_match:
+                        item_pmid = pmid_match.group(1)
+                        if item_pmid in pmids_set:
+                            existing_pmids.add(item_pmid)
+                            pmid_to_key[item_pmid] = key
 
         return {
             "existing_pmids": existing_pmids,

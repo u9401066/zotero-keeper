@@ -6,6 +6,7 @@ Ensures complete metadata preservation.
 """
 
 import logging
+from datetime import datetime, timezone
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -48,6 +49,9 @@ def map_pubmed_to_zotero(
         keywords               -> tags[]
         mesh_terms             -> tags[] (prefix: MeSH:)
         publication_types      -> extra
+        (doi|pmid)             -> url
+        (auto)                 -> accessDate
+        (auto)                 -> libraryCatalog
     """
 
     # Basic fields
@@ -150,10 +154,24 @@ def map_pubmed_to_zotero(
     if article.get("language"):
         item["language"] = article["language"]
 
+    # URL - DOI URL preferred, then PubMed URL
+    doi_val = article.get("doi")
+    pmid_val = article.get("pmid")
+    if doi_val:
+        item["url"] = f"https://doi.org/{doi_val}"
+    elif pmid_val:
+        item["url"] = f"https://pubmed.ncbi.nlm.nih.gov/{pmid_val}/"
+
+    # Access date - when metadata was retrieved
+    item["accessDate"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    # Library catalog - source identifier
+    item["libraryCatalog"] = "PubMed"
+
     # Extra field - PMID, PMCID, publication types, affiliations
     extra_parts = []
 
-    pmid = article.get("pmid")
+    pmid = pmid_val
     if pmid:
         extra_parts.append(f"PMID: {pmid}")
 
@@ -313,11 +331,18 @@ def extract_pmid_from_zotero_item(item: dict[str, Any]) -> str | None:
     """
     Extract PMID from a Zotero item.
 
-    Checks the 'extra' field for PMID: xxx pattern.
+    Checks native PMID field first (Zotero 6+), then 'extra' field.
     """
     import re
 
     data = item.get("data", item)
+
+    # Check native PMID field first
+    native_pmid = data.get("PMID", "")
+    if native_pmid:
+        return str(native_pmid).strip()
+
+    # Fall back to extra field
     extra = data.get("extra", "")
 
     if not extra:
