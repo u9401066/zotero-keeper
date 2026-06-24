@@ -2,6 +2,17 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.5.34] - 2026-06-24
+
+### Changed
+
+- Extension-managed installs now point at the `v0.5.34-ext` archive and bundle Zotero Keeper `1.13.0`.
+
+### Added
+
+- **Type-aware Zotero import**: bundled Zotero Keeper now detects the correct Zotero item type and maps fields to that type's schema across journal articles, books, book chapters, conference papers, theses, reports, web pages, preprints, software/repositories, and datasets. Unsupported fields are preserved in the `Extra` field so nothing is lost.
+- **More complete metadata**: imported items now include `url`, `accessDate`, and `libraryCatalog`; duplicate detection also reads Zotero's native `PMID` field; the RIS importer captures publisher, place, edition, ISBN/ISSN, series, and editors.
+
 ## [0.5.33] - 2026-06-22
 
 ### Changed

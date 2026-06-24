@@ -6,6 +6,7 @@
 
 import * as vscode from 'vscode';
 import { execSync } from 'child_process';
+import { ZOTERO_KEEPER_VERSION } from './zoteroKeeperPackage.js';
 import {
     PUBMED_SEARCH_ENTRYPOINT,
     PUBMED_SEARCH_VERSION,
@@ -78,7 +79,7 @@ export class ZoteroMcpServerProvider implements vscode.McpServerDefinitionProvid
                         ZOTERO_HOST: zoteroHost,
                         ZOTERO_PORT: String(zoteroPort),
                     },
-                    '1.12.0'
+                    ZOTERO_KEEPER_VERSION
                 )
             );
         }

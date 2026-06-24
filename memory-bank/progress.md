@@ -17,13 +17,17 @@
 - [x] 完成 PubMed Search 啟動回歸修復的 release 前驗證，包含 lint、compile、focused mocha tests 與 VSIX package (2026-04-20)
 - [x] 確認 `pubmed-search-mcp v0.5.17` GitHub release commit 與 PyPI resolver 皆可用 (2026-06-22)
 - [x] 將 `external/pubmed-search-mcp` 更新到 `v0.5.17` commit `60ea753` (2026-06-22)
+- [x] 參考 ZotMeta 強化 keeper→Zotero metadata：新增 url/accessDate/libraryCatalog 並用原生 PMID 欄位做去重 (2026-06-24)
+- [x] 新增 `infrastructure/mappers/zotero_schema.py`：14 種 Zotero 類型欄位註冊表、`detect_item_type()`、`finalize_item_for_schema()`（不支援欄位保存到 extra）(2026-06-24)
+- [x] 讓 `_unified_article_to_zotero` 與 RIS parser 具備型別感知（書本/章節/研討會/網頁/軟體/資料集 + editors）(2026-06-24)
+- [x] 新增型別感知測試（test_zotero_schema + 匯入/RIS），mcp-server 單元測試 464 passing (2026-06-24)
+- [x] bump：mcp-server `1.13.0`、extension `0.5.34`、keeper archive 指向 `v0.5.34-ext`，mcpProvider 改用 `ZOTERO_KEEPER_VERSION` 常數 (2026-06-24)
 
 ## Doing
-- [ ] 準備發布 VS Code extension v0.5.33
+- [ ] 發布 VS Code extension v0.5.34 / Zotero Keeper 1.13.0（型別感知 metadata 匯入）
 
 ## Next
-- [ ] 建立 release commit 並推送 `main`
-- [ ] 推送 `v0.5.33-ext` tag 觸發 Marketplace/VSIX 發布
+- [ ] 推送 `main` 並推送 `v0.5.34-ext` tag 觸發 Marketplace/VSIX 發布
 - [ ] 驗證 GitHub Actions release/publish workflow 結果
 
 ## Blocked

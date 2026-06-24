@@ -185,7 +185,7 @@ describe('ZoteroMcpServerProvider', () => {
             // Zotero Keeper
             assert.strictEqual(servers[0].command, mockPythonPath);
             assert.deepStrictEqual(servers[0].args, ['-m', 'zotero_mcp']);
-            assert.strictEqual(servers[0].version, '1.12.0');
+            assert.strictEqual(servers[0].version, '1.13.0');
 
             // PubMed Search
             assert.strictEqual(servers[1].command, mockPythonPath);

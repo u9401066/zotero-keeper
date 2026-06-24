@@ -14,7 +14,7 @@ When you activate the extension, it will automatically install these packages us
 ```bash
 uv venv <extension-storage>/venv --python 3.12
 uv pip install --upgrade --python <extension-storage>/venv/bin/python \
-  "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.5.33-ext.tar.gz#subdirectory=mcp-server" \
+  "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.5.34-ext.tar.gz#subdirectory=mcp-server" \
   "pubmed-search-mcp @ https://github.com/u9401066/pubmed-search-mcp/archive/60ea753fcfd8fd8e49f6907c5a71bbcd220a288d.tar.gz"
 ```
 

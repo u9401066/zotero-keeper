@@ -1,5 +1,28 @@
 # Decision Log
 
+## 2026-06-24
+
+### DEC-028: Type-aware Zotero metadata mapping (Keeper 1.13.0 / VSIX v0.5.34)
+- **Decision**: Make the PubMed/RIS → Zotero importer detect the correct Zotero
+  item type and route fields to that type's schema, instead of forcing every
+  record into `journalArticle`.
+- **Rationale**:
+  1. Books, book chapters, conference papers, web pages, software repositories
+     and datasets each have different valid fields in Zotero; sending journal
+     fields to them caused silent metadata loss via the Connector API.
+  2. A verified field registry (`mappers/zotero_schema.py`) plus
+     `finalize_item_for_schema()` keeps only valid fields and preserves the rest
+     in the Zotero `Extra` field, so no metadata is ever dropped.
+  3. `detect_item_type()` infers the type from source vocabularies and
+     identifier/field heuristics (arXiv → preprint, repo URL → computerProgram,
+     ISBN without journal → book/bookSection, website fields → webpage).
+  4. `mcpProvider.ts` now consumes `ZOTERO_KEEPER_VERSION` instead of a
+     hardcoded string so the bundled keeper version cannot drift again.
+- **Delivery**: extension downloads `v{X}-ext.tar.gz#subdirectory=mcp-server`,
+  so the keeper change ships via the `v0.5.34-ext` release line (bundled keeper
+  `1.13.0`).
+- **Release line**: `v0.5.34-ext`.
+
 ## 2026-06-22
 
 ### DEC-027: VSIX v0.5.33 upgrades managed PubMed Search to v0.5.17

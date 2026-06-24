@@ -1,5 +1,12 @@
 # Zotero + PubMed MCP Extension for VS Code
 
+## What's New in v0.5.34
+
+- **Complete, type-aware Zotero metadata**: imports now detect the correct Zotero item type (journal article, book, book chapter, conference paper, thesis, report, web page, preprint, software/repository, dataset, …) and route every field to that type's schema, so books keep ISBN/publisher/edition, chapters keep the book title, conferences keep the conference/proceedings name, and repositories become software items.
+- **No metadata is ever lost**: any field that a given item type does not support is preserved in the Zotero `Extra` field instead of being silently dropped.
+- **Richer provenance**: imported records now carry `url`, `accessDate`, and `libraryCatalog`, and duplicate detection also reads Zotero's native `PMID` field.
+- **Bundled Zotero Keeper 1.13.0** with an expanded RIS importer (publisher, place, edition, ISBN vs ISSN, series, editors).
+
 ## What's New in v0.5.33
 
 - **PubMed Search 0.5.17 baseline**: updates the managed PubMed Search MCP source pin, bundled assistant assets, and keeper dependency floor to the latest contact-email fallback release.

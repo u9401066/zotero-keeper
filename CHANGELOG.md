@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.13.0] - 2026-06-24
+
+### 📚 Type-Aware, Complete Zotero Metadata Import
+
+This release makes the PubMed/RIS → Zotero importer aware of every Zotero item
+type instead of forcing everything into `journalArticle`, and guarantees no
+metadata is silently dropped.
+
+### Added
+
+- **Type-aware item mapping** (`infrastructure/mappers/zotero_schema.py`):
+  - A verified field registry for 14 Zotero item types (journalArticle, book,
+    bookSection, conferencePaper, thesis, report, webpage, preprint,
+    computerProgram, manuscript, magazineArticle, newspaperArticle, dataset,
+    document).
+  - `detect_item_type()` infers the correct type from source vocabularies
+    (CrossRef / OpenAlex / RIS / PubMed / BibTeX) plus identifier and field
+    heuristics (arXiv → preprint, repository URL → computerProgram, ISBN without
+    a journal → book/bookSection, website fields → webpage).
+  - `finalize_item_for_schema()` keeps only the fields valid for the detected
+    type and preserves the rest in the Zotero `Extra` field, so no metadata is
+    ever lost.
+  - Container titles are routed per type (journal → publicationTitle,
+    chapter → bookTitle, conference → proceedingsTitle) and creator roles are
+    remapped (software → programmer).
+- **Type-specific fields** in the unified importer: publisher, place, ISBN,
+  edition, series, conferenceName, institution, university, thesisType,
+  reportNumber, repository, versionNumber, programmingLanguage, websiteTitle,
+  editors, and arXiv repository/archiveID for preprints.
+- **Richer journal metadata**: imported items now carry `url`, `accessDate`,
+  and `libraryCatalog`.
+- **Expanded RIS importer**: books, conferences, web pages, software, and
+  datasets, including publisher, place, edition, ISBN-vs-ISSN detection,
+  series, and editors.
+
+### Changed
+
+- Duplicate detection now reads Zotero's native `PMID` field in addition to the
+  legacy `Extra: PMID` convention (batch identifier check, owned-identifier
+  scan, and mapper helper).
+- `mcp-server` package version is now `1.13.0`; the internal
+  `zotero_mcp.__version__` marker was synced to match.
+
+### Tests
+
+- Added `tests/unit/infrastructure/test_zotero_schema.py` plus type-aware
+  import and RIS-parsing coverage. Full unit suite: 464 passing.
+
+---
+
 ## [1.12.0] - 2026-04-08
 
 ### 🛡️ Collaboration-Safe Defaults & Production Hardening
