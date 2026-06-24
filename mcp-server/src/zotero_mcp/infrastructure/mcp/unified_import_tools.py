@@ -38,8 +38,11 @@ Example:
 """
 
 import logging
+import mimetypes
 import re
+import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
@@ -894,4 +897,171 @@ def register_unified_import_tools(mcp, zotero_client):
             result["error"] = str(e)
             return result
 
+    @mcp.tool()
+    async def import_pdf(
+        file_path: str,
+        title: str | None = None,
+        article: dict[str, Any] | None = None,
+        collection_name: str | None = None,
+        collection_key: str | None = None,
+        tags: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """
+        📎 Import a local PDF file into Zotero (Connector API — no API key needed)
+
+        匯入本機 PDF 檔案到 Zotero，使用 Connector API（不需 Web API key），
+        符合現有 Local/Connector 架構。
+
+        Two modes:
+        - **Metadata mode** (recommended): provide `article` (a unified article
+          dict from pubmed-search-mcp) or `title`. Creates a parent item with
+          that metadata in the chosen collection and attaches the PDF to it.
+        - **Auto-recognize mode** (default when no metadata): saves the PDF as a
+          standalone attachment and lets Zotero recognize it — Zotero extracts
+          the DOI/title from the PDF and builds the parent item automatically.
+
+        Args:
+            file_path: Absolute path to a local PDF on the machine running this
+                MCP server (the server reads the bytes directly).
+            title: Optional parent-item title when no `article` is given.
+            article: Optional unified article dict (e.g. from
+                fetch_article_details / unified_search) to build a rich parent.
+            collection_name: Target collection by name (metadata mode).
+            collection_key: Target collection by key (metadata mode).
+            tags: Extra tags for the parent item (metadata mode).
+
+        Returns:
+            Result dict with: success, mode, parent/attachment info, saved_to.
+
+        Examples:
+            # Auto-recognize a PDF (Zotero figures out the metadata)
+            import_pdf(file_path="/home/me/papers/smith2024.pdf")
+
+            # Attach a PDF to a parent built from PubMed metadata
+            details = await fetch_article_details(pmid="38353755")
+            import_pdf(
+                file_path="/home/me/papers/ai-anesthesia.pdf",
+                article=details,
+                collection_name="AI Anesthesia",
+            )
+
+        Note:
+            Attaching to a *pre-existing* library item is not supported by the
+            Connector API (it is session-scoped). This tool creates the parent
+            item itself (metadata mode) or relies on Zotero's standalone
+            auto-recognition.
+        """
+        result: dict[str, Any] = {"success": False, "file_path": file_path}
+
+        # === Step 1: Validate and read the local file ===
+        path = Path(file_path).expanduser()
+        if not path.exists() or not path.is_file():
+            result["error"] = f"File not found: {file_path}"
+            result["hint"] = "Provide an absolute path to a PDF on the machine running this MCP server."
+            return result
+
+        try:
+            file_bytes = path.read_bytes()
+        except OSError as e:
+            result["error"] = f"Could not read file: {e}"
+            return result
+
+        if not file_bytes:
+            result["error"] = "File is empty"
+            return result
+
+        content_type = mimetypes.guess_type(path.name)[0] or "application/pdf"
+        file_url = path.resolve().as_uri()
+        session_id = uuid.uuid4().hex
+        has_metadata = bool(article) or bool(title)
+
+        try:
+            if has_metadata:
+                # === Metadata mode: create parent item, then attach the PDF ===
+                if article:
+                    try:
+                        validated_article = _validate_article_payload(article)
+                    except (ValidationError, TypeError) as e:
+                        result["error"] = f"Invalid article payload: {e}"
+                        return result
+                    zotero_item = _unified_article_to_zotero(validated_article)
+                else:
+                    zotero_item = {"itemType": "document", "title": title}
+
+                resolution = await resolve_collection_target(
+                    zotero_client,
+                    collection_name=collection_name,
+                    collection_key=collection_key,
+                )
+                if not resolution["success"]:
+                    result.update(resolution)
+                    return result
+                target_key = resolution["target_key"]
+                target_name = resolution["target_name"]
+
+                zotero_item = apply_collection_and_tags(zotero_item, collection_key=target_key, tags=tags)
+
+                # Connector key lets the attachment reference this parent in the session
+                connector_key = f"zk-{session_id}"
+                zotero_item["id"] = connector_key
+
+                await zotero_client.save_items(
+                    [zotero_item],
+                    uri=file_url,
+                    title=str(zotero_item.get("title") or "PDF Import"),
+                    session_id=session_id,
+                )
+
+                attachment = await zotero_client.save_attachment(
+                    file_bytes=file_bytes,
+                    content_type=content_type,
+                    title="Full Text PDF",
+                    url=str(zotero_item.get("url") or file_url),
+                    parent_item_id=connector_key,
+                    session_id=session_id,
+                )
+
+                result["mode"] = "metadata"
+                result["parent_title"] = zotero_item.get("title", "")
+                result["item_type"] = zotero_item.get("itemType", "")
+                result["attachment_saved"] = attachment["success"]
+                if not attachment["success"]:
+                    result["error"] = f"Parent item created, but attaching the PDF failed: {attachment['message']}"
+                    return attach_saved_to_info(result, target_key=target_key, target_name=target_name)
+
+                result["success"] = True
+                result["message"] = f"Imported PDF and created parent item '{zotero_item.get('title', '')}'"
+                return attach_saved_to_info(result, target_key=target_key, target_name=target_name)
+
+            # === Auto-recognize mode: standalone attachment ===
+            attachment_title = title or path.stem
+            standalone = await zotero_client.save_standalone_attachment(
+                file_bytes=file_bytes,
+                content_type=content_type,
+                title=attachment_title,
+                url=file_url,
+                session_id=session_id,
+            )
+
+            result["mode"] = "standalone"
+            if not standalone["success"]:
+                result["error"] = standalone["message"]
+                return result
+
+            can_recognize = bool(isinstance(standalone["data"], dict) and standalone["data"].get("canRecognize"))
+            result["success"] = True
+            result["recognizing"] = can_recognize
+            result["message"] = (
+                "Saved PDF as a standalone attachment; Zotero is recognizing its metadata to build the parent item."
+                if can_recognize
+                else "Saved PDF as a standalone attachment. Provide `article` or `title` for richer metadata."
+            )
+            return result
+
+        except Exception as e:
+            logger.error(f"PDF import failed: {e}")
+            result["error"] = str(e)
+            return result
+
     logger.info("Unified import tool registered (import_articles)")
+    logger.info("PDF import tool registered (import_pdf) 📎 Connector API attachments, no Web API key needed")

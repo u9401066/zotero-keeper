@@ -418,6 +418,43 @@ import_articles(
 
 ---
 
+### `import_pdf` 📎
+
+Import a **local PDF file** into Zotero using the Connector API — **no Web API key required** (stays within the Local/Connector architecture).
+
+**Two modes**:
+- **Metadata mode** (recommended): provide `article` (a unified article dict, e.g. from `fetch_article_details`) or a `title`. Creates a parent item with that metadata in the chosen collection and attaches the PDF to it.
+- **Auto-recognize mode** (default when no metadata): saves the PDF as a standalone attachment and lets Zotero extract the DOI/title and build the parent item automatically.
+
+**Parameters**:
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `file_path` | `str` | — | Absolute path to a local PDF on the machine running the MCP server |
+| `title` | `str` | `None` | Parent-item title when no `article` is given |
+| `article` | `dict` | `None` | Unified article dict to build a rich parent item |
+| `collection_name` | `str` | `None` | Target collection name (metadata mode) |
+| `collection_key` | `str` | `None` | Target collection key (metadata mode) |
+| `tags` | `list[str]` | `None` | Extra tags for the parent item (metadata mode) |
+
+> ⚠️ Attaching to a **pre-existing** library item is not supported by the Connector API (it is session-scoped). This tool creates the parent item itself, or uses standalone auto-recognition.
+
+**Example**:
+```python
+# Auto-recognize a PDF (Zotero figures out the metadata)
+import_pdf(file_path="/home/me/papers/smith2024.pdf")
+
+# Attach a PDF to a parent built from PubMed metadata
+details = fetch_article_details(pmid="38353755")
+import_pdf(
+    file_path="/home/me/papers/ai-anesthesia.pdf",
+    article=details,
+    collection_name="AI Anesthesia",
+)
+```
+
+---
+
 ## Analytics Tools
 
 ### `get_library_stats`
