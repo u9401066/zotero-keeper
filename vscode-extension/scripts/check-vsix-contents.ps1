@@ -86,6 +86,7 @@ try {
         "extension/resources/repo-assets/pubmed-search-mcp/.claude/skills/pubmed-paper-exploration/SKILL.md",
         "extension/resources/repo-assets/pubmed-search-mcp/.claude/skills/pubmed-pico-search/SKILL.md",
         "extension/resources/repo-assets/pubmed-search-mcp/.claude/skills/pubmed-quick-search/SKILL.md",
+        "extension/resources/repo-assets/pubmed-search-mcp/.claude/skills/pubmed-research-chronicle/SKILL.md",
         "extension/resources/repo-assets/pubmed-search-mcp/.claude/skills/pubmed-systematic-search/SKILL.md"
     )
 

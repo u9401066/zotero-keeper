@@ -22,7 +22,7 @@ workspace.
 3. Gather evidence through the appropriate MCP tools:
    - Zotero Keeper for saved library state and imports.
    - PubMed Search MCP for search, details, related/citing/reference traversal,
-     export, timeline, and full-text follow-up.
+     export, persistent Research Chronicle, and full-text follow-up.
    - Asset-aware/document tools for PDFs, DOCX, DFM, tables, figures, and
      span-level evidence when available.
 4. Write Markdown notes with stable filenames, one H1, clean sections, and

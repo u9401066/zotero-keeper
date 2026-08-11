@@ -21,7 +21,8 @@ wiki or LLM-readable literature wiki.
 2. Use Zotero tools to inspect saved library items, collections, and duplicate
    state before importing or refetching.
 3. Use PubMed Search MCP tools for discovery, article details, related/citing
-   articles, references, exports, and full-text follow-up.
+   articles, references, exports, persistent Research Chronicle, and full-text
+   follow-up.
 4. Use asset-aware or document tools when PDFs, DOCX, DFM, tables, figures, or
    span-level citations are part of the request.
 5. Write or update Markdown notes with Foam-compatible wikilinks and preserved

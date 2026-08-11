@@ -29,7 +29,11 @@ VSIX install path healthy.
 
 ## Product Guardrails
 
+- Keep Keeper 2.x and PubMed Search MCP 0.6.x on the same MCP SDK v2 runtime;
+  managed-environment upgrades must resolve both packages together.
 - Keep Zotero local-library behavior separate from PubMed literature-search behavior.
 - Use `import_articles` as the preferred bridge from PubMed results/RIS into Zotero.
+- Require a confirmed collection; set `allow_library_root=true` only after the
+  user explicitly approves a My Library root import.
 - Do not bypass the NCBI email policy; use explicit settings or the git email fallback.
 - Treat VSIX install as a first-class path: bundled repo assets must be synced before compile/package.

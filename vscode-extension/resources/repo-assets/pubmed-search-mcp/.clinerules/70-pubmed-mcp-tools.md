@@ -12,7 +12,7 @@ paths:
 ## Tool Contract Rules
 
 - Keep `unified_search` as the primary search facade.
-- Preserve session-aware flows: cached articles, last PMIDs, search history, and pipeline state.
+- Preserve session-aware flows: cached articles, last PMIDs, session logs, Research Chronicle, and pipeline state.
 - Return source counts and warnings when a source fails or contributes zero results.
 - Keep output formats stable for markdown, JSON, RIS, BibTeX, CSV, and MEDLINE.
 - Do not remove old fields without tolerating them for at least one release cycle.
@@ -21,6 +21,7 @@ paths:
 
 - Use `generate_search_queries` and `analyze_search_query` before complex/systematic searches.
 - Use `parse_pico` for clinical comparison questions.
+- Use `build_research_chronicle` and `read_research_chronicle` for persistent research history.
 - Use `get_fulltext`, `get_article_figures`, and institutional access tools only when full-text retrieval is requested.
 - Export to RIS for Zotero/EndNote and BibTeX for LaTeX workflows.
 
