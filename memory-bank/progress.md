@@ -27,13 +27,21 @@
 - [x] 新增 client 二進位/附件支援（_request_raw content+headers、save_attachment、save_standalone_attachment、save_items session_id）(2026-06-24)
 - [x] 完整測試：wire-level（httpx MockTransport）+ 端到端 + 錯誤分支 + 真實 FastMCP 註冊，494 passing；import_pdf 與附件方法 100% 覆蓋 (2026-06-24)
 - [x] bump：mcp-server `1.14.0`、extension `0.5.35`、keeper archive 指向 `v0.5.35-ext` (2026-06-24)
+- [x] 完成 VSIX `0.5.35` / Keeper `1.14.0` 發布與 PDF 匯入交付 (2026-06-24)
+- [x] 盤點 PubMed Search MCP v0.6.1：固定 commit `ad85dde`、45 tools、Research Chronicle 與 SDK v2 契約 (2026-08-11)
+- [x] 將 Keeper 升級為 `2.0.0`，改用 `mcp.server.MCPServer` 與 `mcp>=2,<3` (2026-08-11)
+- [x] 將 Keeper 的 PubMed adapter 升級為 v0.6.1 `PubMedSearchClient` API (2026-08-11)
+- [x] 確認 Zotero 官方組織未發布 MCP；Registry 收錄的 `54yyyu/zotero-mcp` 為社群 server，且與 Keeper 有 Python namespace 衝突 (2026-08-11)
+- [x] 將 Keeper 2.0.0 與 PubMed 0.6.1 合併為單一 `uv pip install` resolver transaction，並以真實雙 server tool listing 驗證 managed venv (2026-08-11)
+- [x] 完成 assistant assets / Research Chronicle 同步、521 個 Keeper tests、63 個 PubMed protocol/release tests、84 個 extension tests、mypy、ruff 與 VSIX 內容 smoke (2026-08-11)
+- [x] 封閉 malformed collection-name 與 legacy import 的 My Library fail-open 路徑，所有無 collection 寫入皆需明確 root 授權 (2026-08-11)
 
 ## Doing
-- [ ] 發布 VS Code extension v0.5.35 / Zotero Keeper 1.14.0（PDF 匯入）
+- [ ] 發布 VS Code extension / VSIX `0.6.0` 與 bundled Keeper `2.0.0`、PubMed Search MCP `0.6.1`
 
 ## Next
-- [ ] 推送 `main` 並推送 `v0.5.35-ext` tag 觸發 Marketplace/VSIX 發布
-- [ ] 驗證 GitHub Actions release/publish workflow 結果
+- [ ] 依 MCP runtime、extension/assets、docs、memory/release 分段提交
+- [ ] 推送 `main` 與 `v0.6.0-ext` tag，驗證 GitHub Actions、GitHub Release 與 Marketplace/VSIX 結果
 
 ## Blocked
 - [ ] 無

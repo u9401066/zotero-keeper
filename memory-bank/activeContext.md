@@ -1,27 +1,52 @@
 # Active Context
 
 ## 當前焦點
-發布 VS Code extension v0.5.35 / Zotero Keeper 1.14.0：新增 `import_pdf` 工具，可在現有 Local/Connector 架構內（無需 Web API key）匯入本機 PDF — metadata 模式（建立父項目並掛 PDF）或 auto-recognize 模式（讓 Zotero 從 PDF 抽出 metadata 建立項目）。
+發布 breaking release：Zotero Keeper `2.0.0` 與 VS Code extension / VSIX
+`0.6.0`。兩個 bundled MCP servers 都必須在同一個 extension-managed venv
+切換到 MCP SDK v2；SDK v1 與 v2 不相容，不允許只升級其中一套。
 
 ## 相關檔案
-- `mcp-server/src/zotero_mcp/infrastructure/zotero_client/client_base.py` - `_request_raw` 支援二進位 body + per-request headers
-- `mcp-server/src/zotero_mcp/infrastructure/zotero_client/client_write.py` - `save_attachment`、`save_standalone_attachment`、`save_items(session_id=...)`
-- `mcp-server/src/zotero_mcp/infrastructure/mcp/unified_import_tools.py` - `import_pdf` 工具（重用型別感知對應）
-- `vscode-extension/src/zoteroKeeperPackage.ts` - keeper archive 指向 `v0.5.35-ext`，`ZOTERO_KEEPER_VERSION` = 1.14.0
-- `docs/ZOTERO_LOCAL_API.md` / `docs/tools-reference.md` - Connector 附件端點與 import_pdf 說明
-- `vscode-extension/src/zoteroKeeperPackage.ts` - keeper archive 指向 `v0.5.34-ext`，`ZOTERO_KEEPER_VERSION` = 1.13.0
-- `vscode-extension/src/mcpProvider.ts` - 改用 `ZOTERO_KEEPER_VERSION` 常數避免版本漂移
-- `CHANGELOG.md` / `vscode-extension/CHANGELOG.md` / `vscode-extension/README.md` - 版本說明
+- `mcp-server/pyproject.toml` - Keeper `2.0.0` 與 `mcp>=2.0,<3`
+- `mcp-server/src/zotero_mcp/infrastructure/mcp/server.py` - SDK v2
+  `MCPServer` 組裝與 Keeper 的 24 tools / 6 resources
+- `mcp-server/src/zotero_mcp/infrastructure/pubmed/__init__.py` - PubMed
+  v0.6.1 公開 Python API 整合
+- `external/pubmed-search-mcp` - upstream v0.6.1 commit
+  `ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d`（45 tools，含 Research
+  Chronicle）
+- `vscode-extension/src/uvPythonManager.ts` / `pythonEnvironment.ts` - 同一
+  managed venv 的 package-set 升級、來源與版本驗證
+- `vscode-extension/src/zoteroKeeperPackage.ts` / `pubmedSearchPackage.ts` -
+  Keeper `2.0.0` 與 PubMed `0.6.1` reproducible pins
+- `vscode-extension/package.json` / `CHANGELOG.md` - VSIX `0.6.0` 發布面
+- `README.md` / `README.zh-TW.md` / `.github/**` - MCP v2、Research
+  Chronicle、Zotero MCP 生態與安全邊界說明
 
 ## 待解決問題
-- [x] mcp-server 單元測試 464 passing、ruff clean
-- [x] extension tsc/eslint/mocha 82 passing、version-sync OK (0.5.34)
-- [ ] 推送 `main` 並推送 `v0.5.34-ext` tag 觸發 VSIX 更新
+- [x] VSIX `0.5.35` / Keeper `1.14.0`（`import_pdf`）已完成發布
+- [x] 盤點 PubMed Search MCP v0.6.1 與 MCP SDK v2 breaking surface
+- [x] Keeper server 與 PubMed Python client adapter 遷移至 SDK v2 API
+- [x] 確保兩套 MCP package 以單一解析/安裝單元升級至同一 managed venv
+- [x] 同步 bundled assistant assets，完成 full checks 與 VSIX content smoke
+- [ ] 分段提交、推送 `main` 與 `v0.6.0-ext` tag，驗證發布 workflow
 
 ## 上下文
-- 參考 RoadToDream/ZotMeta 的 metadata 完整性做法，但改為「匯入時即型別感知」而非事後補。
-- extension 透過下載 `v{X}-ext.tar.gz#subdirectory=mcp-server` 安裝 keeper，故 metadata 改進需透過 `-ext` release 才會送達使用者。
-- `finalize_item_for_schema()` 確保任何類型不支援的欄位改寫進 Zotero `Extra`，避免 Connector API 靜默丟棄 metadata。
+- MCP SDK v2 以 `mcp.server.MCPServer` 取代 v1 `FastMCP` surface；Keeper
+  與 PubMed 共同約束 `mcp>=2,<3`。
+- PubMed Search MCP v0.6.1 提供 45 個 tools；Research Chronicle 的
+  `build_research_chronicle` / `read_research_chronicle` 取代舊 timeline
+  公開工具面。
+- 截至 2026-08-11，Zotero 官方組織未發布 MCP server。
+  `54yyyu/zotero-mcp` 是 MCP Registry 收錄的社群 server，不是 Zotero
+  官方產品；它與 Keeper 使用相同的 `zotero_mcp` Python namespace，禁止安裝
+  在同一 managed venv，若評估使用必須採獨立環境與獨立 server 設定。
+- Keeper 的 local/Connector 模式以使用者桌面 Zotero 為信任邊界，可在不使用
+  Zotero Web API key 的情況讀取本地資料並執行 Connector 匯入。任何可遠端存取
+  的 authenticated service 模式都必須另外處理 token、tenant、bind host、
+  origin/host 驗證與資料目錄隔離，不可沿用 local-mode 假設。
+- Collection name 解析必須取得非空 Zotero key；malformed response、取消、無
+  elicitation capability 與所有未確認 destination 都必須 fail closed。即使開啟
+  legacy PubMed tools，也必須以 `allow_library_root=true` 攜帶 root 授權。
 
 ## 更新時間
-2026-06-24
+2026-08-11 16:44 UTC

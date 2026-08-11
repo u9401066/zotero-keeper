@@ -1,5 +1,66 @@
 # Decision Log
 
+## 2026-08-11
+
+### DEC-030: MCP SDK v2 breaking release 與雙 server 原子升級邊界
+
+#### 背景
+PubMed Search MCP v0.6.1 已全面遷移到 MCP SDK v2；v2 與既有 SDK v1
+runtime 不相容。Zotero Keeper 與 PubMed Search MCP 由同一個 VS Code
+extension-managed venv 啟動，因此任何只升級其中一套的方案都可能讓共用的
+`mcp` dependency 落在另一套無法啟動的版本。同時，Zotero MCP 生態出現功能豐富
+的社群 server，需要明確區分專案來源、Python namespace 與服務安全模型。
+
+#### 選項
+1. 保留 Keeper SDK v1、只升級 PubMed - 變更較小，但同一 venv 無法同時滿足
+   不相容 runtime，否決。
+2. 將兩套 server 一起遷移到 SDK v2，並在同一 managed venv 以單一 package
+   set 解析、安裝及驗證 - 有 breaking release 成本，但能維持可重現與可修復安裝。
+3. 以 `54yyyu/zotero-mcp` 取代或與 Keeper 混裝 - 可取得不同功能面，但該專案
+   並非 Zotero 官方 server，且其 Python module 同樣命名為 `zotero_mcp`，同環境
+   會有 namespace/entrypoint 衝突，否決混裝。
+
+#### 決定
+- Zotero Keeper 發布 `2.0.0`，改用 `mcp.server.MCPServer`，runtime 約束為
+  `mcp>=2.0,<3`。
+- PubMed Search MCP 固定至 upstream v0.6.1 commit
+  `ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d`；其公開工具面為 45 tools，研究
+  演進工作流使用 `build_research_chronicle` 與 `read_research_chronicle`。
+- VS Code extension / VSIX 發布 `0.6.0`，把 Keeper `2.0.0` 與 PubMed
+  `0.6.1` 視為不可拆分的 runtime package set：停止舊 process，在同一 managed
+  venv 共同解析/安裝，再同時驗證版本、direct source 與 server tool listing。
+- 截至決策日，Zotero 官方組織沒有發布 MCP server。
+  `54yyyu/zotero-mcp` 僅標示為 MCP Registry 收錄的社群 server；若使用，必須放在
+  Keeper managed venv 之外的獨立環境並使用不同 server 設定。
+- 保留雙 MCP 職責：PubMed Search 負責搜尋、探索、full text、pipeline、session
+  與 Research Chronicle；Keeper 負責本地 Zotero 檢視、重複檢查、collection
+  選擇及 Connector 匯入。
+
+#### 理由
+1. 單一 SDK major 與單一 resolver transaction 可消除共用 venv 的半升級狀態。
+2. 固定 release commit、direct URL 與 install state 能讓 VSIX 安裝可重現，也能
+   在 breaking upgrade 時強制 refresh，而非誤用舊 venv。
+3. Keeper 的 Local API/Connector 路徑能在不要求 Zotero Web API key 的情況下
+   服務桌面使用者，符合既有 product boundary。
+4. 來源與 namespace 說明可避免把 Registry 收錄誤稱為 Zotero 官方背書，也避免
+   兩個 `zotero_mcp` distribution 在同一 interpreter 中互相覆蓋。
+5. local stdio 與 authenticated HTTP service 的威脅模型不同；明確分界能避免
+   把 localhost 無認證假設錯誤套用到可遠端存取的服務。
+
+#### 影響
+- 所有 Keeper MCP registration、context 型別、測試與文件由 `FastMCP` 名稱遷移
+  至 SDK v2 `MCPServer`；SDK v1 環境不再支援。
+- Extension upgrade 必須同時刷新兩套 packages；安裝 smoke 必須建立兩個 server
+  並列出 tools，而不能只測試 Python import。
+- Packaged assistant assets 必須同步 PubMed v0.6.1 的 45-tool surface 與
+  `pubmed-research-chronicle` skill，移除舊 timeline 公開工具假設。
+- Collection resolution 只有取得非空 Zotero key 才算成功；主工具與 opt-in
+  legacy imports 都不得把 malformed/missing destination 降級成 My Library root。
+- local/Connector 模式以桌面 Zotero 與 loopback 為信任邊界；authenticated
+  service 模式必須額外實施 token、tenant、bind host、Host/Origin 驗證與資料目錄
+  隔離，兩者不得混為同一安全設定。
+- `v0.5.35-ext` 已完成；目前發布工作線為 `v0.6.0-ext`。
+
 ## 2026-06-24
 
 ### DEC-029: PDF import via Connector API (Keeper 1.14.0 / VSIX v0.5.35)

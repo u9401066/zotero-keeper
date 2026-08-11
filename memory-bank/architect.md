@@ -7,33 +7,39 @@
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        VS Code Extension                         │
-│                    (vscode-zotero-mcp v0.3.1)                   │
+│                    (vscode-zotero-mcp v0.6.0)                   │
+│       one managed venv / one MCP SDK v2 package set             │
 └──────────────────────────────┬──────────────────────────────────┘
                                │ MCP Protocol (stdio)
            ┌───────────────────┴───────────────────┐
            ▼                                       ▼
 ┌──────────────────────┐              ┌──────────────────────┐
-│   zotero-keeper      │              │   pubmed-search-mcp  │
-│    (MCP Server)      │◄────────────►│    (MCP Server)      │
-└──────────┬───────────┘   PubMed     └──────────┬───────────┘
-           │               Mapper                 │
+│ zotero-keeper 2.0.0  │              │ pubmed-search 0.6.1 │
+│ 24 tools/6 resources │◄────────────►│       45 tools       │
+│ SDK v2 MCPServer     │ UnifiedArticle│ SDK v2 MCPServer     │
+└──────────┬───────────┘   handoff     └──────────┬───────────┘
            │                                      │
            ▼                                      ▼
 ┌──────────────────────┐              ┌──────────────────────┐
-│   Zotero Local API   │              │   NCBI Entrez API    │
-│   (localhost:23119)  │              │   iCite, MeSH        │
+│ Zotero Local API +   │              │ NCBI + biomedical   │
+│ Connector :23119     │              │ literature sources  │
 └──────────────────────┘              └──────────────────────┘
 ```
+
+兩個 MCP servers 的預設協作發生在 agent/tool contract 層，並非互相控制對方：
+PubMed Search 產生 citation-ready / `UnifiedArticle` 資料；Keeper 先檢查本地擁有
+狀態與 collection，再執行持久化。
 
 ## DDD 分層架構 (符合憲法第 1 條)
 
 ### 1. Domain Layer (核心層)
+
 ```
 domain/
-├── entities/
-│   ├── reference.py      # 文獻參考實體 (182 行 ✅)
-│   ├── collection.py     # 收藏夾實體 (41 行 ✅)
-│   └── batch_result.py   # 批次結果實體 (211 行 ✅)
+└── entities/
+    ├── reference.py      # 文獻參考實體
+    ├── collection.py     # 收藏夾實體
+    └── batch_result.py   # 批次結果實體
 ```
 
 **責任**:
@@ -42,41 +48,47 @@ domain/
 - 不依賴任何外部套件
 
 ### 2. Infrastructure Layer (基礎設施層)
+
 ```
 infrastructure/
 ├── zotero_client/
-│   └── client.py         # Zotero API 客戶端 (618 行 ⚠️ 需拆分)
+│   ├── client.py         # read/write facade
+│   ├── client_base.py    # transport/configuration
+│   ├── client_read.py    # Local API reads
+│   └── client_write.py   # Connector writes/attachments
 ├── mappers/
-│   └── pubmed_mapper.py  # PubMed → Zotero 映射 (325 行 ✅)
+│   ├── pubmed_mapper.py  # PubMed → Zotero 映射
+│   └── zotero_schema.py  # type-aware Zotero schema guard
 ├── pubmed/
-│   └── __init__.py       # PubMed 整合 (268 行 ✅)
+│   └── __init__.py       # PubMed v0.6.1 PubMedSearchClient adapter
 └── mcp/
-    ├── server.py         # MCP Server (586 行 ⚠️ 需拆分)
-    ├── search_tools.py   # 搜尋工具 (604 行 ⚠️ 需拆分)
-    ├── batch_tools.py    # 批次工具 (469 行 ⚠️ 需拆分)
-    ├── smart_tools.py    # 智慧工具 (224 行 ✅)
-    ├── pubmed_tools.py   # PubMed 工具 (433 行 ⚠️ 需拆分)
-    ├── interactive_tools.py # 互動工具 (816 行 ⚠️ 需拆分)
-    ├── saved_search_tools.py # 儲存搜尋 (228 行 ✅)
-    └── resources.py      # MCP 資源 (300 行 ✅)
+    ├── server.py         # MCP SDK v2 MCPServer assembly
+    ├── basic_read_tools.py / search_tools.py
+    ├── collection_tools.py / saved_search_tools.py
+    ├── attachment_tools.py / analytics_tools.py
+    ├── unified_import_tools.py # handoff + import_pdf
+    ├── interactive_tools.py / batch_tools.py
+    └── resources.py      # 6 MCP resources
 ```
 
 ## 待重構清單 (違反 bylaws/ddd-architecture.md 第 3 條)
 
 | 檔案 | 行數 | 優先級 | 拆分建議 |
 |------|------|--------|----------|
-| `interactive_tools.py` | 816 | P1 | → `interactive/validation.py` + `interactive/duplicate.py` |
-| `client.py` | 618 | P1 | → `client/read.py` + `client/write.py` |
-| `search_tools.py` | 604 | P2 | → `search/basic.py` + `search/advanced.py` |
-| `server.py` | 586 | P2 | → `server/core.py` + `server/tools.py` |
-| `batch_tools.py` | 469 | P3 | → `batch/add.py` + `batch/validate.py` |
-| `pubmed_tools.py` | 433 | P3 | → `pubmed/import.py` + `pubmed/search.py` |
+| `unified_import_tools.py` | 1067 | P1 | → import orchestration + PDF + RIS modules |
+| `pubmed_tools.py` | 526 | P2 | legacy-only bridge 可再拆分或移除 |
+| `interactive_tools.py` | 489 | P2 | → validation + duplicate/save workflow |
+| `batch_tools.py` | 401 | P3 | → add + validate modules |
+
+`client.py`、`server.py` 與 `search_tools.py` 的早期拆分工作已完成；上表保留目前
+仍超過 400 行的實際 hotspots，不回寫舊行數。
 
 ## 架構決策
 
-### ADR-001: 使用 FastMCP 框架
-- **決策**: 使用 FastMCP 而非手動實作 MCP
-- **理由**: 簡化 tool 定義，自動處理協定
+### ADR-001: 使用 FastMCP 框架（歷史，已由 ADR-005 取代）
+- **原決策**: 使用 SDK v1 FastMCP 而非手動實作 MCP
+- **原理由**: 簡化 tool 定義，自動處理協定
+- **狀態**: SDK v1 與 v2 不相容；Keeper `2.0.0` 起不再使用此 API 名稱
 
 ### ADR-002: DDD 分層但不過度
 - **決策**: 簡化 DDD，省略 Application Service 層
@@ -90,14 +102,30 @@ infrastructure/
 - **決策**: 使用 uv 管理 Python 環境 (符合 bylaws/python-environment.md)
 - **理由**: 更快的套件安裝速度，更好的鎖定機制
 
----
+### ADR-005: MCP SDK v2 `MCPServer`
+- **決策**: Keeper `2.0.0` 與 PubMed Search `0.6.1` 統一使用
+  `mcp.server.MCPServer` 與 `mcp>=2,<3`
+- **理由**: 共用 managed venv 無法安全混用 SDK v1/v2；server assembly、context
+  與 tool registration 必須使用同一 major contract
+
+### ADR-006: Extension-managed venv 是原子 package-set 邊界
+- **決策**: VSIX `0.6.0` 將 Keeper 與 PubMed 的 pinned direct sources 放在同一
+  resolver install 中，安裝後共同驗證版本、source 與 tool listing
+- **理由**: 避免其中一套已升級、另一套仍依賴 SDK v1 的半升級環境
+
+### ADR-007: Zotero MCP implementation 與安全模式隔離
+- **決策**: Keeper local/Connector 與 authenticated HTTP service 使用不同安全
+  假設；第三方 `54yyyu/zotero-mcp` 因同名 Python namespace 只能使用獨立環境
+- **理由**: Registry 收錄不代表 Zotero 官方產品；loopback 無 Web API key 的
+  desktop flow 也不能直接延伸到遠端 service
 
 ## 下一步架構改進
 
-1. **拆分大檔案**: 依據上表拆分超過 400 行的檔案
-2. **增加 Application Layer**: 如果業務邏輯變複雜，考慮加入 services/
-3. **Repository Pattern**: 在 Domain 和 Infrastructure 之間加入抽象
+1. **先完成 v2 release invariant**: 雙 server 同 resolver 升級與 runtime smoke
+2. **拆分大檔案**: 依據上表拆分仍超過 400 行的檔案
+3. **增加 Application Layer**: 如果匯入 orchestration 持續變複雜，考慮加入 services/
+4. **Repository Pattern**: 在 Domain 和 Infrastructure 之間加入抽象
 
 ---
-*Updated: 2025-12-16*
+*Updated: 2026-08-11*
 *符合: CONSTITUTION.md 第 1, 2 條*
