@@ -60,7 +60,7 @@ class TestZoteroKeeperServer:
     """Tests for ZoteroKeeperServer class."""
 
     @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
-    @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
+    @patch("zotero_mcp.infrastructure.mcp.server.MCPServer")
     @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
     @patch("zotero_mcp.infrastructure.mcp.server.register_interactive_save_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_saved_search_tools")
@@ -82,7 +82,7 @@ class TestZoteroKeeperServer:
         mock_mcp.assert_called_once()
 
     @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
-    @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
+    @patch("zotero_mcp.infrastructure.mcp.server.MCPServer")
     @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
     @patch("zotero_mcp.infrastructure.mcp.server.register_interactive_save_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_saved_search_tools")
@@ -114,7 +114,7 @@ class TestZoteroKeeperServer:
     @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
     @patch("zotero_mcp.infrastructure.mcp.server.register_batch_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_pubmed_tools")
-    @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
+    @patch("zotero_mcp.infrastructure.mcp.server.MCPServer")
     @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
     def test_legacy_pubmed_tools_disabled_by_default(
         self,
@@ -154,7 +154,7 @@ class TestZoteroKeeperServer:
     @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
     @patch("zotero_mcp.infrastructure.mcp.server.register_batch_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_pubmed_tools")
-    @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
+    @patch("zotero_mcp.infrastructure.mcp.server.MCPServer")
     @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
     def test_legacy_pubmed_tools_can_be_enabled_explicitly(
         self,
@@ -228,7 +228,7 @@ class TestServerTools:
 
     @pytest.mark.asyncio
     @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
-    @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
+    @patch("zotero_mcp.infrastructure.mcp.server.MCPServer")
     @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
     @patch("zotero_mcp.infrastructure.mcp.server.register_interactive_save_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_saved_search_tools")
@@ -263,7 +263,7 @@ class TestServerTools:
 
     @pytest.mark.asyncio
     @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
-    @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
+    @patch("zotero_mcp.infrastructure.mcp.server.MCPServer")
     @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
     @patch("zotero_mcp.infrastructure.mcp.server.register_interactive_save_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_saved_search_tools")
@@ -296,7 +296,7 @@ class TestServerTools:
 
     @pytest.mark.asyncio
     @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
-    @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
+    @patch("zotero_mcp.infrastructure.mcp.server.MCPServer")
     @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
     @patch("zotero_mcp.infrastructure.mcp.server.register_interactive_save_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_saved_search_tools")
@@ -329,7 +329,7 @@ class TestServerTools:
 
     @pytest.mark.asyncio
     @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
-    @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
+    @patch("zotero_mcp.infrastructure.mcp.server.MCPServer")
     @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
     @patch("zotero_mcp.infrastructure.mcp.server.register_interactive_save_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_saved_search_tools")
@@ -380,7 +380,7 @@ class TestServerRun:
     """Tests for server run method."""
 
     @patch("zotero_mcp.infrastructure.mcp.server.ZoteroClient")
-    @patch("zotero_mcp.infrastructure.mcp.server.FastMCP")
+    @patch("zotero_mcp.infrastructure.mcp.server.MCPServer")
     @patch("zotero_mcp.infrastructure.mcp.server.register_resources")
     @patch("zotero_mcp.infrastructure.mcp.server.register_interactive_save_tools")
     @patch("zotero_mcp.infrastructure.mcp.server.register_saved_search_tools")

@@ -12,7 +12,7 @@ Provides item reading and searching tools:
 import logging
 from typing import TYPE_CHECKING, Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server import MCPServer
 
 if TYPE_CHECKING:
     from ..zotero_client.client import ZoteroClient
@@ -38,7 +38,7 @@ def _format_creators(creators: list[dict]) -> str:
     return result
 
 
-def register_basic_read_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
+def register_basic_read_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
     """Register basic read tools with the MCP server"""
 
     @mcp.tool()

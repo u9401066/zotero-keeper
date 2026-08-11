@@ -1,7 +1,7 @@
 [project]
 name = "zotero-keeper"
-version = "1.14.0"
-description = "MCP Server for managing local Zotero libraries - enables AI assistants to read and write bibliographic references"
+version = "2.0.0"
+description = "MCP SDK v2 server for safe, collection-aware management of local Zotero libraries"
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.12"
@@ -22,7 +22,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "mcp>=1.0.0",
+    "mcp>=2.0,<3",
     "httpx>=0.27.0",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
@@ -39,14 +39,15 @@ Changelog = "https://github.com/u9401066/zotero-keeper/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 pubmed = [
-    "pubmed-search-mcp>=0.5.17",  # PubMed integration
+    "pubmed-search-mcp>=0.6.1",  # MCP SDK v2 PubMed integration
 ]
 all = [
-    "pubmed-search-mcp>=0.5.17",
+    "pubmed-search-mcp>=0.6.1",
     "rapidfuzz>=3.0.0",
 ]
 dev = [
-    "pubmed-search-mcp>=0.5.17",
+    "mcp[cli]>=2.0,<3",
+    "pubmed-search-mcp>=0.6.1",
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.0.0",
@@ -98,8 +99,9 @@ addopts = "-n auto --dist worksteal"
 
 [dependency-groups]
 dev = [
+    "mcp[cli]>=2.0,<3",
     "mypy>=1.0.0",
-    "pubmed-search-mcp>=0.5.17",
+    "pubmed-search-mcp>=0.6.1",
     "pytest>=9.0.2",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.0.0",

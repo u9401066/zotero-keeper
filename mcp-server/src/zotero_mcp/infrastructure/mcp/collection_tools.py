@@ -12,7 +12,7 @@ Provides collection management tools:
 import logging
 from typing import TYPE_CHECKING, Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server import MCPServer
 
 if TYPE_CHECKING:
     from ..zotero_client.client import ZoteroClient
@@ -23,7 +23,7 @@ from .basic_read_tools import _format_creators
 logger = logging.getLogger(__name__)
 
 
-def register_collection_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
+def register_collection_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
     """Register collection tools with the MCP server"""
 
     @mcp.tool()

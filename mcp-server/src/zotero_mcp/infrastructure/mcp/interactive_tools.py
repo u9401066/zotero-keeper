@@ -1,13 +1,14 @@
 """
 Interactive Save Tools with MCP Elicitation
 
-Uses MCP Elicitation feature to interactively ask users to select collections
-when saving references. This provides a much better UX than two-phase save.
+Uses MCP SDK v2 Resolve/Elicit dependencies to ask users to select collections
+while remaining compatible with both current and legacy protocol negotiation.
 
 Key Features:
-- Mid-tool user input via ctx.elicit()
-- Collection selection with numbered options
+- Protocol-portable elicitation through a read-only resolver graph
+- Collection selection with exact Zotero keys
 - Duplicate detection with confirmation
+- Separate confirmation before writing to My Library root
 - Validation with user feedback
 - Auto-fetch complete metadata from DOI/PMID
 
@@ -17,18 +18,14 @@ Key Features:
 """
 
 import logging
-from typing import Any
+from typing import Annotated, Any
 
-from mcp.server.fastmcp import Context
-from mcp.server.session import ServerSession
+from mcp.server.mcpserver import Elicit, Resolve
 from pydantic import BaseModel, Field
 
+from .collection_support import resolve_collection_target
 from .metadata_fetcher import auto_fetch_and_merge
 from .validation import validate_item, find_duplicates
-from .collection_utils import (
-    format_collection_options,
-    num_to_collection_key,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -41,13 +38,33 @@ logger = logging.getLogger(__name__)
 class CollectionChoiceSchema(BaseModel):
     """Schema for collection selection elicitation"""
 
-    choice: str = Field(description="Enter the number of your choice (e.g., '1' for first option, '0' for no collection)")
+    choice: str = Field(description="Enter an exact Zotero collection key, or ROOT for My Library")
 
 
 class DuplicateConfirmSchema(BaseModel):
     """Schema for duplicate confirmation elicitation"""
 
-    confirm: str = Field(description="Enter 'yes' to add anyway, or 'no' to cancel")
+    confirm: bool = Field(description="Confirm that this possible duplicate should be saved anyway")
+
+
+class RootConfirmSchema(BaseModel):
+    """Schema for an explicit Zotero library-root confirmation."""
+
+    confirm_root: bool = Field(description="Confirm saving outside every Zotero collection")
+
+
+class PreparedSave(BaseModel):
+    """Read-only candidate built before any interactive authorization."""
+
+    item: dict[str, Any]
+    metadata_source: str
+    validation: dict[str, Any]
+
+
+class DuplicateSnapshot(BaseModel):
+    """Stable duplicate-check result shared by the v2 resolver graph."""
+
+    best: dict[str, Any] | None = None
 
 
 # =============================================================================
@@ -67,7 +84,7 @@ def _build_user_input(
     abstract: str | None,
     url: str | None,
     tags: list[str] | None,
-    extra_fields: dict,
+    extra_fields: dict[str, Any] | None,
 ) -> dict:
     """Build user input dict from parameters."""
     user_input = {
@@ -93,111 +110,8 @@ def _build_user_input(
     if tags:
         user_input["tags"] = [{"tag": t} for t in tags]
 
-    user_input.update(extra_fields)
+    user_input.update(extra_fields or {})
     return user_input
-
-
-async def _handle_duplicate_check(item: dict, zotero_client, ctx: Context | None, result: dict) -> bool:
-    """
-    Handle duplicate check with optional elicitation.
-
-    Returns True if should proceed, False if cancelled.
-    """
-    from .smart_tools import _find_duplicates
-
-    duplicates = await _find_duplicates(item, zotero_client)
-
-    if not duplicates:
-        return True
-
-    best = duplicates[0]
-
-    if ctx:
-        try:
-            dup_msg = (
-                f"⚠️ **Potential Duplicate Found:**\n\n"
-                f"Existing: **{best['title']}**\n"
-                f"Match: {best['score']}% ({best['match_type']})\n\n"
-                f"Do you want to add anyway?"
-            )
-
-            dup_result = await ctx.elicit(
-                message=dup_msg,
-                schema=DuplicateConfirmSchema,
-            )
-
-            if dup_result.action == "accept" and dup_result.data:
-                if dup_result.data.confirm.lower() not in ("yes", "y", "是", "確定"):
-                    result["message"] = "❌ Cancelled - duplicate exists"
-                    result["duplicate"] = best
-                    return False
-            elif dup_result.action in ("decline", "cancel"):
-                result["message"] = "❌ Cancelled by user"
-                return False
-        except Exception as e:
-            logger.warning(f"Elicitation failed (duplicate check): {e}")
-            result["duplicate_warning"] = f"Duplicate found: {best['title']} ({best['score']}%)"
-
-    return True
-
-
-async def _handle_collection_selection(item: dict, zotero_client, ctx: Context | None, skip_prompt: bool) -> tuple[str | None, str | None]:
-    """
-    Handle collection selection with optional elicitation.
-
-    Returns (collection_key, collection_name).
-    """
-    if skip_prompt or not ctx:
-        return None, None
-
-    try:
-        from .smart_tools import _suggest_collections
-
-        # Get all collections
-        collections = await zotero_client.get_collections()
-        all_collections = [
-            {
-                "key": c.get("key"),
-                "name": c.get("data", {}).get("name", ""),
-                "parentKey": c.get("data", {}).get("parentCollection"),
-                "itemCount": c.get("data", {}).get("numItems", 0),
-            }
-            for c in collections
-        ]
-
-        # Get suggestions
-        suggestions = await _suggest_collections(item, zotero_client)
-
-        # Format options
-        options_text, key_to_num = format_collection_options(all_collections, suggestions)
-
-        # Build elicitation message
-        title = item.get("title", "Unknown")
-        elicit_msg = f"📚 **Saving:** {title}\n{options_text}\nEnter the number of your choice:"
-
-        # Ask user
-        choice_result = await ctx.elicit(
-            message=elicit_msg,
-            schema=CollectionChoiceSchema,
-        )
-
-        if choice_result.action == "accept" and choice_result.data:
-            choice = choice_result.data.choice.strip()
-            target_key = num_to_collection_key(choice, key_to_num)
-
-            if target_key:
-                # Find the name
-                for c in all_collections:
-                    if c["key"] == target_key:
-                        return target_key, c["name"]
-
-        elif choice_result.action in ("decline", "cancel"):
-            return "CANCELLED", None
-
-    except Exception as e:
-        logger.warning(f"Elicitation failed (collection selection): {e}")
-
-    return None, None
 
 
 # =============================================================================
@@ -206,12 +120,162 @@ async def _handle_collection_selection(item: dict, zotero_client, ctx: Context |
 
 
 def register_interactive_save_tools(mcp, zotero_client):
-    """Register the interactive save tool with elicitation support."""
+    """Register save tools with protocol-portable MCP v2 elicitation."""
+
+    async def prepare_candidate(
+        item_type: str,
+        title: str,
+        creators: list[dict] | None = None,
+        doi: str | None = None,
+        isbn: str | None = None,
+        pmid: str | None = None,
+        publication_title: str | None = None,
+        date: str | None = None,
+        abstract: str | None = None,
+        url: str | None = None,
+        tags: list[str] | None = None,
+        auto_fetch_metadata: bool = True,
+        include_citation_metrics: bool = True,
+        extra_fields: dict[str, Any] | None = None,
+    ) -> PreparedSave:
+        """Build and validate a save candidate without changing Zotero."""
+        user_input = _build_user_input(
+            item_type,
+            title,
+            creators,
+            doi,
+            isbn,
+            pmid,
+            publication_title,
+            date,
+            abstract,
+            url,
+            tags,
+            extra_fields,
+        )
+        item, metadata_source = await auto_fetch_and_merge(
+            user_input,
+            pmid=pmid,
+            doi=doi,
+            auto_fetch=auto_fetch_metadata,
+            include_citation_metrics=include_citation_metrics,
+        )
+        return PreparedSave(
+            item=item,
+            metadata_source=metadata_source,
+            validation=validate_item(item),
+        )
+
+    candidate_dependency = Resolve(prepare_candidate)
+
+    async def inspect_duplicates(
+        candidate: Annotated[PreparedSave, candidate_dependency],
+    ) -> DuplicateSnapshot:
+        """Take a duplicate snapshot; invalid candidates never reach Zotero reads."""
+        if not candidate.validation.get("valid"):
+            return DuplicateSnapshot()
+
+        from .smart_tools import _find_duplicates
+
+        duplicates = await _find_duplicates(candidate.item, zotero_client)
+        return DuplicateSnapshot(best=duplicates[0] if duplicates else None)
+
+    duplicate_dependency = Resolve(inspect_duplicates)
+
+    async def authorize_duplicate(
+        duplicate: Annotated[DuplicateSnapshot, duplicate_dependency],
+    ) -> DuplicateConfirmSchema | Elicit[DuplicateConfirmSchema]:
+        """Ask only when a duplicate exists; refusal aborts dependency resolution."""
+        if duplicate.best is None:
+            return DuplicateConfirmSchema(confirm=True)
+
+        best = duplicate.best
+        message = (
+            "⚠️ **Potential Duplicate Found**\n\n"
+            f"Existing: **{best.get('title', 'Untitled')}**\n"
+            f"Match: {best.get('score', '?')}% ({best.get('match_type', 'similar metadata')})\n\n"
+            "Save another copy anyway?"
+        )
+        return Elicit(message, DuplicateConfirmSchema)
+
+    duplicate_authorization = Resolve(authorize_duplicate)
+
+    async def choose_collection(
+        candidate: Annotated[PreparedSave, candidate_dependency],
+        duplicate: Annotated[DuplicateSnapshot, duplicate_dependency],
+        duplicate_confirmation: Annotated[DuplicateConfirmSchema, duplicate_authorization],
+        skip_collection_prompt: bool = False,
+    ) -> CollectionChoiceSchema | Elicit[CollectionChoiceSchema]:
+        """Choose a destination only after validation and duplicate authorization."""
+        if not candidate.validation.get("valid") or (duplicate.best and not duplicate_confirmation.confirm):
+            return CollectionChoiceSchema(choice="BLOCKED")
+        if skip_collection_prompt:
+            return CollectionChoiceSchema(choice="SKIPPED")
+
+        from .smart_tools import _suggest_collections
+
+        collections = await zotero_client.get_collections()
+        catalog = sorted(
+            (
+                {
+                    "key": str(collection.get("key") or "").strip(),
+                    "name": str(collection.get("data", {}).get("name") or "Untitled"),
+                }
+                for collection in collections
+                if collection.get("key")
+            ),
+            key=lambda collection: (collection["name"].casefold(), collection["key"]),
+        )
+        suggestions = await _suggest_collections(candidate.item, zotero_client)
+        suggested_keys = {
+            str(suggestion.get("key"))
+            for suggestion in sorted(
+                suggestions,
+                key=lambda suggestion: (
+                    -float(suggestion.get("score", 0)),
+                    str(suggestion.get("name", "")).casefold(),
+                    str(suggestion.get("key", "")),
+                ),
+            )[:3]
+            if suggestion.get("key")
+        }
+
+        lines = [f"📚 **Saving:** {candidate.item.get('title', 'Untitled')}", "", "Choose a collection key:"]
+        for collection in catalog:
+            marker = "⭐ " if collection["key"] in suggested_keys else ""
+            lines.append(f"- {marker}{collection['name']}: `{collection['key']}`")
+        lines.extend(
+            [
+                "",
+                "Enter `ROOT` only if you intend to save outside every collection; a second confirmation is required.",
+            ]
+        )
+        return Elicit("\n".join(lines), CollectionChoiceSchema)
+
+    collection_dependency = Resolve(choose_collection)
+
+    async def confirm_library_root(
+        collection_choice: Annotated[CollectionChoiceSchema, collection_dependency],
+    ) -> RootConfirmSchema | Elicit[RootConfirmSchema]:
+        """Require a separate human confirmation before writing to library root."""
+        if collection_choice.choice.strip().upper() != "ROOT":
+            return RootConfirmSchema(confirm_root=False)
+        return Elicit(
+            "Save this item to My Library without assigning it to any collection?",
+            RootConfirmSchema,
+        )
+
+    root_authorization = Resolve(confirm_library_root)
 
     @mcp.tool()
     async def interactive_save(
         item_type: str,
         title: str,
+        candidate: Annotated[PreparedSave, candidate_dependency],
+        duplicate: Annotated[DuplicateSnapshot, duplicate_dependency],
+        duplicate_confirmation: Annotated[DuplicateConfirmSchema, duplicate_authorization],
+        collection_choice: Annotated[CollectionChoiceSchema, collection_dependency],
+        root_confirmation: Annotated[RootConfirmSchema, root_authorization],
         creators: list[dict] | None = None,
         doi: str | None = None,
         isbn: str | None = None,
@@ -224,8 +288,7 @@ def register_interactive_save_tools(mcp, zotero_client):
         skip_collection_prompt: bool = False,
         auto_fetch_metadata: bool = True,
         include_citation_metrics: bool = True,
-        ctx: Context[ServerSession, None] = None,
-        **extra_fields,
+        extra_fields: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
         💾 Interactive save with collection selection
@@ -233,10 +296,11 @@ def register_interactive_save_tools(mcp, zotero_client):
         互動式儲存 - 會列出所有收藏夾讓你選擇
 
         🎯 This tool uses MCP Elicitation to:
-        1. Show all available collections as numbered options
+        1. Show available collections and their exact keys
         2. Highlight suggested collections based on title/tags
-        3. Let you choose by entering a number
+        3. Let you choose an exact collection key
         4. Confirm if duplicates are found
+        5. Require a second confirmation if you choose ROOT
 
         🔒 DATA INTEGRITY:
         When DOI or PMID is provided, this tool will **automatically fetch**
@@ -253,7 +317,9 @@ def register_interactive_save_tools(mcp, zotero_client):
             creators: List of author dicts
             doi: Digital Object Identifier → 自動從 CrossRef 取得完整資料
             pmid: PubMed ID → 自動從 PubMed 取得完整資料 + RCR
-            skip_collection_prompt: If True, save without asking
+            skip_collection_prompt: Deprecated. If True, aborts without writing;
+                use quick_save with a validated collection or explicitly approved
+                allow_library_root instead.
 
         Returns:
             Success/failure with details
@@ -266,30 +332,10 @@ def register_interactive_save_tools(mcp, zotero_client):
         }
 
         try:
-            # Step 0: Build user input and auto-fetch metadata
-            user_input = _build_user_input(
-                item_type,
-                title,
-                creators,
-                doi,
-                isbn,
-                pmid,
-                publication_title,
-                date,
-                abstract,
-                url,
-                tags,
-                extra_fields,
-            )
-
-            item, metadata_source = await auto_fetch_and_merge(
-                user_input,
-                pmid=pmid,
-                doi=doi,
-                auto_fetch=auto_fetch_metadata,
-                include_citation_metrics=include_citation_metrics,
-            )
-            result["metadata_source"] = metadata_source
+            # Resolvers are read-only. This final body is the sole write boundary.
+            item = dict(candidate.item)
+            validation = candidate.validation
+            result["metadata_source"] = candidate.metadata_source
 
             # Log abstract status
             if item.get("abstractNote"):
@@ -298,25 +344,44 @@ def register_interactive_save_tools(mcp, zotero_client):
                 logger.warning("⚠️ No abstract in final item")
                 result["warning"] = "No abstract. Provide DOI or PMID for complete metadata."
 
-            # Step 1: Validation
-            validation = validate_item(item)
             if not validation["valid"]:
                 result["message"] = f"❌ Validation failed: {', '.join(validation['errors'])}"
                 result["validation"] = validation
                 return result
 
-            # Step 2: Duplicate Check
-            if not await _handle_duplicate_check(item, zotero_client, ctx, result):
+            if duplicate.best and not duplicate_confirmation.confirm:
+                result["message"] = "❌ Cancelled - duplicate exists"
+                result["duplicate"] = duplicate.best
                 return result
 
-            # Step 3: Collection Selection
-            target_key, target_name = await _handle_collection_selection(item, zotero_client, ctx, skip_collection_prompt)
-
-            if target_key == "CANCELLED":
-                result["message"] = "❌ Cancelled by user"
+            choice = collection_choice.choice.strip()
+            if choice == "BLOCKED":
+                result["message"] = "❌ Save authorization was not completed"
+                return result
+            if choice == "SKIPPED":
+                result["message"] = (
+                    "❌ skip_collection_prompt no longer writes to My Library. "
+                    "Use quick_save with a validated collection key, or choose ROOT and confirm it interactively."
+                )
                 return result
 
-            # Step 4: Save
+            target_key: str | None = None
+            target_name: str | None = None
+            if choice.upper() == "ROOT":
+                if not root_confirmation.confirm_root:
+                    result["message"] = "❌ My Library root was not confirmed"
+                    return result
+            else:
+                try:
+                    collection = await zotero_client.get_collection(choice)
+                except Exception:
+                    result["message"] = f"❌ Collection key '{choice}' is no longer available"
+                    return result
+
+                collection_data = collection.get("data", {}) if isinstance(collection, dict) else {}
+                target_key = choice
+                target_name = collection_data.get("name") or choice
+
             if target_key:
                 item["collections"] = [target_key]
 
@@ -356,18 +421,20 @@ def register_interactive_save_tools(mcp, zotero_client):
         url: str | None = None,
         tags: list[str] | None = None,
         force_add: bool = False,
+        allow_library_root: bool = False,
         auto_fetch_metadata: bool = True,
         include_citation_metrics: bool = True,
-        **extra_fields,
+        extra_fields: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
         ⚡ Quick save without interactive prompts
 
         快速儲存（不詢問，直接存）
 
-        Use this when you already know the collection, or want to save
-        without interaction. For interactive collection selection,
-        use `interactive_save` instead.
+        Use this when you already know the collection. A destination is required
+        unless the user has explicitly approved a root-library write and the
+        caller carries that approval as `allow_library_root=True`. For interactive
+        collection selection, use `interactive_save` instead.
 
         🔒 DATA INTEGRITY:
         When DOI or PMID is provided, this tool will **automatically fetch**
@@ -386,6 +453,7 @@ def register_interactive_save_tools(mcp, zotero_client):
             doi: Digital Object Identifier → 自動從 CrossRef 取得完整資料
             pmid: PubMed ID → 自動從 PubMed 取得完整資料 + RCR
             force_add: Add even if duplicate found
+            allow_library_root: Explicitly allow saving outside every collection
 
         Returns:
             Success/failure with details
@@ -444,27 +512,24 @@ def register_interactive_save_tools(mcp, zotero_client):
                     result["duplicate"] = best
                     return result
 
-            # Resolve collection
-            target_key = None
-            target_name = None
+            # Resolve collection through the shared fail-closed path. A truthy
+            # but malformed name lookup must never degrade into a root write.
+            resolution = await resolve_collection_target(
+                zotero_client,
+                collection_name=collection_name,
+                collection_key=collection_key,
+                allow_library_root=allow_library_root,
+            )
+            if not resolution["success"]:
+                result["message"] = f"❌ {resolution['error']}"
+                if resolution.get("hint"):
+                    result["hint"] = resolution["hint"]
+                if resolution.get("available_collections") is not None:
+                    result["available_collections"] = resolution["available_collections"]
+                return result
 
-            if collection_key:
-                try:
-                    col = await zotero_client.get_collection(collection_key)
-                    target_key = collection_key
-                    target_name = col.get("data", {}).get("name", collection_key)
-                except Exception:
-                    result["message"] = f"❌ Collection key '{collection_key}' not found"
-                    return result
-
-            elif collection_name:
-                found = await zotero_client.find_collection_by_name(collection_name)
-                if found:
-                    target_key = found.get("key")
-                    target_name = found.get("data", {}).get("name", collection_name)
-                else:
-                    result["message"] = f"❌ Collection '{collection_name}' not found"
-                    return result
+            target_key = resolution["target_key"]
+            target_name = resolution["target_name"]
 
             # Save
             if target_key:

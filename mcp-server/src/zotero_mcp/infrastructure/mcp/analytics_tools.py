@@ -10,7 +10,7 @@ import logging
 from collections import Counter
 from typing import TYPE_CHECKING, Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server import MCPServer
 
 if TYPE_CHECKING:
     from ..zotero_client.client import ZoteroClient
@@ -20,7 +20,7 @@ from ..zotero_client.client import ZoteroAPIError, ZoteroConnectionError
 logger = logging.getLogger(__name__)
 
 
-def register_analytics_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
+def register_analytics_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
     """Register library analytics tools with the MCP server"""
 
     @mcp.tool()

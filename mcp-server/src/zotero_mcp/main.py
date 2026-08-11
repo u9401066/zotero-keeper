@@ -5,14 +5,11 @@ Usage:
     # Default (stdio transport, localhost)
   uv run python -m zotero_mcp
 
-    # With remote Zotero host
-  ZOTERO_HOST=<your-zotero-ip> uv run python -m zotero_mcp
-
     # With MCP inspector
   uv run mcp dev src/zotero_mcp/infrastructure/mcp/server.py
 
 Environment Variables:
-    ZOTERO_HOST     Zotero machine IP (default: localhost)
+    ZOTERO_HOST     Zotero Desktop loopback host (default: localhost)
     ZOTERO_PORT     Zotero HTTP port (default: 23119)
     ZOTERO_TIMEOUT  Request timeout in seconds (default: 30)
 
@@ -41,9 +38,6 @@ Examples:
   # Local Zotero (default)
   uv run python -m zotero_mcp
 
-  # Remote Zotero
-  ZOTERO_HOST=<your-zotero-ip> uv run python -m zotero_mcp
-
 VS Code Copilot Configuration:
   {
     "github.copilot.chat.agent.mcpServers": {
@@ -59,7 +53,9 @@ VS Code Copilot Configuration:
 
     parser.add_argument("--transport", "-t", choices=["stdio", "sse"], default="stdio", help="Transport mode (default: stdio)")
     parser.add_argument(
-        "--host", default=os.environ.get("ZOTERO_HOST", "localhost"), help="Zotero host (default: localhost or ZOTERO_HOST env)"
+        "--host",
+        default=os.environ.get("ZOTERO_HOST", "localhost"),
+        help="Zotero Desktop loopback host (default: localhost; do not expose port 23119)",
     )
     parser.add_argument(
         "--port", type=int, default=int(os.environ.get("ZOTERO_PORT", "23119")), help="Zotero port (default: 23119 or ZOTERO_PORT env)"

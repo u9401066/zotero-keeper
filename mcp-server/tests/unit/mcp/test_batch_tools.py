@@ -115,6 +115,35 @@ class TestBatchImportFromPubmed:
     """Tests for batch_import_from_pubmed tool function."""
 
     @pytest.mark.asyncio
+    @patch("zotero_mcp.infrastructure.mcp.batch_tools.BATCH_IMPORT_AVAILABLE", True)
+    @patch("zotero_mcp.infrastructure.mcp.batch_tools.fetch_pubmed_articles")
+    async def test_refuses_library_root_without_explicit_opt_in(self, mock_fetch):
+        from zotero_mcp.infrastructure.mcp.batch_tools import register_batch_tools
+
+        mock_mcp = MagicMock()
+        mock_client = AsyncMock()
+        registered_func = None
+
+        def tool_decorator():
+            def wrapper(func):
+                nonlocal registered_func
+                registered_func = func
+                return func
+
+            return wrapper
+
+        mock_mcp.tool = tool_decorator
+        register_batch_tools(mock_mcp, mock_client)
+
+        assert registered_func is not None
+        result = await registered_func("12345678")
+
+        assert result["success"] is False
+        assert result["error"] == "No Zotero collection selected"
+        mock_fetch.assert_not_awaited()
+        mock_client.batch_save_items.assert_not_awaited()
+
+    @pytest.mark.asyncio
     @patch("zotero_mcp.infrastructure.mcp.batch_tools.BATCH_IMPORT_AVAILABLE", False)
     async def test_returns_error_when_unavailable(self):
         """Test error returned when batch import unavailable."""
@@ -139,7 +168,7 @@ class TestBatchImportFromPubmed:
         register_batch_tools(mock_mcp, mock_client)
 
         if registered_func:
-            result = await registered_func("12345678")
+            result = await registered_func("12345678", allow_library_root=True)
             assert result["success"] is False
             assert "error" in result
 
@@ -199,7 +228,7 @@ class TestBatchImportFromPubmed:
         register_batch_tools(mock_mcp, mock_client)
 
         if registered_func:
-            result = await registered_func("12345678")
+            result = await registered_func("12345678", allow_library_root=True)
             assert result["success"] is False
             assert "No articles found" in result.get("error", "")
 
@@ -246,7 +275,7 @@ class TestBatchImportFromPubmed:
         if registered_func:
             # Mock pubmed_search to prevent citation metrics async issues
             with block_pubmed_search():
-                result = await registered_func("12345678")
+                result = await registered_func("12345678", allow_library_root=True)
             assert result["success"] is True
             assert result["added"] == 1
 
@@ -286,7 +315,7 @@ class TestBatchImportFromPubmed:
 
         if registered_func:
             with block_pubmed_search():
-                result = await registered_func("12345678", skip_duplicates=True)
+                result = await registered_func("12345678", skip_duplicates=True, allow_library_root=True)
             assert result["success"] is True
             assert result["skipped"] == 1
             assert result["added"] == 0
@@ -341,6 +370,7 @@ class TestBatchImportIntegration:
                 result = await registered_func(
                     "11111111,22222222",
                     tags=["Test", "2024"],
+                    allow_library_root=True,
                 )
             assert result["success"] is True
             assert result["total"] == 2

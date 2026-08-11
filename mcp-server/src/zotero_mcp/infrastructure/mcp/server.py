@@ -18,14 +18,17 @@ Usage:
         # Direct execution (stdio transport, localhost)
     uv run python -m zotero_mcp
 
-        # With remote Zotero host
-    ZOTERO_HOST=<your-zotero-ip> uv run python -m zotero_mcp
+Security:
+        Keep Zotero's unauthenticated Local/Connector API on loopback. Do not
+        expose or forward port 23119 for remote access.
 """
 
 import logging
 from typing import Any, Literal, cast
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server import MCPServer
+
+from zotero_mcp import __version__
 
 from ..zotero_client.client import ZoteroClient, ZoteroConfig, ZoteroConnectionError
 from .analytics_tools import register_analytics_tools
@@ -56,10 +59,11 @@ class ZoteroKeeperServer:
     def __init__(self, config: McpServerConfig | None = None):
         self._config = config or default_config
 
-        # Create FastMCP server
-        self._mcp = FastMCP(
-            name=self._config.name,
+        # MCP SDK v2 renamed the high-level server from FastMCP to MCPServer.
+        self._mcp: MCPServer[Any] = MCPServer(
+            self._config.name,
             instructions=self._config.instructions,
+            version=__version__,
         )
 
         # Create Zotero client
@@ -77,8 +81,8 @@ class ZoteroKeeperServer:
         logger.info(f"Zotero endpoint: {zotero_config.base_url}")
 
     @property
-    def mcp(self) -> FastMCP:
-        """Get the FastMCP server instance"""
+    def mcp(self) -> MCPServer[Any]:
+        """Get the MCP SDK v2 server instance."""
         return self._mcp
 
     def _register_all_tools(self):
@@ -215,8 +219,8 @@ def create_server(config: McpServerConfig | None = None) -> ZoteroKeeperServer:
     return _server
 
 
-# Export the concrete FastMCP instance for `mcp dev .../server.py` compatibility.
-mcp: FastMCP = get_server().mcp
+# Export the concrete MCPServer instance for `mcp dev .../server.py` compatibility.
+mcp: MCPServer[Any] = get_server().mcp
 
 
 # =============================================================================

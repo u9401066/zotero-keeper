@@ -13,14 +13,14 @@ Local API 可以執行 Saved Search 並返回符合條件的文獻。
 import logging
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server import MCPServer
 
 from ..zotero_client.client import ZoteroAPIError, ZoteroClient, ZoteroConnectionError
 
 logger = logging.getLogger(__name__)
 
 
-def register_saved_search_tools(mcp: FastMCP, zotero: ZoteroClient) -> None:
+def register_saved_search_tools(mcp: MCPServer, zotero: ZoteroClient) -> None:
     """
     Register Saved Search MCP tools.
 

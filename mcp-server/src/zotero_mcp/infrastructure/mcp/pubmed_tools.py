@@ -148,6 +148,7 @@ def register_pubmed_tools(mcp, zotero_client):
         collection_name: str | None = None,
         collection_key: str | None = None,
         tags: list[str] | None = None,
+        allow_library_root: bool = False,
     ) -> dict[str, Any]:
         """
         📥 Import RIS format citations to Zotero
@@ -168,13 +169,14 @@ def register_pubmed_tools(mcp, zotero_client):
 
         ⚠️ COLLECTION 防呆:
         - 若指定 collection_name/collection_key 但找不到，會回傳錯誤
-        - 不會靜默存到 library root
+        - 未指定 collection 時預設拒絕；只有明確確認後才可設定 allow_library_root
 
         Args:
             ris_text: RIS format citation text (from prepare_export or other sources)
             collection_name: Target collection name (recommended - human readable)
             collection_key: Target collection key (alternative)
             tags: Optional tags to add to all imported items
+            allow_library_root: Explicitly allow importing outside every collection
 
         Returns:
             Import result with count of imported items
@@ -209,6 +211,7 @@ def register_pubmed_tools(mcp, zotero_client):
                 zotero_client,
                 collection_name=collection_name,
                 collection_key=collection_key,
+                allow_library_root=allow_library_root,
             )
             if not resolution["success"]:
                 return resolution
@@ -248,6 +251,7 @@ def register_pubmed_tools(mcp, zotero_client):
         collection_key: str | None = None,
         tags: list[str] | None = None,
         include_citation_metrics: bool = True,
+        allow_library_root: bool = False,
     ) -> dict[str, Any]:
         """
         📥 Import PubMed articles directly by PMID
@@ -269,7 +273,7 @@ def register_pubmed_tools(mcp, zotero_client):
 
         ⚠️ COLLECTION 防呆:
         - 若指定 collection_name/collection_key 但找不到，會回傳錯誤
-        - 不會靜默存到 library root
+        - 未指定 collection 時預設拒絕；只有明確確認後才可設定 allow_library_root
 
         Alternative workflow (without pubmed extra):
         1. pubmed: get_session_pmids() → PMIDs
@@ -281,6 +285,7 @@ def register_pubmed_tools(mcp, zotero_client):
             collection_key: Target collection key (alternative)
             tags: Optional tags to add to all items
             include_citation_metrics: If True (default), fetch RCR from iCite
+            allow_library_root: Explicitly allow importing outside every collection
 
         Returns:
             Import result
@@ -305,6 +310,7 @@ def register_pubmed_tools(mcp, zotero_client):
                 zotero_client,
                 collection_name=collection_name,
                 collection_key=collection_key,
+                allow_library_root=allow_library_root,
             )
             if not resolution["success"]:
                 return resolution
@@ -370,6 +376,7 @@ def register_pubmed_tools(mcp, zotero_client):
         pmids: str,
         collection_name: str | None = None,
         tags: list[str] | None = None,
+        allow_library_root: bool = False,
     ) -> dict[str, Any]:
         """
         ⚡ Quick import PMIDs to Zotero (one-step convenience tool)
@@ -389,7 +396,7 @@ def register_pubmed_tools(mcp, zotero_client):
         ⚠️ COLLECTION 防呆機制:
         - 如果指定 collection_name 但找不到，會回傳錯誤和可用清單
         - 避免意外存到 Library root！
-        - 不指定 collection_name 則存到 root（需明確知道）
+        - 不指定 collection_name 時預設拒絕；root 需明確確認與 allow_library_root
 
         💡 GET PMIDs FROM:
         - search_pubmed_exclude_owned → new_pmids field
@@ -405,12 +412,16 @@ def register_pubmed_tools(mcp, zotero_client):
             pmids: Comma-separated PMIDs (e.g., "38353755,37864754")
             collection_name: Optional collection name to add items to (防呆: 找不到會報錯!)
             tags: Optional tags to add to all imported items
+            allow_library_root: Explicitly allow importing outside every collection
 
         Returns:
             Simple result with success/failure and count
 
         Example:
-            quick_import_pmids(pmids="38353755,37864754")
+            quick_import_pmids(
+                pmids="38353755,37864754",
+                collection_name="AI Research",
+            )
             → {"success": true, "imported": 2, "message": "..."}
 
             quick_import_pmids(
@@ -430,25 +441,26 @@ def register_pubmed_tools(mcp, zotero_client):
                     "hint": "Provide comma-separated PMIDs, e.g., '38353755,37864754'",
                 }
 
+            resolution = await resolve_collection_target(
+                zotero_client,
+                collection_name=collection_name,
+                allow_library_root=allow_library_root,
+                available_limit=10,
+                include_similar=True,
+            )
+            if not resolution["success"]:
+                return resolution
+
+            target_key = resolution["target_key"]
+            target_name = resolution["target_name"]
+            collection_info = resolution["collection_info"]
+
             # Try to use batch_import if available (better metadata)
             from .batch_tools import is_batch_import_available
 
             if is_batch_import_available():
                 from ..pubmed import fetch_pubmed_articles
                 from ..mappers.pubmed_mapper import map_pubmed_to_zotero
-
-                # === 防呆機制: Collection 驗證 ===
-                resolution = await resolve_collection_target(
-                    zotero_client,
-                    collection_name=collection_name,
-                    available_limit=10,
-                    include_similar=True,
-                )
-                if not resolution["success"]:
-                    return resolution
-
-                collection_key = resolution["target_key"]
-                collection_info = resolution["collection_info"]
 
                 # Fetch articles
                 articles = await fetch_pubmed_articles(pmid_list)
@@ -459,7 +471,7 @@ def register_pubmed_tools(mcp, zotero_client):
                     }
 
                 # Convert to Zotero format
-                collection_keys = [collection_key] if collection_key else None
+                collection_keys = [target_key] if target_key else None
                 zotero_items = [map_pubmed_to_zotero(article, extra_tags=tags, collection_keys=collection_keys) for article in articles]
 
                 # Save to Zotero
@@ -477,7 +489,7 @@ def register_pubmed_tools(mcp, zotero_client):
                 }
                 if collection_info:
                     result["collection_info"] = collection_info
-                attach_saved_to_info(result, target_key=collection_key, target_name=collection_info["name"] if collection_info else None)
+                attach_saved_to_info(result, target_key=target_key, target_name=target_name)
                 return result
 
             # Fallback to import_from_pmids if pubmed package available
@@ -490,10 +502,14 @@ def register_pubmed_tools(mcp, zotero_client):
                         "error": "No articles found",
                     }
 
-                zotero_items = [_pmid_to_zotero_item(a) for a in articles]
-                if tags:
-                    for item in zotero_items:
-                        item["tags"] = item.get("tags", []) + [{"tag": t} for t in tags]
+                zotero_items = [
+                    apply_collection_and_tags(
+                        _pmid_to_zotero_item(article),
+                        collection_key=target_key,
+                        tags=tags,
+                    )
+                    for article in articles
+                ]
 
                 await zotero_client.save_items(zotero_items)
 
@@ -503,7 +519,7 @@ def register_pubmed_tools(mcp, zotero_client):
                     "pmids": pmid_list,
                     "message": f"Successfully imported {len(zotero_items)} articles",
                 }
-                return attach_saved_to_info(result, target_key=None, target_name=None)
+                return attach_saved_to_info(result, target_key=target_key, target_name=target_name)
 
             else:
                 return {

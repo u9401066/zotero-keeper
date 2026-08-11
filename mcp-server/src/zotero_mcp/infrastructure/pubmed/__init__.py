@@ -138,12 +138,12 @@ def _configure_pubmed_search() -> bool:
 
 def get_pubmed_client():
     """
-    Get a PubMedClient instance.
+    Get a stable PubMedSearchClient SDK instance.
 
     Lazily configures the import path and creates a client.
 
     Returns:
-        PubMedClient instance
+        PubMedSearchClient instance
 
     Raises:
         ImportError: If pubmed-search cannot be imported
@@ -157,7 +157,7 @@ def get_pubmed_client():
             "clone submodule via 'git submodule update --init --recursive'"
         )
 
-    from pubmed_search import PubMedClient
+    from pubmed_search import PubMedSearchClient, PubMedSearchConfig
 
     # Get API key from environment if available
     email = os.environ.get("NCBI_EMAIL", "zotero-keeper@example.com")
@@ -167,7 +167,7 @@ def get_pubmed_client():
     if _pubmed_client is not None and _pubmed_client_signature == signature:
         return _pubmed_client
 
-    _pubmed_client = PubMedClient(email=email, api_key=api_key)
+    _pubmed_client = PubMedSearchClient(PubMedSearchConfig(email=email, api_key=api_key))
     _pubmed_client_signature = signature
     return _pubmed_client
 
@@ -188,7 +188,7 @@ async def fetch_pubmed_articles(pmids: list[str]) -> list[dict[str, Any]]:
     Fetch complete article details from PubMed.
 
     This is the main entry point for fetching article metadata.
-    Uses the pubmed-search library's PubMedClient.
+    Uses pubmed-search-mcp's stable PubMedSearchClient facade.
 
     Args:
         pmids: List of PubMed IDs
@@ -223,7 +223,7 @@ async def search_pubmed_raw(
     return cast(
         list[dict[str, Any]],
         await await_maybe(
-            client.search_raw(
+            client.search_pubmed(
                 query=query,
                 limit=limit,
                 min_year=min_year,
@@ -261,10 +261,7 @@ async def fetch_citation_metrics(pmids: list[str]) -> dict[str, dict]:
 
     try:
         client = get_pubmed_client()
-        from pubmed_search import LiteratureSearcher  # type: ignore
-
-        searcher = LiteratureSearcher(email=getattr(client, "email", "zotero@example.com"), api_key=getattr(client, "api_key", None))
-        metrics = await await_maybe(searcher.get_citation_metrics(pmids))
+        metrics = await await_maybe(client.searcher.get_citation_metrics(pmids))
         logger.info(f"Fetched citation metrics for {len(metrics)} articles")
         return metrics
 
@@ -321,4 +318,4 @@ async def enrich_articles_with_metrics(articles: list[dict], pmids: list[str] | 
 
 # Type checking support
 if TYPE_CHECKING:
-    from pubmed_search import PubMedClient, SearchResult  # noqa: F401
+    from pubmed_search import PubMedSearchClient  # noqa: F401

@@ -1,9 +1,92 @@
-"""Tests for async PubMed integration helpers."""
+"""Tests for PubMed Search MCP v0.6.1 facade integration."""
+
+import sys
+from types import SimpleNamespace
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from zotero_mcp.infrastructure.pubmed import fetch_pubmed_articles
+import zotero_mcp.infrastructure.pubmed as pubmed_integration
+from zotero_mcp.infrastructure.pubmed import (
+    fetch_citation_metrics,
+    fetch_pubmed_articles,
+    get_pubmed_client,
+    search_pubmed_raw,
+)
+
+
+def test_get_pubmed_client_builds_v061_facade_from_config(monkeypatch):
+    created = {}
+
+    class FakeConfig:
+        def __init__(self, *, email, api_key):
+            created["config"] = {"email": email, "api_key": api_key}
+
+    class FakeClient:
+        def __init__(self, config):
+            created["client_config"] = config
+
+    fake_module = SimpleNamespace(
+        PubMedSearchClient=FakeClient,
+        PubMedSearchConfig=FakeConfig,
+    )
+    monkeypatch.setitem(sys.modules, "pubmed_search", fake_module)
+    monkeypatch.setattr(pubmed_integration, "_configure_pubmed_search", lambda: True)
+    monkeypatch.setattr(pubmed_integration, "_pubmed_client", None)
+    monkeypatch.setattr(pubmed_integration, "_pubmed_client_signature", None)
+    monkeypatch.setenv("NCBI_EMAIL", "researcher@example.com")
+    monkeypatch.setenv("NCBI_API_KEY", "test-key")
+
+    client = get_pubmed_client()
+
+    assert isinstance(client, FakeClient)
+    assert created["config"] == {
+        "email": "researcher@example.com",
+        "api_key": "test-key",
+    }
+    assert created["client_config"] is not None
+
+
+@pytest.mark.asyncio
+@patch("zotero_mcp.infrastructure.pubmed.get_pubmed_client")
+async def test_search_pubmed_raw_uses_v061_search_pubmed(mock_get_client):
+    client = MagicMock()
+    client.search_pubmed = AsyncMock(return_value=[{"pmid": "12345678"}])
+    mock_get_client.return_value = client
+
+    result = await search_pubmed_raw(
+        "anesthesia AI",
+        limit=25,
+        min_year=2024,
+        strategy="date",
+    )
+
+    assert result == [{"pmid": "12345678"}]
+    client.search_pubmed.assert_awaited_once_with(
+        query="anesthesia AI",
+        limit=25,
+        min_year=2024,
+        max_year=None,
+        date_from=None,
+        date_to=None,
+        article_type=None,
+        strategy="date",
+    )
+
+
+@pytest.mark.asyncio
+@patch("zotero_mcp.infrastructure.pubmed.get_pubmed_client")
+async def test_fetch_citation_metrics_uses_v061_searcher_facade(mock_get_client):
+    client = MagicMock()
+    client.searcher.get_citation_metrics = AsyncMock(
+        return_value={"12345678": {"relative_citation_ratio": 1.5}}
+    )
+    mock_get_client.return_value = client
+
+    result = await fetch_citation_metrics(["12345678"])
+
+    assert result["12345678"]["relative_citation_ratio"] == 1.5
+    client.searcher.get_citation_metrics.assert_awaited_once_with(["12345678"])
 
 
 class TestFetchPubmedArticles:

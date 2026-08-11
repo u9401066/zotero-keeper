@@ -15,10 +15,19 @@ class TestResolveCollectionTarget:
     """Tests for collection resolution helper."""
 
     @pytest.mark.asyncio
-    async def test_returns_empty_resolution_when_no_collection_provided(self):
+    async def test_refuses_empty_resolution_without_root_authorization(self):
         mock_client = AsyncMock()
 
         result = await resolve_collection_target(mock_client)
+
+        assert result["success"] is False
+        assert result["error"] == "No Zotero collection selected"
+
+    @pytest.mark.asyncio
+    async def test_returns_root_resolution_only_with_explicit_authorization(self):
+        mock_client = AsyncMock()
+
+        result = await resolve_collection_target(mock_client, allow_library_root=True)
 
         assert result["success"] is True
         assert result["target_key"] is None
@@ -73,6 +82,21 @@ class TestResolveCollectionTarget:
         assert result["success"] is True
         assert result["target_key"] == "ABC123"
         assert result["collection_info"]["resolved_from"] == "name"
+
+    @pytest.mark.asyncio
+    async def test_rejects_truthy_name_result_without_a_usable_key(self):
+        mock_client = AsyncMock()
+        mock_client.find_collection_by_name.return_value = {"data": {"name": "Malformed"}}
+        mock_client.get_collections.return_value = []
+
+        result = await resolve_collection_target(
+            mock_client,
+            collection_name="Malformed",
+            allow_library_root=True,
+        )
+
+        assert result["success"] is False
+        assert "no usable key" in result["error"]
 
     @pytest.mark.asyncio
     async def test_returns_similar_names_when_requested(self):

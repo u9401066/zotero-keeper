@@ -670,6 +670,7 @@ def register_unified_import_tools(mcp, zotero_client):
         collection_key: str | None = None,
         tags: list[str] | None = None,
         skip_duplicates: bool = True,
+        allow_library_root: bool = False,
     ) -> dict[str, Any]:
         """
         📥 Unified Import Tool - Import articles from ANY source to Zotero
@@ -691,7 +692,7 @@ def register_unified_import_tools(mcp, zotero_client):
         ⚠️ COLLECTION 防呆:
         - If collection_name/collection_key is specified but not found → ERROR
         - Returns available collections list for user to choose
-        - If no collection specified → saves to library root (with warning)
+        - If no collection is specified → refuses to write unless allow_library_root=True
 
         Args:
             articles: List of article dicts from pubmed-search-mcp
@@ -701,6 +702,7 @@ def register_unified_import_tools(mcp, zotero_client):
             collection_key: Target collection key (alternative)
             tags: Additional tags to add to all imported items
             skip_duplicates: If True (default), skip articles already in Zotero
+            allow_library_root: Explicitly allow importing outside every collection
 
         Returns:
             Import result with:
@@ -762,10 +764,19 @@ def register_unified_import_tools(mcp, zotero_client):
                 result["hint"] = f"Split the import into batches of {MAX_IMPORT_ARTICLES} articles or fewer."
                 return result
 
+            if not collection_name and not collection_key and not allow_library_root:
+                result["error"] = "No Zotero collection selected"
+                result["hint"] = (
+                    "Call list_collections and pass collection_name or collection_key. "
+                    "Set allow_library_root=True only after explicitly confirming a My Library root import."
+                )
+                return result
+
             resolution = await resolve_collection_target(
                 zotero_client,
                 collection_name=collection_name,
                 collection_key=collection_key,
+                allow_library_root=allow_library_root,
             )
             if not resolution["success"]:
                 result.update(resolution)
@@ -905,6 +916,7 @@ def register_unified_import_tools(mcp, zotero_client):
         collection_name: str | None = None,
         collection_key: str | None = None,
         tags: list[str] | None = None,
+        allow_library_root: bool = False,
     ) -> dict[str, Any]:
         """
         📎 Import a local PDF file into Zotero (Connector API — no API key needed)
@@ -929,13 +941,19 @@ def register_unified_import_tools(mcp, zotero_client):
             collection_name: Target collection by name (metadata mode).
             collection_key: Target collection by key (metadata mode).
             tags: Extra tags for the parent item (metadata mode).
+            allow_library_root: Explicitly allow a metadata parent or standalone
+                attachment outside every collection.
 
         Returns:
             Result dict with: success, mode, parent/attachment info, saved_to.
 
         Examples:
-            # Auto-recognize a PDF (Zotero figures out the metadata)
-            import_pdf(file_path="/home/me/papers/smith2024.pdf")
+            # Auto-recognize writes a standalone PDF to My Library root, so the
+            # user must explicitly confirm that destination first.
+            import_pdf(
+                file_path="/home/me/papers/smith2024.pdf",
+                allow_library_root=True,
+            )
 
             # Attach a PDF to a parent built from PubMed metadata
             details = await fetch_article_details(pmid="38353755")
@@ -988,10 +1006,19 @@ def register_unified_import_tools(mcp, zotero_client):
                 else:
                     zotero_item = {"itemType": "document", "title": title}
 
+                if not collection_name and not collection_key and not allow_library_root:
+                    result["error"] = "No Zotero collection selected"
+                    result["hint"] = (
+                        "Pass collection_name or collection_key. Set allow_library_root=True only after "
+                        "explicitly confirming a My Library root import."
+                    )
+                    return result
+
                 resolution = await resolve_collection_target(
                     zotero_client,
                     collection_name=collection_name,
                     collection_key=collection_key,
+                    allow_library_root=allow_library_root,
                 )
                 if not resolution["success"]:
                     result.update(resolution)
@@ -1034,6 +1061,15 @@ def register_unified_import_tools(mcp, zotero_client):
                 return attach_saved_to_info(result, target_key=target_key, target_name=target_name)
 
             # === Auto-recognize mode: standalone attachment ===
+            if collection_name or collection_key:
+                result["error"] = "Standalone PDF recognition cannot target a collection"
+                result["hint"] = "Provide article metadata or a title to create a parent item in the selected collection."
+                return result
+            if not allow_library_root:
+                result["error"] = "Standalone PDF recognition saves to My Library root and requires explicit confirmation"
+                result["hint"] = "Set allow_library_root=True only after confirming the root destination."
+                return result
+
             attachment_title = title or path.stem
             standalone = await zotero_client.save_standalone_attachment(
                 file_bytes=file_bytes,

@@ -9,7 +9,7 @@ Provides PDF/attachment access tools:
 import logging
 from typing import TYPE_CHECKING, Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server import MCPServer
 
 if TYPE_CHECKING:
     from ..zotero_client.client import ZoteroClient
@@ -19,7 +19,7 @@ from ..zotero_client.client import ZoteroAPIError, ZoteroConnectionError
 logger = logging.getLogger(__name__)
 
 
-def register_attachment_tools(mcp: FastMCP, zotero: "ZoteroClient") -> None:
+def register_attachment_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
     """Register attachment and fulltext tools with the MCP server"""
 
     @mcp.tool()

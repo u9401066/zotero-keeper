@@ -44,12 +44,16 @@ class ZoteroConfig:
 
     @property
     def host_header(self) -> str:
-        """Required header for port proxy"""
+        """Legacy Host override retained for compatibility tests."""
         return f"127.0.0.1:{self.port}"
 
     @property
     def needs_host_header(self) -> bool:
-        """Check if we need Host header override (remote connection via port proxy)"""
+        """Whether a legacy non-loopback configuration needs a Host override.
+
+        Zotero's unauthenticated Local/Connector API must not be exposed or
+        forwarded to a network. Production configurations should use loopback.
+        """
         return self.host not in ("localhost", "127.0.0.1")
 
 
@@ -69,7 +73,8 @@ class ZoteroClientBase:
         if self._client is None:
             headers = {"Content-Type": "application/json"}
 
-            # Add Host header override for remote connections (port proxy)
+            # Retain the historical override for compatibility. This does not
+            # make a network-exposed Zotero Local API a supported deployment.
             if self.config.needs_host_header:
                 headers["Host"] = self.config.host_header
 
@@ -160,8 +165,8 @@ class ZoteroClientBase:
                 f"無法連接到 Zotero ({self.config.base_url})。\n"
                 f"請確認:\n"
                 f"1. Zotero 正在運行\n"
-                f"2. Windows 防火牆已開放 port {self.config.port}\n"
-                f"3. Port proxy 已設定 (netsh interface portproxy)\n"
+                f"2. Zotero Local API 已啟用\n"
+                f"3. Keeper 與 Zotero 在同一主機，且 port {self.config.port} 僅限 loopback\n"
                 f"Details: {e}"
             ) from e
         except httpx.TimeoutException as e:

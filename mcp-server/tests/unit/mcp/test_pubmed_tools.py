@@ -17,6 +17,23 @@ from zotero_mcp.infrastructure.mcp.pubmed_tools import (
 )
 
 
+def _register_pubmed_tool_functions(mock_client):
+    """Register legacy PubMed tools and capture them by function name."""
+    registered = {}
+    mock_mcp = MagicMock()
+
+    def tool_decorator():
+        def wrapper(func):
+            registered[func.__name__] = func
+            return func
+
+        return wrapper
+
+    mock_mcp.tool = tool_decorator
+    register_pubmed_tools(mock_mcp, mock_client)
+    return registered
+
+
 class TestParseRisToZoteroItems:
     """Tests for _parse_ris_to_zotero_items function."""
 
@@ -323,6 +340,41 @@ class TestRegisterPubmedTools:
         mock_mcp.tool = tool_decorator
 
         register_pubmed_tools(mock_mcp, mock_client)
+
+    @pytest.mark.asyncio
+    async def test_all_legacy_import_paths_refuse_unconfirmed_library_root(self):
+        mock_client = AsyncMock()
+        tools = _register_pubmed_tool_functions(mock_client)
+        ris = "TY  - JOUR\nTI  - Destination Required\nER  -"
+
+        ris_result = await tools["import_ris_to_zotero"](ris_text=ris)
+        with patch(
+            "zotero_mcp.infrastructure.mcp.pubmed_tools.pubmed_integration_available",
+            return_value=True,
+        ):
+            pmid_result = await tools["import_from_pmids"](pmids=["12345678"])
+        quick_result = await tools["quick_import_pmids"](pmids="12345678")
+
+        for result in (ris_result, pmid_result, quick_result):
+            assert result["success"] is False
+            assert result["error"] == "No Zotero collection selected"
+        mock_client.save_items.assert_not_awaited()
+        mock_client.batch_save_items.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_legacy_ris_root_write_requires_and_honors_explicit_opt_in(self):
+        mock_client = AsyncMock()
+        tools = _register_pubmed_tool_functions(mock_client)
+        ris = "TY  - JOUR\nTI  - Explicit Root\nER  -"
+
+        result = await tools["import_ris_to_zotero"](
+            ris_text=ris,
+            allow_library_root=True,
+        )
+
+        assert result["success"] is True
+        assert result["saved_to"] == "My Library (root)"
+        mock_client.save_items.assert_awaited_once()
 
 
 class TestImportRisToZotero:

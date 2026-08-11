@@ -30,12 +30,16 @@ class ZoteroConfig:
 
     @property
     def host_header(self) -> str:
-        """Required header for port proxy (when Zotero is on remote machine)"""
+        """Legacy Host override retained for compatibility tests."""
         return f"127.0.0.1:{self.port}"
 
     @property
     def needs_host_header(self) -> bool:
-        """Check if we need to override Host header (remote connection)"""
+        """Whether a legacy non-loopback configuration needs a Host override.
+
+        Supported deployments keep Zotero's unauthenticated Local/Connector API
+        on loopback and never expose or forward port 23119.
+        """
         return self.host not in ("localhost", "127.0.0.1")
 
 
@@ -44,7 +48,7 @@ class McpServerConfig:
     """MCP Server configuration"""
 
     name: str = "Zotero Keeper"
-    version: str = "1.12.0"
+    version: str = "2.0.0"
 
     # Zotero connection
     zotero: ZoteroConfig = field(default_factory=ZoteroConfig)
@@ -79,6 +83,9 @@ Zotero Keeper - MCP Server for managing local Zotero libraries.
 - `interactive_save(...)` - Manual save with elicitation and optional metadata fetch
 - `quick_save(...)` - Manual save without prompts
 - `check_articles_owned(pmids=[...])` - Check whether PubMed records already exist locally
+
+Never import to My Library root without explicit user confirmation. Only after
+that confirmation may a non-interactive tool set `allow_library_root=true`.
 
 ## Recommended Collaboration Workflow
 

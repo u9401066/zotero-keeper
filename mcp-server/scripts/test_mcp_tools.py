@@ -8,8 +8,9 @@ Usage:
     # Local Zotero (default)
     python test_mcp_tools.py
 
-    # Remote Zotero
-    ZOTERO_HOST=<your-zotero-ip> python test_mcp_tools.py
+Security:
+    Keep Zotero's unauthenticated Local/Connector API on loopback. Do not expose
+    or forward port 23119 for remote testing.
 """
 
 import asyncio
@@ -50,7 +51,7 @@ async def main():
         print("\n❌ Cannot connect to Zotero. Make sure:")
         print("   1. Zotero is running")
         print("   2. Local API is enabled")
-        print("   3. Port proxy is configured (for remote)")
+        print("   3. Keeper and Zotero share a host, with port 23119 on loopback only")
         return
 
     # Test 2: list_items
@@ -88,20 +89,15 @@ async def main():
     if result.get("itemTypes"):
         print(f"   Types: {', '.join(result.get('itemTypes', [])[:10])}")
 
-    # Test 7: add_reference (creates a test item)
-    print("\n7. ➕ add_reference() - Creating test item")
-    result = await tools["add_reference"].fn(
-        title="MCP Test Reference - Delete Me",
-        item_type="journalArticle",
-        authors=["Test Author", "Another Author"],
-        date="2024",
-        doi="10.9999/mcp-test",
-        publication_title="Test Journal",
-        abstract="This is a test reference created by Zotero Keeper MCP.",
-        tags=["test", "mcp", "delete-me"],
-    )
-    print(f"   Success: {result.get('success')}")
-    print(f"   Message: {result.get('message')}")
+    # Default mode intentionally omits the old add_reference write tool.
+    # Keep this live diagnostic read-only; write flows require an explicitly
+    # confirmed collection through interactive_save/import_articles.
+    print("\n7. 🛡️ Default write-surface policy")
+    required = {"interactive_save", "quick_save", "import_articles", "import_pdf"}
+    missing = sorted(required - set(tools))
+    if missing:
+        raise RuntimeError(f"Missing required write tools: {missing}")
+    print("   Read-only live smoke complete; no test item was created.")
 
     print("\n" + "=" * 60)
     print("✅ All tests completed!")

@@ -105,6 +105,39 @@ class TestImportArticles:
     """Tests for the unified import tool."""
 
     @pytest.mark.asyncio
+    async def test_refuses_library_root_without_explicit_opt_in(self):
+        mock_client = AsyncMock()
+        import_articles = _register_import_tool(MagicMock(), mock_client)
+
+        result = await import_articles(
+            articles=[{"title": "Destination required", "authors": ["Author One"]}],
+            skip_duplicates=False,
+        )
+
+        assert result["success"] is False
+        assert result["error"] == "No Zotero collection selected"
+        assert "list_collections" in result["hint"]
+        mock_client.save_items.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_rejects_malformed_named_collection_instead_of_writing_root(self):
+        mock_client = AsyncMock()
+        mock_client.find_collection_by_name.return_value = {"data": {"name": "Malformed"}}
+        mock_client.get_collections.return_value = []
+        import_articles = _register_import_tool(MagicMock(), mock_client)
+
+        result = await import_articles(
+            articles=[{"title": "Must not reach root", "authors": ["Author One"]}],
+            collection_name="Malformed",
+            allow_library_root=True,
+            skip_duplicates=False,
+        )
+
+        assert result["success"] is False
+        assert "no usable key" in result["error"]
+        mock_client.save_items.assert_not_awaited()
+
+    @pytest.mark.asyncio
     async def test_accepts_pubmed_unified_article_contract_without_drift(self):
         """Canonical UnifiedArticle.to_dict output should import cleanly into keeper."""
         mock_mcp = MagicMock()
@@ -114,7 +147,7 @@ class TestImportArticles:
         import_articles = _register_import_tool(mock_mcp, mock_client)
         payload = _build_pubmed_unified_article_payload()
 
-        result = await import_articles(articles=[payload], skip_duplicates=False)
+        result = await import_articles(articles=[payload], skip_duplicates=False, allow_library_root=True)
 
         assert result["success"] is True
         assert result["imported"] == 1
@@ -165,7 +198,8 @@ class TestImportArticles:
                 {"title": "Duplicate PMID", "pmid": "11111111", "authors": ["Author One"]},
                 {"title": "Duplicate DOI", "doi": "10.1234/existing", "authors": ["Author Two"]},
                 {"title": "Fresh Article", "pmid": "33333333", "doi": "10.1234/new", "authors": ["Author Three"]},
-            ]
+            ],
+            allow_library_root=True,
         )
 
         assert result["success"] is True
@@ -214,6 +248,7 @@ class TestImportArticles:
                 {"pmid": "87654321", "authors": ["Author Two"]},
             ],
             skip_duplicates=False,
+            allow_library_root=True,
         )
 
         assert result["success"] is True
@@ -240,6 +275,7 @@ class TestImportArticles:
         result = await import_articles(
             articles=[{"title": f"Article {index}", "pmid": str(10000000 + index), "authors": [f"Author {index}"]} for index in range(60)],
             skip_duplicates=False,
+            allow_library_root=True,
         )
 
         assert result["success"] is False
@@ -434,6 +470,19 @@ class TestImportPdf:
     """Tests for the import_pdf tool (Connector API attachments)."""
 
     @pytest.mark.asyncio
+    async def test_refuses_standalone_library_root_without_explicit_opt_in(self, tmp_path):
+        mock_client = AsyncMock()
+        import_pdf = _register_pdf_tool(MagicMock(), mock_client)
+        pdf = tmp_path / "paper.pdf"
+        pdf.write_bytes(b"%PDF-1.7 minimal")
+
+        result = await import_pdf(file_path=str(pdf))
+
+        assert result["success"] is False
+        assert "requires explicit confirmation" in result["error"]
+        mock_client.save_standalone_attachment.assert_not_awaited()
+
+    @pytest.mark.asyncio
     async def test_standalone_mode_auto_recognizes(self, tmp_path):
         """With no metadata, the PDF is saved standalone and auto-recognized."""
         mock_mcp = MagicMock()
@@ -449,7 +498,7 @@ class TestImportPdf:
         pdf = tmp_path / "paper.pdf"
         pdf.write_bytes(b"%PDF-1.7 minimal")
 
-        result = await import_pdf(file_path=str(pdf))
+        result = await import_pdf(file_path=str(pdf), allow_library_root=True)
 
         assert result["success"] is True
         assert result["mode"] == "standalone"
@@ -487,6 +536,7 @@ class TestImportPdf:
                 "doi": "10.1/x",
                 "journal": "Anesthesiology",
             },
+            allow_library_root=True,
         )
 
         assert result["success"] is True
@@ -517,7 +567,7 @@ class TestImportPdf:
         pdf = tmp_path / "scan.pdf"
         pdf.write_bytes(b"%PDF-1.7")
 
-        result = await import_pdf(file_path=str(pdf), title="Old Scanned Report")
+        result = await import_pdf(file_path=str(pdf), title="Old Scanned Report", allow_library_root=True)
 
         assert result["success"] is True
         saved_item = mock_client.save_items.await_args.args[0][0]
@@ -555,7 +605,7 @@ class TestImportPdf:
         pdf = tmp_path / "x.pdf"
         pdf.write_bytes(b"%PDF-1.7")
 
-        result = await import_pdf(file_path=str(pdf), title="Paper")
+        result = await import_pdf(file_path=str(pdf), title="Paper", allow_library_root=True)
 
         assert result["success"] is False
         assert "attaching the pdf failed" in result["error"].lower()
@@ -597,6 +647,7 @@ class TestImportPdf:
                     "doi": "10.1/x",
                     "journal": "Anesthesiology",
                 },
+                allow_library_root=True,
             )
         finally:
             await client.close()
@@ -645,7 +696,7 @@ class TestImportPdf:
         pdf.write_bytes(b"%PDF scan")
 
         try:
-            result = await import_pdf(file_path=str(pdf))
+            result = await import_pdf(file_path=str(pdf), allow_library_root=True)
         finally:
             await client.close()
 
@@ -667,7 +718,7 @@ class TestImportPdf:
         pdf = tmp_path / "empty.pdf"
         pdf.write_bytes(b"")
 
-        result = await import_pdf(file_path=str(pdf))
+        result = await import_pdf(file_path=str(pdf), allow_library_root=True)
 
         assert result["success"] is False
         assert "empty" in result["error"].lower()
@@ -719,7 +770,7 @@ class TestImportPdf:
         pdf = tmp_path / "x.pdf"
         pdf.write_bytes(b"%PDF")
 
-        result = await import_pdf(file_path=str(pdf))
+        result = await import_pdf(file_path=str(pdf), allow_library_root=True)
 
         assert result["success"] is False
         assert "editable" in result["error"].lower()
@@ -734,7 +785,7 @@ class TestImportPdf:
         pdf = tmp_path / "x.pdf"
         pdf.write_bytes(b"%PDF")
 
-        result = await import_pdf(file_path=str(pdf))
+        result = await import_pdf(file_path=str(pdf), allow_library_root=True)
 
         assert result["success"] is False
         assert "boom" in result["error"]
@@ -757,10 +808,10 @@ class TestImportPdf:
 
     @pytest.mark.asyncio
     async def test_tools_register_with_real_fastmcp(self):
-        """Both tools register on a real FastMCP (validates MCP schema generation)."""
-        from mcp.server.fastmcp import FastMCP
+        """Both tools register on a real MCPServer (validates MCP schema generation)."""
+        from mcp.server import MCPServer
 
-        mcp = FastMCP("test-keeper")
+        mcp = MCPServer("test-keeper")
         register_unified_import_tools(mcp, AsyncMock())
 
         tools = await mcp.list_tools()

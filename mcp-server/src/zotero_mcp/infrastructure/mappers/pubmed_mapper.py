@@ -21,7 +21,7 @@ def map_pubmed_to_zotero(
     Map a PubMed article (from pubmed-search) to Zotero journalArticle schema.
 
     Args:
-        article: Article dict from PubMedClient.fetch_details()
+        article: Article dict from PubMedSearchClient.fetch_details()
                  (SearchResult.to_dict() or raw dict)
         extra_tags: Additional tags to add (user-provided)
         collection_keys: Zotero collection keys to add item to
@@ -318,7 +318,7 @@ def map_pubmed_list_to_zotero(
     Map a list of PubMed articles to Zotero items.
 
     Args:
-        articles: List of article dicts from PubMedClient
+        articles: List of article dicts from PubMedSearchClient
         extra_tags: Tags to add to all items
 
     Returns:

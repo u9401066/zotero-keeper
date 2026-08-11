@@ -5,9 +5,9 @@ Usage:
     # Local Zotero (default)
     uv run python -m zotero_mcp
 
-    # Remote Zotero
-    uv run python -m zotero_mcp --host <your-zotero-ip>
-    ZOTERO_HOST=<your-zotero-ip> uv run python -m zotero_mcp
+Security:
+    Keep Zotero's unauthenticated Local/Connector API on loopback. Do not expose
+    or forward port 23119 for remote access.
 """
 
 from .main import main

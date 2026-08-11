@@ -59,7 +59,7 @@ def register_batch_tools(mcp, zotero_client):
     Register batch import tools.
 
     Args:
-        mcp: FastMCP server instance
+        mcp: MCP SDK v2 server instance
         zotero_client: ZoteroClient instance
     """
 
@@ -71,6 +71,7 @@ def register_batch_tools(mcp, zotero_client):
         collection_key: str | None = None,
         collection_name: str | None = None,
         include_citation_metrics: bool = False,
+        allow_library_root: bool = False,
     ) -> dict[str, Any]:
         """
         📦 Legacy batch import PubMed articles to Zotero with complete metadata
@@ -101,6 +102,7 @@ def register_batch_tools(mcp, zotero_client):
             include_citation_metrics: If True, fetch RCR/percentile from iCite
                                       and add to extra field. Prefer calling
                                       pubmed-search-mcp `get_citation_metrics()` upstream.
+            allow_library_root: Explicitly allow importing outside every collection
 
         Returns:
             Detailed import result:
@@ -146,20 +148,6 @@ def register_batch_tools(mcp, zotero_client):
         start_time = time.time()
         result = BatchImportResult()
 
-        resolution = await resolve_collection_target(
-            zotero_client,
-            collection_name=collection_name,
-            collection_key=collection_key,
-            available_limit=10,
-            include_similar=True,
-            fallback_to_unvalidated_key=True,
-        )
-        if not resolution["success"]:
-            return resolution
-
-        validated_collection_key = resolution["target_key"]
-        collection_info = resolution["collection_info"]
-
         try:
             # 1. Parse PMIDs
             pmid_list = _parse_pmids(pmids)
@@ -170,6 +158,21 @@ def register_batch_tools(mcp, zotero_client):
                     "error": "No valid PMIDs provided",
                     "hint": "Provide comma-separated PMIDs, e.g., '38353755,37864754'",
                 }
+
+            resolution = await resolve_collection_target(
+                zotero_client,
+                collection_name=collection_name,
+                collection_key=collection_key,
+                allow_library_root=allow_library_root,
+                available_limit=10,
+                include_similar=True,
+                fallback_to_unvalidated_key=True,
+            )
+            if not resolution["success"]:
+                return resolution
+
+            validated_collection_key = resolution["target_key"]
+            collection_info = resolution["collection_info"]
 
             logger.info(f"Batch import: {len(pmid_list)} PMIDs")
 
@@ -201,17 +204,10 @@ def register_batch_tools(mcp, zotero_client):
                     from ..pubmed import get_pubmed_client
 
                     client = get_pubmed_client()
-                    # Import LiteratureSearcher from pubmed_search
-                    # Note: pubmed_search is configured via ../pubmed/__init__.py
-                    from pubmed_search import LiteratureSearcher  # type: ignore
-
-                    searcher = LiteratureSearcher(
-                        email=getattr(client, "email", "zotero@example.com"), api_key=getattr(client, "api_key", None)
-                    )
-                    citation_metrics = await await_maybe(searcher.get_citation_metrics(pmid_list))
+                    citation_metrics = await await_maybe(client.searcher.get_citation_metrics(pmid_list))
                     logger.info(f"Fetched citation metrics for {len(citation_metrics)} articles")
                 except ImportError as e:
-                    logger.warning(f"Cannot import LiteratureSearcher for citation metrics: {e}")
+                    logger.warning(f"Cannot load PubMed citation metrics backend: {e}")
                 except Exception as e:
                     logger.warning(f"Failed to fetch citation metrics: {e}")
                     # Continue without metrics

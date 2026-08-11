@@ -344,7 +344,7 @@ class TestPydanticSchemas:
     def test_duplicate_confirm_schema(self):
         """Test DuplicateConfirmSchema."""
         schema = DuplicateConfirmSchema(confirm="yes")
-        assert schema.confirm == "yes"
+        assert schema.confirm is True
 
 
 class TestRegisterInteractiveSaveTools:
