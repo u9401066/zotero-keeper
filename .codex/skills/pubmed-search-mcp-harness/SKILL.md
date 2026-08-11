@@ -29,5 +29,7 @@ pipeline state, fulltext access, exports, and release checks.
 
 - Prefer `unified_search` as the primary multi-source entrypoint.
 - Preserve session/pipeline state instead of relying on agent memory.
+- Use `build_research_chronicle` and `read_research_chronicle` for durable
+  research-history artifacts; the former timeline tools are no longer public.
 - Respect NCBI email/API-key policy and institutional access configuration.
 - Keep exported citations reproducible with PMIDs, DOI, source, date filters, and query strategy.

@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.0] - 2026-08-11
+
+### Breaking changes
+
+- Migrated the server runtime from MCP Python SDK 1.x `FastMCP` to the stable
+  MCP SDK 2.x `MCPServer` API. Runtime dependencies now require
+  `mcp>=2.0,<3`; 1.x and 2.x are not API-compatible.
+- Updated the optional PubMed integration to `pubmed-search-mcp>=0.6.1` and
+  its public `PubMedSearchClient` API. The bundled extension upgrades Keeper
+  and PubMed together in one managed-environment resolution.
+
+### Added
+
+- Protocol-level tests using the MCP v2 in-memory `Client`, covering the
+  default 2026-07-28 protocol and the legacy negotiation path.
+- Explicit `allow_library_root` authorization for non-interactive imports.
+  `import_articles`, `import_pdf`, and `quick_save` now fail closed when no
+  collection is selected unless the caller explicitly confirms a root import.
+
+### Changed
+
+- Rebuilt `interactive_save` around MCP v2 `Resolve`/`Elicit` dependencies.
+  Duplicate approval, collection choice, and My Library root confirmation now
+  work across both protocol eras; missing elicitation capability, cancellation,
+  invalid collection keys, and stale destinations never fall through to a write.
+- Replaced variadic `extra_fields` arguments with optional object schemas so
+  MCP clients receive valid, non-required tool inputs.
+- Default server surface remains 24 collaboration-safe tools plus 6 resources;
+  legacy PubMed bridge tools remain opt-in.
+
+### Security
+
+- Removed the unsafe collection-selection fallback that could save to Zotero's
+  library root after an elicitation failure.
+- Collection-name resolution now requires a non-empty Zotero key; malformed
+  lookups cannot fail open to My Library. Optional legacy PubMed write tools
+  now enforce the same explicit `allow_library_root` authorization.
+- Documentation no longer recommends forwarding or exposing Zotero's unauthenticated
+  Local API port; remote access uses the official HTTPS Web API or an authenticated service.
+
 ## [1.14.0] - 2026-06-24
 
 ### 📎 PDF Import via the Connector API (no Web API key)

@@ -4,9 +4,8 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.6.x   | :white_check_mark: |
-| 1.5.x   | :white_check_mark: |
-| < 1.5   | :x:                |
+| 2.0.x   | :white_check_mark: |
+| < 2.0   | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -41,14 +40,15 @@ When using Zotero Keeper:
 
 ### Network Security
 
-1. **Local API Access**: Zotero's Local API has no authentication
-   - Only expose on trusted networks
-   - Use firewall rules to restrict access
-   - Consider VPN for remote access
+1. **Keep Zotero local interfaces on loopback**: Zotero's Local and Connector
+   APIs are unauthenticated local interfaces.
+   - Run Zotero Keeper on the same trusted host as Zotero Desktop.
+   - Keep `ZOTERO_HOST=localhost` (or `127.0.0.1`).
+   - Never expose or forward port `23119` to a LAN or the Internet.
 
-2. **Port Proxy**: If using Windows port proxy
-   - Bind to specific IPs, not `0.0.0.0` in production
-   - Use firewall rules
+2. **Use an authenticated remote interface**: For a genuinely remote library,
+   use Zotero's authenticated HTTPS Web API or a purpose-built service with TLS,
+   authorization, auditing, and explicit network access controls.
 
 ### Configuration Security
 
@@ -64,23 +64,25 @@ When using Zotero Keeper:
 
 1. **Trusted MCP Clients Only**: Only use with trusted AI agents
 2. **Review Actions**: MCP tools can write to Zotero - review what the AI suggests
+3. **Confirm Destinations**: Select a collection before importing. Writing to My
+   Library root requires explicit confirmation and `allow_library_root=true`.
 
 ## Security Features
 
-- No cloud dependencies - all local
-- No authentication storage
-- Stateless operation
-- Input validation on all MCP tools
+- Zotero Local/Connector access defaults to loopback
+- Collection-aware imports fail closed when no destination is confirmed
+- My Library root writes require explicit authorization
+- MCP SDK v2 typed tool schemas and input validation
+- NCBI credentials are read from environment/configuration rather than hardcoded
 
 ## Known Limitations
 
-1. **No Authentication**: Zotero Local API has no auth mechanism
-   - This is a Zotero design decision
-   - Security relies on network access control
+1. **No Local API Authentication**: Zotero's Local and Connector APIs do not
+   authenticate callers. Their security boundary is the local machine, so they
+   must remain bound to loopback.
 
-2. **Local Network Exposure**: When using remote Zotero
-   - Data travels over local network unencrypted
-   - Use trusted networks only
+2. **Trusted-agent boundary**: An authorized MCP client can invoke write tools.
+   Review proposed imports, collection choices, and root-library confirmations.
 
 ## Acknowledgments
 

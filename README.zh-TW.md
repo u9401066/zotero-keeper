@@ -3,7 +3,7 @@
 讓 AI 幫你管理文獻！連接 VS Code Copilot / Claude Desktop 與本地 Zotero 書目資料庫。
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![MCP SDK](https://img.shields.io/badge/MCP-FastMCP-green.svg)](https://github.com/modelcontextprotocol/python-sdk)
+[![MCP SDK](https://img.shields.io/badge/MCP%20SDK-v2-green.svg)](https://github.com/modelcontextprotocol/python-sdk)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Zotero 7/8/9](https://img.shields.io/badge/Zotero-7%20%2F%208%20%2F%209-red.svg)](https://www.zotero.org/)
 [![CI](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml/badge.svg)](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml)
@@ -12,14 +12,15 @@
 
 ---
 
-## 🚀 一鍵安裝 (VS Code)
+## 🚀 建議安裝方式 (VS Code)
 
 > **前置作業**：必須先啟動 [Zotero 7、8 或 9](https://www.zotero.org/download/)
 
-<a href="vscode:mcp/install?%7B%22name%22%3A%22zotero-keeper%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22zotero-keeper%22%5D%7D"><img src="https://img.shields.io/badge/VS%20Code-%E5%AE%89%E8%A3%9D%20MCP%20Server-007ACC?style=for-the-badge&logo=visualstudiocode" alt="Install in VS Code"></a>
-<a href="vscode-insiders:mcp/install?%7B%22name%22%3A%22zotero-keeper%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22zotero-keeper%22%5D%7D"><img src="https://img.shields.io/badge/VS%20Code%20Insiders-%E5%AE%89%E8%A3%9D%20MCP%20Server-24bfa5?style=for-the-badge&logo=visualstudiocode" alt="Install in VS Code Insiders"></a>
+[📦 從 VS Code Marketplace 安裝 Zotero + PubMed MCP](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp)
 
-> 💡 **需要 [uv](https://docs.astral.sh/uv/getting-started/installation/)** - 點擊後會自動透過 `uvx zotero-keeper` 安裝
+**v0.6.0 VSIX 是目前建議的發佈管道**：擴充套件會建立隔離環境，並安裝 Zotero Keeper 2.0.0 與固定版的 PubMed Search MCP 0.6.1。`uvx` / PyPI 仍可用於舊版的直接 server 安裝，但在 PyPI 更新前，不應當作 2.0 版本來使用。
+
+> ⚠️ MCP SDK 2.0 與 1.x 不相容。擴充套件升級後，若 VS Code 仍使用舊環境，請執行 **Zotero MCP: Reinstall Python Environment**。
 
 ---
 
@@ -32,6 +33,7 @@
 - ➕ **新增文獻**：「把這篇 DOI 加到我的 Zotero」（自動取得完整 metadata！）
 - 🤝 **協作式 PubMed 工作流**：先用 pubmed-search-mcp 搜尋，再用 keeper 檢查重複與匯入
 - 📁 **互動式存檔**：列出所有收藏夾讓你選擇！
+- 📚 **現代化文獻發現**：PubMed Search MCP 0.6.1 提供 16 類、45 個工具，包含兩工具組成的 Research Chronicle 工作流程
 
 不用自己開 Zotero、手動搜尋、複製貼上。直接用自然語言告訴 AI，它會幫你完成！
 
@@ -39,16 +41,17 @@
 
 ## ✨ 特色功能
 
-- **🔌 MCP 原生整合**：使用 FastMCP SDK，與 AI Agent 無縫整合
+- **🔌 MCP SDK 2.0 原生整合**：使用 v2 `MCPServer` API，不再依賴不相容的 1.x `FastMCP` 介面
 - **📖 MCP Resources**：透過 URI 瀏覽 Zotero 資料（`zotero://collections` 等）
-- **💬 MCP Elicitation**：互動式收藏夾選擇，提供數字選項
+- **💬 MCP Elicitation**：使用精確 collection key 做互動式選擇；`ROOT` 一定會再確認一次
 - **🔒 自動取得 Metadata**：DOI/PMID → 自動取得完整摘要 + 所有欄位！
 - **📖 讀取操作**：搜尋、列出、取得本地 Zotero 書目資料
 - **✏️ 寫入操作**：透過 Connector API 將新參考文獻加入 Zotero
 - **🧠 智慧功能**：重複偵測、參考文獻驗證、智能匯入
 - **📁 Collection 支援**：支援巢狀收藏夾（資料夾層級結構）
 - **🏗️ DDD 架構**：乾淨的領域驅動設計，洋蔥式架構
-- **🔒 無需雲端**：所有操作都在本地，無需 Zotero 帳號
+- **🔒 Zotero 本機邊界**：Zotero 資料庫操作只走本機 loopback API；PubMed
+  文獻探索則使用已設定的外部文獻 API
 
 ---
 
@@ -141,12 +144,13 @@ NCBI_EMAIL=your.email@example.com
 - [docs/tools-reference.md](docs/tools-reference.md) — 公開工具參數與使用範例總表
 - [docs/faq.md](docs/faq.md) — 安裝、疑難排解與工作流 FAQ
 - [docs/ZOTERO_LOCAL_API.md](docs/ZOTERO_LOCAL_API.md) — Zotero API 能力與限制整理
+- [docs/ZOTERO_MCP_LANDSCAPE.md](docs/ZOTERO_MCP_LANDSCAPE.md) — 官方與社群 MCP 的定位、能力與安全共存方式
 - [ARCHITECTURE.md](ARCHITECTURE.md) — 元件與分層架構
 - [CONTRIBUTING.md](CONTRIBUTING.md) — 開發與貢獻流程
 
 ---
 
-## 🔧 可用工具 (預設公開面 23 個 + legacy opt-in 5 個)
+## 🔧 可用工具 (預設公開面 24 個 + legacy opt-in 5 個)
 
 > 💡 **提示**：大部分讀取操作也可透過 [MCP Resources](#-mcp-resources-可瀏覽的資料) 完成，不需呼叫 Tool。
 
@@ -182,6 +186,8 @@ NCBI_EMAIL=your.email@example.com
 | `interactive_save` ⭐ | 互動式存檔 + 自動 RCR | 「把這篇存到 Zotero」 |
 | `quick_save` | 快速存檔 + 自動 RCR | 「快速存到 AI Research」 |
 
+所有存檔路徑都採 fail-closed。`interactive_save` 要求精確 collection key（或明確的 `ROOT` sentinel）；選 `ROOT` 後還會再確認一次。`skip_collection_prompt=True` 會中止，不會靜默存入 library root。`quick_save`、`import_articles` 與 `import_pdf` 在沒有 collection 時預設拒絕；只有使用者已明確確認 root，且 caller 傳入 `allow_library_root=true` 才會執行。
+
 ### 🔍 Saved Search 工具 (saved_search_tools.py - 3 工具)
 
 | 工具 | 說明 | 範例問法 |
@@ -197,13 +203,14 @@ NCBI_EMAIL=your.email@example.com
 | `advanced_search` ⭐ | 多條件搜尋 (itemType, tag, qmode) | 「找出所有標記為 AI 的期刊論文」 |
 | `check_articles_owned` | 檢查 PMID 是否已有 | 「這些 PMID 我有嗎？」 |
 
-### 📥 匯入工具 (單一公開 handoff)
+### 📥 匯入工具 (2 個)
 
 > 🤝 **collaboration-safe 預設**：PubMed 搜尋、探索與匯出由 pubmed-search-mcp 負責；Zotero Keeper 提供單一公開匯入入口 `import_articles`。
 
 | 工具 | 說明 | 範例問法 |
 |------|------|----------|
 | `import_articles` ⭐ | 單一公開匯入入口，可接 JSON articles 或 RIS 文字 | 「把這批 PubMed 結果存到 AI Research」 |
+| `import_pdf` 📎 | 透過 Zotero Connector 匯入本機 PDF，可提供 metadata 或讓 Zotero 自動辨識 | 「匯入這份 PDF 並掛到文章」 |
 
 ### 📊 分析工具 (analytics_tools.py - 2 工具)
 
@@ -213,6 +220,8 @@ NCBI_EMAIL=your.email@example.com
 | `find_orphan_items` | 找出未放入收藏夾的文獻 | 「哪些文獻還沒整理？」 |
 
 ### 📎 附件工具 (attachment_tools.py - 2 工具)
+
+> 🗂️ **PDF 存取**：列出附件 PDF 並讀取 Zotero 索引全文。需設定 `ZOTERO_DATA_DIR` 才能取得檔案路徑。
 
 | 工具 | 說明 | 範例問法 |
 |------|------|----------|
@@ -238,7 +247,8 @@ results = unified_search("anesthesia AI", output_format="json", options="preprin
 results = unified_search("anesthesia AI", output_format="json", options="all_types")
 
 # 2. 可選：先對本地 Zotero 做重複檢查
-owned = check_articles_owned([article["identifiers"]["pmid"] for article in results["articles"] if article.get("identifiers", {}).get("pmid")])
+pmids = [article.get("identifiers", {}).get("pmid") for article in results["articles"]]
+owned = check_articles_owned(pmids=[pmid for pmid in pmids if pmid])
 
 # 3. 匯入到 Zotero
 import_articles(
@@ -280,40 +290,31 @@ advanced_search(
 )
 ```
 
-### 📊 分析工具 (analytics_tools.py - 2 工具)
-
-| 工具 | 說明 | 範例問法 |
-|------|------|----------|
-| `get_library_stats` | 文獻庫統計（年份/作者/期刊分布）| 「顯示我的文獻庫統計」 |
-| `find_orphan_items` | 找出未歸類文獻 | 「哪些論文還沒有整理？」 |
-
-### 📎 附件與全文工具 (attachment_tools.py - 2 工具)
-
-> 🗂️ **PDF 存取**：列出附件 PDF 並讀取 Zotero 索引全文。需設定 `ZOTERO_DATA_DIR` 才能取得檔案路徑。
-
-| 工具 | 說明 | 範例問法 |
-|------|------|----------|
-| `get_item_attachments` | 列出文獻的所有附件（PDF、快照等）| 「key:X42A7DEE 有哪些附件？」 |
-| `get_item_fulltext` | 取得 Zotero 索引的全文內容 | 「讀取 key:X42A7DEE 的全文」 |
-
 ---
 
 ## 📖 MCP Resources (可瀏覽的資料)
 
-不需要呼叫 Tool！AI 可以直接瀏覽 Zotero 資料：
+SDK v2 server 會公告 6 個具體 resource，另有 4 個參數化 URI template，用於個別文獻、collection、collection 內容與 saved search。
+
+### 具體 resources (6)
 
 | Resource URI | 說明 |
 |--------------|------|
 | `zotero://collections` | 所有收藏夾 |
 | `zotero://collections/tree` | 收藏夾樹狀結構 |
-| `zotero://collections/{key}` | 特定收藏夾 |
-| `zotero://collections/{key}/items` | 收藏夾內的文獻 |
 | `zotero://items` | 最近的文獻 |
-| `zotero://items/{key}` | 文獻詳情 |
 | `zotero://tags` | 所有標籤 |
 | `zotero://searches` | Saved Search 列表 |
-| `zotero://searches/{key}` | 搜尋詳情 |
 | `zotero://schema/item-types` | 可用的文獻類型 |
+
+### 參數化 resource templates (4)
+
+| Resource template | 說明 |
+|-------------------|------|
+| `zotero://collections/{key}` | 特定收藏夾 |
+| `zotero://collections/{key}/items` | 收藏夾內的文獻 |
+| `zotero://items/{key}` | 文獻詳情 |
+| `zotero://searches/{key}` | Saved Search 詳情 |
 
 ---
 
@@ -329,21 +330,21 @@ advanced_search(
 📚 Saving: Deep Learning for Medical Imaging
 
 ⭐ 推薦:
-   1. AI Research (匹配度: 90%) - 標題匹配
-   2. Medical Imaging (匹配度: 75%) - 關鍵字匹配
+   AI Research — key `A1B2C3D4` (匹配度: 90%)
+   Medical Imaging — key `M5N6P7Q8` (匹配度: 75%)
 
 📂 所有收藏夾:
-   3. Biology (12 items)
-   4. Chemistry (8 items)
-   5. 待讀 (23 items)
-
-0. 存到 My Library (不選收藏夾)
+   Biology — key `B1O2L3O4` (12 items)
+   Chemistry — key `C5H6E7M8` (8 items)
+   待讀 — key `T1O2R3E4` (23 items)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-輸入數字選擇: [用戶輸入: 1]
+輸入精確 collection key 或 `ROOT`: [用戶輸入: A1B2C3D4]
 
 AI: ✅ 已存入 'AI Research' 收藏夾！
 ```
+
+`ROOT` 不是預設快捷選項。選擇後必須通過第二次確認；拒絕或跳過 prompt 都會中止。
 
 ### 🔒 資料完整性：自動取得 Metadata
 
@@ -381,13 +382,13 @@ Zotero 支援**巢狀收藏夾**。建議的組織方式：
 
 ## 🔬 搭配 PubMed 使用
 
-最強大的工作流程是搭配 [pubmed-search-mcp](https://github.com/u9401066/pubmed-search-mcp)：
+v0.6.0 VSIX 固定使用 [pubmed-search-mcp 0.6.1](https://github.com/u9401066/pubmed-search-mcp/tree/v0.6.1)（commit `ad85dde`）。它的 MCP SDK v2 server 提供 **16 類、45 個工具**；新的 `build_research_chronicle` 與 `read_research_chronicle` 取代了早期 3 個 timeline 工具。
 
 ```
 你: 「幫我找 2024 年麻醉 AI 的新論文，我還沒有的」
 
 AI 執行:
-1. pubmed-search-mcp: unified_search("anesthesia AI", min_year=2024, output_format="json")
+1. pubmed-search-mcp: unified_search("anesthesia AI", filters="year:2024-", output_format="json")
   → 找到 30 篇候選文獻
 
 2. zotero-keeper: check_articles_owned([...pmids...])
@@ -408,35 +409,19 @@ cd mcp-server
 uv sync --extra pubmed
 ```
 
+### Zotero MCP 生態定位
+
+截至 2026-08-11，未在 Zotero 組織的 repository 或 Zotero 官方文件找到由 Zotero 發佈的官方 MCP server。[`54yyyu/zotero-mcp`](https://github.com/54yyyu/zotero-mcp) 功能完整，且已收錄於 MCP Registry，但它是**社群 server**，不是 Zotero 官方 server。OpenAI-curated Zotero connector 也是獨立的 connector 產品，不應被寫成 Zotero 官方 MCP server，也不應在沒有可驗證介面時杜撰 tool schema。
+
+社群 server 與 Zotero Keeper 都使用 Python module/package 名 `zotero_mcp`。若要並用，必須安裝到**不同虛擬環境、以不同 MCP process 啟動**；不要把社群 package 加入擴充套件管理的共用環境。詳見 [MCP 生態比較](docs/ZOTERO_MCP_LANDSCAPE.md)。
+
 ---
 
-## 🌐 遠端 Zotero 設定
+## 🌐 遠端 Zotero 存取
 
-如果 Zotero 在另一台電腦：
+Zotero Local API 與 Connector API 都是沒有身分驗證的本機介面，必須只綁定 loopback。請勿將 23119 port 暴露給 LAN、Internet 或未認證的轉送規則。
 
-### 1. 在 Zotero 電腦執行 (Windows)
-
-```powershell
-# 開啟 Local API (在 Zotero → 工具 → 開發者 → Run JavaScript)
-Zotero.Prefs.set("httpServer.localAPI.enabled", true)
-
-# 開啟防火牆
-netsh advfirewall firewall add rule name="Zotero" dir=in action=allow protocol=TCP localport=23119
-
-# 設定 Port Proxy (Zotero 只聽 127.0.0.1)
-netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=23119 connectaddress=127.0.0.1 connectport=23119
-```
-
-### 2. 設定 MCP Server
-
-```json
-{
-  "env": {
-    "ZOTERO_HOST": "192.168.1.100",
-    "ZOTERO_PORT": "23119"
-  }
-}
-```
+遠端書庫請使用 Zotero 有身分驗證的 HTTPS Web API，或使用具 TLS、授權與網路存取控制的專用服務。如果要使用 Local/Connector 操作，請讓 Zotero Keeper 與 Zotero Desktop 在同一台可信任主機執行。
 
 ---
 
@@ -568,7 +553,7 @@ Zotero 團隊正在開發 **Local API 寫入功能**：
 |------|------|----------|
 | VS Code 擴充功能 | ✅ 已提供 | 想在 VS Code 內走引導式安裝的研究者 |
 | 原始碼 checkout + `uv sync` | ✅ 已提供 | 貢獻者與本地開發 |
-| 直接用 `uvx zotero-keeper` 註冊 MCP | ✅ 已提供 | 已有 MCP client 的使用者 |
+| 直接用 `uvx zotero-keeper` 註冊 MCP | ⚠️ 舊 PyPI 版線 | 明確要使用 2.0 之前版本的 MCP client |
 | 獨立執行檔 | 🚧 規劃中 | 不想自行安裝 Python / uv 的使用者 |
 | Homebrew / Chocolatey | 🚧 規劃中 | 偏好 OS 套件管理器的使用者 |
 

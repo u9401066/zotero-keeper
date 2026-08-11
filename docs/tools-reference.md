@@ -1,6 +1,7 @@
 # MCP Tools Reference
 
-Complete reference for all 23 public MCP tools exposed by Zotero Keeper.
+Complete reference for all 24 default MCP tools exposed by Zotero Keeper 2.0.0
+on MCP SDK v2, plus five legacy opt-in tools.
 
 > **Tip**: Most read operations can also be performed via [MCP Resources](../README.md#-mcp-resources-browsable-data) (e.g. `zotero://collections`) without calling a tool.
 
@@ -210,7 +211,10 @@ Find a collection by name (fuzzy match supported).
 
 ### `interactive_save` ⭐
 
-Save a reference with an interactive collection picker. Uses **MCP Elicitation** to show all available collections as numbered options and let you choose one.
+Save a reference with an interactive collection picker. MCP v2
+`Resolve`/`Elicit` dependencies ask for duplicate approval and an exact
+collection key across both modern and legacy protocol connections. Choosing
+`ROOT` triggers a second explicit confirmation.
 
 **Parameters**:
 
@@ -227,9 +231,10 @@ Save a reference with an interactive collection picker. Uses **MCP Elicitation**
 | `abstract` | `str` | `None` | Abstract text |
 | `url` | `str` | `None` | URL |
 | `tags` | `list[str]` | `None` | Tags to apply |
-| `skip_collection_prompt` | `bool` | `False` | Save to root without asking |
+| `skip_collection_prompt` | `bool` | `False` | Deprecated safety switch; `True` aborts instead of writing to root |
 | `auto_fetch_metadata` | `bool` | `True` | Auto-fetch from CrossRef/PubMed |
 | `include_citation_metrics` | `bool` | `True` | Fetch RCR from iCite |
+| `extra_fields` | `dict` | `None` | Additional Zotero fields as an object |
 
 **Example prompt**: *"Save DOI:10.1000/xyz to my Zotero"*
 
@@ -251,7 +256,11 @@ Save a reference directly to a named collection without the interactive picker.
 | `pmid` | `str` | `None` | PubMed ID → auto-fetches metadata + RCR |
 | `creators` | `list[dict]` | `None` | Author list |
 | `tags` | `list[str]` | `None` | Tags to apply |
+| `force_add` | `bool` | `False` | Explicitly bypass duplicate blocking |
+| `allow_library_root` | `bool` | `False` | Explicitly allow saving outside every collection |
 | `auto_fetch_metadata` | `bool` | `True` | Auto-fetch from CrossRef/PubMed |
+| `include_citation_metrics` | `bool` | `True` | Fetch RCR from iCite |
+| `extra_fields` | `dict` | `None` | Additional Zotero fields as an object |
 
 **Example prompt**: *"Quick save PMID:12345678 to 'AI Research'"*
 
@@ -359,9 +368,11 @@ Check whether a list of PMIDs already exist in your Zotero library.
 ```json
 {
   "owned": ["12345678"],
-  "not_owned": ["99999999"],
+  "new": ["99999999"],
   "owned_count": 1,
-  "not_owned_count": 1
+  "new_count": 1,
+  "total": 2,
+  "details": {}
 }
 ```
 
@@ -385,8 +396,11 @@ The **single unified import entry point** for all article imports to Zotero. Acc
 | `collection_key` | `str` | `None` | Target collection key (alternative) |
 | `tags` | `list[str]` | `None` | Additional tags to apply to all imported items |
 | `skip_duplicates` | `bool` | `True` | Skip articles already in Zotero (by PMID/DOI) |
+| `allow_library_root` | `bool` | `False` | Explicitly allow importing outside every collection |
 
-> ⚠️ If `collection_name` or `collection_key` is provided but not found, the tool returns an error listing all available collections.
+> ⚠️ A collection is required by default. If a named/keyed collection is not
+> found, the tool returns an error. Set `allow_library_root=true` only after the
+> user explicitly confirms a My Library root import.
 
 **Returns**:
 ```json
@@ -406,7 +420,8 @@ The **single unified import entry point** for all article imports to Zotero. Acc
 results = unified_search("machine learning anesthesia", output_format="json")
 
 # 2. (Optional) Filter out already-owned articles
-owned = check_articles_owned([a["pmid"] for a in results["articles"] if a.get("pmid")])
+pmids = [a.get("identifiers", {}).get("pmid") for a in results["articles"]]
+owned = check_articles_owned(pmids=[pmid for pmid in pmids if pmid])
 
 # 3. Import to Zotero
 import_articles(
@@ -436,13 +451,14 @@ Import a **local PDF file** into Zotero using the Connector API — **no Web API
 | `collection_name` | `str` | `None` | Target collection name (metadata mode) |
 | `collection_key` | `str` | `None` | Target collection key (metadata mode) |
 | `tags` | `list[str]` | `None` | Extra tags for the parent item (metadata mode) |
+| `allow_library_root` | `bool` | `False` | Explicitly allow a parent/standalone PDF outside every collection |
 
 > ⚠️ Attaching to a **pre-existing** library item is not supported by the Connector API (it is session-scoped). This tool creates the parent item itself, or uses standalone auto-recognition.
 
 **Example**:
 ```python
-# Auto-recognize a PDF (Zotero figures out the metadata)
-import_pdf(file_path="/home/me/papers/smith2024.pdf")
+# Auto-recognize writes a standalone attachment to My Library, so confirm it.
+import_pdf(file_path="/home/me/papers/smith2024.pdf", allow_library_root=True)
 
 # Attach a PDF to a parent built from PubMed metadata
 details = fetch_article_details(pmid="38353755")

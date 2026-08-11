@@ -1,6 +1,8 @@
 # Zotero Keeper MCP Server
 
-MCP Server for managing local Zotero libraries via AI Agents.
+Zotero Keeper 2.0.0 is an MCP SDK v2 server for managing local Zotero libraries via AI agents. It uses the v2 `MCPServer` API and is intentionally incompatible with an MCP SDK 1.x environment.
+
+> The v0.6.0 VS Code extension is the recommended distribution for this 2.0 runtime. The commands below install from this source checkout. The separately published `uvx`/PyPI package may still be on the older release line until its own publication is complete.
 
 ## Installation
 
@@ -30,14 +32,10 @@ uv run zotero-keeper
 Copy `.env.example` to `.env` and configure:
 
 ```bash
-# Local Zotero (default)
-ZOTERO_HOST=localhost
+# Local Zotero (default; keep the unauthenticated API on loopback)
+ZOTERO_HOST=127.0.0.1
 ZOTERO_PORT=23119
 ZOTERO_TIMEOUT=30
-
-# Remote Zotero
-ZOTERO_HOST=<your-zotero-ip>
-ZOTERO_PORT=23119
 
 # Optional: PubMed API credentials for higher NCBI rate limits
 NCBI_EMAIL=your.email@example.com
@@ -51,6 +49,7 @@ ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1
 ```
 
 - `ZOTERO_TIMEOUT` controls Zotero API request timeout in seconds.
+- Do not point `ZOTERO_HOST` at a remotely exposed Local/Connector API. For remote libraries, use Zotero's authenticated HTTPS Web API or a purpose-built authenticated service.
 - `NCBI_EMAIL` and optional `NCBI_API_KEY` are passed through to pubmed-search-mcp for fetch and ownership-check workflows.
 - `PUBMED_SEARCH_PATH` is only for local development when you want keeper to import a checked-out pubmed-search-mcp instead of the installed package.
 
@@ -80,13 +79,20 @@ import_articles(
 
 **Supported sources:** PubMed, Europe PMC, CORE, CrossRef, OpenAlex, Semantic Scholar, RIS
 
-### Public Tool Surface (23 default tools)
+### Public Tool Surface (24 default tools + 6 resources)
 
-The default public surface combines connection, read, collection, save, search, import, analytics, and attachment access tools.
+The default public surface combines connection, read, collection, save, search, import, analytics, and attachment access tools. MCP SDK v2 advertises six concrete browsable resources plus four parameterized URI templates.
 
 ### Smart Save Behavior
 
 Duplicate detection, validation, and collection suggestion are built into `interactive_save` and `quick_save`.
+
+Collection routing is fail-closed:
+
+- `interactive_save` accepts an exact collection key or the explicit `ROOT` sentinel. `ROOT` always triggers a second confirmation.
+- `skip_collection_prompt=True` aborts when no destination is confirmed; it never silently falls back to the library root.
+- `quick_save`, `import_articles`, and `import_pdf` reject a missing collection by default.
+- Root storage is allowed only after the user explicitly confirms it and the caller passes `allow_library_root=true`.
 
 ### Legacy PubMed Bridge (Opt-in)
 
@@ -117,6 +123,7 @@ Set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` only if you intentionally want 
 | `advanced_search` | Multi-condition Zotero search |
 | `check_articles_owned` | Check PubMed IDs against the local library |
 | `import_articles` | Collaboration-safe PubMed -> Zotero import handoff |
+| `import_pdf` | Import a local PDF through Zotero Connector endpoints, with metadata or Zotero recognition |
 
 ### Analytics Tools
 
@@ -138,6 +145,14 @@ Set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` only if you intentionally want 
 | ---- | ----------- |
 | `list_tags` | List all tags |
 | `get_item_types` | Get available item types |
+
+### PubMed Search MCP boundary
+
+The v0.6.0 VSIX installs PubMed Search MCP 0.6.1 from commit `ad85dde`. That companion MCP SDK v2 server exposes 45 tools in 16 categories. Its two Research Chronicle tools, `build_research_chronicle` and `read_research_chronicle`, replace the previous three timeline tools.
+
+PubMed discovery, session reuse, full text, citation exploration, export, and Research Chronicle work belong to PubMed Search MCP. Zotero Keeper owns the local library, duplicate check, collection choice, and final `import_articles` handoff.
+
+See [Zotero MCP landscape](../docs/ZOTERO_MCP_LANDSCAPE.md) before adding another Zotero server. In particular, the MCP Registry-listed community project `54yyyu/zotero-mcp` uses the same Python module name, `zotero_mcp`; it must run in a separate environment and process from Keeper.
 
 ---
 
@@ -185,6 +200,7 @@ Since Local API cannot create collections:
 
 1. **Create collection structure in Zotero first**
 2. **Let AI classify into existing collections**
+3. **Never omit the destination to imply root**; use the explicit double-confirmation / `allow_library_root=true` path only when the user truly requests My Library
 
 ---
 

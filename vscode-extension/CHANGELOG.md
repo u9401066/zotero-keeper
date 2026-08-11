@@ -2,6 +2,36 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.6.0] - 2026-08-11
+
+### Breaking changes
+
+- The managed Python environment now uses MCP SDK 2.x. Zotero Keeper 2.0.0
+  and PubMed Search MCP 0.6.1 are installed together because SDK 1.x and 2.x
+  server APIs are not compatible.
+- Existing extension-managed environments are refreshed during upgrade.
+
+### Added
+
+- PubMed Search MCP 0.6.1 with 45 tools across 16 categories, including the
+  persistent Research Chronicle workflow (`build_research_chronicle` and
+  `read_research_chronicle`).
+- The bundled `pubmed-research-chronicle` assistant skill and updated v2 tool,
+  hook, Cline, Copilot, and Codex assets.
+- A fresh-venv release smoke test that creates both real MCP servers and lists
+  all 24 Keeper and 45 PubMed tools before packaging.
+
+### Changed
+
+- Keeper's interactive import flow now uses MCP v2 portable elicitation and
+  requires explicit confirmation before writing to My Library root.
+- Malformed collection-name lookups and optional legacy import paths now fail
+  closed instead of degrading to an unassigned My Library root write.
+- Managed installs resolve both Python servers in one `uv pip install` command,
+  preventing a partially upgraded SDK environment.
+- Documentation distinguishes Zotero's official Local/Web APIs, the optional
+  OpenAI-curated Zotero connector, and MCP Registry-listed community servers.
+
 ## [0.5.35] - 2026-06-24
 
 ### Added

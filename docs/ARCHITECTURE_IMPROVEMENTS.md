@@ -2,6 +2,12 @@
 
 > 基於 2025-12-15 使用者觀察回饋
 
+> **歷史設計稿（已被取代）**：本頁保留當時的問題分析與舊工具名稱，
+> 不代表 v0.6.0 / MCP SDK v2 現況。請以 [ARCHITECTURE.md](../ARCHITECTURE.md)、
+> [協作流程](COLLABORATION_WORKFLOW.md) 與 PubMed Search MCP 0.6.1 的
+> `get_session_log`、`read_session`、`build_research_chronicle`、
+> `read_research_chronicle` 為準。
+
 ## 📋 問題清單與優先級
 
 | 優先級 | 問題 | 狀態 | 影響 |

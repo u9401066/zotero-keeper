@@ -3,7 +3,7 @@
 Let AI manage your references! A MCP Server connecting VS Code Copilot / Claude Desktop to your local Zotero library.
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![MCP SDK](https://img.shields.io/badge/MCP-FastMCP-green.svg)](https://github.com/modelcontextprotocol/python-sdk)
+[![MCP SDK](https://img.shields.io/badge/MCP%20SDK-v2-green.svg)](https://github.com/modelcontextprotocol/python-sdk)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Zotero 7/8/9](https://img.shields.io/badge/Zotero-7%20%2F%208%20%2F%209-red.svg)](https://www.zotero.org/)
 [![CI](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml/badge.svg)](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml)
@@ -13,14 +13,15 @@ Let AI manage your references! A MCP Server connecting VS Code Copilot / Claude 
 
 ---
 
-## 🚀 One-Click Install (VS Code)
+## 🚀 Recommended Install (VS Code)
 
 > **Prerequisites**: [Zotero 7, 8, or 9](https://www.zotero.org/download/) must be running
 
-<a href="vscode:mcp/install?%7B%22name%22%3A%22zotero-keeper%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22zotero-keeper%22%5D%7D"><img src="https://img.shields.io/badge/VS%20Code-Install%20MCP%20Server-007ACC?style=for-the-badge&logo=visualstudiocode" alt="Install in VS Code"></a>
-<a href="vscode-insiders:mcp/install?%7B%22name%22%3A%22zotero-keeper%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22zotero-keeper%22%5D%7D"><img src="https://img.shields.io/badge/VS%20Code%20Insiders-Install%20MCP%20Server-24bfa5?style=for-the-badge&logo=visualstudiocode" alt="Install in VS Code Insiders"></a>
+[📦 Install Zotero + PubMed MCP from the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp)
 
-> 💡 **Requires [uv](https://docs.astral.sh/uv/getting-started/installation/)** - Click installs automatically via `uvx zotero-keeper`
+The **v0.6.0 VSIX is the recommended distribution**. It creates an isolated environment and installs Zotero Keeper 2.0.0 plus the pinned PubMed Search MCP 0.6.1 snapshot. The `uvx`/PyPI path remains available for older direct-server installs, but it must not be treated as the 2.0 release until PyPI is updated.
+
+> ⚠️ MCP SDK 2.0 is not compatible with 1.x. After upgrading the extension, run **Zotero MCP: Reinstall Python Environment** if VS Code still has an older managed environment.
 
 ---
 
@@ -33,6 +34,7 @@ Let AI manage your references! A MCP Server connecting VS Code Copilot / Claude 
 - ➕ **Add references**: "Add this DOI to my Zotero" (with auto-fetch metadata!)
 - 🔄 **PubMed integration**: "Search PubMed, skip what I already have"
 - 📁 **Interactive save**: Shows collection options for you to choose!
+- 📚 **Modern literature discovery**: PubMed Search MCP 0.6.1 exposes 45 tools in 16 categories, including the two-tool Research Chronicle workflow
 
 No more manually searching, copying, pasting. Just tell your AI in natural language!
 
@@ -40,9 +42,9 @@ No more manually searching, copying, pasting. Just tell your AI in natural langu
 
 ## ✨ Features
 
-- **🔌 MCP Native**: Built with FastMCP SDK for seamless AI integration
+- **🔌 MCP SDK 2.0 native**: Built on the v2 `MCPServer` API (not the incompatible 1.x `FastMCP` surface)
 - **📖 MCP Resources**: Browse Zotero data via URIs (`zotero://collections`, etc.)
-- **💬 MCP Elicitation**: Interactive collection selection with numbered options
+- **💬 MCP Elicitation**: Interactive collection selection using an exact collection key; `ROOT` always requires a second confirmation
 - **🔒 Auto-fetch Metadata**: DOI/PMID → complete abstract + all fields automatically!
 - **📊 Citation Metrics**: RCR and NIH Percentile stored in Zotero extra fields
 - **🛡️ Collection Validation**: Use `collection_name` for safer auto-validation
@@ -51,7 +53,8 @@ No more manually searching, copying, pasting. Just tell your AI in natural langu
 - **🧠 Smart Features**: Duplicate detection, validation, intelligent import
 - **📁 Collection Support**: Nested collections (folders) with hierarchy
 - **🏗️ Clean Architecture**: DDD with onion architecture
-- **🔒 No Cloud Required**: All operations are local
+- **🔒 Local Zotero boundary**: Zotero library operations stay on the local
+  loopback API; PubMed discovery uses the configured external literature APIs
 
 ---
 
@@ -146,12 +149,13 @@ NCBI_EMAIL=your.email@example.com
 - [docs/tools-reference.md](docs/tools-reference.md) — parameter reference and examples for public tools
 - [docs/faq.md](docs/faq.md) — installation, troubleshooting, and workflow FAQ
 - [docs/ZOTERO_LOCAL_API.md](docs/ZOTERO_LOCAL_API.md) — Zotero API capability notes and limitations
+- [docs/ZOTERO_MCP_LANDSCAPE.md](docs/ZOTERO_MCP_LANDSCAPE.md) — what is official, what is community-maintained, and safe coexistence guidance
 - [ARCHITECTURE.md](ARCHITECTURE.md) — component and layering overview
 - [CONTRIBUTING.md](CONTRIBUTING.md) — development workflow and contribution guide
 
 ---
 
-## 🔧 Available Tools (23 default public + 5 legacy opt-in)
+## 🔧 Available Tools (24 default public + 5 legacy opt-in)
 
 > 💡 **Tip**: Most read operations can also be done via [MCP Resources](#-mcp-resources-browsable-data) without calling tools.
 
@@ -187,6 +191,8 @@ NCBI_EMAIL=your.email@example.com
 | `interactive_save` ⭐ | Interactive save + auto RCR | "Save this paper to Zotero" |
 | `quick_save` | Quick save + auto RCR | "Quick save to AI Research" |
 
+All save paths fail closed when no destination is confirmed. `interactive_save` asks for an exact collection key (or the explicit sentinel `ROOT`); choosing `ROOT` triggers a second confirmation. `skip_collection_prompt=True` aborts instead of silently saving to the library root. `quick_save`, `import_articles`, and `import_pdf` reject a missing collection unless the user has explicitly confirmed root storage and the caller passes `allow_library_root=true`.
+
 ### 🔍 Saved Search Tools (saved_search_tools.py - 3 tools)
 
 | Tool | Description | Example |
@@ -202,13 +208,14 @@ NCBI_EMAIL=your.email@example.com
 | `advanced_search` ⭐ | Multi-condition search (itemType, tag, qmode) | "Find all journal articles tagged with AI" |
 | `check_articles_owned` | Check if PMIDs exist in Zotero | "Do I have these PMIDs?" |
 
-### 📥 Import Tools (single public handoff)
+### 📥 Import Tools (2 tools)
 
 > 🤝 **Collaboration-safe default**: PubMed search/discovery/export lives in pubmed-search-mcp. Zotero Keeper exposes one public import handoff: `import_articles`.
 
 | Tool | Description | Example |
 |------|-------------|--------|
 | `import_articles` ⭐ | Single public import entry for JSON articles or RIS text | "Import these PubMed results to AI Research" |
+| `import_pdf` 📎 | Import a local PDF through Zotero Connector endpoints, with metadata or Zotero recognition | "Import this PDF and attach it to its paper" |
 
 #### Legacy PubMed bridge tools
 
@@ -239,7 +246,11 @@ If you intentionally want the old standalone keeper behavior, set `ZOTERO_KEEPER
 results = unified_search("anesthesia AI", output_format="json")
 
 # 2. Optional: filter against local Zotero
-owned = check_articles_owned([article["pmid"] for article in results["articles"] if article.get("pmid")])
+pmids = [
+  article.get("identifiers", {}).get("pmid")
+  for article in results["articles"]
+]
+owned = check_articles_owned(pmids=[pmid for pmid in pmids if pmid])
 
 # 3. Import selected records into Zotero
 import_articles(
@@ -285,20 +296,27 @@ advanced_search(
 
 ## 📖 MCP Resources (Browsable Data)
 
-No tool calls needed! AI can directly browse Zotero data:
+The SDK v2 server advertises six concrete resources. Four additional parameterized URI templates resolve individual items, collections, collection contents, and saved searches.
+
+### Concrete resources (6)
 
 | Resource URI | Description |
 |--------------|-------------|
 | `zotero://collections` | All collections |
 | `zotero://collections/tree` | Collection hierarchy |
-| `zotero://collections/{key}` | Specific collection |
-| `zotero://collections/{key}/items` | Items in collection |
 | `zotero://items` | Recent items |
-| `zotero://items/{key}` | Item details |
 | `zotero://tags` | All tags |
 | `zotero://searches` | Saved searches |
-| `zotero://searches/{key}` | Search details |
 | `zotero://schema/item-types` | Available item types |
+
+### Parameterized resource templates (4)
+
+| Resource template | Description |
+|-------------------|-------------|
+| `zotero://collections/{key}` | Specific collection |
+| `zotero://collections/{key}/items` | Items in collection |
+| `zotero://items/{key}` | Item details |
+| `zotero://searches/{key}` | Saved-search details |
 
 ---
 
@@ -314,21 +332,21 @@ User: "Save this DOI:10.1234/example paper to Zotero"
 📚 Saving: Deep Learning for Medical Imaging
 
 ⭐ Suggested:
-   1. AI Research (match: 90%) - Title matches
-   2. Medical Imaging (match: 75%) - Keyword matches
+   AI Research — key `A1B2C3D4` (match: 90%)
+   Medical Imaging — key `M5N6P7Q8` (match: 75%)
 
 📂 All Collections:
-   3. Biology (12 items)
-   4. Chemistry (8 items)
-   5. To Read (23 items)
-
-0. Save to My Library (no collection)
+   Biology — key `B1O2L3O4` (12 items)
+   Chemistry — key `C5H6E7M8` (8 items)
+   To Read — key `T1O2R3E4` (23 items)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Enter the number of your choice: [User enters: 1]
+Enter the exact collection key, or `ROOT`: [User enters: A1B2C3D4]
 
 AI: ✅ Saved to 'AI Research' collection!
 ```
+
+`ROOT` is not a default shortcut. Selecting it starts a second confirmation before a save can proceed; declining or skipping the prompt aborts the operation.
 
 ### 🔒 Data Integrity: Auto-fetch Metadata
 
@@ -366,13 +384,13 @@ Zotero supports **nested collections**. Recommended strategies:
 
 ## 🔬 PubMed Integration
 
-Works seamlessly with [pubmed-search-mcp](https://github.com/u9401066/pubmed-search-mcp):
+The v0.6.0 VSIX pins [pubmed-search-mcp 0.6.1](https://github.com/u9401066/pubmed-search-mcp/tree/v0.6.1) at commit `ad85dde`. Its MCP SDK v2 server exposes **45 tools across 16 categories**. The new `build_research_chronicle` and `read_research_chronicle` workflow replaces the three earlier timeline tools.
 
 ```
 You: "Find new anesthesia AI papers from 2024 that I don't have"
 
 AI executes:
-1. pubmed-search-mcp: unified_search("anesthesia AI", min_year=2024, output_format="json")
+1. pubmed-search-mcp: unified_search("anesthesia AI", filters="year:2024-", output_format="json")
   → Found 30 candidate articles
 
 2. zotero-keeper: check_articles_owned([...pmids...])
@@ -391,35 +409,19 @@ cd mcp-server
 uv sync --extra pubmed
 ```
 
+### Zotero MCP ecosystem naming
+
+As of 2026-08-11, no Zotero-organization repository or Zotero documentation was found that publishes an official Zotero MCP server. [`54yyyu/zotero-mcp`](https://github.com/54yyyu/zotero-mcp) is a capable **community server listed in the MCP Registry**, not an official Zotero server. An OpenAI-curated Zotero connector is likewise a separate connector product and should not be described as Zotero's official MCP server or assigned an invented tool schema.
+
+The community server and Zotero Keeper both use the Python module/package name `zotero_mcp`. If you run both, install them in **separate virtual environments and separate MCP processes**; do not add the community package to the extension-managed environment. See [the ecosystem comparison](docs/ZOTERO_MCP_LANDSCAPE.md).
+
 ---
 
-## 🌐 Remote Zotero Setup
+## 🌐 Remote Zotero Access
 
-If Zotero runs on another computer:
+Zotero's Local and Connector APIs are unauthenticated local interfaces and must remain bound to loopback. Do not expose port 23119 to a LAN, the Internet, or an unauthenticated forwarding rule.
 
-### 1. On Zotero Machine (Windows)
-
-```powershell
-# Enable Local API (in Zotero → Tools → Developer → Run JavaScript)
-Zotero.Prefs.set("httpServer.localAPI.enabled", true)
-
-# Open firewall
-netsh advfirewall firewall add rule name="Zotero" dir=in action=allow protocol=TCP localport=23119
-
-# Setup port proxy (Zotero only listens on 127.0.0.1)
-netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=23119 connectaddress=127.0.0.1 connectport=23119
-```
-
-### 2. Configure MCP Server
-
-```json
-{
-  "env": {
-    "ZOTERO_HOST": "192.168.1.100",
-    "ZOTERO_PORT": "23119"
-  }
-}
-```
+For remote libraries, use Zotero's authenticated HTTPS Web API, or place a purpose-built authenticated service in front of Zotero and apply TLS, authorization, and network access controls. Keep Zotero Keeper and Zotero Desktop on the same trusted host when using Local/Connector operations.
 
 ---
 
@@ -430,21 +432,23 @@ netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=23119 conn
 │           AI Agent (VS Code / Claude)           │
 └──────────────────────┬──────────────────────────┘
                        │ MCP Protocol
-                       │ ├── Tools (22)
-                       │ ├── Resources (10 URIs)
+                       │ ├── Tools (24 default)
+                       │ ├── Resources (6 + 4 URI templates)
                        │ └── Elicitation (interactive input)
                        ▼
 ┌─────────────────────────────────────────────────┐
 │              Zotero Keeper MCP Server           │
 │  ┌───────────────────────────────────────────┐  │
 │  │  MCP Layer                                │  │
-│  │  ├── server.py (11 tools: 6 core + 5 collection) │
-│  │  ├── resources.py (10 URIs, incl. collections)   │
-│  ├── interactive_tools.py (2 save tools)  │  │
+│  │  ├── server.py + basic reads (6 tools)      │  │
+│  │  ├── collection_tools.py (5 tools)         │  │
+│  │  ├── resources.py (6 resources + 4 templates) │
+│  │  ├── interactive_tools.py (2 save tools)   │  │
 │  │  ├── saved_search_tools.py (3 tools)      │  │
-│  │  ├── search_tools.py (3 tools)            │  │
-│  │  ├── pubmed_tools.py (2 tools)            │  │
-│  │  ├── batch_tools.py (1 tool)              │  │
+│  │  ├── search_tools.py (2 default + 1 legacy) │ │
+│  │  ├── unified_import_tools.py (2 tools)    │  │
+│  │  ├── analytics + attachment tools (4)     │  │
+│  │  ├── pubmed/batch legacy modules (4 tools) │ │
 │  │  └── smart_tools.py (helpers only)        │  │
 │  └───────────────────────────────────────────┘  │
 └──────────────────────┬──────────────────────────┘
@@ -558,7 +562,7 @@ We support both developer-oriented and researcher-friendly entry points today, w
 |------|--------|----------|
 | VS Code extension | ✅ Available now | Researchers who want guided setup inside VS Code |
 | Source checkout + `uv sync` | ✅ Available now | Contributors and local development |
-| Direct MCP registration via `uvx zotero-keeper` | ✅ Available now | Existing MCP-capable clients |
+| Direct MCP registration via `uvx zotero-keeper` | ⚠️ Older PyPI line | Existing clients that intentionally accept the pre-2.0 package |
 | Standalone executable | 🚧 Planned | Users who do not want to install Python/uv |
 | Homebrew / Chocolatey | 🚧 Planned | OS-level package manager workflows |
 

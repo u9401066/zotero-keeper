@@ -30,9 +30,9 @@ This document describes the system architecture of Zotero Keeper, a MCP server f
 │          │                   │                   │                        │
 │          └───────────────────┼───────────────────┘                        │
 │                              │                                            │
-│                              │ MCP Protocol (stdio/sse)                   │
-│                              │ ├── Tools (23 default + 5 legacy opt-in)   │
-│                              │ ├── Resources (10 URIs)                    │
+│                              │ MCP Protocol (stdio)                       │
+│                              │ ├── Tools (24 default + 5 legacy opt-in)   │
+│                              │ ├── Resources (6 + 4 URI templates)        │
 │                              │ └── Elicitation (interactive input)        │
 │                              ▼                                            │
 │  ┌───────────────────────────────────────────────────────────────────┐   │
@@ -45,11 +45,11 @@ This document describes the system architecture of Zotero Keeper, a MCP server f
 │  │  │  ├── interactive_tools.py (2 tools + elicitation)            │  │   │
 │  │  │  ├── saved_search_tools.py (3 tools)                         │  │   │
 │  │  │  ├── search_tools.py (2 public + 1 legacy tool)              │  │   │
-│  │  │  ├── unified_import_tools.py (1 tool)                        │  │   │
+│  │  │  ├── unified_import_tools.py (2 tools)                        │  │   │
 │  │  │  ├── analytics_tools.py (2 tools)                            │  │   │
 │  │  │  ├── attachment_tools.py (2 tools)                           │  │   │
 │  │  │  ├── pubmed_tools.py / batch_tools.py (legacy import tools)  │  │   │
-│  │  │  ├── resources.py (10 Resource URIs)                         │  │   │
+│  │  │  ├── resources.py (6 resources + 4 URI templates)            │  │   │
 │  │  │  └── smart_tools.py (helpers only, no tools)                 │  │   │
 │  │  └──────────────────────────┬──────────────────────────────────┘  │   │
 │  │                             │                                      │   │
@@ -77,6 +77,8 @@ This document describes the system architecture of Zotero Keeper, a MCP server f
 ### Dual MCP Collaboration Architecture
 
 Zotero Keeper is designed to work alongside `pubmed-search-mcp` for a complete literature workflow:
+
+The v0.6.0 VSIX pins PubMed Search MCP 0.6.1 at commit `ad85dde`. It contributes 45 MCP SDK v2 tools across 16 categories. Research history is now persisted through `build_research_chronicle` and `read_research_chronicle`; those two tools replace the former three-tool timeline surface.
 
 ```
 ┌────────────────────────────┐    ┌────────────────────────────┐
@@ -112,6 +114,8 @@ Zotero Keeper is designed to work alongside `pubmed-search-mcp` for a complete l
 4. [zotero-keeper] import_articles(articles=..., collection_name="CRISPR") → Zotero
 ```
 
+This two-server environment must not install another Python distribution named `zotero_mcp`. The MCP Registry-listed community project `54yyyu/zotero-mcp` shares that module name with Keeper; coexistence requires a separate virtual environment and MCP process. See [Zotero MCP landscape](docs/ZOTERO_MCP_LANDSCAPE.md).
+
 ---
 
 ## MCP Interface
@@ -126,7 +130,7 @@ Zotero Keeper is designed to work alongside `pubmed-search-mcp` for a complete l
 | saved_search_tools.py | 3 | `list_saved_searches`, `run_saved_search`, `get_saved_search_details` |
 | search_tools.py | 2 | `advanced_search`, `check_articles_owned` |
 | interactive_tools.py | 2 | `interactive_save`, `quick_save` |
-| unified_import_tools.py | 1 | `import_articles` ⭐ Single public import entry |
+| unified_import_tools.py | 2 | `import_articles` ⭐, `import_pdf` 📎 |
 | analytics_tools.py | 2 | `get_library_stats`, `find_orphan_items` |
 | attachment_tools.py | 2 | `get_item_attachments`, `get_item_fulltext` |
 
@@ -135,10 +139,12 @@ Zotero Keeper is designed to work alongside `pubmed-search-mcp` for a complete l
 | File | Count | Tools |
 |------|-------|-------|
 | search_tools.py | 1 | `search_pubmed_exclude_owned` |
-| pubmed_tools.py | 2 | `import_ris_to_zotero`, `import_from_pmids` |
+| pubmed_tools.py | 3 | `import_ris_to_zotero`, `import_from_pmids`, `quick_import_pmids` |
 | batch_tools.py | 1 | `batch_import_from_pubmed` |
 
-### Resources (10 URIs)
+### Resources (6 concrete + 4 URI templates)
+
+MCP SDK v2 reports six concrete resources through `resources/list`. Four parameterized routes are advertised separately through `resources/templates/list`.
 
 | URI | Description |
 |-----|-------------|
@@ -155,23 +161,33 @@ Zotero Keeper is designed to work alongside `pubmed-search-mcp` for a complete l
 
 ### Elicitation (Interactive Input)
 
-The `interactive_save` tool uses MCP Elicitation to prompt users:
+The `interactive_save` tool uses SDK v2 resolver dependencies to prompt users.
+It does not call `ctx.elicit()` directly because the current protocol does not
+provide an in-tool server-to-client backchannel:
 
 ```python
-# Example: Collection selection via elicitation
-result = await ctx.elicit(
-    message=formatted_options,  # Numbered list of collections
-    schema={
-        "type": "object",
-        "properties": {
-            "selection": {
-                "type": "string",
-                "description": "Enter the number of your choice"
-            }
-        }
-    }
-)
+from typing import Annotated
+from mcp.server.mcpserver import Elicit, Resolve
+from pydantic import BaseModel
+
+class CollectionChoice(BaseModel):
+    choice: str
+
+async def choose_collection(...) -> CollectionChoice | Elicit[CollectionChoice]:
+    return Elicit(formatted_options, CollectionChoice)
+
+collection_dependency = Resolve(choose_collection)
+
+@mcp.tool()
+async def interactive_save(
+    ...,
+    collection_choice: Annotated[CollectionChoice, collection_dependency],
+):
+    # The final tool body is the only write boundary.
+    ...
 ```
+
+`ROOT` always enters a second confirmation step. `skip_collection_prompt=True` aborts rather than choosing root. Non-interactive `quick_save`, `import_articles`, and `import_pdf` calls require a collection unless explicit user approval is carried as `allow_library_root=true`.
 
 ---
 
@@ -186,11 +202,11 @@ src/zotero_mcp/
 │   │   ├── server.py           # Connection tool + server setup
 │   │   ├── basic_read_tools.py # 5 read tools
 │   │   ├── collection_tools.py # 5 collection tools
-│   │   ├── resources.py        # 10 Resource URIs
+│   │   ├── resources.py        # 6 resources + 4 URI templates
 │   │   ├── interactive_tools.py # 2 save tools with elicitation
 │   │   ├── saved_search_tools.py # 3 saved search tools
 │   │   ├── search_tools.py     # 2 public search tools + 1 legacy bridge
-│   │   ├── unified_import_tools.py # 1 collaboration-safe import tool
+│   │   ├── unified_import_tools.py # import_articles + import_pdf
 │   │   ├── analytics_tools.py  # 2 analytics tools
 │   │   ├── attachment_tools.py # 2 attachment/fulltext tools
 │   │   ├── pubmed_tools.py     # 3 legacy import tools
@@ -229,7 +245,7 @@ These functions are used by `interactive_tools.py` for:
 ### MCP Server (server.py)
 
 The main entry point that:
-1. Initializes FastMCP server
+1. Initializes the MCP SDK v2 `MCPServer`
 2. Creates Zotero HTTP client
 3. Registers the connection tool and shared resources
 4. Imports and registers tools from other modules
@@ -238,7 +254,11 @@ The main entry point that:
 ```python
 class ZoteroKeeperServer:
     def __init__(self, config: ZoteroMcpConfig = None):
-        self._mcp = FastMCP(name="zotero-keeper", version="1.7.0")
+        self._mcp = MCPServer(
+            name="zotero-keeper",
+            version="2.0.0",
+            instructions="Zotero library management and import",
+        )
         self._zotero = ZoteroClient(config.zotero)
         self._register_tools()
         self._register_external_modules()
@@ -250,8 +270,8 @@ Two main save tools with different interaction models:
 
 | Tool | Interaction | Use Case |
 |------|-------------|----------|
-| `interactive_save` | Elicitation (numbered options) | User wants to choose collection |
-| `quick_save` | None (direct save) | User specifies collection or skips |
+| `interactive_save` | Elicitation (exact collection key; double-confirmed `ROOT`) | User wants to choose collection |
+| `quick_save` | None (direct save) | User specifies a collection, or explicitly approves root with `allow_library_root=true` |
 
 **Auto-fetch Metadata Feature:**
 ```python
@@ -343,8 +363,8 @@ User Request (title, DOI/PMID)
            │
            ▼
 ┌──────────────────────────┐
-│  MCP Elicitation         │ ← User selects number
-│  (numbered options)      │
+│  MCP Elicitation         │ ← User submits exact key
+│  (ROOT = confirm again)  │
 └──────────┬───────────────┘
            │
            ▼
@@ -383,14 +403,13 @@ AI Agent
 
 ## Design Decisions
 
-### Why Resources over Collection Tools?
+### Why both Resources and Collection Tools?
 
-| Aspect | Old (collection_tools.py) | New (resources.py) |
-|--------|---------------------------|-------------------|
-| Interaction | Active tool calls | Passive browsing |
-| Tool Count | 3 tools | 0 tools (10 URIs) |
-| Use Case | Explicit queries | Background context |
-| AI Decision | Must choose tool | Can browse freely |
+| Surface | Best use |
+|---------|----------|
+| Collection tools | Explicit, parameterized actions and clients that primarily operate through tools |
+| Six concrete resources | Passive browsing of stable library entry points |
+| Four URI templates | Direct lookup of a known item, collection, collection contents, or saved search |
 
 ### Why Auto-fetch Metadata?
 
@@ -413,12 +432,15 @@ The 6 original smart tools were redundant with `interactive_save`/`quick_save`. 
 - Simplified AI decision-making
 - Kept useful logic as internal helpers
 
-### Why FastMCP?
+### Why MCP SDK v2 `MCPServer`?
 
-- Native Python SDK for MCP
+- Current native Python SDK API for MCP 2.x
 - Simple decorator-based API (`@mcp.tool()`, `@mcp.resource()`)
-- Built-in elicitation support (`ctx.elicit()`)
-- Active development and community
+- Protocol-portable elicitation via `Resolve(...)` dependencies that return
+  `Elicit(...)`, without relying on a direct context backchannel
+- Explicit resources and resource-template discovery
+
+MCP SDK 2.0 is intentionally incompatible with the old 1.x `FastMCP` interface. Keeper 2.0.0 and PubMed Search MCP 0.6.1 therefore share one SDK v2 runtime in the extension-managed environment.
 
 ---
 
@@ -434,23 +456,17 @@ The 6 original smart tools were redundant with `interactive_save`/`quick_save`. 
 └──────────────┘     └──────────────┘
 ```
 
-### Remote Setup (Requires Port Proxy)
+### Remote libraries
 
-```
-┌──────────────┐           ┌──────────────┐           ┌──────────────┐
-│  MCP Server  │──────────▶│  Port Proxy  │──────────▶│   Zotero     │
-│  (Linux VM)  │ HTTP:23119│  (Windows)   │ localhost │  (Windows)   │
-│  <MCP_HOST>  │           │    netsh     │  :23119   │ 127.0.0.1    │
-└──────────────┘           └──────────────┘           └──────────────┘
-```
+Do not forward Zotero's unauthenticated Local/Connector port to another host. Use Zotero's authenticated HTTPS Web API, or an authenticated service with TLS and explicit access control. Local/Connector workflows require Keeper and Zotero Desktop to share the same trusted host.
 
 ---
 
 ## Security Considerations
 
-1. **No Authentication**: Zotero Local API has no authentication
-   - Only expose on trusted networks
-   - Use firewall rules to restrict access
+1. **No Authentication**: Zotero Local and Connector APIs have no authentication
+   - Keep them on loopback only
+   - Never expose port 23119 to a LAN or the Internet
 
 2. **Data Validation**: All input validated before sending to Zotero
    - Required field checks
@@ -471,4 +487,4 @@ The 6 original smart tools were redundant with `interactive_save`/`quick_save`. 
 
 ---
 
-*Last updated: December 14, 2024 (v1.8.0)*
+*Last updated: August 11, 2026 (Keeper 2.0.0 / MCP SDK v2)*

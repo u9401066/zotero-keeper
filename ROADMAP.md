@@ -13,12 +13,21 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
 
 ---
 
+## Current Release Baseline (August 2026) ✅
+
+- **Zotero Keeper 2.0.0**: migrated from the incompatible MCP SDK 1.x `FastMCP` interface to MCP SDK 2.x `MCPServer`; exposes 24 default tools (including `import_pdf`), 5 legacy opt-in tools, and 6 concrete resources. Collection routing now fails closed; root saves require explicit confirmation and an opt-in flag.
+- **PubMed Search MCP 0.6.1**: pinned at commit `ad85dde`; exposes 45 tools across 16 categories. `build_research_chronicle` and `read_research_chronicle` replace the earlier three-tool timeline design.
+- **VS Code extension 0.6.0**: the Marketplace VSIX is the recommended installer and owns the isolated shared SDK v2 environment. PyPI/`uvx` remains on the older release line until separately published.
+- **Zotero MCP ecosystem**: no Zotero-organization official MCP server was found as of 2026-08-11. The Registry-listed `54yyyu/zotero-mcp` is a community server and shares Keeper's `zotero_mcp` Python namespace, so coexistence requires a separate environment and process.
+
+---
+
 ## Phase 1: Foundation ✅
 
 ### v1.0.0 - v1.1.0 (December 2024)
 
 - ✅ Project structure (DDD architecture)
-- ✅ FastMCP framework integration
+- ✅ FastMCP framework integration *(historical 1.x baseline; replaced by MCP SDK v2 in Keeper 2.0.0)*
 - ✅ Zotero Local API client
 - ✅ Basic connectivity (`check_connection`)
 - ✅ Configuration management
@@ -335,9 +344,9 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
   - 📋 Retry logic for transient failures
   - 📋 Connection recovery
 
-### v2.0.0 (Planned) - One-Click Installation + Citation Analysis 🎯
+### Historical v2.0.0 Product Plan (partially delivered / superseded)
 
-> ⚠️ **目標用戶**：研究人員，不是開發者。需要簡化安裝流程。
+> The `2.0.0` runtime number is now used by the completed MCP SDK v2 migration. The unchecked product ideas below remain future work and no longer define the release number.
 
 - 📋 **安裝簡化**
   - 📋 PyPI Package: `uv pip install zotero-keeper-mcp`
@@ -381,9 +390,9 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
 
 ---
 
-## Phase 4.5: VS Code Extension & Marketplace 📋
+## Phase 4.5: VS Code Extension & Marketplace ✅
 
-> 💡 **研究結果**：VS Code 支援三種 MCP 安裝方式
+> The Marketplace extension is now the recommended path. v0.6.0 installs the pinned SDK v2 server pair; the direct MCP Install URL below is retained as historical design work and still follows the older PyPI line.
 
 ### 安裝方式比較
 
@@ -826,10 +835,11 @@ if (items?.length > 0) {
 | v1.7.0 | 21 | Simplification |
 | v1.8.0 | 21 | Collection 防呆 + RCR |
 | v1.10.0 | 22 | PyPI + VS Code Extension v0.3.1 |
-| **v1.10.1** | **25** | **One-click install + Analytics tools (current)** |
+| **v1.10.1** | **25** | **Historical one-click + analytics baseline** |
 | v1.11.0  | ~28 | + More Analytics (duplicates, citations) |
-| v2.0.0  | ~32 | + Citation Analysis + Smart Suggestions |
-| v2.1.0  | ~36 | + Report Generation |
+| **v2.0.0** | **24 default + 5 legacy** | **MCP SDK v2; `import_pdf`; 6 concrete resources (current)** |
+| Future | ~32 | Citation Analysis + Smart Suggestions |
+| Future | ~36 | Report Generation |
 
 ---
 
@@ -840,6 +850,7 @@ if (items?.length > 0) {
 | Tools | v1.1.0 | ✅ |
 | Resources | v1.7.0 | ✅ |
 | Elicitation | v1.7.0 | ✅ |
+| MCP SDK v2 `MCPServer` | v2.0.0 | ✅ |
 | Prompts | - | 💡 Future |
 | Sampling | - | 💡 Future |
 

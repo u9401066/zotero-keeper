@@ -12,6 +12,8 @@ paths:
 ## Import Invariants
 
 - Ask for the target Zotero collection before importing search results.
+- Never save to My Library root unless the user explicitly confirms it; only
+  then may a caller set `allow_library_root=true`.
 - Check for existing articles before creating new Zotero items.
 - Prefer the unified `import_articles` bridge for PubMed JSON, PMID lists, or RIS text.
 - Keep RIS and PubMed JSON parsing tolerant, but report skipped records clearly.

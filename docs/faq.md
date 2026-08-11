@@ -16,17 +16,19 @@ Common questions about installing, configuring, and using Zotero Keeper.
 
 ### What is the easiest way to install?
 
-For VS Code users, the fastest path is the one-click install button in the [README](../README.md#-one-click-install-vs-code).
+For VS Code users, install the v0.6.0 VSIX from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp). It is the recommended distribution for Zotero Keeper 2.0.0 and PubMed Search MCP 0.6.1.
 
-For Claude Desktop or manual setups, use `uvx`:
+For Claude Desktop or manual setups, use a source checkout with `uv sync`. The separately published `uvx`/PyPI package may still be on the older pre-2.0 line; do not assume this command installs Keeper 2.0.0 until the PyPI release is updated:
 
 ```bash
+# Legacy pre-2.0 PyPI line only
 uvx zotero-keeper
 ```
 
 Or install permanently:
 
 ```bash
+# Legacy pre-2.0 PyPI line only
 uv tool install zotero-keeper
 ```
 
@@ -52,21 +54,16 @@ Yes. Zotero Keeper is a standard [MCP server](https://modelcontextprotocol.io/).
    curl http://127.0.0.1:23119/connector/ping
    ```
    Expected response: `Zotero is running`
-3. Make sure no firewall is blocking port `23119`
+3. Check that local security software is not blocking loopback traffic. Do not create an inbound rule or expose port `23119`.
 4. On Windows, check that Zotero's local server is enabled under **Edit > Preferences > Advanced > Allow other applications to communicate with Zotero**
 
 ---
 
 ### I'm connecting to a remote Zotero instance. What should I set?
 
-Set the host in your `.env` or MCP launcher configuration:
+Do not expose Zotero's unauthenticated Local/Connector API port to another host. Keep it bound to loopback and run Keeper beside Zotero Desktop on the same trusted machine.
 
-```bash
-ZOTERO_HOST=192.168.1.100
-ZOTERO_PORT=23119
-```
-
-Make sure the remote machine's firewall allows incoming connections on port 23119.
+For a genuinely remote library, use Zotero's authenticated HTTPS Web API or a purpose-built authenticated service with TLS, authorization, and explicit network access controls.
 
 ---
 
@@ -76,7 +73,7 @@ Make sure the remote machine's firewall allows incoming connections on port 2311
 
 | | `interactive_save` | `quick_save` |
 |--|--|--|
-| Collection picker | ✅ Shows numbered list via MCP Elicitation | ❌ You must specify `collection_name` |
+| Collection picker | ✅ Shows choices and requires an exact collection key; `ROOT` is confirmed twice | ❌ You must specify `collection_name` |
 | Best for | Interactive use with Copilot | Automated workflows |
 | Duplicate check | ✅ | ✅ |
 | Auto-fetch metadata | ✅ (DOI/PMID) | ✅ (DOI/PMID) |
@@ -136,6 +133,8 @@ The public surface is:
 - **Import handoff**: `import_articles` (Zotero Keeper)
 - **Library reads**: all read tools (Zotero Keeper)
 
+All writes fail closed on collection routing. `skip_collection_prompt=True` aborts; `quick_save`, `import_articles`, and `import_pdf` reject a missing collection. Saving to My Library requires explicit user confirmation plus `allow_library_root=true` (and `interactive_save` confirms `ROOT` a second time).
+
 To restore the legacy tools (e.g. for standalone use without pubmed-search-mcp):
 
 ```bash
@@ -184,15 +183,17 @@ Zotero 8 stores PDF annotations as top-level items with `itemType: "annotation"`
 
 ## PubMed Integration
 
+The v0.6.0 VSIX pins PubMed Search MCP 0.6.1 at commit `ad85dde`. It exposes 45 MCP SDK v2 tools in 16 categories. `build_research_chronicle` and `read_research_chronicle` replace the three former timeline tools.
+
 ### Do I need pubmed-search-mcp installed?
 
 Only if you want to **search PubMed** from within Copilot. `import_articles` and the core library tools work without it. Install with:
 
 ```bash
 uv sync --extra pubmed   # in the mcp-server directory
-# or
-uvx zotero-keeper[pubmed]
 ```
+
+For the MCP SDK v2 release, prefer the v0.6.0 VSIX or a current source checkout; the PyPI/`uvx` package may still resolve the older release line.
 
 ---
 
@@ -231,6 +232,14 @@ The `[pubmed]` extra is not installed. Run:
 cd mcp-server
 uv sync --extra all
 ```
+
+If this started immediately after a VSIX upgrade, run **Zotero MCP: Reinstall Python Environment**. MCP SDK 2.x is incompatible with 1.x, so an older managed venv cannot safely host the new servers.
+
+### Is there an official Zotero MCP server?
+
+As of 2026-08-11, we could not find a Zotero-organization repository or Zotero documentation publishing an official MCP server. [`54yyyu/zotero-mcp`](https://github.com/54yyyu/zotero-mcp) is an MCP Registry-listed **community** server with a broad feature set, not a Zotero-official server. An OpenAI-curated Zotero connector is also a separate connector product; it is not evidence of a Zotero-official MCP server, and its tool schema should not be guessed.
+
+The community server and Keeper both use the Python module name `zotero_mcp`. If you need both, put them in separate virtual environments and run them as separate MCP processes. Never install the community distribution into the extension-managed environment. See [Zotero MCP landscape](ZOTERO_MCP_LANDSCAPE.md).
 
 ---
 

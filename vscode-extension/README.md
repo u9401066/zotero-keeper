@@ -1,5 +1,15 @@
 # Zotero + PubMed MCP Extension for VS Code
 
+## What's New in v0.6.0
+
+- **MCP SDK 2.0 runtime**: the managed environment now installs Zotero Keeper 2.0.0 and PubMed Search MCP 0.6.1 on the new `MCPServer` API. MCP SDK 2.x is not compatible with 1.x.
+- **PubMed Search 0.6.1**: pinned to commit `ad85dde`, with 45 tools across 16 categories. `build_research_chronicle` and `read_research_chronicle` replace the three earlier timeline tools.
+- **Verified Zotero surface**: Keeper exposes 24 default tools, including `import_pdf`, plus six concrete resources and four parameterized resource templates.
+- **Fail-closed collection routing**: interactive saves require an exact collection key (or double-confirmed `ROOT`); non-interactive save/import tools reject a missing destination unless explicit user approval is carried as `allow_library_root=true`.
+- **Clean upgrade path**: if an existing installation still resolves MCP SDK 1.x, run **Zotero MCP: Reinstall Python Environment** to rebuild the isolated venv.
+
+> Install the v0.6.0 VSIX from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp). This is the recommended 2.0 distribution; the separate `uvx`/PyPI package can remain on the older release line until it is published independently.
+
 ## What's New in v0.5.35
 
 - **Import PDF files into Zotero** 📎: a new `import_pdf` tool imports a local PDF entirely within the Local/Connector architecture (no Web API key). Two modes — attach the PDF to a parent built from PubMed metadata, or drop a PDF and let Zotero auto-recognize it (extract the DOI/title and build the item).
@@ -53,7 +63,7 @@
 
 ## ✨ What's New in v0.5.26
 
-- **PubMed Search 0.5.12 baseline**: updates the bundled PubMed Search MCP snapshot to the latest upstream tag with Entrez runtime stability fixes.
+- **Historical PubMed Search 0.5.12 baseline**: this was the bundled snapshot for v0.5.26; v0.6.0 now installs 0.6.1.
 - **Cline asset compatibility**: fixes strict YAML frontmatter for bundled skills and packages Zotero/PubMed Cline rules into the VSIX.
 - **Marketplace banner fix**: uses a GitHub raw image URL so the VSIX details page renders the banner correctly.
 
@@ -74,25 +84,25 @@
 This extension provides two MCP (Model Context Protocol) servers that enable AI assistants like GitHub Copilot to:
 
 ### 📚 Zotero Keeper
-- Search and browse your Zotero library
+- Search and browse your Zotero library through 24 default tools and six concrete resources
 - Add references from PubMed or DOI
-- Manage collections and tags
+- Import local PDFs with `import_pdf`
+- Browse collections/tags and import into a confirmed collection
 - Smart duplicate detection
-- Batch import from PubMed searches
+- Batch selected search results through the `import_articles` handoff
 - **Library analytics** (stats, orphan detection)
 - **PDF attachment access** (list attachments, get indexed fulltext)
 
-### 🔍 PubMed Search (v0.5.17)
+### 🔍 PubMed Search (v0.6.1, 45 tools / 16 categories)
 
 - **`unified_search`** - 統一搜尋入口，自動合併去重多來源結果
 - **Multi-source search** (PubMed, Europe PMC, CORE)
-- **預印本搜尋** - 支援 arXiv、medRxiv、bioRxiv（`include_preprints`）
-- **同行審查篩選** - 只顯示同行審查文章（`peer_reviewed_only`）
+- **預印本與多來源篩選** - 透過 `unified_search` 的 sources / filters / options 選擇來源與文獻類型
 - Parse PICO clinical questions
 - Find related and citing articles
 - Get citation metrics (RCR)
 - **ICD ↔ MeSH 轉換** - 自動轉換 ICD 代碼和 MeSH 術語
-- **研究時間軸** - 建構與比較研究領域的歷史演進
+- **Research Chronicle** - 以 `build_research_chronicle` 建立、`read_research_chronicle` 讀取可持續的研究演進記錄（取代舊 timeline 工具）
 - **生物醫學圖片搜尋** - 搜尋 Open-i 和 Europe PMC 圖片
 - **Full-text access** (Europe PMC, CORE)
 - **Session management** (retrieve previous search results)
@@ -125,7 +135,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 2. The extension will automatically:
    - Download [uv](https://github.com/astral-sh/uv) (fast Python package manager, ~10MB)
    - Create an isolated Python 3.12 environment
-   - Install required packages (`zotero-keeper`, fixed `pubmed-search-mcp` snapshot)
+   - Install pinned packages (Zotero Keeper 2.0.0 and PubMed Search MCP 0.6.1 at `ad85dde`)
    - Register MCP servers with VS Code
    - **Install official Copilot instructions, workflow guides, `@research` agent, and collaboration hook assets**
 
@@ -135,7 +145,7 @@ Once installed, the MCP tools will be available to GitHub Copilot. Try asking:
 
 - *"Search PubMed for remimazolam sedation"*
 - *"Find recent articles about CRISPR gene editing"*
-- *"Save this article to my Zotero library"*
+- *"Save this article to my 'AI Research' collection"*
 - *"Show my recent Zotero references"*
 - *"Get my last search results"* (uses session management)
 
@@ -156,6 +166,7 @@ The extension installs workflow guides that teach Copilot and Cline:
 2. Use `get_session_pmids` instead of re-searching
 3. Use cached articles to save API quota
 4. Check for duplicates before importing
+5. Never infer the library root: ask for a collection; `ROOT` requires a second confirmation, and non-interactive calls require explicit `allow_library_root=true`
 
 Run `Zotero MCP: Install Official Assistant Assets` to manually install/update.
 
@@ -194,6 +205,8 @@ This extension uses [uv](https://github.com/astral-sh/uv) from Astral to manage 
 5. **Assistant Assets**: Installs research workflow guides to workspace
 
 The Python environment is completely isolated from your system Python.
+
+Do not add [`54yyyu/zotero-mcp`](https://github.com/54yyyu/zotero-mcp) to this managed environment. It is an MCP Registry-listed community server (not a Zotero-official server) and uses the same Python module name, `zotero_mcp`, as Keeper. If you need both, configure it as a separate MCP process in a separate virtual environment. See the [Zotero MCP landscape](../docs/ZOTERO_MCP_LANDSCAPE.md).
 
 ## Troubleshooting
 

@@ -30,7 +30,7 @@ evidence. Use with `.clinerules/35-foam-llm-wiki.md`.
 - Use PubMed tools for discovery and follow-up:
   - `unified_search`
   - `fetch_article_details`
-  - related, citing, reference, timeline, export, and full-text tools when needed
+  - related, citing, reference, Research Chronicle, export, and full-text tools when needed
 - Use document or asset-aware tools when the user provides PDFs, DOCX, DFM,
   tables, figures, or span-level citation requirements.
 - Record provenance as you gather it; do not reconstruct citations from memory.

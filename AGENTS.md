@@ -22,9 +22,10 @@ articles into Zotero without losing provenance or overwriting user choices.
 2. Use `parse_pico` and `generate_search_queries` for clinical or comparison questions.
 3. Reuse session state with `get_session_pmids`, `get_cached_article`, and `get_session_summary`.
 4. Use related/citing/reference/fulltext tools for follow-up instead of rerunning the same search.
-5. Before saving to Zotero, call `list_collections` unless the destination is already confirmed.
-6. Check duplicates with `check_articles_owned`.
-7. Use `import_articles` as the default PubMed-to-Zotero handoff.
+5. Use `build_research_chronicle` and `read_research_chronicle` for persistent research-history artifacts.
+6. Before saving to Zotero, call `list_collections` unless the destination is already confirmed.
+7. Check duplicates with `check_articles_owned`.
+8. Use `import_articles` as the default PubMed-to-Zotero handoff.
 
 ## Repository Work
 
@@ -36,6 +37,7 @@ articles into Zotero without losing provenance or overwriting user choices.
 ## Guardrails
 
 - Do not import into the Zotero root collection without explicit confirmation.
+- Set `allow_library_root=true` only after that explicit confirmation.
 - Do not assume the target collection.
 - Do not repeat searches when session state already contains the relevant PMIDs.
 - Distinguish peer-reviewed articles, preprints, and metadata-only records.

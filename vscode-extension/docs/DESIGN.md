@@ -1,6 +1,6 @@
 # VS Code Extension for Zotero + PubMed MCP Servers
 
-> Current installer note (2026-04-25): the released VSIX uses `UvPythonManager` to download `uv`, create an isolated Python 3.12 venv in VS Code global storage, and install pinned GitHub archive sources for `zotero-keeper` and `pubmed-search-mcp`. Older notes below are historical design sketches and should not be read as the active install contract.
+> Current installer contract (v0.6.0, 2026-08-11): the VSIX uses `UvPythonManager` to download `uv`, create an isolated Python 3.12 venv in VS Code global storage, and install pinned GitHub archive sources for Zotero Keeper 2.0.0 and PubMed Search MCP 0.6.1 (`ad85dde`). Both servers require MCP SDK 2.x and its `MCPServer` API; SDK 1.x is incompatible. Older phase sketches below remain as historical design context and are not the active install contract.
 
 ## 🎯 目標
 
@@ -43,15 +43,15 @@ class ZoteroMcpProvider implements vscode.McpServerDefinitionProvider<vscode.Mcp
                 pythonPath,
                 ['-m', 'zotero_mcp'],
                 { ZOTERO_HOST: 'localhost', ZOTERO_PORT: '23119' },
-                '1.8.2'
+                '2.0.0'
             ),
             // PubMed Search MCP Server
             new vscode.McpStdioServerDefinition(
                 'PubMed Search',
                 pythonPath,
-                ['-m', 'pubmed_search.mcp'],
+                ['-m', 'pubmed_search.presentation.mcp_server'],
                 { NCBI_EMAIL: 'user@example.com' },
-                '0.1.14'
+                '0.6.1'
             ),
         ];
     }
@@ -136,8 +136,8 @@ async function ensureDependencies(): Promise<void> {
 │                                                      │
 │  ✓ Python 3.12 environment ready                    │
 │  ⏳ Installing packages...                          │
-│    - zotero-keeper 1.12.0                           │
-│    - pubmed-search-mcp fixed source snapshot 0.5.17 │
+│    - zotero-keeper 2.0.0                            │
+│    - pubmed-search-mcp 0.6.1 @ ad85dde              │
 │  ✓ MCP servers registered                           │
 │                                                      │
 │  Ready! Try asking Copilot:                          │
@@ -192,8 +192,11 @@ async function ensureDependencies(): Promise<void> {
 ## 🔒 安全考量
 
 1. **Python 路徑驗證** - 只允許執行已知的 Python interpreter
-2. **Package 來源** - 只從 PyPI 安裝官方 packages
-3. **環境隔離** - 建議使用虛擬環境避免污染系統
+2. **Package 來源** - 擴充套件安裝固定的 GitHub archive commit/tag，不漂移追蹤 branch tip
+3. **環境隔離** - 一律使用 extension-managed venv，避免污染系統 Python
+4. **Zotero loopback 邊界** - 未認證的 Local/Connector API 只能在 loopback 使用，不得直接對外暴露
+5. **Package namespace** - 不在共用 venv 安裝其他名為 `zotero_mcp` 的社群 server；如需並用，必須拆分環境與 process
+6. **Collection fail-closed** - `interactive_save` 只接受精確 collection key 或明確的 `ROOT`，且 `ROOT` 會再確認一次；`skip_collection_prompt=True` 會中止。`quick_save` / `import_articles` / `import_pdf` 無 collection 時拒絕，除非使用者已確認且 caller 傳入 `allow_library_root=true`
 
 ## 📊 相依性
 
@@ -203,9 +206,11 @@ async function ensureDependencies(): Promise<void> {
 ### Python
 - 最低版本: 3.12
 - Required packages:
-    - `zotero-keeper[all]>=1.12.0`
-    - Extension-managed `pubmed-search-mcp` fixed source snapshot `0.5.17`
-    - PyPI optional dependency floor: `pubmed-search-mcp>=0.5.17`
+    - Extension-managed Zotero Keeper `2.0.0`
+    - Extension-managed PubMed Search MCP `0.6.1` at commit `ad85dde`
+    - `mcp>=2.0,<3`
+
+The managed PubMed server exposes 45 tools in 16 categories. Its Research Chronicle surface consists of `build_research_chronicle` and `read_research_chronicle`, replacing the earlier three timeline tools. Zotero Keeper exposes 24 default tools and six concrete resources.
 
 ### External
 - Zotero 7, 8, or 9 (running locally with API enabled)

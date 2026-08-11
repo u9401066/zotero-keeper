@@ -1,115 +1,54 @@
-# Copilot 自定義指令 - Zotero Keeper
+# Copilot User Instructions for Zotero + PubMed MCP
 
-## 專案概述
-這是一個整合 PubMed 文獻搜尋與 Zotero 書目管理的 AI 輔助研究工具組。
+> Official end-user workspace instructions for the VS Code extension.
+> This file is intended for research workspaces, not repository development.
 
-## 開發哲學 💡
-> **「想要寫文件的時候，就更新 Memory Bank 吧！」**
->
-> **「想要零散測試的時候，就寫測試檔案進 tests/ 資料夾吧！」**
+## Goal
+Use Zotero Keeper and PubMed Search MCP as a research assistant for literature search, review, and import.
 
-## 法規遵循
-你必須遵守以下法規層級：
-1. **憲法**：`CONSTITUTION.md` - 最高原則
-2. **子法**：`.github/bylaws/*.md` - 細則規範
-3. **技能**：`.claude/skills/*/SKILL.md` - 操作程序
+The v0.6.0 VSIX baseline is Zotero Keeper 2.0.0 (MCP SDK v2; 24 default tools and 6 concrete resources) plus PubMed Search MCP 0.6.1 at `ad85dde` (45 tools in 16 categories).
 
-## 架構原則
-- 採用 DDD (Domain-Driven Design)
-- DAL (Data Access Layer) 必須獨立
-- 參見子法：`.github/bylaws/ddd-architecture.md`
+## Response Style
+- Use Traditional Chinese
+- Explain each step briefly and clearly
+- Confirm user intent before importing into Zotero
 
-## Python 環境（uv 唯一）
-- **所有專案必須使用 uv 管理套件**（禁止使用 pip）
-- 必須建立虛擬環境（禁止全域安裝）
-- 文件、程式碼、CI 中一律使用 uv 指令
-- 參見子法：`.github/bylaws/python-environment.md`
+## Core Search Workflow
+1. Start with `unified_search` for first-pass literature discovery
+2. For complex or clinical questions, use `parse_pico` and `generate_search_queries`
+3. Reuse session state with `get_session_pmids`, `get_cached_article`, and `get_session_summary`
+4. For deeper follow-up, use related/citing/reference/fulltext tools instead of repeating the same search
 
-## Memory Bank 同步
-每次重要操作必須更新 Memory Bank：
-- 參見子法：`.github/bylaws/memory-bank.md`
-- 目錄：`memory-bank/`
+## Zotero Import Workflow
+1. Always call `list_collections` before importing if the destination collection is not already confirmed
+2. Ask the user which collection to use before saving
+3. Check duplicates with `check_articles_owned`
+4. Use `import_articles` as the default PubMed → Zotero handoff for structured articles or RIS text
+5. Only use legacy keeper PubMed bridge/import tools when the workspace intentionally enables `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1`
+6. Treat collection routing as fail-closed: `interactive_save` uses an exact collection key or `ROOT`; `ROOT` requires a second confirmation, and `skip_collection_prompt=True` must abort
+7. For `quick_save`, `import_articles`, or `import_pdf`, never omit the collection unless the user explicitly confirms My Library and the call includes `allow_library_root=true`
 
-## Git 工作流
-提交前必須執行檢查清單：
-- 參見子法：`.github/bylaws/git-workflow.md`
+## Preferred Tooling
+- Quick topic search: `unified_search`
+- Clinical comparison: `parse_pico` + `generate_search_queries` + `unified_search`
+- Comprehensive review: use the PubMed research skills in `.claude/skills/pubmed-*`
+- Paper follow-up: `fetch_article_details`, `find_related_articles`, `find_citing_articles`, `get_article_references`, `build_citation_tree`
+- Export/synthesis: `prepare_export`, fulltext tools, and the Research Chronicle pair `build_research_chronicle` / `read_research_chronicle`
 
-## MCP Server 開發
-- pubmed-search-mcp: `external/pubmed-search-mcp/`
-- zotero-keeper: `mcp-server/`
-- 使用 FastMCP 框架
+## Session Discipline
+- Prefer `get_session_pmids` over rerunning the same search
+- Use `get_session_log` or `read_session` to inspect persisted session activity instead of relying on the removed search-history interface
+- Prefer cached or Zotero-stored data over refetching when possible
+- If a paper is already in Zotero, use Zotero tools to inspect it before calling external APIs again
 
-## VS Code Extension 開發
-- 位置: `vscode-extension/`
-- 使用 TypeScript
-- 發布到 VS Code Marketplace
+## Important Guardrails
+- Do not infer the Zotero library root. It requires explicit user confirmation and the tool-specific root opt-in described above
+- Do not assume a collection name
+- Do not rerun the same search when session state already has the PMIDs you need
+- Distinguish between peer-reviewed results and preprints when reporting evidence
+- Keep PubMed search/discovery/export in pubmed-search-mcp; keep persistence/import in zotero-keeper
 
-### 發布流程
-
-#### 1. 版本更新檢查清單
-發布前必須同步更新以下檔案的版本號：
-- `vscode-extension/package.json` - `version` 欄位
-- `vscode-extension/src/statusBar.ts` - `private version` 欄位（fallback 用）
-- `vscode-extension/CHANGELOG.md` - 新增版本區塊
-
-#### 2. 編譯驗證
-```bash
-cd vscode-extension
-npm run compile  # 確保無 TypeScript 錯誤
-```
-
-#### 3. 提交與發布
-```bash
-# 提交變更
-git add -A && git commit -m "release: vX.Y.Z - 簡短描述"
-
-# 建立 tag 並推送（觸發 CI 自動發布）
-git tag -a vX.Y.Z-ext -m "Release vX.Y.Z"
-git push && git push origin vX.Y.Z-ext
-```
-
-**重要**：tag 格式必須為 `vX.Y.Z-ext`，CI workflow 才會觸發發布
-
-#### 4. 驗證發布成功
-
-**GitHub Actions（最即時）**
-```bash
-# 檢查 workflow 狀態（推薦用 Python 解析）
-curl -s "https://api.github.com/repos/u9401066/zotero-keeper/actions/runs?per_page=10" | \
-  python3 -c "import sys,json; d=json.load(sys.stdin); print('\n'.join([f\"{r['name']:30} | {r['head_branch']:15} | {r['conclusion']}\" for r in d['workflow_runs'][:8]]))"
-```
-- `Publish VS Code Extension | v0.5.x-ext | success` 表示成功
-
-**VS Marketplace（5-10 分鐘後更新）**
-- URL: https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp
-```bash
-# curl 方式（推薦，不會卡住）
-curl -s "https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp" | \
-  grep -o '"version":"[^"]*"' | head -1
-
-# npx 方式（可能會卡住，需要下載套件）
-# npx @vscode/vsce show u9401066.vscode-zotero-mcp --json | grep version
-```
-
-
-
-#### 5. 常見問題排除
-
-| 問題 | 原因 | 解決方案 |
-|------|------|----------|
-| "version already exists" | Marketplace 已有此版本 | 升級版本號重新發布 |
-| CI 未觸發 | tag 格式錯誤 | 確保使用 `vX.Y.Z-ext` 格式 |
-
-#### 6. Secrets 設定（Repository Settings）
-- `VSCE_PAT` - VS Code Marketplace Personal Access Token
-
-### 平台支援
-擴充功能支援以下平台：
-- `win32-x64`, `win32-ia32` (Windows)
-- `linux-x64`, `linux-arm64` (Linux)
-- `darwin-x64`, `darwin-arm64` (macOS)
-
-## 回應風格
-- 使用繁體中文
-- 提供清晰的步驟說明
-- 引用相關法規條文
+## Related Files
+- `.github/zotero-research-workflow.md` - end-user workflow guide
+- `.claude/skills/pubmed-*` - user-facing research skills from PubMed Search MCP
+- `.github/agents/research.agent.md` - research-focused agent profile

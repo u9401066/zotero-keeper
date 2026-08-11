@@ -31,6 +31,8 @@ Zotero 提供**三種** API，各有不同的能力和限制：
 
 **預設端口**: `23119` (localhost)
 
+> 🔒 **安全邊界**：Local API 與 Connector API 沒有身分驗證，只能綁定在 loopback。不要將 23119 port 直接暴露給 LAN 或 Internet，也不要使用未認證的 port forwarding。遠端存取請改用 Zotero 有身分驗證的 HTTPS Web API，或具有 TLS、授權與存取控制的專用服務。
+
 ---
 
 ## API 比較
@@ -489,10 +491,9 @@ Connector API 沒有明確的批次大小限制，但建議：
 ```python
 # 預設端口
 ZOTERO_PORT = 23119
-
-# Windows 可能需要 port proxy
-# netsh interface portproxy add v4tov4 listenport=23119 ...
 ```
+
+Keeper 使用 Local/Connector API 時應與 Zotero Desktop 在同一台可信任主機執行。需要存取遠端書庫時，使用 HTTPS Web API 或受認證服務，不要轉送本機 port。
 
 ### 2. 錯誤處理
 
@@ -538,6 +539,7 @@ API 只接受 **Key**，不接受 Name。需要先查詢 collection 列表來取
 ## 參考資料
 
 - [Zotero Web API v3](https://www.zotero.org/support/dev/web_api/v3/start)
+- [Zotero MCP 生態與命名邊界](ZOTERO_MCP_LANDSCAPE.md)
 - [Zotero Web API Write Requests](https://www.zotero.org/support/dev/web_api/v3/write_requests)
 - [Zotero Connector Development](https://www.zotero.org/support/dev/client_coding)
 - [pyzotero GitHub](https://github.com/urschrei/pyzotero) - 1.2k ⭐ Python client
