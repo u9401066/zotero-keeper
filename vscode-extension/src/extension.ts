@@ -49,6 +49,7 @@ const PUBMED_USER_SKILL_NAMES: readonly string[] = [
     'pubmed-export-citations',
     'pubmed-gene-drug-research',
     'pubmed-mcp-tools-reference',
+    'pubmed-research-chronicle',
     'pipeline-persistence',
 ];
 

@@ -93,6 +93,20 @@ type InstallState = {
 };
 
 /**
+ * Build one uv resolver invocation for packages that must remain compatible.
+ * Keeping Zotero Keeper and PubMed Search MCP in the same command prevents an
+ * observable MCP SDK 1.x/2.x intermediate state during extension upgrades.
+ */
+export function buildAtomicPackageInstallCommand(
+    uvPath: string,
+    pythonBinary: string,
+    packages: readonly string[],
+): string {
+    const packageArguments = packages.map(pkg => `"${pkg}"`).join(' ');
+    return `"${uvPath}" pip install --upgrade --force-reinstall --python "${pythonBinary}" ${packageArguments}`;
+}
+
+/**
  * Build enriched PATH for macOS.
  * VS Code launched from Finder/Dock does NOT inherit shell PATH,
  * so common locations like /opt/homebrew/bin are missing.
@@ -655,26 +669,32 @@ print("OK")
             this.log('packaging already installed or install skipped');
         }
 
-        for (const pkg of REQUIRED_PACKAGES) {
-            const pkgName = pkg.split('>=')[0].split('[')[0];
-            this.log(`Installing/upgrading: ${pkg}`);
-            onProgress?.(`Installing ${pkgName}...`);
+        // Resolve and replace the mutually compatible Keeper, PubMed Search,
+        // and MCP SDK versions together. Installing one package at a time can
+        // temporarily leave a running environment with incompatible SDK majors.
+        const packageNames = REQUIRED_PACKAGES
+            .map(pkg => pkg.split(' ', 1)[0].split('>=', 1)[0].split('[', 1)[0])
+            .join(' + ');
+        this.log(`Installing/upgrading together: ${REQUIRED_PACKAGES.join(', ')}`);
+        onProgress?.(`Installing ${packageNames}...`);
 
-            // Use --upgrade to ensure version requirements are met
-            const cmd = `"${this.uvPath}" pip install --upgrade --force-reinstall --python "${this.pythonBinary}" "${pkg}"`;
+        const cmd = buildAtomicPackageInstallCommand(
+            this.uvPath,
+            this.pythonBinary,
+            REQUIRED_PACKAGES,
+        );
 
-            try {
-                execSync(cmd, {
-                    encoding: 'utf-8',
-                    stdio: 'pipe',
-                    timeout: PACKAGE_INSTALL_TIMEOUT_MS,
-                    env: baseEnv,
-                });
-            } catch (error: unknown) {
-                const errorMessage = error instanceof Error ? error.message : String(error);
-                this.log(`Error installing ${pkg}: ${errorMessage}`);
-                throw error;
-            }
+        try {
+            execSync(cmd, {
+                encoding: 'utf-8',
+                stdio: 'pipe',
+                timeout: PACKAGE_INSTALL_TIMEOUT_MS,
+                env: baseEnv,
+            });
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            this.log(`Error installing required package set: ${errorMessage}`);
+            throw error;
         }
 
         this.writeInstallState();

@@ -1,8 +1,8 @@
 {
     "name": "vscode-zotero-mcp",
     "displayName": "Zotero + PubMed MCP",
-    "description": "AI-powered research assistant - integrates Zotero reference management and PubMed literature search with GitHub Copilot. One-click setup for researchers!",
-    "version": "0.5.35",
+    "description": "One-click MCP SDK v2 research workspace: Zotero Keeper 2.0 plus PubMed Search MCP 0.6.1 for Copilot, Cline, and Codex.",
+    "version": "0.6.0",
     "publisher": "u9401066",
     "license": "Apache-2.0",
     "icon": "resources/icon.png",
@@ -69,7 +69,7 @@
                 "zoteroMcp.zoteroHost": {
                     "type": "string",
                     "default": "localhost",
-                    "description": "Zotero host address (where Zotero is running)",
+                    "description": "Zotero Desktop loopback host. Keep localhost; do not expose or forward the unauthenticated port 23119.",
                     "order": 10
                 },
                 "zoteroMcp.zoteroPort": {

@@ -24,12 +24,12 @@ If you don't have Zotero installed:
 ### "Cannot connect to Zotero"
 
 - Make sure Zotero is open
-- Check firewall settings (allow port 23119)
+- Check that local security software allows loopback traffic
 - Verify in Zotero: Edit → Settings → Advanced → Allow other applications...
 
 ### Remote Zotero
 
-If Zotero runs on a different machine:
-
-1. Set `zoteroMcp.zoteroHost` to the machine's IP
-2. Set up port forwarding if needed
+Do not expose or forward Zotero's unauthenticated Local/Connector API port. Run
+Keeper beside Zotero Desktop on the same trusted host. For a genuinely remote
+library, use Zotero's authenticated HTTPS Web API or a purpose-built service
+with TLS, authorization, and explicit network access controls.

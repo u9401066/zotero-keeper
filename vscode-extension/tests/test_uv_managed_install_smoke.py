@@ -21,7 +21,7 @@ PYTHON_VERSION = "3.12"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MCP_SERVER = REPO_ROOT / "mcp-server"
 PUBMED_SEARCH_FIXED_COMMIT = (
-    "60ea753fcfd8fd8e49f6907c5a71bbcd220a288d"  # pragma: allowlist secret
+    "ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d"  # pragma: allowlist secret
 )
 PUBMED_SEARCH_PACKAGE = (
     "pubmed-search-mcp @ "
@@ -103,19 +103,45 @@ def main() -> int:
         if install.returncode != 0:
             return install.returncode
 
+        pubmed_data = temp_root / "pubmed-data"
+        workspace = temp_root / "workspace"
+        pubmed_data.mkdir()
+        workspace.mkdir()
+
         probe = run(
             [
                 str(python),
                 "-c",
                 (
-                    "import json, sys, sysconfig, zotero_mcp, pubmed_search, numpy; "
-                    "print(json.dumps({"
+                    "import asyncio, json, sys, sysconfig, numpy; "
+                    "from mcp.client import Client; "
+                    "from pubmed_search.presentation.mcp_server import create_server as create_pubmed_server; "
+                    "from zotero_mcp import create_server as create_zotero_server\n"
+                    "async def inspect():\n"
+                    "    zotero_server = create_zotero_server().mcp\n"
+                    "    pubmed_server = create_pubmed_server("
+                    "email='smoke@example.com', data_dir=sys.argv[1], workspace_dir=sys.argv[2])\n"
+                    "    async with Client(zotero_server) as zotero_client:\n"
+                    "        zotero_tools = await zotero_client.list_tools()\n"
+                    "    async with Client(pubmed_server) as pubmed_client:\n"
+                    "        pubmed_tools = await pubmed_client.list_tools()\n"
+                    "    return {"
                     "'prefix': sys.prefix, "
                     "'base_prefix': sys.base_prefix, "
                     "'purelib': sysconfig.get_paths()['purelib'], "
-                    "'numpy': numpy.__file__"
-                    "}))"
+                    "'numpy': numpy.__file__, "
+                    "'zotero_server': type(zotero_server).__name__, "
+                    "'pubmed_server': type(pubmed_server).__name__, "
+                    "'zotero_tools': len(zotero_tools.tools), "
+                    "'pubmed_tools': len(pubmed_tools.tools), "
+                    "'has_import_articles': any(t.name == 'import_articles' for t in zotero_tools.tools), "
+                    "'has_unified_search': any(t.name == 'unified_search' for t in pubmed_tools.tools), "
+                    "'has_chronicle': any(t.name == 'build_research_chronicle' for t in pubmed_tools.tools)"
+                    "}\n"
+                    "print(json.dumps(asyncio.run(inspect())))"
                 ),
+                str(pubmed_data),
+                str(workspace),
             ],
             timeout=60,
         )
@@ -135,6 +161,13 @@ def main() -> int:
         assert_inside(prefix, venv, "sys.prefix")
         assert_inside(purelib, venv, "site-packages")
         assert_inside(numpy_path, venv, "numpy")
+
+        if data["zotero_server"] != "MCPServer" or data["pubmed_server"] != "MCPServer":
+            raise AssertionError(f"SDK v2 MCPServer not used by both packages: {data}")
+        if data["zotero_tools"] != 24 or not data["has_import_articles"]:
+            raise AssertionError(f"Unexpected Zotero Keeper tool surface: {data}")
+        if data["pubmed_tools"] != 45 or not data["has_unified_search"] or not data["has_chronicle"]:
+            raise AssertionError(f"Unexpected PubMed Search MCP tool surface: {data}")
 
         system_purelib = Path(sysconfig.get_paths()["purelib"]).resolve()
         if system_purelib == purelib.resolve():
