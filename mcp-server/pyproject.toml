@@ -1,6 +1,6 @@
 [project]
 name = "zotero-keeper"
-version = "2.0.0"
+version = "2.1.0"
 description = "MCP SDK v2 server for safe, collection-aware management of local Zotero libraries"
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -96,6 +96,9 @@ disable_error_code = [
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "-n auto --dist worksteal"
+markers = [
+    "live_zotero: opt-in smoke against a running local Zotero desktop instance",
+]
 
 [dependency-groups]
 dev = [

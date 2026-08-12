@@ -47,8 +47,35 @@ class TestZoteroClientHttp:
 
         assert http_client is not None
         assert client._client is not None
+        assert client._client._trust_env is False
 
         await client.close()
+
+    @pytest.mark.asyncio
+    async def test_get_client_ignores_environment_proxy_for_loopback_secrets(
+        self,
+        mock_config,
+        monkeypatch,
+    ):
+        """HTTP_PROXY must never intercept Local API keys or attachment bytes."""
+        from zotero_mcp.infrastructure.zotero_client.client import ZoteroClient
+
+        monkeypatch.setenv("HTTP_PROXY", "http://proxy.invalid:8888")
+        monkeypatch.setenv("HTTPS_PROXY", "http://proxy.invalid:8888")
+        monkeypatch.setenv("ALL_PROXY", "http://proxy.invalid:8888")
+        monkeypatch.setenv("NO_PROXY", "")
+
+        with patch(
+            "zotero_mcp.infrastructure.zotero_client.client_base.httpx.AsyncClient",
+            wraps=httpx.AsyncClient,
+        ) as constructor:
+            client = ZoteroClient(config=mock_config)
+            try:
+                http_client = await client._get_client()
+                assert http_client._trust_env is False
+                assert constructor.call_args.kwargs["trust_env"] is False
+            finally:
+                await client.close()
 
     @pytest.mark.asyncio
     async def test_get_client_reuses_client(self, mock_config):
@@ -571,7 +598,11 @@ class TestZoteroClientPing:
         local_response = Mock()
         local_response.status_code = 200
         local_response.text = "[]"
-        local_response.headers = {"Zotero-API-Version": "3"}
+        local_response.headers = {
+            "Zotero-API-Version": "3",
+            "Zotero-Schema-Version": "42",
+            "Zotero-Server-ID": "server-A",
+        }
 
         client = ZoteroClient(config=mock_config)
 
@@ -583,9 +614,15 @@ class TestZoteroClientPing:
         assert capabilities["connector_api_version"] == "3"
         assert capabilities["local_api_readable"] is True
         assert capabilities["local_api_version"] == "3"
-        assert capabilities["supports_zotero_major_versions"] == [7, 8, 9]
+        assert capabilities["local_api_schema_version"] == "42"
+        assert capabilities["local_api_server_id"] == "server-A"
+        assert capabilities["local_api_write_available"] is True
+        assert capabilities["local_api_write_authorized"] is False
+        assert capabilities["supports_zotero_major_versions"] == [7, 8, 9, 10]
+        assert client._local_api_version == "3"
+        assert client._local_server_id == "server-A"
         mock_raw.assert_any_call("GET", "/connector/ping")
-        mock_raw.assert_any_call("GET", "/api/users/0/items", params={"limit": 1})
+        mock_raw.assert_any_call("GET", "/api/")
 
     @pytest.mark.asyncio
     async def test_get_capabilities_reports_connector_and_local_api_separately(self, mock_config):

@@ -364,6 +364,49 @@ class TestIsSearchToolsAvailable:
 class TestRegisterSearchTools:
     """Tests for register_search_tools function."""
 
+    @pytest.mark.asyncio
+    async def test_advanced_search_uses_response_server_id_not_shared_state(self):
+        """Versioned items retain the identity from their exact response."""
+        from zotero_mcp.infrastructure.mcp.search_tools import register_search_tools
+
+        mock_mcp = MagicMock()
+        mock_client = AsyncMock()
+        mock_client._local_server_id = "server-B"
+        mock_client.get_items_snapshot.return_value = (
+            [
+                {
+                    "key": "ABCD2345",
+                    "version": 7,
+                    "data": {
+                        "key": "ABCD2345",
+                        "version": 7,
+                        "itemType": "journalArticle",
+                        "title": "Response from A",
+                    },
+                }
+            ],
+            "server-A",
+        )
+        registered_tools = {}
+
+        def tool_decorator():
+            def wrapper(func):
+                registered_tools[func.__name__] = func
+                return func
+
+            return wrapper
+
+        mock_mcp.tool = tool_decorator
+        register_search_tools(mock_mcp, mock_client)
+
+        result = await registered_tools["advanced_search"]()
+
+        assert result["server_id"] == "server-A"
+        assert result["items"][0]["version"] == 7
+        assert result["items"][0]["server_id"] == "server-A"
+        mock_client.get_items_snapshot.assert_awaited_once()
+        mock_client.get_items.assert_not_awaited()
+
     def test_registers_advanced_search_when_pubmed_unavailable(self):
         """Test that advanced_search is still registered when PubMed not available."""
         from zotero_mcp.infrastructure.mcp.search_tools import register_search_tools

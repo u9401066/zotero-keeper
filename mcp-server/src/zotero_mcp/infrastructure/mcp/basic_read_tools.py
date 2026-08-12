@@ -59,7 +59,7 @@ def register_basic_read_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
             List of matching items with metadata
         """
         try:
-            items = await zotero.search_items(query=query, limit=limit)
+            items, server_id = await zotero.search_items_snapshot(query=query, limit=limit)
             results = []
             for item in items:
                 data = item.get("data", item)
@@ -68,6 +68,9 @@ def register_basic_read_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                 results.append(
                     {
                         "key": item.get("key"),
+                        "version": item.get("version", data.get("version")),
+                        "version_scope": "local",
+                        "server_id": server_id,
                         "title": data.get("title", ""),
                         "itemType": data.get("itemType", ""),
                         "date": data.get("date", ""),
@@ -78,6 +81,7 @@ def register_basic_read_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
             return {
                 "count": len(results),
                 "query": query,
+                "server_id": server_id,
                 "items": results,
             }
         except (ZoteroConnectionError, ZoteroAPIError) as e:
@@ -97,12 +101,20 @@ def register_basic_read_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
             Full item metadata
         """
         try:
-            item = await zotero.get_item(key)
+            item, server_id = await zotero.get_item_snapshot(key)
             data = item.get("data", item)
             return {
                 "found": True,
+                "server_id": server_id,
                 "item": {
                     "key": item.get("key"),
+                    # Zotero 10+ Local API object versions are instance-local.
+                    # Mutation tools require this value as expected_version;
+                    # callers must not reuse a Web API or another Server-ID's
+                    # version.
+                    "version": item.get("version", data.get("version")),
+                    "version_scope": "local",
+                    "server_id": server_id,
                     "itemType": data.get("itemType", ""),
                     "title": data.get("title", ""),
                     "creators": data.get("creators", []),
@@ -144,9 +156,9 @@ def register_basic_read_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
         """
         try:
             if collection_key:
-                items = await zotero.get_collection_items(collection_key, limit=limit)
+                items, server_id = await zotero.get_collection_items_snapshot(collection_key, limit=limit)
             else:
-                items = await zotero.get_items(limit=limit)
+                items, server_id = await zotero.get_items_snapshot(limit=limit)
 
             results = []
             for item in items:
@@ -156,6 +168,9 @@ def register_basic_read_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                 results.append(
                     {
                         "key": item.get("key"),
+                        "version": item.get("version", data.get("version")),
+                        "version_scope": "local",
+                        "server_id": server_id,
                         "title": data.get("title", ""),
                         "itemType": data.get("itemType", ""),
                         "date": data.get("date", ""),
@@ -164,6 +179,7 @@ def register_basic_read_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                 )
             return {
                 "count": len(results),
+                "server_id": server_id,
                 "items": results,
             }
         except (ZoteroConnectionError, ZoteroAPIError) as e:

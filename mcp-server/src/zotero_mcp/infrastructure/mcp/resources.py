@@ -20,6 +20,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _add_tree_server_id(nodes: list[dict], server_id: str | None) -> None:
+    """Bind every versioned collection node to its source response."""
+    for node in nodes:
+        if "version" in node:
+            node["server_id"] = server_id
+        children = node.get("children", [])
+        if isinstance(children, list):
+            _add_tree_server_id(children, server_id)
+
+
 def register_resources(mcp, zotero_client):
     """
     Register MCP Resources for Zotero data access.
@@ -76,11 +86,13 @@ def register_resources(mcp, zotero_client):
         以樹狀結構瀏覽收藏夾（含子收藏夾）
         """
         try:
-            tree = await zotero_client.get_collection_tree()
+            tree, server_id = await zotero_client.get_collection_tree_snapshot()
+            _add_tree_server_id(tree, server_id)
             return json.dumps(
                 {
                     "type": "collection_tree",
                     "count": len(tree),
+                    "server_id": server_id,
                     "tree": tree,
                 },
                 ensure_ascii=False,

@@ -37,8 +37,8 @@ class ZoteroConfig:
     def needs_host_header(self) -> bool:
         """Whether a legacy non-loopback configuration needs a Host override.
 
-        Supported deployments keep Zotero's unauthenticated Local/Connector API
-        on loopback and never expose or forward port 23119.
+        Supported deployments keep Zotero's Local/Connector API on loopback.
+        Zotero 10+ write authorization does not make port forwarding safe.
         """
         return self.host not in ("localhost", "127.0.0.1")
 
@@ -48,7 +48,7 @@ class McpServerConfig:
     """MCP Server configuration"""
 
     name: str = "Zotero Keeper"
-    version: str = "2.0.0"
+    version: str = "2.1.0"
 
     # Zotero connection
     zotero: ZoteroConfig = field(default_factory=ZoteroConfig)
@@ -83,6 +83,22 @@ Zotero Keeper - MCP Server for managing local Zotero libraries.
 - `interactive_save(...)` - Manual save with elicitation and optional metadata fetch
 - `quick_save(...)` - Manual save without prompts
 - `check_articles_owned(pmids=[...])` - Check whether PubMed records already exist locally
+
+### Zotero 10+ Local API Management
+- `authorize_local_writes(require_remembered=false)` - Ask Zotero for runtime
+  write approval; use `true` before file upload. The key stays private inside
+  Keeper
+- `create_collection(...)` - Create a confirmed top-level or nested collection
+- `add_items_to_collection(...)` - Preserve existing memberships while adding
+  exact items to one confirmed collection
+- `update_item_fields(...)` - Version-protected scalar metadata update
+- `create_note(...)` / `create_saved_search(...)` - Confirmed local creation
+- `attach_file_to_item(...)` - Attach a local file to an existing item
+- `set_attachment_fulltext(...)` - Version-protected indexed-text write
+
+Every Local API mutation first returns a proposal with `confirm=false`. Obtain
+explicit user approval before repeating it with `confirm=true`. Never request,
+display, or persist the Zotero Local API key, and never replay a 412 conflict.
 
 Never import to My Library root without explicit user confirmation. Only after
 that confirmation may a non-interactive tool set `allow_library_root=true`.

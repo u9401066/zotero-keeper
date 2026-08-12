@@ -10,10 +10,12 @@ Provides read operations:
 - Attachments & Fulltext
 """
 
+import json
 import logging
 import os
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from .client_base import ZoteroAPIError
 
@@ -22,6 +24,32 @@ logger = logging.getLogger(__name__)
 
 class ZoteroReadMixin:
     """Mixin providing read operations for ZoteroClient"""
+
+    async def _request_snapshot(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, Any] | None = None,
+    ) -> tuple[Any, str | None]:
+        """Return a decoded response together with its own Local API identity.
+
+        ``_local_server_id`` is shared discovery state and may already refer to
+        another Zotero profile by the time a caller formats a read result.  A
+        mutation proposal must therefore carry the ``Zotero-Server-ID`` from
+        the exact HTTP response that supplied its object version.
+
+        Zotero 7--9 responses legitimately omit the header; keep that as
+        ``None`` instead of inferring an identity from client state.
+        """
+        response = await self._request_raw(method, path, params=params)
+        payload: Any = None
+        if response.text:
+            try:
+                payload = response.json()
+            except (json.JSONDecodeError, ValueError):
+                payload = response.text
+        return payload, self._header_value(response.headers, "Zotero-Server-ID")
 
     # ==================== Items ====================
 
@@ -51,6 +79,61 @@ class ZoteroReadMixin:
             tag: Filter by tag(s)
             include_trashed: Include items in trash
         """
+        params = self._item_query_params(
+            limit=limit,
+            start=start,
+            sort=sort,
+            direction=direction,
+            item_type=item_type,
+            q=q,
+            qmode=qmode,
+            tag=tag,
+            include_trashed=include_trashed,
+        )
+
+        return await self._request("GET", "/api/users/0/items", params=params)
+
+    async def get_items_snapshot(
+        self,
+        limit: int = 50,
+        start: int = 0,
+        sort: str = "dateModified",
+        direction: str = "desc",
+        item_type: str | None = None,
+        q: str | None = None,
+        qmode: str = "titleCreatorYear",
+        tag: str | list[str] | None = None,
+        include_trashed: bool = False,
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        """Get items and the Server-ID on that exact HTTP response."""
+        params = self._item_query_params(
+            limit=limit,
+            start=start,
+            sort=sort,
+            direction=direction,
+            item_type=item_type,
+            q=q,
+            qmode=qmode,
+            tag=tag,
+            include_trashed=include_trashed,
+        )
+        payload, server_id = await self._request_snapshot("GET", "/api/users/0/items", params=params)
+        return cast(list[dict[str, Any]], payload), server_id
+
+    @staticmethod
+    def _item_query_params(
+        *,
+        limit: int,
+        start: int,
+        sort: str,
+        direction: str,
+        item_type: str | None,
+        q: str | None,
+        qmode: str,
+        tag: str | list[str] | None,
+        include_trashed: bool,
+    ) -> dict[str, Any]:
+        """Build the shared item-list query for ordinary and snapshot reads."""
         params: dict[str, Any] = {
             "limit": limit,
             "start": start,
@@ -76,16 +159,28 @@ class ZoteroReadMixin:
                 params["tag"] = tag
         if include_trashed:
             params["includeTrashed"] = "1"
-
-        return await self._request("GET", "/api/users/0/items", params=params)
+        return params
 
     async def get_item(self, item_key: str) -> dict[str, Any]:
         """Get a single item by key"""
         return await self._request("GET", f"/api/users/0/items/{item_key}")
 
+    async def get_item_snapshot(self, item_key: str) -> tuple[dict[str, Any], str | None]:
+        """Get an item and the Server-ID on that exact HTTP response."""
+        payload, server_id = await self._request_snapshot("GET", f"/api/users/0/items/{item_key}")
+        return cast(dict[str, Any], payload), server_id
+
     async def get_item_children(self, item_key: str) -> list[dict[str, Any]]:
         """Get child items (attachments, notes) of an item"""
         return await self._request("GET", f"/api/users/0/items/{item_key}/children")
+
+    async def get_item_children_snapshot(
+        self,
+        item_key: str,
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        """Get child items and the Server-ID on that exact HTTP response."""
+        payload, server_id = await self._request_snapshot("GET", f"/api/users/0/items/{item_key}/children")
+        return cast(list[dict[str, Any]], payload), server_id
 
     async def search_items(
         self,
@@ -95,15 +190,36 @@ class ZoteroReadMixin:
         """Search for items by title, creator, year"""
         return await self.get_items(q=query, limit=limit)
 
+    async def search_items_snapshot(
+        self,
+        query: str,
+        limit: int = 25,
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        """Search items and retain the exact response's Server-ID."""
+        return await self.get_items_snapshot(q=query, limit=limit)
+
     # ==================== Collections ====================
 
     async def get_collections(self) -> list[dict[str, Any]]:
         """Get all collections"""
         return await self._request("GET", "/api/users/0/collections")
 
+    async def get_collections_snapshot(self) -> tuple[list[dict[str, Any]], str | None]:
+        """Get collections and the Server-ID on that exact HTTP response."""
+        payload, server_id = await self._request_snapshot("GET", "/api/users/0/collections")
+        return cast(list[dict[str, Any]], payload), server_id
+
     async def get_collection(self, collection_key: str) -> dict[str, Any]:
         """Get a single collection"""
         return await self._request("GET", f"/api/users/0/collections/{collection_key}")
+
+    async def get_collection_snapshot(
+        self,
+        collection_key: str,
+    ) -> tuple[dict[str, Any], str | None]:
+        """Get a collection and the Server-ID on that exact HTTP response."""
+        payload, server_id = await self._request_snapshot("GET", f"/api/users/0/collections/{collection_key}")
+        return cast(dict[str, Any], payload), server_id
 
     async def get_collection_items(
         self,
@@ -116,6 +232,19 @@ class ZoteroReadMixin:
             f"/api/users/0/collections/{collection_key}/items",
             params={"limit": limit},
         )
+
+    async def get_collection_items_snapshot(
+        self,
+        collection_key: str,
+        limit: int = 50,
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        """Get collection items and the Server-ID on that HTTP response."""
+        payload, server_id = await self._request_snapshot(
+            "GET",
+            f"/api/users/0/collections/{collection_key}/items",
+            params={"limit": limit},
+        )
+        return cast(list[dict[str, Any]], payload), server_id
 
     async def find_collection_by_name(
         self,
@@ -140,6 +269,17 @@ class ZoteroReadMixin:
         """Get collections organized as a tree structure"""
         collections = await self.get_collections()
 
+        return self._build_collection_tree(collections)
+
+    async def get_collection_tree_snapshot(self) -> tuple[list[dict[str, Any]], str | None]:
+        """Get a collection tree tied to its source response's Server-ID."""
+        collections, server_id = await self.get_collections_snapshot()
+        return self._build_collection_tree(collections), server_id
+
+    @staticmethod
+    def _build_collection_tree(collections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Build a hierarchy without losing the source response identity."""
+
         col_by_key: dict[str, dict[str, Any]] = {}
         for col in collections:
             key = col.get("key")
@@ -148,6 +288,8 @@ class ZoteroReadMixin:
             data = col.get("data", col)
             col_by_key[key] = {
                 "key": key,
+                "version": col.get("version", data.get("version")),
+                "version_scope": "local",
                 "name": data.get("name", ""),
                 "parentKey": data.get("parentCollection"),
                 "itemCount": data.get("numItems", 0),
@@ -240,6 +382,77 @@ class ZoteroReadMixin:
 
     # ==================== Attachments & Fulltext ====================
 
+    def _response_library_version(
+        self,
+        response: Any,
+        *,
+        operation: str,
+        required: bool,
+    ) -> int | None:
+        raw_version = self._header_value(response.headers, "Last-Modified-Version")
+        if raw_version is None and not required:
+            return None
+        try:
+            version = int(raw_version) if raw_version is not None else -1
+        except (TypeError, ValueError) as exc:
+            raise ZoteroAPIError(
+                f"Zotero Local API returned an invalid Last-Modified-Version for {operation}",
+                status_code=response.status_code,
+                response_text=response.text,
+                response_headers=response.headers,
+            ) from exc
+        if version < 0 or str(version) != raw_version:
+            raise ZoteroAPIError(
+                f"Zotero Local API returned an invalid Last-Modified-Version for {operation}",
+                status_code=response.status_code,
+                response_text=response.text,
+                response_headers=response.headers,
+            )
+        return version
+
+    async def get_item_library_cursor(self, item_key: str) -> dict[str, Any]:
+        """Read one exact item's object version and containing library cursor."""
+        response = await self._request_raw(
+            "GET",
+            "/api/users/0/items",
+            params={"itemKey": item_key, "format": "versions"},
+        )
+        try:
+            payload = response.json()
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise ZoteroAPIError(
+                "Zotero Local API returned invalid JSON for the full-text library cursor",
+                status_code=response.status_code,
+                response_text=response.text,
+                response_headers=response.headers,
+            ) from exc
+        item_version = payload.get(item_key) if isinstance(payload, Mapping) else None
+        if (
+            not isinstance(payload, Mapping)
+            or set(payload) != {item_key}
+            or isinstance(item_version, bool)
+            or not isinstance(item_version, int)
+            or item_version < 0
+        ):
+            raise ZoteroAPIError(
+                "Zotero Local API returned an invalid item-versions cursor for full text",
+                status_code=response.status_code,
+                response_text=response.text,
+                response_headers=response.headers,
+            )
+
+        server_id = self._header_value(response.headers, "Zotero-Server-ID")
+        library_version = self._response_library_version(
+            response,
+            operation="the item library cursor",
+            required=server_id is not None,
+        )
+        return {
+            "item_version": item_version,
+            "library_version": library_version,
+            "server_id": server_id,
+        }
+
     async def get_item_fulltext(self, item_key: str) -> dict[str, Any]:
         """
         Get fulltext content indexed by Zotero for an attachment.
@@ -251,13 +464,62 @@ class ZoteroReadMixin:
             item_key: The attachment item key (NOT the parent item key)
 
         Returns:
-            Dict with 'content', 'indexedPages', 'totalPages'
+            Dict with 'content', 'indexedPages', 'totalPages', plus the
+            snapshot's 'libraryVersion' and 'serverID' on Zotero 10+
             Raises ZoteroAPIError (404) if not indexed
 
         Example response:
             {"content": "Full text...", "indexedPages": 12, "totalPages": 12}
         """
-        return await self._request("GET", f"/api/users/0/items/{item_key}/fulltext")
+        # A library cursor on both sides of the content read prevents a
+        # concurrent full-text update from being paired with a newer cursor.
+        # All three reads are automatically bound to the observed Server-ID by
+        # ``ZoteroClientBase``; a profile switch therefore fails with 412.
+        before_cursor = await self.get_item_library_cursor(item_key)
+        response = await self._request_raw("GET", f"/api/users/0/items/{item_key}/fulltext")
+        try:
+            payload = response.json()
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise ZoteroAPIError(
+                "Zotero Local API returned invalid JSON for attachment full text",
+                status_code=response.status_code,
+                response_text=response.text,
+                response_headers=response.headers,
+            ) from exc
+        if not isinstance(payload, dict):
+            raise ZoteroAPIError(
+                "Zotero Local API returned an invalid attachment full-text response",
+                status_code=response.status_code,
+                response_text=response.text,
+                response_headers=response.headers,
+            )
+
+        fulltext_server_id = self._header_value(response.headers, "Zotero-Server-ID")
+        after_cursor = await self.get_item_library_cursor(item_key)
+        before_server_id = before_cursor["server_id"]
+        after_server_id = after_cursor["server_id"]
+
+        server_ids = (before_server_id, fulltext_server_id, after_server_id)
+        present_server_ids = {server_id for server_id in server_ids if server_id is not None}
+        if present_server_ids and (len(present_server_ids) != 1 or any(server_id is None for server_id in server_ids)):
+            raise ZoteroAPIError(
+                "Zotero Server-ID changed while reading attachment full text",
+                status_code=412,
+                response_headers={"Zotero-Server-ID": after_server_id or fulltext_server_id or before_server_id or ""},
+            )
+        if before_cursor["library_version"] != after_cursor["library_version"]:
+            raise ZoteroAPIError(
+                "Zotero library changed while reading attachment full text; read it again before writing",
+                status_code=412,
+                response_headers={"Zotero-Server-ID": after_server_id or ""},
+            )
+
+        result = dict(payload)
+        if after_cursor["library_version"] is not None:
+            result["libraryVersion"] = after_cursor["library_version"]
+        if after_server_id is not None:
+            result["serverID"] = after_server_id
+        return result
 
     def resolve_attachment_path(self, attachment_key: str, filename: str) -> Path | None:
         """

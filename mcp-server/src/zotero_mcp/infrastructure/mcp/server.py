@@ -19,8 +19,8 @@ Usage:
     uv run python -m zotero_mcp
 
 Security:
-        Keep Zotero's unauthenticated Local/Connector API on loopback. Do not
-        expose or forward port 23119 for remote access.
+        Keep Zotero's Local/Connector API on loopback. Zotero 10+ write keys are
+        runtime-authorized but unscoped; do not expose or forward port 23119.
 """
 
 import logging
@@ -38,6 +38,7 @@ from .batch_tools import is_batch_import_available, register_batch_tools
 from .collection_tools import register_collection_tools
 from .config import McpServerConfig, default_config
 from .interactive_tools import register_interactive_save_tools
+from .local_api_tools import register_local_api_tools
 from .pubmed_tools import is_pubmed_available, register_pubmed_tools
 from .resources import register_resources
 from .saved_search_tools import register_saved_search_tools
@@ -93,6 +94,8 @@ class ZoteroKeeperServer:
         # Register tool groups from separate modules
         register_basic_read_tools(self._mcp, self._zotero)
         register_collection_tools(self._mcp, self._zotero)
+        register_local_api_tools(self._mcp, self._zotero)
+        logger.info("Zotero 10+ Local API write tools enabled (authorization + 7 confirmed mutations)")
 
         # Register MCP Resources (read-only browsable data)
         register_resources(self._mcp, self._zotero)
@@ -176,7 +179,7 @@ class ZoteroKeeperServer:
                     "capabilities": capabilities,
                 }
                 if not is_running:
-                    result["hint"] = "Zotero responded but returned unexpected content. Make sure Zotero 7, 8, or 9 is running."
+                    result["hint"] = "Zotero responded but returned unexpected content. Make sure Zotero 7, 8, 9, or 10+ is running."
                 elif not result["local_api_readable"]:
                     result["hint"] = (
                         "Connector ping works, but Zotero Local API reads are unavailable. Check Zotero's local API setting and port/security configuration."

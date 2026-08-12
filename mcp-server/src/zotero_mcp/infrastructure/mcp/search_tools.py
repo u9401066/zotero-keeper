@@ -65,7 +65,7 @@ def register_search_tools(mcp, zotero_client, *, enable_pubmed_bridge_tools: boo
         try:
             tag_param = tags if tags else tag
 
-            items = await zotero_client.get_items(
+            items, server_id = await zotero_client.get_items_snapshot(
                 q=q,
                 item_type=item_type,
                 tag=tag_param,
@@ -75,6 +75,10 @@ def register_search_tools(mcp, zotero_client, *, enable_pubmed_bridge_tools: boo
                 limit=limit,
                 include_trashed=include_trashed,
             )
+            # Local object versions are meaningful only within the
+            # Zotero-Server-ID on the exact response that supplied them. Do
+            # not infer identity from mutable shared client discovery state.
+            items = [{**item, "server_id": server_id} for item in items]
 
             # Format results
             formatted = "## 🔍 Advanced Search Results\n\n"
@@ -101,6 +105,7 @@ def register_search_tools(mcp, zotero_client, *, enable_pubmed_bridge_tools: boo
 
             return {
                 "count": len(items),
+                "server_id": server_id,
                 "items": items,
                 "search_params": {
                     "q": q,

@@ -7,7 +7,12 @@ Provides PDF/attachment access tools:
 """
 
 import logging
+import os
+import re
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.parse import unquote, urlparse
+from urllib.request import url2pathname
 
 from mcp.server import MCPServer
 
@@ -17,6 +22,43 @@ if TYPE_CHECKING:
 from ..zotero_client.client import ZoteroAPIError, ZoteroConnectionError
 
 logger = logging.getLogger(__name__)
+
+
+def _same_server_snapshot(*server_ids: str | None) -> str | None:
+    """Require all parts of a Zotero 10+ read to come from one database."""
+    present = {server_id for server_id in server_ids if server_id is not None}
+    if present and (len(present) != 1 or any(server_id is None for server_id in server_ids)):
+        actual = next((server_id for server_id in reversed(server_ids) if server_id), "")
+        raise ZoteroAPIError(
+            "Zotero Server-ID changed while reading attachment metadata",
+            status_code=412,
+            response_headers={"Zotero-Server-ID": actual},
+        )
+    return next(iter(present), None)
+
+
+def _file_url_to_path(value: Any) -> Path | None:
+    """Safely convert Zotero's ``file://`` view URL to a local path.
+
+    ``url2pathname`` supplies platform-native decoding.  The explicit handling
+    around it preserves Windows drive paths and UNC authorities while rejecting
+    non-file URLs and relative paths.
+    """
+    if not isinstance(value, str):
+        return None
+    parsed = urlparse(value.strip())
+    if parsed.scheme.lower() != "file" or parsed.query or parsed.fragment:
+        return None
+
+    decoded = url2pathname(parsed.path)
+    authority = unquote(parsed.netloc)
+    if authority and authority.lower() != "localhost":
+        decoded = f"//{authority}{decoded}"
+    elif os.name == "nt" and re.match(r"^/[A-Za-z]:[/\\]", decoded):
+        decoded = decoded[1:]
+
+    path = Path(decoded)
+    return path if path.is_absolute() else None
 
 
 def register_attachment_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
@@ -32,8 +74,8 @@ def register_attachment_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
         取得文獻的所有附件資訊，包含檔案路徑。
         回傳的 file_path 可以直接交給其他 MCP 工具（如 PDF reader）使用。
 
-        需要設定環境變數 ZOTERO_DATA_DIR 才能取得檔案路徑。
-        例如: ZOTERO_DATA_DIR=~/Zotero
+        Zotero 10+ 會透過 Local API 回傳實際路徑；舊版 Zotero 或不支援該
+        endpoint 時，才使用可選的 ZOTERO_DATA_DIR 推導 storage 路徑。
 
         Args:
             item_key: Zotero item key (8-character, e.g. "ABCD1234")
@@ -42,9 +84,15 @@ def register_attachment_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
             Dict with:
             - item_key: The parent item key
             - title: Parent item title
+            - library_version: Library cursor for version-protected full-text writes
+            - server_id: Zotero 10+ database identity paired with that cursor
             - attachment_count: Number of attachments
             - attachments: List of attachment info dicts, each containing:
                 - key: Attachment item key
+                - version: Zotero instance-local object version, used as the
+                  expected_version for object-version-protected writes
+                - object_version: Explicit alias of version
+                - server_id: Database identity in which the object version is valid
                 - title: Attachment title
                 - filename: Original filename
                 - content_type: MIME type (e.g. "application/pdf")
@@ -73,12 +121,20 @@ def register_attachment_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
         """
         try:
             # Get parent item title
-            parent = await zotero.get_item(item_key)
+            parent, parent_server_id = await zotero.get_item_snapshot(item_key)
             parent_data = parent.get("data", parent)
             parent_title = parent_data.get("title", "Untitled")
 
             # Get children
-            children = await zotero.get_item_children(item_key)
+            children, children_server_id = await zotero.get_item_children_snapshot(item_key)
+            cursor = await zotero.get_item_library_cursor(item_key)
+            library_version = cursor.get("library_version")
+            cursor_server_id = cursor.get("server_id")
+            server_id = _same_server_snapshot(
+                parent_server_id,
+                children_server_id,
+                cursor_server_id,
+            )
 
             attachments = []
             for child in children:
@@ -91,12 +147,36 @@ def register_attachment_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                 content_type = data.get("contentType", "")
                 link_mode = data.get("linkMode", "")
 
-                # Resolve file path
+                # Prefer Zotero 10+'s documented Local API file view URL.  A
+                # missing/unsupported endpoint is attachment-local and must not
+                # make the entire list fail.
                 file_path_str = ""
                 file_exists = False
                 file_size = 0
+                file_path_source = ""
 
-                resolved = zotero.resolve_attachment_path(att_key, filename)
+                resolved: Path | None = None
+                try:
+                    file_url, file_server_id = await zotero.get_item_file_view_url_snapshot(att_key)
+                    _same_server_snapshot(server_id, file_server_id)
+                    resolved = _file_url_to_path(file_url)
+                    if resolved is not None:
+                        file_path_source = "local_api"
+                except ZoteroAPIError as exc:
+                    _same_server_snapshot(server_id, exc.server_id)
+                    # Older Zotero releases and unsupported attachment modes
+                    # can lack this endpoint. Identity/auth/conflict errors are
+                    # not fallback conditions: swallowing a 412 could combine
+                    # attachment metadata from one database with a cursor from
+                    # another.
+                    if exc.status_code not in {404, 405, 501}:
+                        raise
+                    logger.debug("Local API attachment path unsupported for %s: %s", att_key, exc)
+
+                if resolved is None:
+                    resolved = zotero.resolve_attachment_path(att_key, filename)
+                    if resolved is not None:
+                        file_path_source = "data_dir"
                 if resolved:
                     file_path_str = str(resolved)
                     file_exists = resolved.exists()
@@ -106,12 +186,17 @@ def register_attachment_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                 attachments.append(
                     {
                         "key": att_key,
+                        "version": child.get("version", data.get("version")),
+                        "object_version": child.get("version", data.get("version")),
+                        "version_scope": "local",
+                        "server_id": server_id,
                         "title": data.get("title", ""),
                         "filename": filename,
                         "content_type": content_type,
                         "file_path": file_path_str,
                         "file_exists": file_exists,
                         "file_size": file_size,
+                        "file_path_source": file_path_source,
                         "link_mode": link_mode,
                     }
                 )
@@ -119,11 +204,13 @@ def register_attachment_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
             return {
                 "item_key": item_key,
                 "title": parent_title,
+                "library_version": library_version,
+                "server_id": server_id,
                 "attachment_count": len(attachments),
                 "attachments": attachments,
                 "hint": "Use file_path with a PDF reader MCP tool to extract content"
                 if attachments
-                else "No attachments found. Set ZOTERO_DATA_DIR env var for file access.",
+                else "No attachments found for this Zotero item.",
             }
 
         except (ZoteroConnectionError, ZoteroAPIError) as e:
@@ -152,6 +239,8 @@ def register_attachment_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
             - content: Fulltext content (plain text)
             - indexed_pages: Number of pages indexed
             - total_pages: Total pages in document
+            - library_version: Library cursor to pass to set_attachment_fulltext
+            - server_id: Zotero database identity paired with the cursor
             - source: Which attachment provided the fulltext
 
         Example:
@@ -167,7 +256,7 @@ def register_attachment_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
         """
         try:
             # Get the item metadata
-            item = await zotero.get_item(item_key)
+            item, item_server_id = await zotero.get_item_snapshot(item_key)
             item_data = item.get("data", item)
             title = item_data.get("title", "Untitled")
             item_type = item_data.get("itemType", "")
@@ -176,15 +265,21 @@ def register_attachment_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
             if item_type == "attachment":
                 try:
                     ft = await zotero.get_item_fulltext(item_key)
+                    _same_server_snapshot(item_server_id, ft.get("serverID"))
                     return {
                         "item_key": item_key,
                         "title": title,
                         "content": ft.get("content", ""),
                         "indexed_pages": ft.get("indexedPages", 0),
                         "total_pages": ft.get("totalPages", 0),
+                        "library_version": ft.get("libraryVersion"),
+                        "server_id": ft.get("serverID"),
                         "source": f"{item_key} (direct attachment)",
                     }
-                except ZoteroAPIError:
+                except ZoteroAPIError as exc:
+                    _same_server_snapshot(item_server_id, exc.server_id)
+                    if exc.status_code != 404:
+                        raise
                     return {
                         "item_key": item_key,
                         "title": title,
@@ -193,7 +288,8 @@ def register_attachment_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                     }
 
             # It's a parent item — find its PDF/EPUB attachments
-            children = await zotero.get_item_children(item_key)
+            children, children_server_id = await zotero.get_item_children_snapshot(item_key)
+            read_server_id = _same_server_snapshot(item_server_id, children_server_id)
 
             # Prioritize: PDF > EPUB > HTML > any
             pdf_attachments = []
@@ -228,6 +324,7 @@ def register_attachment_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                 att_title = att.get("data", att).get("title", "")
                 try:
                     ft = await zotero.get_item_fulltext(att_key)
+                    _same_server_snapshot(read_server_id, ft.get("serverID"))
                     content = ft.get("content", "")
                     if content:
                         return {
@@ -236,9 +333,14 @@ def register_attachment_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                             "content": content,
                             "indexed_pages": ft.get("indexedPages", 0),
                             "total_pages": ft.get("totalPages", 0),
+                            "library_version": ft.get("libraryVersion"),
+                            "server_id": ft.get("serverID"),
                             "source": f"{att_key} ({att_title})",
                         }
                 except ZoteroAPIError as e:
+                    _same_server_snapshot(read_server_id, e.server_id)
+                    if e.status_code != 404:
+                        raise
                     errors.append(f"{att_key}: {e}")
 
             return {

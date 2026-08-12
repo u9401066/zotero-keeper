@@ -108,13 +108,29 @@ class TestCollectionsResource:
             assert data["count"] == 1
 
     @pytest.mark.asyncio
-    async def test_get_collection_tree_resource(self):
-        """Test collection tree resource."""
+    async def test_collection_tree_uses_response_server_id_not_shared_state(self):
+        """Every versioned tree node retains the exact response identity."""
         mock_mcp = MagicMock()
         mock_client = AsyncMock()
-        mock_client.get_collection_tree.return_value = [
-            {"key": "ABC", "name": "Root", "children": []},
-        ]
+        mock_client._local_server_id = "server-B"
+        mock_client.get_collection_tree_snapshot.return_value = (
+            [
+                {
+                    "key": "ABCD2345",
+                    "version": 7,
+                    "name": "Root",
+                    "children": [
+                        {
+                            "key": "BCDE3456",
+                            "version": 8,
+                            "name": "Child",
+                            "children": [],
+                        }
+                    ],
+                },
+            ],
+            "server-A",
+        )
 
         registered_funcs = {}
 
@@ -129,10 +145,15 @@ class TestCollectionsResource:
 
         register_resources(mock_mcp, mock_client)
 
-        if "zotero://collections/tree" in registered_funcs:
-            result = await registered_funcs["zotero://collections/tree"]()
-            data = json.loads(result)
-            assert data["type"] == "collection_tree"
+        result = await registered_funcs["zotero://collections/tree"]()
+        data = json.loads(result)
+
+        assert data["type"] == "collection_tree"
+        assert data["server_id"] == "server-A"
+        assert data["tree"][0]["server_id"] == "server-A"
+        assert data["tree"][0]["children"][0]["server_id"] == "server-A"
+        mock_client.get_collection_tree_snapshot.assert_awaited_once_with()
+        mock_client.get_collection_tree.assert_not_awaited()
 
 
 class TestItemsResource:

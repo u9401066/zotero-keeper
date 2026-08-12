@@ -6,8 +6,8 @@ Usage:
     uv run python -m zotero_mcp
 
 Security:
-    Keep Zotero's unauthenticated Local/Connector API on loopback. Do not expose
-    or forward port 23119 for remote access.
+    Keep Zotero's Local/Connector API on loopback. Zotero 10+ write keys are
+    runtime-authorized but unscoped; do not expose or forward port 23119.
 """
 
 from .main import main

@@ -247,7 +247,7 @@ class TestServerTools:
         # Capture registered tools
         registered_tools = {}
 
-        def tool_decorator():
+        def tool_decorator(**_kwargs):
             def wrapper(func):
                 registered_tools[func.__name__] = func
                 return func
@@ -281,7 +281,7 @@ class TestServerTools:
 
         registered_tools = {}
 
-        def tool_decorator():
+        def tool_decorator(**_kwargs):
             def wrapper(func):
                 registered_tools[func.__name__] = func
                 return func
@@ -314,7 +314,7 @@ class TestServerTools:
 
         registered_tools = {}
 
-        def tool_decorator():
+        def tool_decorator(**_kwargs):
             def wrapper(func):
                 registered_tools[func.__name__] = func
                 return func
@@ -347,7 +347,7 @@ class TestServerTools:
 
         registered_tools = {}
 
-        def tool_decorator():
+        def tool_decorator(**_kwargs):
             def wrapper(func):
                 registered_tools[func.__name__] = func
                 return func
@@ -370,6 +370,14 @@ class TestServerTools:
             "find_collection",
             "list_tags",
             "get_item_types",
+            "authorize_local_writes",
+            "create_collection",
+            "add_items_to_collection",
+            "update_item_fields",
+            "create_note",
+            "create_saved_search",
+            "attach_file_to_item",
+            "set_attachment_fulltext",
         ]
 
         for tool_name in expected_tools:

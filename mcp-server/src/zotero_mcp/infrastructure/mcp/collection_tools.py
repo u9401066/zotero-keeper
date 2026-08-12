@@ -23,6 +23,31 @@ from .basic_read_tools import _format_creators
 logger = logging.getLogger(__name__)
 
 
+def _find_collection(
+    collections: list[dict[str, Any]],
+    name: str,
+    parent_key: str | None = None,
+) -> dict[str, Any] | None:
+    """Find a collection within one already identified response snapshot."""
+    normalized_name = name.lower().strip()
+    for collection in collections:
+        data = collection.get("data", collection)
+        if data.get("name", "").lower().strip() != normalized_name:
+            continue
+        if parent_key is None or data.get("parentCollection") == parent_key:
+            return collection
+    return None
+
+
+def _add_tree_server_id(nodes: list[dict[str, Any]], server_id: str | None) -> None:
+    """Attach the source response identity to every versioned tree node."""
+    for node in nodes:
+        node["server_id"] = server_id
+        children = node.get("children", [])
+        if isinstance(children, list):
+            _add_tree_server_id(children, server_id)
+
+
 def register_collection_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
     """Register collection tools with the MCP server"""
 
@@ -46,13 +71,16 @@ def register_collection_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
             List of collections with item counts
         """
         try:
-            collections = await zotero.get_collections()
+            collections, server_id = await zotero.get_collections_snapshot()
             results = []
             for col in collections:
                 data = col.get("data", col)
                 results.append(
                     {
                         "key": col.get("key"),
+                        "version": col.get("version", data.get("version")),
+                        "version_scope": "local",
+                        "server_id": server_id,
                         "name": data.get("name", ""),
                         "parentKey": data.get("parentCollection"),
                         "itemCount": data.get("numItems", 0),
@@ -60,6 +88,7 @@ def register_collection_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                 )
             return {
                 "count": len(results),
+                "server_id": server_id,
                 "collections": results,
             }
         except (ZoteroConnectionError, ZoteroAPIError) as e:
@@ -79,12 +108,16 @@ def register_collection_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
             Collection details including name and item count
         """
         try:
-            col = await zotero.get_collection(key)
+            col, server_id = await zotero.get_collection_snapshot(key)
             data = col.get("data", col)
             return {
                 "found": True,
+                "server_id": server_id,
                 "collection": {
                     "key": col.get("key"),
+                    "version": col.get("version", data.get("version")),
+                    "version_scope": "local",
+                    "server_id": server_id,
                     "name": data.get("name", ""),
                     "parentKey": data.get("parentCollection"),
                     "itemCount": data.get("numItems", 0),
@@ -115,7 +148,7 @@ def register_collection_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
             List of items in the collection
         """
         try:
-            items = await zotero.get_collection_items(collection_key, limit=limit)
+            items, server_id = await zotero.get_collection_items_snapshot(collection_key, limit=limit)
             results = []
             for item in items:
                 data = item.get("data", item)
@@ -124,6 +157,9 @@ def register_collection_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                 results.append(
                     {
                         "key": item.get("key"),
+                        "version": item.get("version", data.get("version")),
+                        "version_scope": "local",
+                        "server_id": server_id,
                         "title": data.get("title", ""),
                         "itemType": data.get("itemType", ""),
                         "date": data.get("date", ""),
@@ -132,6 +168,7 @@ def register_collection_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                 )
             return {
                 "collection_key": collection_key,
+                "server_id": server_id,
                 "count": len(results),
                 "items": results,
             }
@@ -164,9 +201,11 @@ def register_collection_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
             }
         """
         try:
-            tree = await zotero.get_collection_tree()
+            tree, server_id = await zotero.get_collection_tree_snapshot()
+            _add_tree_server_id(tree, server_id)
             return {
                 "count": len(tree),
+                "server_id": server_id,
                 "tree": tree,
             }
         except (ZoteroConnectionError, ZoteroAPIError) as e:
@@ -194,25 +233,32 @@ def register_collection_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
             find_collection(name="Deep Learning", parent_name="AI Research")
         """
         try:
-            # First find parent if specified
+            # Resolve parent, child, and suggestions from one HTTP snapshot so
+            # no object version can be paired with another profile's identity.
+            all_collections, server_id = await zotero.get_collections_snapshot()
             parent_key = None
             if parent_name:
-                parent = await zotero.find_collection_by_name(parent_name)
+                parent = _find_collection(all_collections, parent_name)
                 if parent:
                     parent_key = parent.get("key")
                 else:
                     return {
                         "found": False,
+                        "server_id": server_id,
                         "error": f"Parent collection '{parent_name}' not found",
                     }
 
-            col = await zotero.find_collection_by_name(name, parent_key)
+            col = _find_collection(all_collections, name, parent_key)
             if col:
                 data = col.get("data", col)
                 return {
                     "found": True,
+                    "server_id": server_id,
                     "collection": {
                         "key": col.get("key"),
+                        "version": col.get("version", data.get("version")),
+                        "version_scope": "local",
+                        "server_id": server_id,
                         "name": data.get("name", ""),
                         "parentKey": data.get("parentCollection"),
                         "itemCount": data.get("numItems", 0),
@@ -220,7 +266,6 @@ def register_collection_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                 }
             else:
                 # Provide suggestions
-                all_collections = await zotero.get_collections()
                 suggestions = []
                 name_lower = name.lower()
                 for c in all_collections:
@@ -230,6 +275,7 @@ def register_collection_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                         suggestions.append(cname)
                 return {
                     "found": False,
+                    "server_id": server_id,
                     "error": f"Collection '{name}' not found",
                     "suggestions": suggestions[:5] if suggestions else None,
                 }
