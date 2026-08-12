@@ -15,9 +15,9 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
 
 ## Current Release Baseline (August 2026) ✅
 
-- **Zotero Keeper 2.0.0**: migrated from the incompatible MCP SDK 1.x `FastMCP` interface to MCP SDK 2.x `MCPServer`; exposes 24 default tools (including `import_pdf`), 5 legacy opt-in tools, and 6 concrete resources. Collection routing now fails closed; root saves require explicit confirmation and an opt-in flag.
+- **Zotero Keeper 2.1.0**: runs on MCP SDK 2.x `MCPServer`; exposes 32 default tools, 5 legacy opt-in tools, 6 concrete resources, and 4 resource templates. Zotero 10+ Local API v3 writes are runtime-authorized and guarded by proposal/confirmation, Server-ID binding, and local-version preconditions. Collection routing still fails closed; root saves require explicit confirmation and an opt-in flag.
 - **PubMed Search MCP 0.6.1**: pinned at commit `ad85dde`; exposes 45 tools across 16 categories. `build_research_chronicle` and `read_research_chronicle` replace the earlier three-tool timeline design.
-- **VS Code extension 0.6.0**: the Marketplace VSIX is the recommended installer and owns the isolated shared SDK v2 environment. PyPI/`uvx` remains on the older release line until separately published.
+- **VS Code extension 0.7.0**: the Marketplace VSIX is the recommended installer and owns the isolated shared SDK v2 environment for Keeper 2.1.0 and the pinned PubMed server. PyPI/`uvx` remains on its separately published release line.
 - **Zotero MCP ecosystem**: no Zotero-organization official MCP server was found as of 2026-08-11. The Registry-listed `54yyyu/zotero-mcp` is a community server and shares Keeper's `zotero_mcp` Python namespace, so coexistence requires a separate environment and process.
 
 ---
@@ -63,8 +63,8 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
 ### v1.5.0 - v1.6.0 (December 2024)
 
 - ✅ **Dual API Architecture**
-  - ✅ Local API for READ operations
-  - ✅ Connector API for WRITE operations
+  - ✅ Local API for READ operations *(historical pre-Zotero-10 role; v3 now also supports authorized writes)*
+  - ✅ Connector API for WRITE operations *(historical default; retained as the create/import compatibility path)*
   - ✅ Unified HTTP client
 
 - ✅ **PubMed Integration**
@@ -134,7 +134,7 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
   - ✅ Detailed technical limitations explanation
   - ✅ One-click installation roadmap section
 
-### v1.10.1 (December 2024) - Current ⭐
+### v1.10.1 (December 2024) - Historical release ⭐
 
 - ✅ **One-Click Installation**
   - ✅ `vscode:mcp/install` URL button in README
@@ -373,7 +373,11 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
   - 📋 Author name normalization
   - 📋 ISBN validation
 
-### v2.1.0 (Planned) - Report Generation
+### Historical v2.1.0 Product Plan (superseded; version reassigned)
+
+> This pre-Zotero-10 plan is retained as product-history context. Keeper 2.1.0
+> shipped the authorized Local API write surface instead; report generation is
+> still a possible future capability without a committed version number.
 
 > 📝 **核心價值**：讓 AI Agent 幫助產生文獻報告
 
@@ -392,9 +396,22 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
 
 ## Phase 4.5: VS Code Extension & Marketplace ✅
 
-> The Marketplace extension is now the recommended path. v0.6.0 installs the pinned SDK v2 server pair; the direct MCP Install URL below is retained as historical design work and still follows the older PyPI line.
+> The Marketplace extension is now the recommended path. v0.7.0 installs Keeper 2.1.0 and the pinned PubMed SDK v2 server; the direct MCP Install URL below is retained as historical design work and still follows the separately published Python line.
 
-### 安裝方式比較
+### Current installer contract
+
+- ✅ uv-managed Python 3.12 environment in VS Code global storage
+- ✅ atomic installation of both exact GitHub archive sources
+- ✅ native VS Code MCP definitions plus extension-owned Cline/Codex sync
+- ✅ synchronized assistant assets for Copilot, Cline, Codex, and Claude
+- ✅ package/source/version and exact-VSIX release gates
+
+### Historical pre-v0.7 installer alternatives (preserved)
+
+The comparison, URL payloads, extension mockups, and Chat Participant ideas
+below predate the active v0.7 installer contract.
+
+#### 安裝方式比較（歷史）
 
 | 方式 | 簡易度 | 發布管道 | 適合用戶 |
 |------|--------|----------|----------|
@@ -402,7 +419,7 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
 | **VS Code Extension** | ⭐⭐⭐⭐⭐ | Marketplace | 所有用戶 |
 | **mcp.json 配置** | ⭐⭐ | 手動 | 開發者 |
 
-### 方案 A: MCP Install URL (最簡單) 🎯
+### 歷史方案 A: MCP Install URL (未採用為目前預設)
 
 VS Code 支援 `vscode:mcp/install?{json-config}` URL scheme：
 
@@ -427,9 +444,9 @@ const link = `vscode:mcp/install?${encodeURIComponent(JSON.stringify(config))}`;
 2. 📋 在 README 加入一鍵安裝按鈕
 3. 📋 建立 Landing Page 頁面
 
-### 🚀 立即行動項目 (Next Actions)
+### 歷史行動項目（未採用）
 
-> 📅 **目標**: v2.0.0 發布前完成以下項目
+> 📅 **原目標（歷史）**: v2.0.0 發布前完成以下項目
 
 #### Step 1: 發布 PyPI 套件
 
@@ -495,7 +512,7 @@ git push origin main --tags
 gh release create v2.0.0 --title "v2.0.0 - One-Click Installation" --notes "..."
 ```
 
-### 方案 B: VS Code Extension (完整整合)
+### 歷史方案 B: VS Code Extension 初始草圖
 
 使用 `vscode.lm.registerMcpServerDefinitionProvider` API：
 
@@ -539,7 +556,7 @@ export function activate(context: vscode.ExtensionContext) {
 3. 📋 申請 Publisher ID
 4. 📋 發布到 Marketplace
 
-### 方案 C: Chat Participant (進階)
+### 歷史方案 C: Chat Participant 構想
 
 超越 MCP，直接實作 Chat Participant：
 
@@ -564,7 +581,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 **註**: 需要更多開發工作，但提供最佳用戶體驗
 
-### 推薦路徑
+### 歷史推薦路徑（已由 v0.7.0 取代）
 
 ```
 v2.0: PyPI + MCP Install URL (簡單快速)
@@ -576,13 +593,39 @@ v3.0: Chat Participant (最佳體驗)
 
 ---
 
-## Phase 5: Write Operations via Plugin Integration 🔄
+## Phase 5: Zotero 10 Authorized Local Writes ✅
 
-> ⚠️ **Zotero Local API 限制**: DELETE/PATCH/PUT 回傳 501 Not Implemented
->
-> 解決方案：整合 Zotero 外掛，透過外掛的內部 API 實現寫入操作
+### Keeper 2.1.0 / VSIX 0.7.0 (August 2026)
 
-### v2.0.0 - Plugin Bridge (Planned)
+- ✅ **Official Local API v3 capability discovery**
+  - ✅ `GET /api/` records API/schema versions and `Zotero-Server-ID`
+  - ✅ Zotero 10+ runtime authorization through `/api/local/authorize`
+  - ✅ One-shot and remembered authorization remain private in process memory
+- ✅ **Guarded mutation surface (8 new tools; 32 default total)**
+  - ✅ `authorize_local_writes`, `create_collection`, `add_items_to_collection`
+  - ✅ `update_item_fields`, `create_note`, `create_saved_search`
+  - ✅ `attach_file_to_item`, `set_attachment_fulltext`
+- ✅ **Fail-closed write protocol**
+  - ✅ Every mutation proposes first and requires explicit `confirm=true`
+  - ✅ Writes bind to the discovered Server-ID and use local object versions
+  - ✅ Conflicts, identity changes, timeouts, and ambiguous failures are not replayed
+  - ✅ Stored files use Zotero's three-phase loopback upload; the API key is never sent to the upload URL
+- ✅ **Compatibility path**
+  - ✅ Connector create/import remains available on Zotero 7–9 and Zotero 10+
+  - ✅ Zotero 7–9 retain Local API reads plus Connector imports, without pretending to support v3 authorized writes
+
+The allowlisted collection/item/note/saved-search creation, update, and
+organization operations above, plus stored-file upload, no longer depend on a
+custom Zotero plugin. Keeper still does not expose raw Local API calls or a
+general delete tool.
+
+## Historical pre-Zotero-10 Phase 5: Plugin-only Write Plan
+
+> **Superseded historical context (pre-Zotero 10):** older Local API releases
+> returned 501 for write methods. The plugin-only plan below is preserved to
+> explain the original direction; it is not the Keeper 2.1 architecture.
+
+### Historical v2.0.0 Plugin Bridge Plan (superseded)
 
 - 📋 **Actions & Tags 整合** ⭐ 推薦
   - 📋 研究 Actions & Tags 的 customScript API
@@ -601,20 +644,42 @@ v3.0: Chat Participant (最佳體驗)
 - 📋 **實作方式探索**
   - 💡 方案 A: MCP 輸出腳本 → 使用者貼到 Actions & Tags
   - 💡 方案 B: 透過 Zotero 的 `Run JavaScript` 功能
-  - 💡 方案 C: 等待 Zotero 官方開放 Local API 寫入
+  - 💡 方案 C（歷史）: 等待 Zotero 官方開放 Local API 寫入（已由 Zotero 10 v3 取代）
 
 ---
 
-## Phase 5.5: Zotero Plugin Development 📋 **NEW!**
+## Phase 5.5: Optional Zotero Plugin — Events, UI, and Fallback 💡
 
-> 🎯 **核心價值**：開發獨立的 Zotero 7/8 插件，擴展 Local API 支援完整 CRUD
+The plugin is now an optional capability layer, not a prerequisite for basic
+CRUD on Zotero 10+. If pursued, its priorities are:
+
+1. Annotation/Reader semantics that are not exposed cleanly by Local API v3.
+2. Zotero Notifier events, optionally bridged as authenticated SSE, so agents can
+   react to local changes without polling.
+3. Zotero-native UI, context actions, and review/approval affordances.
+4. Narrow internal-only operations that have no stable official API equivalent.
+5. An explicitly opt-in Zotero 7–9 fallback where Connector import is
+   insufficient.
+
+Any bridge must have a separate threat model and authenticated loopback
+protocol. It must not proxy arbitrary Zotero internals or silently replace the
+official Local API path.
+
+### Historical pre-Zotero-10 HTTP bridge proposal (preserved; superseded)
+
+> The research, endpoint sketches, implementation phases, and examples below
+> were written before Zotero 10 authorized Local API writes. They remain as
+> historical design input only; their CRUD-first priority and unauthenticated
+> assumptions are not current requirements.
+
+> 🎯 **原始核心價值（歷史）**：開發獨立的 Zotero 7/8 插件，擴展當時唯讀的 Local API 以支援完整 CRUD
 >
 > 📚 **參考資源**：
 > - [Zotero 8 for Developers](https://www.zotero.org/support/dev/zotero_8_for_developers)
 > - [zotero-plugin-template](https://github.com/windingwind/zotero-plugin-template) (747⭐)
 > - [Make It Red](https://github.com/zotero/make-it-red) - 官方示例插件
 
-### 研究發現 (2026-01-12)
+### 歷史研究發現 (2026-01-12)
 
 **Local API 設計限制**：
 ```javascript
@@ -634,7 +699,7 @@ Zotero.Server.Endpoints["/mcp/items/:itemKey/collections"] = class {
 };
 ```
 
-### 插件規格設計
+### 歷史插件規格設計
 
 | 項目 | 值 |
 |------|-----|
@@ -643,7 +708,7 @@ Zotero.Server.Endpoints["/mcp/items/:itemKey/collections"] = class {
 | 技術棧 | Bootstrap plugin + manifest.json |
 | 授權 | AGPL-3.0 (與 Zotero 相同) |
 
-### 預計端點
+### 歷史預計端點
 
 ```text
 POST   /mcp/items/:itemKey/collections     # 加入 Collection
@@ -655,7 +720,7 @@ POST   /mcp/batch/add-to-collection        # 批次加入 Collection
 POST   /mcp/batch/remove-duplicates        # 批次移除重複
 ```
 
-### 開發階段
+### 歷史開發階段
 
 #### Phase 5.5.1: 環境設置 (4h) 📋
 
@@ -685,7 +750,7 @@ POST   /mcp/batch/remove-duplicates        # 批次移除重複
 - 📋 在 GitHub Releases 發布
 - 📋 提交到 Zotero Plugin Registry (可選)
 
-### 程式碼範例
+### 歷史程式碼範例
 
 ```javascript
 // bootstrap.js
@@ -738,14 +803,14 @@ Zotero.Server.Endpoints["/mcp/items/:itemKey/collections"] = class {
 };
 ```
 
-### 優先順序
+### 歷史優先順序
 
 ```
 v2.0.0 (短期): pyzotero + Web API ← 目前推薦方案
        ↓
 v2.5.0 (中期): zotero-mcp-bridge 插件 ← 本階段目標
        ↓
-v3.0.0 (長期): 等待 Zotero 官方開放 Local API 寫入
+v3.0.0 (歷史構想): 等待 Zotero 官方開放 Local API 寫入（已由 Zotero 10 v3 取代）
 ```
 
 ### 相關資源
@@ -756,7 +821,7 @@ v3.0.0 (長期): 等待 Zotero 官方開放 Local API 寫入
 | **Zutilo** | 1.7k | 批次操作、快捷鍵 | [GitHub](https://github.com/wshanks/Zutilo) |
 | **Better BibTeX** | - | 引用鍵管理 | [GitHub](https://github.com/retorquere/zotero-better-bibtex) |
 
-### 常用腳本範例 (Actions & Tags)
+### 歷史常用腳本範例 (Actions & Tags)
 
 ```javascript
 // 刪除選中文獻
@@ -792,10 +857,10 @@ if (items?.length > 0) {
   - 💡 Show sync conflicts
   - 💡 Trigger sync (if possible)
 
-- 💡 **Collection Management** (等待 Zotero API 支援)
-  - 💡 Create collections
-  - 💡 Move items between collections
-  - 💡 Rename collections
+- 💡 **Expanded Collection Management**
+  - ✅ Create collections and add items on Zotero 10+ (Keeper 2.1.0)
+  - 💡 Rename/reparent collections with local-version conflict handling
+  - 💡 Permission-aware collection operations across group libraries
 
 ---
 
@@ -813,12 +878,13 @@ if (items?.length > 0) {
   - 💡 Related paper suggestions
 
 - 💡 **Real-time Updates**
-  - 💡 WebSocket support (if Zotero supports)
-  - 💡 Push notifications for library changes
+  - 💡 Polling/cursor support when an official API can provide stable change tokens
+  - 💡 Optional authenticated plugin event bridge for Zotero Notifier events
 
-- 💡 **等待 Zotero 官方支援**
-  - 💡 Local API Write Support ([Issue #1320](https://github.com/zotero/zotero/issues/1320))
-  - 💡 當支援後，直接實作原生寫入操作
+- 💡 **Expand the official Local API v3 surface safely**
+  - 💡 Annotation-specific operations and richer attachment workflows
+  - 💡 Group-library writes after capability and permission discovery
+  - 💡 Keep Connector as the Zotero 7–9 compatibility path
 
 ---
 
@@ -837,7 +903,8 @@ if (items?.length > 0) {
 | v1.10.0 | 22 | PyPI + VS Code Extension v0.3.1 |
 | **v1.10.1** | **25** | **Historical one-click + analytics baseline** |
 | v1.11.0  | ~28 | + More Analytics (duplicates, citations) |
-| **v2.0.0** | **24 default + 5 legacy** | **MCP SDK v2; `import_pdf`; 6 concrete resources (current)** |
+| **v2.0.0** | **24 default + 5 legacy** | **MCP SDK v2; `import_pdf`; 6 concrete resources** |
+| **v2.1.0** | **32 default + 5 legacy** | **8 guarded Zotero 10+ Local API tools; 6 resources + 4 templates (current)** |
 | Future | ~32 | Citation Analysis + Smart Suggestions |
 | Future | ~36 | Report Generation |
 
@@ -1035,4 +1102,4 @@ https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7096777/bin/figure1.jpg
 
 ---
 
-*Last updated: January 2025 (v1.10.4)*
+*Last updated: August 12, 2026 (Keeper 2.1.0 / VSIX 0.7.0)*

@@ -1,5 +1,73 @@
 # Decision Log
 
+## 2026-08-12
+
+### DEC-031: Zotero 10+ authorized Local API 寫入與單一 VSIX 發布 artifact
+
+#### 背景
+Zotero 10+ 的 desktop Local API 已能在 loopback 上執行 items、collections、saved
+searches、full text 與 attachment upload 寫入。它使用 runtime
+`/api/local/authorize`、Zotero instance 的 Server-ID 與 database-local version；這些
+契約不同於既有無 Web API key 的 Connector 匯入，也不能把 Web API version 或另一個
+Zotero profile 的 version 套用於本機更新。同時，`v0.6.0-ext` / Keeper `2.0.0`
+已於 2026-08-11 完成發布，下一條發布線需要在不破壞 Zotero 7–9 相容性的前提下
+擴充功能。
+
+#### 選項
+1. 繼續只使用 Connector writes：相容面最單純，但無法安全更新既有 item、建立
+   collection/note/saved search、附檔到既有 item 或寫回 full text。
+2. 把 Local API key 當作長期設定或 Web API key：實作較容易，但違反 desktop
+   runtime authorization 模型，增加 credential 泄漏與跨 instance 誤用風險，否決。
+3. 以 Server-ID-bound runtime authorization、local optimistic concurrency、
+   confirm guard 與 loopback 限制新增明確的 Local API tools，同時保留 Connector
+   compatibility path：功能與安全邊界可共同驗證，採用。
+
+#### 決定
+- Zotero Keeper 升級為 `2.1.0`，預設工具面由 24 增至 32 tools（另有 6
+  resources）。新增 8 個 guarded tools：授權 local writes、建立 collection、將 items
+  加入 collection、更新安全 scalar fields、建立 child note、建立 saved search、將
+  本機檔案附加到既有 item，以及寫入 attachment full text。
+- mutation tools 預設 `confirm=false` 且不得送出網路請求；preview 前由
+  response-bound read 或 authorize 取得 Server-ID，並在 proposal 中先帶
+  `expected_server_id`。七個 confirmed mutations 全部要求該 identity；只有明確
+  `confirm=true` 才能寫入。若 authorization identity 不同，必須重新 read、preview
+  與取得核准，不能在 preview 後才補 identity。公開 MCP surface 不提供任意
+  delete，collection/item keys 必須由呼叫者明確指定。
+- Keeper 從 `GET /api/` discovery 取得 API/schema capability 與 Server-ID，透過
+  `POST /api/local/authorize` 取得 runtime key。key 只存在 process memory，不寫入
+  config、install state、tool output 或 log；authorize 與每個 write request 都攜帶
+  Server-ID，401/412/428 等身份或 instance 錯誤不得盲目重試。
+- item metadata 更新使用 exact-item response 綁定的 object version；full-text
+  replacement 使用 response-bound library cursor，透過 bulk
+  `POST /api/users/0/fulltext` 與 `If-Unmodified-Since-Version` 寫入，不使用
+  attachment object version。這些 cursor 只在配對的 Zotero Server-ID 有意義，
+  不與 Web API、其他 profile 或 desktop instance 混用。陣列欄位的 PATCH
+  replacement 語意不得被誤當成 merge，因此公開 item update 僅接受封閉的安全
+  scalar fields。
+- attachment 使用 Zotero 定義的三階段流程：建立 attachment item、取得
+  `uploadKey`/prefix/suffix 並串流上傳、最後註冊 upload。任一後段失敗需回報已建立的
+  attachment key，避免把部分成功誤報成完全失敗或再次建立重複 item。
+- Local API writes 僅允許 loopback。禁止把 `localhost:23119` bind、proxy 或
+  forward 給其他主機；遠端 MCP service 仍需獨立的 authentication、tenant、
+  Host/Origin 與資料隔離設計。
+- Zotero 7–9 繼續使用既有 Connector import/PDF path；Zotero 10+ capability 不可用
+  時不得把 local-write failure 偷偷降級為不同語意的 Connector mutation。
+- VS Code extension 候選版為 `0.7.0` / `v0.7.0-ext`，維持 Keeper `2.1.0` 與
+  PubMed Search MCP `0.6.1`（commit
+  `ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d`、45 tools）在同一 managed venv、
+  同一 resolver transaction 的 invariant。
+- 發布流程必須先通過 version、managed install、tag archive 與 Local API loopback
+  smoke；tag workflow 再只 package 一次。該具名 VSIX 經 content inspection 後，
+  同一檔案才可同時送往 Marketplace 與 GitHub Release，禁止 publish 階段重新產生
+  artifact。
+
+#### 驗證與發布狀態
+- 自動化涵蓋 Local API wire contract、authorization/Server-ID、version conflict、
+  三階段 upload、`confirm=false` 零 I/O、真實 loopback simulator，以及 opt-in 的
+  本機 Zotero read-only live smoke。
+- `v0.6.0-ext` / Keeper `2.0.0` 是已發布穩定基線；`v0.7.0-ext` / Keeper
+  `2.1.0` 截至本決策記錄仍在發布流程中，不得標記為已發布。
+
 ## 2026-08-11
 
 ### DEC-030: MCP SDK v2 breaking release 與雙 server 原子升級邊界
@@ -59,7 +127,8 @@ extension-managed venv 啟動，因此任何只升級其中一套的方案都可
 - local/Connector 模式以桌面 Zotero 與 loopback 為信任邊界；authenticated
   service 模式必須額外實施 token、tenant、bind host、Host/Origin 驗證與資料目錄
   隔離，兩者不得混為同一安全設定。
-- `v0.5.35-ext` 已完成；目前發布工作線為 `v0.6.0-ext`。
+- `v0.5.35-ext` 已完成；`v0.6.0-ext` / Keeper `2.0.0` 已於
+  2026-08-11 完成發布，後續 Local API 擴充由 DEC-031 接續。
 
 ## 2026-06-24
 

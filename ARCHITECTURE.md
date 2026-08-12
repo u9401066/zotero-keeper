@@ -1,6 +1,7 @@
 # Architecture Documentation
 
-This document describes the system architecture of Zotero Keeper, a MCP server for managing local Zotero libraries.
+This document describes Zotero Keeper 2.1.0, the 32-tool MCP SDK v2 server
+bundled by the v0.7.0 VSIX for safe local Zotero library management.
 
 ---
 
@@ -31,7 +32,7 @@ This document describes the system architecture of Zotero Keeper, a MCP server f
 │          └───────────────────┼───────────────────┘                        │
 │                              │                                            │
 │                              │ MCP Protocol (stdio)                       │
-│                              │ ├── Tools (24 default + 5 legacy opt-in)   │
+│                              │ ├── Tools (32 default + 5 legacy opt-in)   │
 │                              │ ├── Resources (6 + 4 URI templates)        │
 │                              │ └── Elicitation (interactive input)        │
 │                              ▼                                            │
@@ -42,6 +43,7 @@ This document describes the system architecture of Zotero Keeper, a MCP server f
 │  │  │  ├── server.py (connection tool + setup)                     │  │   │
 │  │  │  ├── basic_read_tools.py (5 tools)                           │  │   │
 │  │  │  ├── collection_tools.py (5 tools)                           │  │   │
+│  │  │  ├── local_api_tools.py (8 guarded Zotero 10+ tools)        │  │   │
 │  │  │  ├── interactive_tools.py (2 tools + elicitation)            │  │   │
 │  │  │  ├── saved_search_tools.py (3 tools)                         │  │   │
 │  │  │  ├── search_tools.py (2 public + 1 legacy tool)              │  │   │
@@ -55,7 +57,7 @@ This document describes the system architecture of Zotero Keeper, a MCP server f
 │  │                             │                                      │   │
 │  │  ┌──────────────────────────▼──────────────────────────────────┐  │   │
 │  │  │  Infrastructure Layer                                        │  │   │
-│  │  │  └── Zotero HTTP Client (dual API support)                   │  │   │
+│  │  │  └── Zotero HTTP Client (Local + Connector adapters)         │  │   │
 │  │  └──────────────────────────┬──────────────────────────────────┘  │   │
 │  │                             │                                      │   │
 │  │  ┌──────────────────────────▼──────────────────────────────────┐  │   │
@@ -68,8 +70,8 @@ This document describes the system architecture of Zotero Keeper, a MCP server f
 │                              ▼                                            │
 │  ┌───────────────────────────────────────────────────────────────────┐   │
 │  │                    ZOTERO DESKTOP CLIENT                           │   │
-│  │  ├── Local API (/api/users/0/...)  → READ Operations              │   │
-│  │  └── Connector API (/connector/...) → WRITE Operations            │   │
+│  │  ├── Local API v3 → READ + authorized WRITE (Zotero 10+)          │   │
+│  │  └── Connector API → compatibility CREATE/import path             │   │
 │  └───────────────────────────────────────────────────────────────────┘   │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
@@ -78,7 +80,7 @@ This document describes the system architecture of Zotero Keeper, a MCP server f
 
 Zotero Keeper is designed to work alongside `pubmed-search-mcp` for a complete literature workflow:
 
-The v0.6.0 VSIX pins PubMed Search MCP 0.6.1 at commit `ad85dde`. It contributes 45 MCP SDK v2 tools across 16 categories. Research history is now persisted through `build_research_chronicle` and `read_research_chronicle`; those two tools replace the former three-tool timeline surface.
+The v0.7.0 VSIX pins Keeper 2.1.0 and PubMed Search MCP 0.6.1 at commit `ad85dde`. PubMed contributes 45 MCP SDK v2 tools across 16 categories. Research history is persisted through `build_research_chronicle` and `read_research_chronicle`; those two tools replace the former three-tool timeline surface.
 
 ```
 ┌────────────────────────────┐    ┌────────────────────────────┐
@@ -127,6 +129,7 @@ This two-server environment must not install another Python distribution named `
 | server.py | 1 | `check_connection` |
 | basic_read_tools.py | 5 | `search_items`, `get_item`, `list_items`, `list_tags`, `get_item_types` |
 | collection_tools.py | 5 | `list_collections`, `get_collection`, `get_collection_items`, `get_collection_tree`, `find_collection` |
+| local_api_tools.py | 8 | `authorize_local_writes`, `create_collection`, `add_items_to_collection`, `update_item_fields`, `create_note`, `create_saved_search`, `attach_file_to_item`, `set_attachment_fulltext` |
 | saved_search_tools.py | 3 | `list_saved_searches`, `run_saved_search`, `get_saved_search_details` |
 | search_tools.py | 2 | `advanced_search`, `check_articles_owned` |
 | interactive_tools.py | 2 | `interactive_save`, `quick_save` |
@@ -202,6 +205,7 @@ src/zotero_mcp/
 │   │   ├── server.py           # Connection tool + server setup
 │   │   ├── basic_read_tools.py # 5 read tools
 │   │   ├── collection_tools.py # 5 collection tools
+│   │   ├── local_api_tools.py # 8 guarded Zotero 10+ write tools
 │   │   ├── resources.py        # 6 resources + 4 URI templates
 │   │   ├── interactive_tools.py # 2 save tools with elicitation
 │   │   ├── saved_search_tools.py # 3 saved search tools
@@ -214,7 +218,11 @@ src/zotero_mcp/
 │   │   ├── smart_tools.py      # Helper functions only (no tools)
 │   │   └── config.py           # Configuration
 │   └── zotero_client/          # Zotero HTTP Client
-│       └── client.py           # Dual API (Local + Connector)
+│       ├── client.py           # Composed client facade
+│       ├── client_base.py      # HTTP, discovery state, capability probe
+│       ├── client_read.py      # Local API reads
+│       ├── client_local.py     # Authorized Zotero 10+ CRUD/upload primitives
+│       └── client_write.py     # Connector compatibility writes
 └── domain/
     └── entities/               # Domain entities
         ├── reference.py
@@ -256,7 +264,7 @@ class ZoteroKeeperServer:
     def __init__(self, config: ZoteroMcpConfig = None):
         self._mcp = MCPServer(
             name="zotero-keeper",
-            version="2.0.0",
+            version="2.1.0",
             instructions="Zotero library management and import",
         )
         self._zotero = ZoteroClient(config.zotero)
@@ -306,25 +314,39 @@ async def get_collection_items_resource(key: str) -> str:
 
 ## API Reference
 
-### Zotero Local API (READ)
+### Zotero Local API v3
+
+The adapter begins with `GET /api/`. Zotero 10+ responses carry
+`Zotero-Server-ID`; write authorization uses `/api/local/authorize`, and every
+confirmed mutation is bound to the response identity already present in its
+approved preview. Object updates and full-text writes additionally use their
+respective optimistic-concurrency cursor so a stale read returns 412 instead of
+overwriting a newer local transaction.
+
+| Endpoint | Methods | Keeper use |
+|----------|---------|------------|
+| `/api/` | GET | Discover API/schema version and Server-ID without prompting |
+| `/api/local/authorize` | POST | Runtime user authorization; key remains private in memory |
+| `/api/users/0/items[/<key>]` | GET/POST/PATCH | Reads, guarded item/note creation, scalar update, batch organization |
+| `/api/users/0/collections[/<key>]` | GET/POST | Reads and confirmed nested collection creation |
+| `/api/users/0/searches[/<key>][/items]` | GET/POST | Saved-search reads/execution and creation |
+| `/api/users/0/items/<key>/file/view/url` | GET | Official local attachment path discovery |
+| `/api/users/0/items/<key>/file` | POST | Three-phase stored-file upload |
+| `/api/users/0/items/<key>/fulltext` | GET | Indexed full-text read and response-bound library cursor |
+| `/api/users/0/fulltext` | POST | Bulk full-text replacement with `If-Unmodified-Since-Version` library cursor |
+
+The client layer implements versioned delete/update primitives for contract
+coverage, but the MCP surface intentionally does not expose arbitrary raw CRUD
+or general deletion.
+
+### Zotero Connector compatibility path
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/users/0/items` | GET | List all items |
-| `/api/users/0/items?q={query}` | GET | Search items |
-| `/api/users/0/items/{key}` | GET | Get single item |
-| `/api/users/0/collections` | GET | List collections |
-| `/api/users/0/collections/{key}/items` | GET | Get collection items |
-| `/api/users/0/searches` | GET | List saved searches |
-| `/api/users/0/searches/{key}/items` | GET | **Execute saved search** (Local API exclusive!) |
-| `/api/users/0/tags` | GET | List all tags |
-
-### Zotero Connector API (WRITE)
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/connector/ping` | GET | Health check |
-| `/connector/saveItems` | POST | Save items |
+| `/connector/ping` | GET | Desktop health/version check |
+| `/connector/saveItems` | POST | Existing create/import tools, including Zotero 7–9 |
+| `/connector/saveAttachment` | POST | Attach within a Connector session that created the parent |
+| `/connector/saveStandaloneAttachment` | POST | Standalone import/recognition |
 
 ### External APIs (Auto-fetch Metadata)
 
@@ -399,6 +421,40 @@ AI Agent
 └──────────────────────────┘
 ```
 
+### Zotero 10+ Mutation Flow
+
+```text
+response-bound Local API read or authorize
+  ├── Zotero-Server-ID
+  ├── exact object version (metadata update), or
+  └── library cursor (full-text replacement)
+        │
+        ▼
+MCP mutation (confirm=false, expected_server_id=...)
+        │
+        └── complete proposal only; zero Zotero/filesystem I/O
+
+explicit user approval
+        │
+        ▼
+authorize_local_writes (separate Zotero UI prompt, if needed)
+        ├── same Server-ID → continue
+        └── different Server-ID → restart read + preview + approval
+        │
+        ▼
+same MCP mutation (confirm=true, unchanged proposal)
+  ├── Zotero-Server-ID
+  ├── private Zotero-API-Key
+  └── object/library-version or write-token precondition
+        │
+        ├── success → structured result
+        └── 401/412/428/timeout → fail closed, never replay mutation
+```
+
+One-shot authorizations and mutations are serialized. Multi-phase attachment
+uploads require an Always Allow authorization; upload bytes are sent only to a
+validated loopback `/api/local/uploads/<key>` URL, without the API-key header.
+
 ---
 
 ## Design Decisions
@@ -440,7 +496,7 @@ The 6 original smart tools were redundant with `interactive_save`/`quick_save`. 
   `Elicit(...)`, without relying on a direct context backchannel
 - Explicit resources and resource-template discovery
 
-MCP SDK 2.0 is intentionally incompatible with the old 1.x `FastMCP` interface. Keeper 2.0.0 and PubMed Search MCP 0.6.1 therefore share one SDK v2 runtime in the extension-managed environment.
+MCP SDK 2.0 is intentionally incompatible with the old 1.x `FastMCP` interface. Keeper 2.1.0 and PubMed Search MCP 0.6.1 therefore share one SDK v2 runtime in the extension-managed environment.
 
 ---
 
@@ -458,23 +514,36 @@ MCP SDK 2.0 is intentionally incompatible with the old 1.x `FastMCP` interface. 
 
 ### Remote libraries
 
-Do not forward Zotero's unauthenticated Local/Connector port to another host. Use Zotero's authenticated HTTPS Web API, or an authenticated service with TLS and explicit access control. Local/Connector workflows require Keeper and Zotero Desktop to share the same trusted host.
+Do not forward Zotero's Local/Connector port to another host. Zotero 10+ Local
+writes require runtime approval, but the key is unscoped and local reads remain
+unauthenticated. Use Zotero's authenticated HTTPS Web API, or an authenticated
+service with TLS and explicit access control. Local/Connector workflows require
+Keeper and Zotero Desktop on the same machine, communicating over literal
+loopback.
 
 ---
 
 ## Security Considerations
 
-1. **No Authentication**: Zotero Local and Connector APIs have no authentication
-   - Keep them on loopback only
-   - Never expose port 23119 to a LAN or the Internet
+1. **Loopback and authorization**: Local reads and Connector endpoints retain a
+   same-machine trust boundary; Zotero 10+ write keys are runtime-authorized but
+   unscoped
+   - Keep port 23119 on loopback and never forward it
+   - Keep the key in process memory; never return/log/persist it
+   - Bind every confirmed mutation to the response-bound Server-ID included in
+     its approved preview; a changed authorization identity requires a fresh
+     read, preview, and approval
+   - Pair object versions and full-text library cursors with the identity from
+     the same response; never add identity after preview
 
 2. **Data Validation**: All input validated before sending to Zotero
    - Required field checks
    - Item type validation
 
-3. **No Sensitive Data Stored**: MCP server is stateless
-   - No credentials stored
-   - No session data
+3. **No Sensitive Data Stored**: MCP server keeps only ephemeral runtime state
+   - Local write credentials remain in memory and clear on process close
+   - Authorization capability and local-version caches are Server-ID scoped and
+     are never durable application state
 
 ---
 
@@ -483,8 +552,12 @@ Do not forward Zotero's unauthenticated Local/Connector port to another host. Us
 1. **Multi-Library Support**: Support for group libraries
 2. **Caching Layer**: Cache frequently accessed data
 3. **WebSocket**: Real-time updates when Zotero changes
-4. **Attachment Handling**: PDF management
+4. **Attachment Handling**: broader annotation and replacement workflows; the
+   core existing-item full upload is delivered in 2.1
+5. **Optional Zotero Plugin**: annotations, real-time events, Zotero-native UI,
+   selected internal-only operations, and a possible Zotero 7–9 write fallback.
+   Zotero 10+ basic CRUD and stored-file upload no longer require a plugin.
 
 ---
 
-*Last updated: August 11, 2026 (Keeper 2.0.0 / MCP SDK v2)*
+*Last updated: August 12, 2026 (Keeper 2.1.0 / MCP SDK v2)*

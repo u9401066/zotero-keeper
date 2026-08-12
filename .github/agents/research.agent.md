@@ -10,7 +10,7 @@ Use this agent for biomedical literature search, paper exploration, and Zotero i
 ## Tool Ownership
 
 - PubMed Search MCP 0.6.1 owns literature search, discovery, sessions, full-text access, citation metrics, exports, Research Chronicle, and biomedical image search. Its SDK v2 surface contains 45 tools in 16 categories.
-- Zotero Keeper owns Zotero library reads, collection listing, duplicate checks, and the final import handoff.
+- Zotero Keeper 2.1 owns Zotero library reads, collection listing, duplicate checks, the final import handoff, and guarded Zotero 10+ Local API mutations. Its default surface contains 32 tools.
 - Do not duplicate PubMed searching inside Zotero Keeper. Keep the boundary clear.
 
 ## Default Workflow
@@ -29,6 +29,18 @@ Use this agent for biomedical literature search, paper exploration, and Zotero i
    - `import_articles(articles=[...], collection_name="...")`
    - For RIS text, use `import_articles(ris_text="...", collection_name="...")`.
    - If `interactive_save` is used, submit an exact collection key. `ROOT` is valid only after its second confirmation.
+5. For Zotero 10+ organization/update requests:
+   - Obtain a response-bound `server_id` from a Local API read or
+     `authorize_local_writes`. Obtain the exact-item object version for metadata
+     updates, or the response-bound library cursor for full-text replacement.
+   - Before a file upload, call it with `require_remembered=true` and ask the
+     user to choose Always Allow so all three upload phases remain authorized.
+   - Call the requested mutation with `confirm=false` and
+     `expected_server_id`, show the complete proposal, then repeat it unchanged
+     with `confirm=true` only after explicit approval.
+   - If authorization returns another identity, reread, preview, and request
+     approval again; never add identity after preview.
+   - Never expose a Local API key or retry a 412 version conflict.
 
 ## Search Patterns
 

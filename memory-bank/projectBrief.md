@@ -9,7 +9,8 @@
 包含：
 - **pubmed-search-mcp**: PubMed / 多來源生醫文獻搜尋、全文、pipeline、
   session 與 Research Chronicle MCP Server
-- **zotero-keeper**: Zotero Local API / Connector MCP Server，負責本地書庫與匯入
+- **zotero-keeper**: Zotero Local API / Connector MCP Server，負責本地書庫、
+  guarded management 與匯入
 - **vscode-extension**: 在單一受管理 Python 環境安裝、驗證並啟動兩套 MCP 的
   VS Code 整合擴充功能
 
@@ -29,17 +30,22 @@
 - [x] PubMed / UnifiedArticle → Zotero `import_articles` 直送機制
 - [x] Session PMID / article cache / summary 持久化
 - [x] 本機 PDF metadata / auto-recognize 匯入
-- [ ] 完成 MCP SDK v2 breaking release：Keeper `2.0.0`、PubMed `0.6.1`、
-  VSIX `0.6.0`
+- [x] 完成 MCP SDK v2 breaking release：Keeper `2.0.0`、PubMed `0.6.1`、
+  VSIX `0.6.0`（2026-08-11）
+- [x] 新增 Zotero 10+ runtime-authorized Local API management，且保留 Zotero
+  7–9 Connector 相容性
+- [ ] 發布 Keeper `2.1.0` / VSIX `0.7.0` 的單一 smoke-tested artifact
 
 ## 🚫 範圍限制
 
 - Keeper 不取代 Zotero 雲端同步或 Zotero Web API；主要邊界是桌面 Local API /
-  Connector
+  Connector。Local API 的 Server-ID、runtime key 與 version 都不得被當作跨 instance
+  的 Web API credential/state
 - 不包含 Impact Factor 資料（版權問題）
 - 外部 biomedical sources 由 PubMed Search MCP 聚合；Keeper 不重複實作搜尋
 - 不把可遠端存取的 authenticated service 與 local/Connector 模式視為同一
   信任邊界
+- 不 bind、proxy 或 forward Zotero Desktop 的 `localhost:23119` 給其他主機
 - Zotero 官方組織目前沒有發布 MCP server；Registry 收錄的社群 server 不構成
   Zotero 官方背書，也不得因相同 `zotero_mcp` namespace 與 Keeper 混裝
 
@@ -50,4 +56,4 @@
 
 ---
 *Created: 2025-12-16*
-*Updated: 2026-08-11*
+*Updated: 2026-08-12*

@@ -5,7 +5,7 @@ Let AI manage your references! A MCP Server connecting VS Code Copilot / Claude 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-v2-green.svg)](https://github.com/modelcontextprotocol/python-sdk)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Zotero 7/8/9](https://img.shields.io/badge/Zotero-7%20%2F%208%20%2F%209-red.svg)](https://www.zotero.org/)
+[![Zotero 7/8/9/10+](https://img.shields.io/badge/Zotero-7%20%2F%208%20%2F%209%20%2F%2010%2B-red.svg)](https://www.zotero.org/)
 [![CI](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml/badge.svg)](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
@@ -15,11 +15,11 @@ Let AI manage your references! A MCP Server connecting VS Code Copilot / Claude 
 
 ## 🚀 Recommended Install (VS Code)
 
-> **Prerequisites**: [Zotero 7, 8, or 9](https://www.zotero.org/download/) must be running
+> **Prerequisites**: [Zotero 7, 8, 9, or 10+](https://www.zotero.org/download/) must be running. Zotero 10+ is required for authorized Local API writes.
 
 [📦 Install Zotero + PubMed MCP from the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp)
 
-The **v0.6.0 VSIX is the recommended distribution**. It creates an isolated environment and installs Zotero Keeper 2.0.0 plus the pinned PubMed Search MCP 0.6.1 snapshot. The `uvx`/PyPI path remains available for older direct-server installs, but it must not be treated as the 2.0 release until PyPI is updated.
+The **v0.7.0 VSIX is the recommended distribution**. It creates an isolated environment and installs Zotero Keeper 2.1.0 plus the pinned PubMed Search MCP 0.6.1 snapshot. The `uvx`/PyPI path remains available for older direct-server installs, but it must not be treated as the 2.1 release until PyPI is updated.
 
 > ⚠️ MCP SDK 2.0 is not compatible with 1.x. After upgrading the extension, run **Zotero MCP: Reinstall Python Environment** if VS Code still has an older managed environment.
 
@@ -34,6 +34,7 @@ The **v0.6.0 VSIX is the recommended distribution**. It creates an isolated envi
 - ➕ **Add references**: "Add this DOI to my Zotero" (with auto-fetch metadata!)
 - 🔄 **PubMed integration**: "Search PubMed, skip what I already have"
 - 📁 **Interactive save**: Shows collection options for you to choose!
+- 🗂️ **Zotero 10+ organization**: Create nested collections, update existing records, add notes, and attach files to records already in your library
 - 📚 **Modern literature discovery**: PubMed Search MCP 0.6.1 exposes 45 tools in 16 categories, including the two-tool Research Chronicle workflow
 
 No more manually searching, copying, pasting. Just tell your AI in natural language!
@@ -49,7 +50,7 @@ No more manually searching, copying, pasting. Just tell your AI in natural langu
 - **📊 Citation Metrics**: RCR and NIH Percentile stored in Zotero extra fields
 - **🛡️ Collection Validation**: Use `collection_name` for safer auto-validation
 - **📖 Read Operations**: Search, list, and retrieve items from local Zotero
-- **✏️ Write Operations**: Add references via Connector API
+- **✏️ Write Operations**: Keep Connector imports for Zotero 7–9; use runtime-authorized Local API writes on Zotero 10+
 - **🧠 Smart Features**: Duplicate detection, validation, intelligent import
 - **📁 Collection Support**: Nested collections (folders) with hierarchy
 - **🏗️ Clean Architecture**: DDD with onion architecture
@@ -63,7 +64,7 @@ No more manually searching, copying, pasting. Just tell your AI in natural langu
 ### Prerequisites
 
 - ✅ [Python 3.12+](https://www.python.org/downloads/)
-- ✅ [Zotero 7, 8, or 9](https://www.zotero.org/download/) (must be running)
+- ✅ [Zotero 7, 8, 9, or 10+](https://www.zotero.org/download/) (must be running; 10+ for Local API writes)
 - ✅ [VS Code](https://code.visualstudio.com/) + GitHub Copilot, or [Claude Desktop](https://claude.ai/)
 - ✅ [uv](https://docs.astral.sh/uv/getting-started/installation/) (recommended)
 
@@ -155,7 +156,7 @@ NCBI_EMAIL=your.email@example.com
 
 ---
 
-## 🔧 Available Tools (24 default public + 5 legacy opt-in)
+## 🔧 Available Tools (32 default public + 5 legacy opt-in)
 
 > 💡 **Tip**: Most read operations can also be done via [MCP Resources](#-mcp-resources-browsable-data) without calling tools.
 
@@ -181,6 +182,36 @@ NCBI_EMAIL=your.email@example.com
 | `get_collection_items` | Items in a collection | `zotero://collections/{key}/items` |
 | `get_collection_tree` | Hierarchical tree view | `zotero://collections/tree` |
 | `find_collection` | Find by name | — (Tool only) |
+
+### 🗂️ Zotero 10+ Local API Tools (local_api_tools.py - 8 tools)
+
+These tools use Zotero's official Local API v3 write support. Before preview,
+obtain a response-bound `server_id` from a Local API read or
+`authorize_local_writes`, and include it as `expected_server_id`. The key stays
+inside the Keeper process; all writes are restricted to loopback and bound to
+the reviewed Zotero Server-ID.
+
+| Tool | Description | Safety boundary |
+|------|-------------|-----------------|
+| `authorize_local_writes` | Ask Zotero to authorize Keeper; use `require_remembered=true` before file upload | Never returns or logs the key |
+| `create_collection` | Create a top-level or nested collection | Exact parent key + explicit confirmation |
+| `add_items_to_collection` | Add up to 50 existing items without removing other memberships | Validates every key before one versioned batch write |
+| `update_item_fields` | Update approved scalar metadata fields | Requires the current local object version |
+| `create_note` | Add a child note to an existing item | Validates the parent + explicit confirmation |
+| `create_saved_search` | Create a Zotero saved search | Structured conditions + explicit confirmation |
+| `attach_file_to_item` | Attach a local file to an existing item | Remembered authorization + validated loopback upload URL |
+| `set_attachment_fulltext` | Write indexed text for an attachment | Response-bound library cursor + Server-ID + explicit confirmation |
+
+These operations are unavailable on Zotero 7–9, which retain the existing
+Connector import path. Keeper intentionally does not expose an unrestricted raw
+PATCH or general-purpose destructive DELETE tool.
+
+For each mutation, put `expected_server_id` (and the response-bound item object
+version or full-text library cursor, when applicable) into the `confirm=false`
+proposal before asking for approval. If later authorization reports a different
+identity, discard that proposal, reread, preview again, and obtain new approval;
+never add identity only after preview. Confirmed execution repeats the unchanged
+proposal. A 412 is never retried automatically.
 
 ### ✏️ Save Tools (interactive_tools.py - 2 tools)
 
@@ -232,7 +263,7 @@ If you intentionally want the old standalone keeper behavior, set `ZOTERO_KEEPER
 
 ### 📎 Attachment & Fulltext Tools (attachment_tools.py - 2 tools)
 
-> 🗂️ **PDF Access**: List attached PDFs and read Zotero-indexed fulltext. Requires `ZOTERO_DATA_DIR` for file paths.
+> 🗂️ **PDF Access**: Zotero 10+ resolves attachment paths through the official Local API. `ZOTERO_DATA_DIR` remains an optional fallback for older Zotero versions or unavailable view URLs.
 
 | Tool | Description | Example |
 |------|-------------|--------|
@@ -384,7 +415,7 @@ Zotero supports **nested collections**. Recommended strategies:
 
 ## 🔬 PubMed Integration
 
-The v0.6.0 VSIX pins [pubmed-search-mcp 0.6.1](https://github.com/u9401066/pubmed-search-mcp/tree/v0.6.1) at commit `ad85dde`. Its MCP SDK v2 server exposes **45 tools across 16 categories**. The new `build_research_chronicle` and `read_research_chronicle` workflow replaces the three earlier timeline tools.
+The v0.7.0 VSIX pins [pubmed-search-mcp 0.6.1](https://github.com/u9401066/pubmed-search-mcp/tree/v0.6.1) at commit `ad85dde`. Its MCP SDK v2 server exposes **45 tools across 16 categories**. The new `build_research_chronicle` and `read_research_chronicle` workflow replaces the three earlier timeline tools.
 
 ```
 You: "Find new anesthesia AI papers from 2024 that I don't have"
@@ -411,7 +442,7 @@ uv sync --extra pubmed
 
 ### Zotero MCP ecosystem naming
 
-As of 2026-08-11, no Zotero-organization repository or Zotero documentation was found that publishes an official Zotero MCP server. [`54yyyu/zotero-mcp`](https://github.com/54yyyu/zotero-mcp) is a capable **community server listed in the MCP Registry**, not an official Zotero server. An OpenAI-curated Zotero connector is likewise a separate connector product and should not be described as Zotero's official MCP server or assigned an invented tool schema.
+As of 2026-08-12, no Zotero-organization repository or Zotero documentation was found that publishes an official Zotero MCP server. [`54yyyu/zotero-mcp`](https://github.com/54yyyu/zotero-mcp) is a capable **community server listed in the MCP Registry**, not an official Zotero server. An OpenAI-curated Zotero connector is likewise a separate connector product and should not be described as Zotero's official MCP server or assigned an invented tool schema.
 
 The community server and Zotero Keeper both use the Python module/package name `zotero_mcp`. If you run both, install them in **separate virtual environments and separate MCP processes**; do not add the community package to the extension-managed environment. See [the ecosystem comparison](docs/ZOTERO_MCP_LANDSCAPE.md).
 
@@ -419,7 +450,10 @@ The community server and Zotero Keeper both use the Python module/package name `
 
 ## 🌐 Remote Zotero Access
 
-Zotero's Local and Connector APIs are unauthenticated local interfaces and must remain bound to loopback. Do not expose port 23119 to a LAN, the Internet, or an unauthenticated forwarding rule.
+Zotero Local API reads and the Connector endpoints are local interfaces;
+Zotero 10+ Local API writes add runtime authorization, but the resulting key is
+unscoped. Port 23119 must therefore remain on loopback. Do not expose or forward
+it to a LAN or the Internet.
 
 For remote libraries, use Zotero's authenticated HTTPS Web API, or place a purpose-built authenticated service in front of Zotero and apply TLS, authorization, and network access controls. Keep Zotero Keeper and Zotero Desktop on the same trusted host when using Local/Connector operations.
 
@@ -432,7 +466,7 @@ For remote libraries, use Zotero's authenticated HTTPS Web API, or place a purpo
 │           AI Agent (VS Code / Claude)           │
 └──────────────────────┬──────────────────────────┘
                        │ MCP Protocol
-                       │ ├── Tools (24 default)
+                       │ ├── Tools (32 default)
                        │ ├── Resources (6 + 4 URI templates)
                        │ └── Elicitation (interactive input)
                        ▼
@@ -442,6 +476,7 @@ For remote libraries, use Zotero's authenticated HTTPS Web API, or place a purpo
 │  │  MCP Layer                                │  │
 │  │  ├── server.py + basic reads (6 tools)      │  │
 │  │  ├── collection_tools.py (5 tools)         │  │
+│  │  ├── local_api_tools.py (8 guarded tools)  │  │
 │  │  ├── resources.py (6 resources + 4 templates) │
 │  │  ├── interactive_tools.py (2 save tools)   │  │
 │  │  ├── saved_search_tools.py (3 tools)      │  │
@@ -456,82 +491,56 @@ For remote libraries, use Zotero's authenticated HTTPS Web API, or place a purpo
                        ▼
 ┌─────────────────────────────────────────────────┐
 │              Zotero Desktop Client              │
-│  ├── Local API (/api/...) → Read               │
-│  └── Connector API (/connector/...) → Write    │
+│  ├── Local API (/api/...) → Read + authorized  │
+│  │                              write (10+)    │
+│  └── Connector API (/connector/...) → Legacy   │
+│                                      create    │
 └─────────────────────────────────────────────────┘
 ```
 
 ---
 
-## ⚠️ Zotero API Limitations (Important!)
+## ⚠️ Zotero API Capabilities and Boundaries
 
-### API Capability Matrix
+Zotero 10+ changed the Local API substantially. The platform now supports
+authorized item, collection, and saved-search writes, tag deletion, full-text
+writes, and full file uploads. Keeper 2.1 exposes a deliberately constrained
+subset rather than handing an unscoped key and arbitrary API paths to an AI
+client.
 
-Zotero provides **two local APIs**, but neither supports full CRUD:
+| Interface | Scope | Authentication | Keeper 2.1 use |
+|-----------|-------|----------------|----------------|
+| **Local API v3** `/api/...` | Same-machine library reads; Zotero 10+ writes | Reads are unauthenticated; writes require runtime user approval | Reads on Zotero 7–10+; guarded writes on 10+ |
+| **Connector API** `/connector/...` | Browser-connector save flows | Local interface | Backward-compatible create/import path, including Zotero 7–9 |
+| **Web API v3** `https://api.zotero.org` | Remote and synchronized libraries | zotero.org key/OAuth | Recommended for remote access; not used by the local Keeper tools |
 
-| API | Endpoint | Read | Create | Update | Delete |
-|-----|----------|:----:|:------:|:------:|:------:|
-| **Local API** | `/api/...` | ✅ | ❌ | ❌ | ❌ |
-| **Connector API** | `/connector/...` | ❌ | ✅ | ❌ | ❌ |
+For Zotero 10+ writes, Keeper first obtains a response-bound
+`Zotero-Server-ID` from discovery/read or runtime authorization. That identity
+must already appear in the `confirm=false` proposal and every confirmed mutation
+carries it as `expected_server_id`. `update_item_fields` additionally carries
+the object version from the same exact-item response. Full-text replacement uses
+the response-bound library cursor and bulk `POST /api/users/0/fulltext` with
+`If-Unmodified-Since-Version`, not the attachment object version. If
+authorization identifies another database, the read, preview, and approval must
+all be repeated. A changed database or stale cursor returns `412` and is never
+silently overwritten; missing identity/preconditions (`428`) and invalid
+authorization (`401`) also fail closed.
 
-### 🔍 Technical Details
+Keeper 2.1 now supports the previously blocked high-value workflows:
 
-**Local API** (port 23119):
-- Designed for reading Zotero data (items, collections, tags)
-- Per [official source code](https://github.com/zotero/zotero/blob/main/chrome/content/zotcom/server/server_localAPI.js#L28-L43): **"Write access is not yet supported."**
-- DELETE/PATCH/PUT methods return `501 Not Implemented`
+- create a top-level or nested collection;
+- add existing items to a confirmed collection while preserving all current memberships;
+- update approved metadata on an existing item and create child notes;
+- create saved searches;
+- attach a local file to an existing item with Zotero's three-phase upload;
+- provide indexed text for an attachment; and
+- obtain attachment paths through the official Local API instead of guessing the Zotero data directory.
 
-**Connector API** (port 23119):
-- Designed for browser extensions to **save new items**
-- `saveItems` endpoint: **Always creates NEW items, never updates**
-- Even if you import the same PMID twice → creates duplicate items
-- No `updateItem` or `deleteItem` endpoints exist
-
-### 🔴 Operations NOT Supported
-
-| Operation | API Support | Technical Reason |
-|-----------|-------------|------------------|
-| ❌ **Delete items** | 501 Not Implemented | Local API is read-only |
-| ❌ **Update items** | 501 Not Implemented | Local API is read-only |
-| ❌ **Move items to collection** | Cannot modify | Connector API only creates, never updates |
-| ❌ **Add tags to existing items** | Cannot modify | No update endpoint available |
-| ❌ **Create collections** | 400 Bad Request | Connector API doesn't support it |
-| ❌ **Delete collections** | 501 Not Implemented | Local API is read-only |
-| ❌ **Merge duplicates** | No API | Must use Zotero GUI |
-
-### 💡 What This Means
-
-**"Smart Management" Limitations:**
-
-```
-❌ Cannot do:
-- "Move these 10 papers to another collection"
-- "Delete all duplicate references"
-- "Help me organize my collections"
-- "Archive old papers"
-
-✅ Can do:
-- "Add to specific collection when importing" (at creation time)
-- "Search for matching references" (then handle manually)
-- "List potential duplicates" (but manual deletion needed)
-```
-
-### 🛠️ Workarounds
-
-| Need | Alternative |
-|------|-------------|
-| Organize collections | Drag & drop in Zotero GUI |
-| Delete duplicates | Zotero → Tools → "Merge duplicates" |
-| Batch operations | Use [Zotero Actions & Tags](https://github.com/windingwind/zotero-actions-tags) plugin |
-| Auto-categorize | Use [Zutilo](https://github.com/wshanks/Zutilo) plugin |
-
-### 🔮 Future Possibilities
-
-Zotero team is working on **Local API write support**:
-- [GitHub Issue #1320](https://github.com/zotero/zotero/issues/1320) - Request for write support
-- Expected in future Zotero releases (8.x+)
-
-**We'll update zotero-keeper as soon as Zotero supports it!**
+General deletion, arbitrary raw PATCH, duplicate merging, annotation editing,
+and group-library writes are not exposed as public Keeper tools in this release.
+Use Zotero's UI for destructive maintenance. See
+[docs/ZOTERO_LOCAL_API.md](docs/ZOTERO_LOCAL_API.md) for the complete platform
+matrix and Keeper's narrower safety contract.
 
 ---
 

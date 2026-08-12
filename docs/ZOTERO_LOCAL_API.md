@@ -1,679 +1,286 @@
-# Zotero API 開發文檔
-
-> 這份文檔記錄了 Zotero 各種 API 的官方文件與我們實際探索的結果。
-> 對於開發 zotero-keeper 非常重要！
-
-## 目錄
-
-- [概述](#概述)
-- [API 比較](#api-比較)
-- [API 端點](#api-端點)
-  - [Local API (Read)](#local-api-read)
-  - [Connector API (Write)](#connector-api-write)
-  - [Web API (Full CRUD)](#web-api-full-crud)
-- [pyzotero 整合](#pyzotero-整合)
-- [實際測試結果](#實際測試結果)
-- [已知限制](#已知限制)
-- [開發注意事項](#開發注意事項)
-- [未來規劃](#未來規劃)
-
----
-
-## 概述
-
-Zotero 提供**三種** API，各有不同的能力和限制：
-
-| API 類型 | 基礎路徑 | 讀取 | 寫入 | 需求 |
-|----------|----------|:----:|:----:|------|
-| **Local API** | `localhost:23119/api/users/0/...` | ✅ | ❌ | Zotero 運行中 |
-| **Connector API** | `localhost:23119/connector/...` | ❌ | ⚠️ 有限 | Zotero 運行中 |
-| **Web API** | `api.zotero.org/users/{id}/...` | ✅ | ✅ **完整** | API Key |
-
-**預設端口**: `23119` (localhost)
-
-> 🔒 **安全邊界**：Local API 與 Connector API 沒有身分驗證，只能綁定在 loopback。不要將 23119 port 直接暴露給 LAN 或 Internet，也不要使用未認證的 port forwarding。遠端存取請改用 Zotero 有身分驗證的 HTTPS Web API，或具有 TLS、授權與存取控制的專用服務。
-
----
-
-## API 比較
-
-### 🔍 選擇哪個 API？
-
-```
-需要寫入/更新現有文獻？
-├─ 是 → 使用 Web API (需 API Key)
-└─ 否 → 使用 Local API (零設定)
-
-需要從網頁匯入？
-├─ 是 → 使用 Connector API
-└─ 否 → 使用 Local API 或 Web API
-```
-
-### 📊 功能對照表
-
-| 功能 | Local API | Connector API | Web API |
-|------|:---------:|:-------------:|:-------:|
-| 讀取文獻 | ✅ | ❌ | ✅ |
-| 讀取 Collections | ✅ | ❌ | ✅ |
-| 讀取 Saved Searches | ✅ | ❌ | ✅ |
-| 執行 Saved Searches | ✅ | ❌ | ❌ |
-| 新增文獻 | ❌ | ✅ | ✅ |
-| 更新文獻 | ❌ | ❌ | ✅ |
-| 刪除文獻 | ❌ | ❌ | ✅ |
-| 加入 Collection | ❌ | ⚠️¹ | ✅ |
-| 移除 Collection | ❌ | ❌ | ✅ |
-| 上傳附件 (新建項目) | ❌ | ✅² | ✅ |
-| 上傳附件 (現有項目) | ❌ | ❌ | ✅ |
-| 需要設定 | 無 | 無 | API Key |
-
-> ¹ Connector API 只能在**新增時**指定 collection，無法修改現有文獻
->
-> ² Connector API 可透過 `/connector/saveAttachment` 與 `/connector/saveStandaloneAttachment`
-> 上傳本機 PDF（無需 API Key），但只能掛到**同一個 session 內新建的項目**，無法掛到現有文獻
-
----
-
-## API 端點
-
-### Local API (Read)
-
-> 🔗 官方文檔: https://www.zotero.org/support/dev/web_api/v3/basics
-
-#### Items
-
-| 端點 | 方法 | 說明 | 測試結果 |
-|------|------|------|----------|
-| `/api/users/0/items` | GET | 列出所有文獻 | ✅ 正常 |
-| `/api/users/0/items?q={query}` | GET | 搜尋文獻 | ✅ 正常 |
-| `/api/users/0/items?limit={n}` | GET | 限制數量 | ✅ 正常 |
-| `/api/users/0/items/{key}` | GET | 取得單一文獻 | ✅ 正常 |
-| `/api/users/0/items/{key}/children` | GET | 取得附件 | ✅ 正常 |
-| `/api/users/0/items/{key}` | PATCH | 更新文獻 | ❌ **501 未實作** |
-| `/api/users/0/items/{key}` | PUT | 更新文獻 | ❌ **501 未實作** |
-| `/api/users/0/items` | POST | 新增文獻 | ❌ **400 錯誤** |
-
-#### Collections
-
-| 端點 | 方法 | 說明 | 測試結果 |
-|------|------|------|----------|
-| `/api/users/0/collections` | GET | 列出所有收藏夾 | ✅ 正常 |
-| `/api/users/0/collections/{key}` | GET | 取得單一收藏夾 | ✅ 正常 |
-| `/api/users/0/collections/{key}/items` | GET | 收藏夾內的文獻 | ✅ 正常 |
-
-#### Tags
-
-| 端點 | 方法 | 說明 | 測試結果 |
-|------|------|------|----------|
-| `/api/users/0/tags` | GET | 列出所有標籤 | ✅ 正常 |
-
-#### Saved Searches
-
-| 端點 | 方法 | 說明 | 測試結果 |
-|------|------|------|----------|
-| `/api/users/0/searches` | GET | 列出已儲存搜尋 | ✅ 正常 |
-| `/api/users/0/searches/{key}` | GET | 取得單一搜尋 | ✅ 正常 |
-| `/api/users/0/searches/{key}/items` | GET | 執行搜尋 | ✅ 正常 (Local API 獨有!) |
-
-#### Schema
-
-| 端點 | 方法 | 說明 | 測試結果 |
-|------|------|------|----------|
-| `/api/itemTypes` | GET | 可用的文獻類型 | ✅ 正常 |
-| `/api/itemTypeFields?itemType={type}` | GET | 類型的欄位 | ✅ 正常 |
-| `/api/creatorTypes?itemType={type}` | GET | 作者類型 | ✅ 正常 |
-
----
-
-### Connector API (Write)
-
-> 這是 Zotero 瀏覽器擴充功能使用的 API
-
-#### 健康檢查
-
-| 端點 | 方法 | 說明 | 測試結果 |
-|------|------|------|----------|
-| `/connector/ping` | GET | 檢查 Zotero 是否運行 | ✅ 正常 |
-
-#### 儲存文獻
-
-| 端點 | 方法 | 說明 | 測試結果 |
-|------|------|------|----------|
-| `/connector/saveItems` | POST | 儲存文獻 | ✅ 正常 (有限制) |
-
-##### saveItems 請求格式
-
-```json
-{
-  "items": [
-    {
-      "itemType": "journalArticle",
-      "title": "文章標題",
-      "creators": [
-        {"firstName": "名", "lastName": "姓", "creatorType": "author"}
-      ],
-      "abstractNote": "摘要",
-      "publicationTitle": "期刊名",
-      "DOI": "10.xxxx/xxxx",
-      "date": "2024-01-15",
-      "tags": [{"tag": "標籤1"}, {"tag": "標籤2"}],
-      "collections": ["COLLECTION_KEY"]
-    }
-  ],
-  "uri": "http://source.url",
-  "title": "來源標題"
-}
-```
-
-##### saveItems 回應格式
-
-```json
-{
-  "items": [...]  // 儲存的項目（但不包含新 key！）
-}
-```
-
-#### 上傳附件 (PDF) — 無需 API Key
-
-> 🔑 **重點**：Connector API 可上傳本機 PDF，完全在 Local/Connector 架構內，不需要 Web API key。
-> zotero-keeper 的 `import_pdf` 工具即基於此。
-
-| 端點 | 方法 | 說明 | Body |
-|------|------|------|------|
-| `/connector/saveAttachment` | POST | 把檔案掛到 session 內既有父項目 | 原始檔案位元組 |
-| `/connector/saveStandaloneAttachment` | POST | 存成獨立附件並自動辨識 metadata | 原始檔案位元組 |
-
-附件流程（metadata 模式）：
-
-1. `POST /connector/saveItems`，body 帶 `sessionID` 與 `items:[{ "id": "<connector key>", ... }]` → 建立父項目。
-2. `POST /connector/saveAttachment`，header 帶 `Content-Type`（如 `application/pdf`）、`X-Metadata`，body 為原始 PDF 位元組。
-
-```text
-POST /connector/saveAttachment
-Content-Type: application/pdf
-X-Metadata: {"sessionID":"<同上>","parentItemID":"<connector key>","title":"Full Text PDF","url":"https://doi.org/..."}
-
-<原始 PDF bytes>
-```
-
-獨立附件 + 自動辨識（auto-recognize）：
-
-```text
-POST /connector/saveStandaloneAttachment
-Content-Type: application/pdf
-X-Metadata: {"sessionID":"<uuid>","title":"paper","url":"file:///path/paper.pdf"}
-
-<原始 PDF bytes>
-```
-
-> ⚠️ `X-Metadata` 必須是 ASCII-safe 的 JSON（`json.dumps` 預設 `ensure_ascii=True`），
-> 否則含中文標題的 header 無法以 latin-1 編碼。Zotero 端會把 `\uXXXX` 還原回 Unicode。
->
-> ⚠️ 回應 `201` 表示成功；`200` 且 body 含「not editable」表示該 library 不可寫入檔案。
-
----
-
-### Web API (Full CRUD)
-
-> 🔗 官方文檔: [Write Requests](https://www.zotero.org/support/dev/web_api/v3/write_requests)
-
-**2025-01 研究發現**：Zotero Web API 完整支援 CRUD 操作！
-
-#### 設定需求
-
-1. **取得 API Key**: [https://www.zotero.org/settings/keys](https://www.zotero.org/settings/keys)
-2. **取得 User ID**: 在 Zotero 設定頁面可見
-3. **設定權限**: 建議給予「讀寫」權限
-
-#### 端點格式
-
-```text
-基礎 URL: https://api.zotero.org
-用戶資料: /users/{userID}/...
-群組資料: /groups/{groupID}/...
-```
-
-#### 寫入操作
-
-| 端點 | 方法 | 說明 | 狀態 |
-|------|------|------|------|
-| `/users/{id}/items` | POST | 新增文獻 | ✅ 支援 |
-| `/users/{id}/items/{key}` | PUT | 完整更新 | ✅ 支援 |
-| `/users/{id}/items/{key}` | PATCH | 部分更新 | ✅ 支援 |
-| `/users/{id}/items/{key}` | DELETE | 刪除文獻 | ✅ 支援 |
-
-#### PATCH 部分更新 (重點功能！)
-
-Web API 支援**只更新特定欄位**，不需要傳送完整物件：
+# Zotero Local API v3: Platform Capabilities and Keeper Contract
+
+Last verified: 2026-08-12 against Zotero's official Local API documentation,
+updated 2026-07-29.
+
+This document separates two questions that older project documentation mixed
+together:
+
+1. What does Zotero's official API support?
+2. Which of those operations does Zotero Keeper 2.1 expose safely through MCP?
+
+## Three different interfaces
+
+| Interface | Location | Authentication | Intended use |
+|-----------|----------|----------------|--------------|
+| Local API v3 | `http://localhost:23119/api/` | Reads are unauthenticated. Zotero 10+ writes require runtime local authorization. | Fast, same-machine access to the currently open Zotero database |
+| Connector endpoints | `http://localhost:23119/connector/` | Local browser-connector interface | Keeper's backward-compatible create/import path, including Zotero 7–9 |
+| Web API v3 | `https://api.zotero.org/` | zotero.org API key or OAuth for private/write access | Remote and synchronized library access over HTTPS |
+
+The Connector endpoints are not the Local API v3 write contract. A limitation
+of Keeper's historical Connector adapter must not be described as a limitation
+of Zotero 10+ itself.
+
+## Security boundary
+
+The Local API is a same-machine interface. Zotero explicitly says not to expose
+or forward its port. Keep `23119` on loopback (`localhost`, `127.0.0.1`, or
+`::1`). Remote access belongs on the authenticated HTTPS Web API or behind a
+purpose-built service with TLS, authentication, authorization, and network
+controls.
+
+This remains true on Zotero 10+. Runtime write authorization prevents silent
+local writes, but a granted local key has no per-library or per-operation scope.
+It can write any library that the current Zotero user may edit.
+
+Keeper therefore applies an additional boundary:
+
+- Local write authorization is accepted only over literal loopback.
+- The key remains in process memory and is never an MCP parameter/result, log
+  field, query parameter, or persisted project asset.
+- Public tools build fixed API paths. There is no raw arbitrary Local API tool.
+- Collection and item keys are validated before mutation.
+- Every mutation preview already contains a response-bound
+  `expected_server_id`; every confirmed mutation requires that reviewed
+  identity. Authorization cannot be used to supplement identity after approval.
+- Root-library import rules remain independent of API authorization. A valid
+  Local API key never implies permission to ignore a missing collection.
+- A write timeout, conflict, or authorization error is not replayed
+  automatically because the first mutation may already have completed.
+
+## Discovery and database identity
+
+A compatible client begins with:
 
 ```http
-PATCH /users/12345/items/ABCD1234
-Zotero-API-Key: your-api-key
-If-Unmodified-Since-Version: 456
+GET /api/
+```
+
+The response identifies the active contract with these headers:
+
+- `Zotero-API-Version` — Local API currently supports v3 only.
+- `Zotero-Schema-Version` — the local schema can differ from the Web API.
+- `Zotero-Server-ID` — Zotero 10+ identity for the currently open database.
+
+Every Zotero 10+ response includes the Server-ID. A write (including
+authorization) must send it; missing identity returns `428`, and a mismatch
+returns `412`. A read may send it as a consistency check. If the Server-ID
+changes, discard cached authorization, object versions, and results tied to the
+previous database.
+
+Local object versions are transaction versions for this one Zotero database.
+They are not interchangeable with Web API/sync versions or versions from
+another Zotero installation. Partition any cache by Server-ID.
+
+Keeper exposes the identity from the same HTTP response as item/collection
+versions and full-text library cursors. A caller obtains this response-bound
+pair before mutation preview and includes the identity as `expected_server_id`.
+Do not combine an object version or library cursor with a separately cached
+identity.
+
+## Runtime write authorization (Zotero 10+)
+
+Keeper requests authorization with a fixed application name:
+
+```http
+POST /api/local/authorize
 Content-Type: application/json
+Zotero-Server-ID: <current-server-id>
 
-{
-  "collections": ["BCDE3456", "CDEF4567"]
-}
+{"appName":"Zotero Keeper"}
 ```
 
-這解決了 Local API 的最大限制：**可以將現有文獻加入 Collection！**
+Zotero presents Allow, Always Allow, or Deny to the user:
 
-#### Version 管理
+- Allow returns a single-use key (`remember: false`). It is consumed by the
+  first successfully authenticated write.
+- Always Allow returns a reusable key (`remember: true`) until the user removes
+  it in Zotero settings.
+- Deny returns `403`.
+- Requests that would display more than five dialogs per minute return `429`
+  with `Retry-After`.
 
-所有寫入請求需要 `If-Unmodified-Since-Version` header：
+Writes send the key in `Zotero-API-Key`, never in a URL. `401` means the key is
+invalid or consumed and requires a new explicit authorization. Keeper does not
+silently open a new dialog or replay the mutation.
 
-```python
-# 1. 先讀取物件，取得 version
-response = requests.get(f"{BASE_URL}/items/{key}")
-version = response.headers["Last-Modified-Version"]
+The multi-step file-upload flow requires a remembered authorization because it
+contains more than one authenticated write. Keeper refuses before creating an
+attachment when only a one-shot key is available. Call
+`authorize_local_writes(require_remembered=true)` and choose **Always Allow**
+before invoking `attach_file_to_item`.
 
-# 2. 寫入時帶上 version
-headers = {
-    "If-Unmodified-Since-Version": version,
-    "Zotero-API-Key": api_key
-}
-requests.patch(f"{BASE_URL}/items/{key}", json=data, headers=headers)
+## Zotero 10+ platform capability matrix
+
+`<prefix>` is `/api/users/0` for the current user or `/api/groups/<groupID>`.
+Keeper 2.1 intentionally limits writes to the current user's local library.
+
+| Object | Read | Create | Update | Delete |
+|--------|:----:|:------:|:------:|:------:|
+| Items, notes, attachments | Yes | `POST <prefix>/items` | `PUT`/`PATCH <prefix>/items/<key>` or batch `POST` | Single or batch `DELETE` |
+| Collections | Yes | `POST <prefix>/collections` | `PUT`/`PATCH` or batch `POST` | Single or batch `DELETE` |
+| Saved searches | Yes; Local API can also execute them | `POST <prefix>/searches` | Local API supports `PUT`/`PATCH` | Single or batch `DELETE` |
+| Tags | Yes | Via item data | Via item data | `DELETE <prefix>/tags?tag=...` |
+| Full text | Yes | `PUT <prefix>/items/<key>/fulltext` or bulk `POST <prefix>/fulltext` | Same | Replace through a versioned write; Keeper uses the bulk form |
+| Stored files | Metadata + local file URL | Three-phase full upload | Three-phase full upload | Attachment item deletion |
+
+Important write semantics:
+
+- Multi-object requests accept at most 50 items, collections, searches, or
+  tags. Bulk full-text writes accept at most 10 entries.
+- `PATCH` changes only supplied fields, but arrays such as `collections`,
+  `tags`, `creators`, and `relations` replace the complete array. Read, merge,
+  and write the full intended array.
+- Updates carry either the JSON object's `version` or
+  `If-Unmodified-Since-Version`. Keeper uses the explicit header.
+- Deletes require a version precondition. Creates use a 32-character
+  `Zotero-Write-Token` or a library-version precondition.
+- A stale object or library version returns `412`; do not refetch and overwrite
+  automatically because the user approved an earlier state.
+- Local and Web batch responses have historically used both `success` and
+  `successful` in examples. Keeper accepts either and normalizes internally.
+
+## Read endpoints relevant to Keeper
+
+The Local API supports most API v3 reads, including:
+
+- items, children, trash, publications, collections, tags, and groups;
+- `qmode=everything`, which includes indexed full text;
+- saved-search metadata and Local-only saved-search execution;
+- schema endpoints such as `/api/itemTypes`, `/api/itemTypeFields`, and
+  `/api/itemTypeCreatorTypes`;
+- `?since=<version>` and `format=versions` for incremental reads;
+- full-text version/content reads; and
+- Local-only attachment file access.
+
+For a stored attachment:
+
+```http
+GET <prefix>/items/<attachmentKey>/file/view/url
 ```
 
-#### 回應碼
-
-| 碼 | 意義 |
-|----|------|
-| 200 | 成功 (更新) |
-| 201 | 成功 (新增) |
-| 204 | 成功 (刪除) |
-| 412 | 版本衝突 (需重新讀取) |
-| 403 | 權限不足 |
-
----
-
-## pyzotero 整合
-
-> 🔗 GitHub: [urschrei/pyzotero](https://github.com/urschrei/pyzotero) (1.2k ⭐)
-> 🔗 文檔: [pyzotero.readthedocs.io](https://pyzotero.readthedocs.io/)
-
-### 為什麼選擇 pyzotero？
-
-| 特點 | 說明 |
-|------|------|
-| **成熟穩定** | 持續維護 10+ 年，v1.7.6 (2025) |
-| **完整功能** | 覆蓋 Web API 所有端點 |
-| **Pythonic** | 設計良好的介面 |
-| **雙模式** | 支援 Web API 和 Local API |
-
-### 安裝
-
-```bash
-uv add pyzotero
-```
-
-### 基本用法
-
-```python
-from pyzotero import zotero
-
-# Web API 模式 (完整讀寫)
-zot = zotero.Zotero(
-    library_id="12345",
-    library_type="user",  # or "group"
-    api_key="your-api-key"
-)
-
-# Local API 模式 (僅讀取)
-zot_local = zotero.Zotero(
-    library_id="0",
-    library_type="user",
-    api_key="",
-    local=True
-)
-```
-
-### 寫入操作範例
-
-```python
-# 新增文獻
-template = zot.item_template("journalArticle")
-template["title"] = "新文章標題"
-zot.create_items([template])
-
-# 更新文獻
-item = zot.item("ABCD1234")
-item["data"]["title"] = "更新的標題"
-zot.update_item(item)
-
-# 加入 Collection (核心功能！)
-zot.addto_collection("COLL1234", item)
-
-# 從 Collection 移除
-zot.deletefrom_collection("COLL1234", item)
-
-# 上傳附件
-zot.attachment_simple(["/path/to/file.pdf"], "PARENT_KEY")
-```
-
-### 批次操作
-
-```python
-# 批次新增 (自動分批)
-items = [template1, template2, template3, ...]
-zot.create_items(items)  # 自動處理 50 個一批
-
-# 批次更新
-for item in items_to_update:
-    zot.update_item(item)
-```
-
-### 錯誤處理
-
-```python
-from pyzotero import zotero_errors
-
-try:
-    zot.update_item(item)
-except zotero_errors.PreConditionFailed:
-    # Version 衝突，需重新讀取
-    item = zot.item(item["key"])
-    # 重試...
-except zotero_errors.UserNotAuthorised:
-    # API Key 權限不足
-    pass
-```
-
----
-
-## 實際測試結果
-
-### ✅ `collections` 欄位在 saveItems 中有效
-
-**測試日期**: 2024-12-14
-
-當透過 `/connector/saveItems` 儲存文獻時，`collections` 欄位**確實有效**：
-
-```python
-item = {
-    "itemType": "journalArticle",
-    "title": "Test",
-    "collections": ["MHT7CZ8U"]  # ← 這會生效！
-}
-```
-
-**驗證方法**:
-1. 匯入文章指定 `collection_key`
-2. 用 `/api/users/0/items/{key}` 查詢文章
-3. 確認 `collections` 欄位包含正確的 key
-4. 用 `/api/users/0/collections/{key}/items` 確認文章在 collection 中
-
-### ❌ Local API 不支援寫入
-
-**測試日期**: 2024-12-14
-
-```bash
-# PATCH - 501 Not Implemented
-curl -X PATCH "http://localhost:23119/api/users/0/items/ABC123" \
-  -H "Content-Type: application/json" \
-  -d '{"collections": ["XYZ789"]}'
-
-# PUT - 501 Not Implemented  
-curl -X PUT "http://localhost:23119/api/users/0/items/ABC123" ...
-
-# POST - 400 Bad Request
-curl -X POST "http://localhost:23119/api/users/0/items" ...
-```
-
-**結論**: Local API 是**唯讀**的，所有寫入必須透過 Connector API。
-
-### ⚠️ Connector API 不回傳新建文獻的 Key
-
-當透過 `/connector/saveItems` 新增文獻時，回應**不包含**新建立的 item key。
-
-這意味著：
-- 無法立即知道新文獻的 key
-- 需要透過 PMID/DOI 搜尋來找到新文獻
-- 或使用 `/api/users/0/items?limit=1&sort=dateAdded&direction=desc`
-
-### ⚠️ Collection itemCount 不即時更新
-
-`/api/users/0/collections` 回傳的 `itemCount` 可能不是最新的。
-
-要取得準確數量，需要：
-```
-GET /api/users/0/collections/{key}/items
-```
-然後計算回傳的 items 數量。
-
----
-
-## 已知限制
-
-### 1. 無法將現有文獻加入 Collection (Local API 限制)
-
-**問題**: 當文獻已存在 Zotero 時，無法透過 Local API 將它加入新的 collection。
-
-**原因**:
-- Connector API 的 `saveItems` 只能在新建時指定 collection
-- Local API 不支援 PATCH/PUT
-
-**解決方案** (2025-01 更新):
-
-| 方案 | 說明 | 推薦 |
-|------|------|:----:|
-| **Web API + pyzotero** | 使用 `zot.addto_collection()` | ✅ **推薦** |
-| 強制重新匯入 | `skip_duplicates=false` | ⚠️ 會產生重複 |
-| Zotero GUI | 手動拖曳操作 | 😅 |
-
-```python
-# 使用 pyzotero 的解決方案
-from pyzotero import zotero
-
-zot = zotero.Zotero(library_id, "user", api_key)
-item = zot.item("EXISTING_KEY")
-zot.addto_collection("TARGET_COLL", item)  # ✅ 完美解決！
-```
-
-### 2. 批次寫入限制
-
-Connector API 沒有明確的批次大小限制，但建議：
-- 每批不超過 50 個項目
-- 批次之間加入適當延遲
-
-### 3. RIS/BibTeX 匯入
-
-`/connector/saveItems` 支援 `ris` 格式，但：
-- 需要完整的 RIS 文字
-- 解析可能不完整（缺少某些欄位）
-
----
-
-## 開發注意事項
-
-### 1. 端口設定
-
-```python
-# 預設端口
-ZOTERO_PORT = 23119
-```
-
-Keeper 使用 Local/Connector API 時應與 Zotero Desktop 在同一台可信任主機執行。需要存取遠端書庫時，使用 HTTPS Web API 或受認證服務，不要轉送本機 port。
-
-### 2. 錯誤處理
-
-```python
-# 常見錯誤碼
-200 - OK
-400 - Bad Request (格式錯誤)
-404 - Not Found (item/collection 不存在)
-409 - Conflict (library 鎖定中)
-501 - Not Implemented (Local API 不支援寫入)
-```
-
-### 3. 重複檢測策略
-
-我們使用的策略：
-1. 先用 `GET /api/users/0/items` 載入現有 PMID/DOI
-2. 比對要匯入的文獻
-3. 標記重複項目
-
-```python
-# 檢測重複
-existing_pmids = set()
-existing_dois = set()
-
-for item in existing_items:
-    extra = item.get("extra", "")
-    if "PMID:" in extra:
-        pmid = extract_pmid(extra)
-        existing_pmids.add(pmid)
-    if doi := item.get("DOI"):
-        existing_dois.add(doi.lower())
-```
-
-### 4. Collection Key vs Name
-
-- **Key**: 8 字元的唯一識別碼 (如 `MHT7CZ8U`)
-- **Name**: 人類可讀的名稱 (如 `test1`)
-
-API 只接受 **Key**，不接受 Name。需要先查詢 collection 列表來取得 key。
-
----
-
-## 參考資料
-
-- [Zotero Web API v3](https://www.zotero.org/support/dev/web_api/v3/start)
-- [Zotero MCP 生態與命名邊界](ZOTERO_MCP_LANDSCAPE.md)
-- [Zotero Web API Write Requests](https://www.zotero.org/support/dev/web_api/v3/write_requests)
-- [Zotero Connector Development](https://www.zotero.org/support/dev/client_coding)
-- [pyzotero GitHub](https://github.com/urschrei/pyzotero) - 1.2k ⭐ Python client
-- [pyzotero Documentation](https://pyzotero.readthedocs.io/)
-- [zotero-keeper ARCHITECTURE.md](../ARCHITECTURE.md)
-
----
-
-## 未來規劃
-
-### 🎯 Phase 1: pyzotero 整合 (優先)
-
-目標：讓 zotero-keeper 支援雙模式運作
-
-```text
-┌─────────────────────────────────────────────────────┐
-│  zotero-keeper                                      │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  ┌──────────────┐     ┌──────────────────────────┐ │
-│  │ Local Mode   │     │ API Key Mode             │ │
-│  │ (現有)       │     │ (新增)                   │ │
-│  ├──────────────┤     ├──────────────────────────┤ │
-│  │ 零設定       │     │ 需要 API Key             │ │
-│  │ 僅讀取       │     │ 完整讀寫                 │ │
-│  │ Connector    │     │ Web API + pyzotero       │ │
-│  │ 寫入有限     │     │ 解決所有限制             │ │
-│  └──────────────┘     └──────────────────────────┘ │
-│                                                     │
-└─────────────────────────────────────────────────────┘
-```
-
-### 📋 實作任務
-
-1. **環境變數支援**
-   - `ZOTERO_USER_ID`: 用戶 ID
-   - `ZOTERO_API_KEY`: API 金鑰
-   - `ZOTERO_MODE`: `local` (預設) 或 `api`
-
-2. **新增 pyzotero 依賴**
-   ```bash
-   uv add pyzotero
-   ```
-
-3. **建立 ZoteroClient 抽象層**
-   ```python
-   class ZoteroClient(Protocol):
-       def get_items(self) -> list[dict]: ...
-       def add_to_collection(self, item_key: str, collection_key: str) -> bool: ...
-
-   class LocalZoteroClient(ZoteroClient): ...  # 現有實作
-   class WebZoteroClient(ZoteroClient): ...    # 新增，使用 pyzotero
-   ```
-
-4. **新增 MCP 工具**
-   - `add_items_to_collection`: 將現有文獻加入 collection
-   - `remove_items_from_collection`: 從 collection 移除
-   - `update_item_metadata`: 更新文獻欄位
-
-### 🚫 不可行的功能
-
-| 功能 | 原因 |
-|------|------|
-| MCP 安裝 Zotero 套件 | 安全限制，需用戶手動確認 |
-| 自動同步 | 需要 Zotero Sync 服務 |
-| 本地檔案操作 | Zotero 資料庫格式私有 |
-
----
-
-## 更新日誌
-
-| 日期 | 更新內容 |
-|------|----------|
-| 2024-12-14 | 初始版本，記錄 Local API 與 Connector API 測試結果 |
-| 2024-12-14 | 確認 collections 欄位在 saveItems 中有效 |
-| 2024-12-14 | 記錄 Local API 不支援寫入 (501) |
-| 2024-12-14 | v1.8.0: 新增 collection 防呆機制 (collection_name 驗證) |
-| 2024-12-14 | v1.8.0: 新增 include_citation_metrics 參數 (RCR 寫入 extra) |
-| **2025-01-12** | **重大更新：新增 Web API 完整文檔** |
-| **2025-01-12** | **新增 pyzotero 整合指南** |
-| **2025-01-12** | **更新已知限制的解決方案** |
-| **2025-01-12** | **新增未來規劃章節** |
-
----
-
-## v1.8.0 新功能
-
-### Collection 防呆機制
-
-`batch_import_from_pubmed` 現在支援：
-
-1. **collection_name 參數** (推薦！)
-   - 用名稱查找 collection，自動解析為 key
-   - 找不到時回傳可用 collections 清單
-   - 避免打錯 key 導致文獻跑錯位置
-
-2. **驗證機制**
-   - 無論用 name 或 key，都會先驗證是否存在
-   - 回傳結果包含 `collection_info` 確認存到哪
-
-```python
-# ✅ 推薦用法
-batch_import_from_pubmed(
-    pmids="12345,67890",
-    collection_name="test1"  # 自動驗證並解析
-)
-
-# ⚠️ 不推薦
-batch_import_from_pubmed(
-    pmids="12345,67890",
-    collection_key="MHT7CZ8U"  # 容易打錯
-)
-```
-
-### Citation Metrics (RCR) 支援
-
-新增 `include_citation_metrics` 參數：
-
-```python
-batch_import_from_pubmed(
-    pmids="12345,67890",
-    include_citation_metrics=True  # 取得 RCR 並寫入 extra
-)
-```
-
-會在 Zotero extra 欄位加入：
-```
-PMID: 12345678
-PMCID: PMC1234567
-RCR: 5.23
-NIH Percentile: 85.2
-Citations: 127
-Citations/Year: 25.4
-APT: 0.85
-```
-
-**注意**: 這會增加 API 呼叫時間（需要額外查詢 iCite）。
+returns the local `file://` URL as plain text. Keeper 2.1 prefers this official
+route and retains `ZOTERO_DATA_DIR/storage/<key>/<filename>` only as a fallback
+for older Zotero releases or unavailable endpoints.
+
+The Local API does not support Atom output. Local result sets also do not use
+the Web API's default/max pagination limits, though `limit`, `start`, and Link
+headers remain available.
+
+## Full file upload
+
+Zotero 10+ uses a three-phase full upload for stored (`imported_file` or
+`imported_url`) attachments smaller than 4 GiB:
+
+1. Create or identify the attachment item, then POST `md5`, `filename`,
+   `filesize`, and millisecond `mtime` to its `/file` endpoint with
+   `If-None-Match: *` for a new file (or `If-Match` for replacement).
+2. POST the bytes to the returned `/api/local/uploads/<uploadKey>` URL. The
+   upload key authorizes only this step, expires after one hour, and must not
+   cause the client to send the Local API key to an arbitrary origin.
+3. POST `upload=<uploadKey>` to the attachment `/file` endpoint with the same
+   condition to register the upload.
+
+Local API uploads are full uploads; binary-diff `PATCH` is a Web API feature and
+returns `405` locally. Keeper validates that the upload URL stays on the
+configured loopback port before sending bytes. If an upload fails after the
+attachment record was created, the result reports a partial operation and its
+attachment key instead of attempting an unapproved cleanup delete.
+
+## Keeper 2.1 public Local API tools
+
+Keeper preserves its original 24 public tools and adds these eight:
+
+| Tool | Exposed operation |
+|------|-------------------|
+| `authorize_local_writes` | Explicitly request Zotero runtime authorization; `require_remembered=true` is required before file upload |
+| `create_collection` | Create a top-level or nested collection |
+| `add_items_to_collection` | Merge one confirmed collection into up to 50 existing items with one versioned batch write |
+| `update_item_fields` | Update approved scalar metadata fields with an expected object version |
+| `create_note` | Create a child note under an existing item |
+| `create_saved_search` | Create a structured saved search |
+| `attach_file_to_item` | Upload a local stored file beneath an existing item |
+| `set_attachment_fulltext` | Write indexed text with a response-bound library cursor through bulk `POST /api/users/0/fulltext` |
+
+All seven mutation tools accept `expected_server_id`; every confirmed call
+requires it. Before preview, obtain that identity from a response-bound read or
+authorization. `update_item_fields` also receives the object version paired with
+the exact-item response. `set_attachment_fulltext` instead receives the library
+cursor paired with `get_item_attachments` or `get_item_fulltext`; the attachment
+object version is not a full-text write precondition.
+
+The confirmation-only first pass includes `expected_server_id` (and any version
+cursor) in `proposed`. Without `confirm=true`, it performs no Zotero read,
+authorization, filesystem probe, or write. If authorization later returns a
+different Server-ID, discard that proposal and repeat the read, preview, and
+approval. Identity cannot be supplied only after preview. A 412 starts the same
+fresh workflow and is never replayed automatically.
+
+Collection membership validates the destination and every item before the
+single batch request. Metadata updates reject structural fields such as keys,
+versions, item types, parent relations, creators, tags, and collection arrays;
+those require dedicated merge-aware tools rather than a raw PATCH.
+
+Keeper 2.1 does not publicly expose general deletes, arbitrary endpoint access,
+group writes, or replacement of complete structural arrays. The underlying
+client implements the official versioned CRUD primitives for controlled future
+tools and tests, but destructive library maintenance remains in Zotero's UI.
+
+## Compatibility matrix
+
+| Zotero version | Local reads | Connector create/import | Authorized Local writes |
+|----------------|:-----------:|:-----------------------:|:-----------------------:|
+| 7 | Yes | Yes | No |
+| 8 | Yes | Yes | No |
+| 9 | Yes, subject to Zotero's Local API setting | Yes | No |
+| 10+ | Yes | Yes (compatibility path) | Yes, after runtime authorization |
+
+`check_connection` is read-only. It discovers and reports the Local API version,
+schema version, Server-ID presence, and whether Keeper currently holds an
+authorization, but it never opens Zotero's authorization dialog.
+
+## Error handling
+
+| Status | Meaning | Keeper behavior |
+|--------|---------|-----------------|
+| `400` | Invalid fields, key, or unsupported content | Return a stable invalid-request error; no retry |
+| `401` | Invalid/consumed Local API key | Clear in-memory authorization; require explicit authorization |
+| `403` | Local API disabled or authorization denied | Explain the relevant Zotero setting or denial |
+| `404` | Object or endpoint not found | Fail closed; never reinterpret as My Library root |
+| `405` | Unsupported local binary-diff file PATCH | Use the documented full-upload flow |
+| `412` | Stale version or wrong Server-ID | Clear database-bound state as needed; never overwrite/replay |
+| `428` | Missing Server-ID or write precondition | Treat as a client protocol error; no retry |
+| `429` | Too many authorization dialogs | Return `Retry-After`; do not prompt-loop |
+| `501` | Unsupported API version/format (for example Atom) | Report the unsupported operation |
+
+## Smoke and release verification
+
+Every release runs:
+
+1. wire-level unit tests for JSON arrays, headers, authorization outcomes,
+   one-shot/remembered keys, Server-ID changes, conflicts, and upload phases;
+2. an ephemeral loopback Zotero simulator exercised through the public MCP v2
+   `Client`, including `check_connection`, authorization, and a real guarded
+   mutation;
+3. a no-listener test proving connection failure is structured and bounded;
+4. managed-venv installation that creates both Keeper and PubMed MCP servers,
+   lists their exact surfaces, and verifies installed versions; and
+5. package-once VSIX inspection before the same artifact is sent to Marketplace
+   and GitHub Release.
+
+An optional live smoke is enabled only with an explicit environment flag. It is
+read-only by default; live writes require a separate opt-in and a dedicated
+test collection, never My Library root.
+
+## Official references
+
+- [Local API](https://www.zotero.org/support/dev/web_api/v3/local_api)
+- [API v3 basics and read endpoints](https://www.zotero.org/support/dev/web_api/v3/basics)
+- [Write requests](https://www.zotero.org/support/dev/web_api/v3/write_requests)
+- [File uploads](https://www.zotero.org/support/dev/web_api/v3/file_upload)
+- [Full-text content](https://www.zotero.org/support/dev/web_api/v3/fulltext_content)
+- [Item types and fields](https://www.zotero.org/support/dev/web_api/v3/types_and_fields)
+
+These Zotero sources define the platform contract. Community MCP projects and
+curated connector products are useful ecosystem references, but they are not
+Zotero's official API specification.

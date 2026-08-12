@@ -35,13 +35,30 @@
 - [x] 將 Keeper 2.0.0 與 PubMed 0.6.1 合併為單一 `uv pip install` resolver transaction，並以真實雙 server tool listing 驗證 managed venv (2026-08-11)
 - [x] 完成 assistant assets / Research Chronicle 同步、521 個 Keeper tests、63 個 PubMed protocol/release tests、84 個 extension tests、mypy、ruff 與 VSIX 內容 smoke (2026-08-11)
 - [x] 封閉 malformed collection-name 與 legacy import 的 My Library fail-open 路徑，所有無 collection 寫入皆需明確 root 授權 (2026-08-11)
+- [x] 發布 VS Code extension / VSIX `0.6.0`（tag `v0.6.0-ext`）、Keeper
+  `2.0.0` 與 PubMed Search MCP `0.6.1` 的 MCP SDK v2 breaking baseline
+  (2026-08-11)
+- [x] 實作 Zotero 10+ Local API discovery、runtime `/api/local/authorize`、
+  Server-ID-bound writes 與 memory-only key (2026-08-12)
+- [x] 新增 8 個 `confirm=true` guarded management tools；Keeper 預設 surface
+  由 24 增至 32 tools，仍維持 6 resources (2026-08-12)
+- [x] 新增 response-bound item object version、full-text library cursor + bulk
+  POST optimistic concurrency、三階段 attachment upload、部分成功資訊與
+  `/file/view/url` path resolution (2026-08-12)
+- [x] 保留 Zotero 7–9 Connector 匯入/PDF 相容路徑，並禁止將 Local API writes
+  對非 loopback host 啟用 (2026-08-12)
+- [x] 新增 Local API wire tests、真實 loopback simulator smoke、opt-in Zotero live
+  smoke，以及單一已檢查 VSIX artifact 的 release workflow guard (2026-08-12)
 
 ## Doing
-- [ ] 發布 VS Code extension / VSIX `0.6.0` 與 bundled Keeper `2.0.0`、PubMed Search MCP `0.6.1`
+- [ ] 發布 VS Code extension / VSIX `0.7.0` 與 bundled Keeper `2.1.0`、PubMed
+  Search MCP `0.6.1`；目前只記錄為 release candidate，尚未標記已發布
 
 ## Next
-- [ ] 依 MCP runtime、extension/assets、docs、memory/release 分段提交
-- [ ] 推送 `main` 與 `v0.6.0-ext` tag，驗證 GitHub Actions、GitHub Release 與 Marketplace/VSIX 結果
+- [ ] 完成 assets sync 與全套 Python/extension/managed-install/VSIX smoke
+- [ ] 依 Local API runtime、docs/memory、extension/release 分段提交並推送 `main`
+- [ ] 推送 `v0.7.0-ext` tag，驗證 GitHub Actions、GitHub Release 與 Marketplace
+  使用同一個已 smoke-tested VSIX 檔案
 
 ## Blocked
 - [ ] 無

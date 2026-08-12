@@ -1,20 +1,21 @@
-# Zotero Keeper Plugin — 完整規劃規格書
+# Zotero Keeper Plugin — 選配擴充規格書
 
-> **版本**: v0.1.0 (Draft)
-> **日期**: 2025-07-18
+> **規格版本**: v0.2.0 (Draft)
+> **日期**: 2026-08-12
 > **作者**: u9401066
-> **狀態**: 📋 規劃中
+> **狀態**: 📋 選配 Plugin 規劃中；官方基本 CRUD transport 不依賴 Plugin
+> **產品基線**: VSIX 0.7.0 / Zotero Keeper 2.1.0 / MCP SDK v2 / 32 個預設 tools
 
 ---
 
 ## 目錄
 
 1. [執行摘要](#1-執行摘要)
-2. [動機與問題分析](#2-動機與問題分析)
-3. [技術架構](#3-技術架構)
-4. [功能規格](#4-功能規格)
+2. [目前架構與 Plugin 定位](#2-目前架構與-plugin-定位)
+3. [歷史附錄：pre-Zotero-10 HTTP Bridge 技術架構](#3-歷史附錄pre-zotero-10-http-bridge-技術架構)
+4. [功能規格（目前目標與歷史參考）](#4-功能規格目前目標與歷史參考)
 5. [Plugin API 可用能力清單](#5-plugin-api-可用能力清單)
-6. [專案結構](#6-專案結構)
+6. [歷史附錄：pre-Zotero-10 Bridge 專案結構](#6-歷史附錄pre-zotero-10-bridge-專案結構)
 7. [開發工具鏈](#7-開發工具鏈)
 8. [實作分期計畫](#8-實作分期計畫)
 9. [安全性考量](#9-安全性考量)
@@ -29,116 +30,102 @@
 
 ### 1.1 一句話描述
 
-**Zotero Keeper Plugin** 是一個 Zotero 7/8/9 原生外掛，透過暴露 Zotero 完整內部 JavaScript API（包括檔案系統、全文索引、PDF 內容、附件管理等），為外部 AI Agent（如 MCP Server）提供一個高權限的 HTTP Bridge，徹底解決 Local API 的功能限制。
+**Zotero Keeper Plugin** 是一個選配的 Zotero 原生外掛，補足官方 Local API
+不適合承載的 Zotero-native 能力：PDF annotation 語意、Reader/Notifier
+事件、原生 UI 與少數經 allowlist 審核的 internal-only 操作；它也可以作為
+Zotero 7–9 的相容 fallback，但不再是 Zotero 10+ 基本 CRUD、全文寫入或
+stored-file upload 的必要元件。
 
 ### 1.2 核心價值
 
-| 現有限制 (Local API) | Plugin 解決方案 |
-|---|---|
-| ❌ 無法讀取 PDF 內容 | ✅ `attachment.attachmentText` 直接取得全文 |
-| ❌ 無法更新現有項目 (501) | ✅ `item.setField()` + `item.saveTx()` |
-| ❌ 無法刪除項目 | ✅ `Zotero.Items.trashTx()` / `eraseTx()` |
-| ❌ 無法上傳附件 | ✅ `Zotero.Attachments.importFromFile()` |
-| ❌ 無法存取檔案系統 | ✅ `Zotero.File` + `IOUtils` + `PathUtils` |
-| ❌ 無法讀取 Annotations | ✅ `item.getAnnotations()` |
-| ❌ 無法操作 Saved Searches | ✅ `new Zotero.Search()` 完整 CRUD |
-| ❌ 無法批量修改 | ✅ `Zotero.DB.executeTransaction()` |
+Zotero Keeper 2.1.0 已在 MCP SDK v2 上提供 32 個預設 tools。新增的 8 個
+Local API tools 包含 runtime write authorization、collection/item/note/saved
+search 操作、全文寫入與 stored-file upload。Plugin 的價值因此集中於：
 
-### 1.3 架構定位
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    AI Agent Layer                        │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
-│  │ VS Code Ext  │  │ Claude/GPT   │  │ Other Agents │   │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘   │
-│         │                 │                 │            │
-│  ┌──────┴─────────────────┴─────────────────┴──────┐    │
-│  │            MCP Server (zotero-keeper)            │    │
-│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐ │    │
-│  │  │ Read Tools │  │Write Tools │  │Batch Tools │ │    │
-│  │  └─────┬──────┘  └─────┬──────┘  └─────┬──────┘ │    │
-│  └────────┼───────────────┼───────────────┼────────┘    │
-│           │               │               │             │
-│  ┌────────┴───────────────┴───────────────┴────────┐    │
-│  │            HTTP Bridge Client (DAL)              │    │
-│  │     GET/POST http://localhost:24119/keeper/*     │    │
-│  └────────────────────┬────────────────────────────┘    │
-└───────────────────────┼─────────────────────────────────┘
-                        │ HTTP (localhost only)
-┌───────────────────────┼─────────────────────────────────┐
-│  Zotero Desktop App   │                                 │
-│  ┌────────────────────┴────────────────────────────┐    │
-│  │     🆕 Zotero Keeper Plugin (本規格書)           │    │
-│  │  ┌──────────────────────────────────────────┐   │    │
-│  │  │   HTTP Server (port 24119)               │   │    │
-│  │  │   ┌──────┐ ┌──────┐ ┌──────┐ ┌────────┐ │   │    │
-│  │  │   │Items │ │Files │ │Full  │ │Annota- │ │   │    │
-│  │  │   │CRUD  │ │Mgmt  │ │Text  │ │tions   │ │   │    │
-│  │  │   └──┬───┘ └──┬───┘ └──┬───┘ └──┬─────┘ │   │    │
-│  │  └──────┼────────┼────────┼────────┼────────┘   │    │
-│  │         │        │        │        │            │    │
-│  │  ┌──────┴────────┴────────┴────────┴────────┐   │    │
-│  │  │     Zotero Internal JavaScript API       │   │    │
-│  │  │  Zotero.Items | Zotero.File | Zotero.DB  │   │    │
-│  │  └──────────────────────────────────────────┘   │    │
-│  └─────────────────────────────────────────────────┘    │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐    │
-│  │  Existing: Local API (port 23119) — Read-only   │    │
-│  └─────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────┘
-```
-
----
-
-## 2. 動機與問題分析
-
-### 2.1 現有 Local API 限制（實測結果）
-
-根據 `docs/ZOTERO_LOCAL_API.md` 的實測：
-
-| API 操作 | 端點 | 狀態 | 回應 |
-|---|---|---|---|
-| 讀取項目 | `GET /api/users/0/items` | ✅ 200 | 正常 |
-| 建立項目 | `POST /connector/saveItems` | ✅ 200 | 正常（Connector API） |
-| 更新項目 | `PATCH /api/users/0/items/:key` | ❌ 501 | Not Implemented |
-| 刪除項目 | `DELETE /api/users/0/items/:key` | ❌ 不支援 | — |
-| 讀取附件內容 | — | ❌ 不存在 | 沒有此端點 |
-| 上傳附件 | — | ❌ 不存在 | 沒有此端點 |
-| 全文搜尋 | — | ❌ 不存在 | 沒有此端點 |
-| Annotations | — | ❌ 不存在 | 沒有此端點 |
-
-### 2.2 為什麼選擇 Plugin 而非 Web API
-
-| 面向 | Plugin | Web API |
+| 優先級 | Plugin 適合提供的能力 | 原因 |
 |---|---|---|
-| 延遲 | < 1ms（同進程內） | 100-500ms（網路往返） |
-| 認證 | 不需要 API Key | 需要 API Key + OAuth |
-| 檔案存取 | 直接讀寫本地檔案 | 無法存取本地附件 |
-| 全文內容 | `attachment.attachmentText` | 僅 fulltext 索引 API |
-| 離線能力 | 完全離線可用 | ❌ 需要網路 |
-| 資料即時性 | 即時（同進程） | 需等待 sync |
-| PDF Annotations | 直接讀取 | 部分支援 |
-| 安全性 | 限制 localhost | 需公開 key |
+| P0 | Annotation/Reader 語意 | 需要 Zotero Reader 與 annotation 內部物件語境 |
+| P0 | Notifier 事件串流 | Local API 是 request/response；Plugin 可主動送出變更事件 |
+| P1 | Zotero-native UI | Item Pane、右鍵選單、狀態與使用者可見的操作入口 |
+| P1 | 經審核的 internal-only 操作 | 只暴露明確 allowlist，不提供任意 JavaScript/SQL/路徑存取 |
+| P2 | Zotero 7–9 fallback | 舊版沒有 Zotero 10 runtime-authorized Local writes 時的選配相容層 |
 
-### 2.3 對 zotero-keeper 生態系的補完
+以下能力**不應再列為 Plugin 的核心理由**：Zotero 10+ 的官方 item、collection、
+note、saved search CRUD transport、versioned fulltext write 與三階段 stored-file
+upload。Keeper 2.1 已透過官方 Local API v3 提供受限且需確認的 allowlist；它並未
+因此暴露任意 raw Local API 或通用 delete tool。
+
+### 1.3 目前架構定位
 
 ```
-zotero-keeper 生態系完整圖:
-
-┌─ pubmed-search-mcp ──── PubMed/Europe PMC/CORE 文獻搜尋
-│
-├─ zotero-keeper MCP ──── Zotero 讀寫（目前受 Local API 限制）
-│   │
-│   └─ 🆕 Zotero Keeper Plugin ── 解鎖完整 Zotero 能力
-│
-└─ VS Code Extension ──── 一鍵安裝、環境管理、狀態欄
+AI Agent / VSIX 0.7.0
+        │ MCP SDK v2
+        ▼
+Zotero Keeper 2.1.0 (32 default tools)
+        ├── Local API v3 : reads + Zotero 10+ authorized writes
+        ├── Connector API: create/import compatibility path (Zotero 7–10+)
+        └── Optional Plugin
+              ├── annotations / Reader events
+              ├── Notifier event stream
+              ├── Zotero-native UI
+              ├── reviewed internal-only operations
+              └── Zotero 7–9 write fallback
 ```
 
 ---
 
-## 3. 技術架構
+## 2. 目前架構與 Plugin 定位
+
+### 2.1 官方 Local API v3（Keeper 2.1 的主要路徑）
+
+Zotero 10+ 已提供 runtime-authorized Local API v3 writes。Keeper 在
+`GET /api/` discovery 後記錄 `Zotero-API-Version`、
+`Zotero-Schema-Version` 與 `Zotero-Server-ID`，並將 authorization、local
+object versions 與 cache 綁定該 Server-ID。
+
+- Reads 不需認證，但只能走 literal loopback。
+- Writes 先由 `authorize_local_writes` 觸發 Zotero 的 Allow / Always Allow /
+  Deny 視窗；Local API key 僅存於 process memory，不會成為 MCP 參數、結果、
+  log、URL query 或專案檔案。
+- 每次 mutation 都帶 Server-ID 及 local version precondition
+  (`If-Unmodified-Since-Version`)；`412` conflict 不自動重播。
+- Stored-file upload 使用官方三階段流程。upload URL 必須仍是設定中的 loopback
+  host/port，傳送檔案 bytes 時不得夾帶 Local API key。
+- `attach_file_to_item` 需要 Always Allow，因為流程包含多次 authenticated writes。
+
+這些是目前正式架構；不能再以「Local API read-only」、「更新固定回傳 501」或
+「等待官方 write API」描述 Zotero 10+。
+
+### 2.2 Connector 相容路徑
+
+`/connector/*` 與 `/api/*` 是兩個不同 contract。Keeper 保留 Connector 的
+create/import 能力供 Zotero 7–9 使用，在 Zotero 10+ 也維持向後相容；它不是
+Zotero 10+ Local API write 能力的替代規格。
+
+### 2.3 Plugin 的界線
+
+Plugin 不應：
+
+- 複製 Zotero 10+ 已正式支援的基本 CRUD/upload 作為預設 transport；
+- 暴露任意 Zotero JavaScript、SQLite、檔案路徑或 raw HTTP proxy；
+- 規避 Keeper 的 proposal → user confirmation → mutation 流程；
+- 重用或外洩 Local API runtime key；Plugin token 必須是獨立 credential；
+- 自動重播可能已成功的 mutation，或用新版本覆蓋使用者先前確認的狀態。
+
+| Zotero 版本 | Local reads | Connector import | Authorized Local writes | Plugin 定位 |
+|---|:---:|:---:|:---:|---|
+| 7–8 | ✅ | ✅ | ❌ | 選配 write fallback、UI、events |
+| 9 | ✅（依 Local API 設定） | ✅ | ❌ | 選配 write fallback、UI、events |
+| 10+ | ✅ | ✅（相容路徑） | ✅ | annotations/events/UI/internal-only ops |
+
+---
+
+## 3. 歷史附錄：pre-Zotero-10 HTTP Bridge 技術架構
+
+> **Historical — not the current architecture.** 本節保留 2025 年、Zotero 10
+> authorized Local writes 公開前的 `localhost:24119` 高權限 HTTP Bridge
+> 草案，供設計脈絡與考古使用。以下「Local API read-only／501／Plugin 負責
+> CRUD」等敘述只描述當時假設，不能套用到 Keeper 2.1 或 Zotero 10+。
 
 ### 3.1 Zotero 7/8/9 Plugin 基礎架構
 
@@ -254,9 +241,14 @@ POST   /keeper/v1/export                    # 匯出（BibTeX/RIS/CSL JSON）
 
 ---
 
-## 4. 功能規格
+## 4. 功能規格（目前目標與歷史參考）
 
-### 4.1 Phase 1：核心讀寫（MVP）
+> **Historical boundary:** 4.1–4.2 保留 pre-Zotero-10 HTTP Bridge 的 CRUD、
+> file、fulltext、notes、search 與 batch endpoint 草案；這些不是目前 Plugin
+> 的實作優先級。4.3–4.4 的 Zotero-native UI、annotations/Reader 與 Notifier
+> events 才是目前核心方向。
+
+### 4.1 Historical Phase 1：核心讀寫 Bridge（pre-Zotero-10）
 
 #### 4.1.1 項目 CRUD
 
@@ -402,7 +394,7 @@ interface StatusResponse {
 }
 ```
 
-### 4.2 Phase 2：進階功能
+### 4.2 Historical Phase 2：通用 Bridge 功能（pre-Zotero-10）
 
 #### 4.2.1 Annotations（PDF 標註）
 
@@ -544,7 +536,7 @@ const format = Zotero.Prefs.get("export.quickCopy.setting");
 const result = Zotero.QuickCopy.getContentFromItems(items, format);
 ```
 
-### 4.3 Phase 3：UI 整合
+### 4.3 Current target：Zotero-native UI 整合
 
 #### 4.3.1 偏好設定面板
 
@@ -556,14 +548,14 @@ const result = Zotero.QuickCopy.getContentFromItems(items, format);
 │  ┌──────────────────────────────┐   │
 │  │ Port: [24119]                │   │
 │  │ ☑ Auto-start on launch      │   │
-│  │ ☐ Require auth token        │   │
+│  │ ☑ Require auth token        │   │
 │  └──────────────────────────────┘   │
 │                                     │
 │  Security                           │
 │  ┌──────────────────────────────┐   │
 │  │ Bind: localhost only         │   │
 │  │ Auth Token: [••••••••]       │   │
-│  │ CORS Origins: [localhost]    │   │
+│  │ Browser CORS: [disabled]     │   │
 │  └──────────────────────────────┘   │
 │                                     │
 │  Logging                            │
@@ -587,7 +579,7 @@ const result = Zotero.QuickCopy.getContentFromItems(items, format);
 - "Re-index Full Text" — 重新索引全文
 - "Export to MCP Format" — 匯出為 MCP 格式
 
-### 4.4 Phase 4：進階整合
+### 4.4 Current target：Annotations 與事件整合
 
 #### 4.4.1 Notification Bridge（即時事件推送）
 
@@ -636,7 +628,7 @@ const notifierID = Zotero.Notifier.registerObserver({
 | `Zotero.MenuManager.registerMenu()` | 選單項目 | Zotero 8+ |
 | `Zotero.Notifier.registerObserver()` | 資料變更通知 | Zotero 5+ |
 
-### 5.2 Zotero 內部 API（非公開但穩定）
+### 5.2 Zotero 內部 API（非公開、需逐版驗證）
 
 | API | 功能 |
 |---|---|
@@ -664,7 +656,10 @@ const notifierID = Zotero.Notifier.registerObserver({
 
 ---
 
-## 6. 專案結構
+## 6. 歷史附錄：pre-Zotero-10 Bridge 專案結構
+
+> 本節保留原始 HTTP-centric 目錄、manifest 與 prefs 草案。若開始實作，應先
+> 依第 8 節目前 roadmap 縮減 scope，且不得直接複製未審核的 CRUD handlers。
 
 ### 6.1 目錄規劃
 
@@ -767,7 +762,7 @@ zotero-plugin/                          # 新的子專案目錄
 ```javascript
 pref("extensions.zotero.keeper.bridge.port", 24119);
 pref("extensions.zotero.keeper.bridge.autoStart", true);
-pref("extensions.zotero.keeper.bridge.requireAuth", false);
+pref("extensions.zotero.keeper.bridge.requireAuth", true); // mandatory
 pref("extensions.zotero.keeper.bridge.authToken", "");
 pref("extensions.zotero.keeper.logging.level", "info");
 pref("extensions.zotero.keeper.logging.logRequests", false);
@@ -833,67 +828,63 @@ zotero-keeper/                    # 主 repo
 
 ## 8. 實作分期計畫
 
-### Phase 1：HTTP Bridge MVP
+### Phase 0：契約與安全邊界（P0）
 
-**目標**：建立基本的 HTTP Bridge，實現 Local API 無法做到的核心操作。
+- 定義只包含 annotations、Reader/Notifier events、UI action 與經審核
+  internal-only operations 的 allowlist；不提供 raw Zotero API proxy。
+- Plugin endpoint 僅 bind literal loopback，所有 request 強制帶獨立的高熵
+  bearer token，CORS 預設完全關閉。
+- 明確區隔 Plugin token 與 Zotero Local API runtime key；兩者不得互用、回傳
+  給 MCP 或寫入 workspace。
+- 所有 mutation 保留 Keeper 的 proposal → explicit confirmation → mutation
+  模式，並定義 conflict/partial-result contract。
 
-| 功能 | 優先級 | 估計複雜度 |
+### Phase 1：Annotations、Reader 與 Notifier events（P0）
+
+| 功能 | 優先級 | 驗收重點 |
 |---|---|---|
-| HTTP Server 啟動/關閉 | P0 | 中 |
-| `GET /status` — 健康檢查 | P0 | 低 |
-| `GET /items/:key` — 讀取項目 | P0 | 低 |
-| `PATCH /items/:key` — 更新項目 | P0 | 中 |
-| `DELETE /items/:key` — 刪除項目 | P0 | 低 |
-| `GET /items/:key/fulltext` — 全文 | P0 | 中 |
-| `GET /items/:key/file` — 檔案下載 | P0 | 中 |
-| `POST /items/:key/attachments` — 附件上傳 | P1 | 高 |
-| 偏好設定面板（Port/Auth） | P1 | 中 |
-| 基本認證（Bearer Token） | P1 | 低 |
-| 基本錯誤處理 | P0 | 低 |
+| 讀取結構化 PDF annotations | P0 | 類型、頁碼、位置、顏色與註解語意穩定 |
+| Reader event listener | P0 | 只發布 allowlisted event 與最小必要 payload |
+| Notifier → SSE event stream | P0 | reconnect、backpressure、shutdown 與資料庫切換安全 |
+| Plugin health/capability discovery | P0 | 回報版本與能力，不回報 secrets |
 
-**交付物**：
-- 可安裝的 .xpi 檔案
-- MCP Server 可連線並呼叫 Bridge API
-- 基本偏好設定面板
+### Phase 2：Zotero-native UI（P1）
 
-### Phase 2：進階功能
-
-| 功能 | 優先級 | 估計複雜度 |
+| 功能 | 優先級 | 驗收重點 |
 |---|---|---|
-| `GET /items/:key/annotations` | P0 | 中 |
-| `GET /items/:key/notes` + CRUD | P0 | 中 |
-| `POST /fulltext-search` | P0 | 中 |
-| `POST /search` — 進階搜尋 | P1 | 中 |
-| `POST /batch` — 批量操作 | P1 | 高 |
-| `POST /export` — 匯出 | P2 | 中 |
-| Collections 完整 CRUD | P1 | 中 |
-| Tags 操作 | P2 | 低 |
+| Item Pane Section | P1 | 顯示 MCP/Plugin 狀態與最近操作，不洩漏 token |
+| Context menu actions | P1 | 使用者可見、可取消、目標 item 清楚 |
+| Preference Pane | P1 | 認證固定開啟；可輪替 token、停用 bridge |
+| Reader actions | P1 | annotation/selection 操作有明確 UI 回饋 |
 
-### Phase 3：UI 整合
+### Phase 3：Internal-only operations（P1/P2）
 
-| 功能 | 優先級 | 估計複雜度 |
-|---|---|---|
-| Item Pane Section | P2 | 中 |
-| 右鍵選單 | P2 | 低 |
-| Toolbar Button | P2 | 低 |
-| 狀態欄指示 | P2 | 低 |
+每個 operation 必須先證明官方 Local API v3 或 Connector 無法安全表達，再加入
+最小 allowlist。Internal API 必須有 Zotero 版本相容測試、失敗關閉策略與移除
+計畫。Generic item/collection/note/saved-search CRUD、fulltext write 與 stored-file
+upload 不屬於此 phase，因為 Zotero 10+ 已有正式 transport。
 
-### Phase 4：事件系統
+### Phase 4：Zotero 7–9 fallback（P2）
 
-| 功能 | 優先級 | 估計複雜度 |
-|---|---|---|
-| Notifier → SSE Bridge | P2 | 高 |
-| Related Items API | P3 | 中 |
-| Custom Column（AI 指標） | P3 | 中 |
+只有在確認仍需支援 legacy desktop writes 時才啟動。Fallback 必須 capability-
+gated，且不得在 Zotero 10+ 攔截 Keeper 的 Local API v3 正常路徑。Connector
+create/import 仍為 7–9 的第一相容選擇；Plugin 只補 Connector 無法覆蓋且經使用者
+確認的操作。
 
-### Phase 5：MCP Server 整合
+### Phase 5：Keeper / VSIX 整合（P2）
 
-| 功能 | 優先級 | 估計複雜度 |
-|---|---|---|
-| 新增 Bridge Client 到 MCP DAL | P0 | 中 |
-| 優先使用 Bridge、fallback 到 Local API | P0 | 中 |
-| 新增基於 Bridge 的 MCP 工具 | P1 | 中 |
-| VS Code Extension 自動檢測 Plugin | P2 | 低 |
+- Keeper 在現有 Local API 與 Connector discovery 之外，選配偵測 Plugin
+  capability；沒有 Plugin 時 32-tool 基線仍正常。
+- VSIX 只顯示選配安裝/診斷狀態，不把 Plugin 當成 Keeper 2.1 啟動前置條件。
+- MCP tools 依能力路由：Zotero 10+ basic writes → Local API v3；create/import
+  compatibility → Connector；annotations/events/internal-only ops → Plugin。
+
+### Historical：pre-Zotero-10 優先順序
+
+2025 草案原先把 HTTP server、item CRUD、全文、檔案下載/上傳與 Bridge-first
+DAL 設為 Phase 1，再依序加入 annotations/notes/search/batch、UI、events 與 MCP
+整合。相關 endpoint、型別與目錄設計完整保留在第 3、4、6 節，但此優先順序已
+由 Zotero 10 Local API v3 與 Keeper 2.1 的正式能力取代。
 
 ---
 
@@ -903,61 +894,53 @@ zotero-keeper/                    # 主 repo
 
 | 威脅 | 風險 | 緩解措施 |
 |---|---|---|
-| 未授權存取 HTTP Bridge | 高 | 僅綁定 `127.0.0.1`，不接受外部連線 |
-| 惡意程式存取 Bridge | 中 | 可選的 Bearer Token 認證 |
-| 路徑遍歷（檔案 API） | 高 | 限制檔案存取範圍在 Zotero storage 內 |
-| 注入攻擊（搜尋 API） | 中 | 參數驗證、使用 Zotero 安全 API |
-| 資料洩漏（錯誤訊息） | 低 | 不在錯誤訊息中暴露內部路徑 |
-| 資源耗盡（批量 API） | 中 | 限制批量操作數量（上限 100） |
+| 未授權的本機程序呼叫 Plugin | 高 | literal loopback + **mandatory** bearer token；無匿名模式 |
+| Plugin token 或 Local API key 洩漏 | 高 | 分離 credential；不進 MCP、log、URL、workspace；可輪替 |
+| 任意 internal API / SQL / filesystem 存取 | 高 | 固定 operation allowlist 與 schema；不提供 raw proxy |
+| 路徑遍歷或任意檔案 exfiltration | 高 | 不接受 raw path；只處理已解析且屬於 Zotero storage 的 item |
+| 跨資料庫或 stale mutation | 高 | 驗證 active database identity/version；conflict fail closed |
+| Browser/CORS drive-by request | 高 | CORS 預設關閉；不接受 wildcard、prefix 或任意 WebView origin |
+| 資源耗盡或 event flood | 中 | request/body/queue limits、backpressure、rate limit |
+| Internal API 隨 Zotero 版本變更 | 中 | capability discovery、逐版 integration tests、失敗關閉 |
 
-### 9.2 安全實作
+### 9.2 Credential 與 transport 規則
+
+Zotero 10+ 的官方 Local API authorization 仍由 Keeper 直接處理：先讀
+`Zotero-Server-ID`，再由 Zotero UI 核准 runtime key；object writes 使用 local
+version precondition，stored-file bytes 只送往經驗證的 loopback upload URL。
+Plugin 不得代理、記錄或重用該 key。
+
+若選配 HTTP Bridge 實作，token 認證是不可關閉的基線：
 
 ```typescript
-// 1. 僅 localhost
+// Concept only: exact APIs depend on the selected Zotero plugin scaffold.
 const serverSocket = Cc["@mozilla.org/network/server-socket;1"]
   .createInstance(Ci.nsIServerSocket);
 serverSocket.init(port, true, -1); // loopbackOnly = true
 
-// 2. Bearer Token 認證
 function authenticate(request: nsIHttpRequest): boolean {
-  if (!Zotero.Prefs.get('extensions.zotero.keeper.bridge.requireAuth')) {
-    return true;
-  }
   const token = Zotero.Prefs.get('extensions.zotero.keeper.bridge.authToken');
   const authHeader = request.getHeader('Authorization');
-  return authHeader === `Bearer ${token}`;
+  return token.length >= 32 && constantTimeEqual(authHeader, `Bearer ${token}`);
 }
-
-// 3. 路徑驗證
-function validateFilePath(path: string): boolean {
-  const storageDir = Zotero.DataDirectory.dir;
-  const resolved = PathUtils.normalize(path);
-  return resolved.startsWith(storageDir);
-}
-
-// 4. 請求大小限制
-const MAX_BODY_SIZE = 50 * 1024 * 1024; // 50 MB
-const MAX_BATCH_SIZE = 100;
 ```
 
 ### 9.3 CORS 設定
 
-```typescript
-// 預設只允許 localhost
-const ALLOWED_ORIGINS = [
-  'http://localhost',
-  'http://127.0.0.1',
-  'vscode-webview://',
-];
+非 browser 的 local MCP client 不需要 CORS。預設不送
+`Access-Control-Allow-Origin`；若未來 Zotero UI 以外確有 browser client，必須
+新增 exact-origin allowlist 與獨立 threat-model review，不能以 `startsWith()` 或
+wildcard 放行 localhost/WebView。
 
-function setCORSHeaders(response: nsIHttpResponse, origin: string) {
-  if (ALLOWED_ORIGINS.some(o => origin.startsWith(o))) {
-    response.setHeader('Access-Control-Allow-Origin', origin, false);
-    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS', false);
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization', false);
-  }
-}
-```
+### 9.4 Mutation 與 upload
+
+- Bridge mutation 仍需 MCP proposal/confirmation，不因已通過 token 認證而省略。
+- 任何可觀察版本衝突都回傳給使用者，不自動 refetch-and-overwrite 或 replay。
+- Zotero 10+ stored-file upload 維持 Keeper → Local API 三階段路徑：需要
+  remembered authorization，upload URL 限制在設定中的 loopback port，bytes
+  request 不帶 Local API key。
+- 若 Zotero 7–9 fallback 日後需要 Plugin 檔案操作，必須另訂大小、來源、父 item
+  與 partial-failure contract；不可把歷史任意 file endpoint 直接上線。
 
 ---
 
@@ -967,42 +950,38 @@ function setCORSHeaders(response: nsIHttpResponse, origin: string) {
 
 | 層級 | 工具 | 涵蓋範圍 |
 |---|---|---|
-| 單元測試 | vitest / jest | Serializer, Router, Middleware |
-| 整合測試 | Zotero test runner | HTTP Bridge ↔ Zotero API |
-| E2E 測試 | curl / httpie | 完整 API 流程 |
-| Manual 測試 | Zotero Dev Tools | UI 整合 |
+| 單元測試 | vitest | capability、serializer、auth、event filtering、limits |
+| 整合測試 | Zotero test runner | Reader/Notifier/UI ↔ allowlisted Plugin operations |
+| E2E 測試 | authenticated local client | 啟動、capability discovery、annotations、SSE、shutdown |
+| 相容性測試 | Zotero 7/8/9/10 matrix | fallback gating；Zotero 10+ basic writes 不改走 Plugin |
+| 安全負向測試 | local adversarial client | 無 token、錯 token、CORS、path、oversize、event flood |
+| Manual 測試 | Zotero Dev Tools | UI、授權失敗與使用者取消 |
 
 ### 10.2 測試用例範例
 
 ```typescript
-// 單元測試：序列化器
-describe('ItemSerializer', () => {
-  it('should serialize a Zotero item to JSON', () => {
-    const mockItem = createMockZoteroItem({
-      key: 'ABC12345',
-      itemType: 'journalArticle',
-      title: 'Test Article',
-    });
-    const result = serializeItem(mockItem);
-    expect(result.key).toBe('ABC12345');
-    expect(result.itemType).toBe('journalArticle');
+describe('Plugin security and annotation contract', () => {
+  it('rejects anonymous requests', async () => {
+    const response = await fetch(
+      'http://127.0.0.1:24119/keeper/v1/capabilities'
+    );
+    expect(response.status).toBe(401);
   });
-});
 
-// 整合測試：HTTP Bridge
-describe('Bridge API', () => {
-  it('should update an item', async () => {
-    const response = await fetch('http://localhost:24119/keeper/v1/items/ABC12345', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: 'Updated Title' }),
-    });
+  it('returns allowlisted annotation fields to an authenticated client', async () => {
+    const response = await fetch(
+      'http://127.0.0.1:24119/keeper/v1/items/ABC12345/annotations',
+      { headers: { Authorization: `Bearer ${testToken}` } },
+    );
     expect(response.status).toBe(200);
-    const item = Zotero.Items.getByLibraryAndKey(1, 'ABC12345');
-    expect(item.getField('title')).toBe('Updated Title');
+    expect(await response.json()).toMatchSchema(annotationResponseSchema);
   });
 });
 ```
+
+Keeper integration tests另需證明：Zotero 10+ 的
+`authorize_local_writes`、versioned mutation、fulltext write 與三階段 upload
+持續直接走 Local API v3；Plugin 未安裝或停用時，32 個預設 tools 的基線不變。
 
 ---
 
@@ -1014,7 +993,7 @@ describe('Bridge API', () => {
 開發者                    CI/CD                     分發
   │                        │                        │
   ├── npx bumpp            │                        │
-  │   └── git tag v0.1.0   │                        │
+  │   └── git tag v0.x.y   │                        │
   │       └── git push ────┤                        │
   │                        ├── npm run build         │
   │                        ├── 產生 .xpi             │
@@ -1048,12 +1027,13 @@ describe('Bridge API', () => {
 
 | 風險 | 影響 | 可能性 | 緩解措施 |
 |---|---|---|---|
-| Zotero 內部 API 變更 | 高 | 中 | 使用官方 Plugin API 優先；訂閱 zotero-dev 郵件列表 |
-| Zotero 8 ESM 遷移 | 中 | 已確認 | 使用 migrate-fx140 腳本；支援 Zotero 7+8 |
-| HTTP Bridge 效能問題 | 中 | 低 | 使用非同步 I/O；批量操作加入限流 |
-| 安全漏洞 | 高 | 低 | localhost-only；Token 認證；路徑驗證 |
-| Plugin 審核被拒 | 低 | 低 | 遵循官方指南；不做危險操作 |
-| 與其他 Plugin 衝突 | 低 | 低 | 使用命名空間隔離（keeper-*） |
+| Zotero 內部 API 變更 | 高 | 中 | 官方 Plugin API 優先；capability gate；逐版測試；失敗關閉 |
+| Zotero 7–10 lifecycle 差異 | 中 | 中 | 版本矩陣；fallback 與 Zotero 10+ transport 分離 |
+| Event flood / SSE backpressure | 中 | 中 | 有界 queue、coalescing、rate limit、可觀察 dropped count |
+| Bridge credential 洩漏 | 高 | 低 | 強制高熵 token、輪替、不進 MCP/log/workspace、constant-time compare |
+| Internal-only operation scope creep | 高 | 中 | 每個 endpoint 個別 threat-model/allowlist；禁止 raw proxy |
+| Plugin 審核被拒 | 中 | 低 | 最小權限、透明 UI、遵循官方指南、不提供任意破壞性操作 |
+| 與其他 Plugin 衝突 | 低 | 低 | 使用命名空間隔離（keeper-*）；完整 startup/shutdown cleanup |
 
 ---
 
@@ -1065,6 +1045,9 @@ describe('Bridge API', () => {
 |---|---|
 | Zotero 7 Plugin 開發指南 | https://www.zotero.org/support/dev/zotero_7_for_developers |
 | Zotero 8 Plugin 開發指南 | https://www.zotero.org/support/dev/zotero_8_for_developers |
+| Zotero Local API v3 | https://www.zotero.org/support/dev/web_api/v3/local_api |
+| Zotero API v3 Write Requests | https://www.zotero.org/support/dev/web_api/v3/write_requests |
+| Zotero File Upload | https://www.zotero.org/support/dev/web_api/v3/file_upload |
 | Zotero JavaScript API | https://www.zotero.org/support/dev/client_coding/javascript_api |
 | Zotero Plugin Template | https://github.com/windingwind/zotero-plugin-template |
 | zotero-plugin-toolkit | https://github.com/windingwind/zotero-plugin-toolkit |
@@ -1105,25 +1088,26 @@ describe('Bridge API', () => {
 ### 13.4 與 MCP Server 的整合方案
 
 ```
-MCP Server 改動摘要:
+Keeper 2.1 routing:
 
-1. 新增 BridgeClient (DAL 層)
-   mcp-server/src/zotero_mcp/infrastructure/dal/bridge_client.py
-   - HTTP client 連接 localhost:24119
-   - 自動探測 Bridge 是否可用
-   - fallback 到現有 Local API client
+1. Local API v3 client (Zotero 10+)
+   - discovery: API/schema version + Zotero-Server-ID
+   - runtime authorization held only in memory
+   - versioned basic CRUD/fulltext + three-phase stored-file upload
 
-2. 更新現有工具使用 Bridge
-   - get_item() → 優先使用 Bridge（取得更完整資訊）
-   - 新增 update_item() 工具（之前不可能）
-   - 新增 get_fulltext() 工具（之前不可能）
-   - 新增 get_annotations() 工具（之前不可能）
-   - 新增 upload_attachment() 工具（之前不可能）
-   - 新增 delete_item() 工具（之前不可能）
+2. Connector client (Zotero 7–10+ compatibility)
+   - existing create/import workflow
+   - remains distinct from the Local API write contract
 
-3. VSCode Extension 整合
-   - StatusBar 顯示 Bridge 連線狀態
-   - 自動偵測 Zotero Plugin 是否安裝
+3. Optional Plugin client
+   - authenticated capability discovery on literal loopback
+   - annotations / Reader / Notifier events / Zotero-native UI
+   - reviewed internal-only operations and optional Zotero 7–9 fallback
+   - never becomes a prerequisite for the 32-tool Keeper baseline
+
+4. VSIX integration
+   - optional installation/health status only
+   - no Plugin credential in settings, logs, status text, or MCP definitions
 ```
 
 ---
@@ -1132,4 +1116,5 @@ MCP Server 改動摘要:
 
 | 日期 | 版本 | 變更 |
 |---|---|---|
+| 2026-08-12 | v0.2.0 | 對齊 VSIX 0.7 / Keeper 2.1 / 32 tools 與 Zotero 10 Local API v3；Plugin 重新定位為 annotations/events/UI/internal-only ops/Zotero 7–9 fallback；舊 HTTP Bridge 明標歷史 |
 | 2025-07-18 | v0.1.0 | 初版規格書 |

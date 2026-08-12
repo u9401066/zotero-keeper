@@ -40,8 +40,9 @@ When using Zotero Keeper:
 
 ### Network Security
 
-1. **Keep Zotero local interfaces on loopback**: Zotero's Local and Connector
-   APIs are unauthenticated local interfaces.
+1. **Keep Zotero local interfaces on loopback**: Local API reads and Connector
+   endpoints are local interfaces. Zotero 10+ writes require runtime approval,
+   but the resulting key is intentionally unscoped.
    - Run Zotero Keeper on the same trusted host as Zotero Desktop.
    - Keep `ZOTERO_HOST=localhost` (or `127.0.0.1`).
    - Never expose or forward port `23119` to a LAN or the Internet.
@@ -60,6 +61,18 @@ When using Zotero Keeper:
    - Keep it in environment variables
    - Never hardcode in source
 
+3. **Zotero Local API key**: Keeper obtains it only from Zotero's runtime
+   authorization dialog
+   - The key remains in process memory and must never appear in MCP arguments,
+     results, logs, URLs, or workspace files
+   - Reauthorize explicitly after a process restart, invalid key, or database
+     Server-ID change
+   - Multi-step file uploads require the user to choose Always Allow
+   - Obtain response-bound identity before preview; every preview and confirmed
+     mutation carries that same `expected_server_id`
+   - If authorization returns another identity, discard the proposal and repeat
+     the read, preview, and approval. Never supplement identity only after review
+
 ### MCP Security
 
 1. **Trusted MCP Clients Only**: Only use with trusted AI agents
@@ -73,13 +86,18 @@ When using Zotero Keeper:
 - Collection-aware imports fail closed when no destination is confirmed
 - My Library root writes require explicit authorization
 - MCP SDK v2 typed tool schemas and input validation
+- Zotero 10+ writes are response-bound Server-ID, loopback-only, and
+  confirmation-gated. Metadata updates use exact-item object versions;
+  full-text writes use response-bound library cursors with bulk
+  `POST /api/users/0/fulltext`
 - NCBI credentials are read from environment/configuration rather than hardcoded
 
 ## Known Limitations
 
-1. **No Local API Authentication**: Zotero's Local and Connector APIs do not
-   authenticate callers. Their security boundary is the local machine, so they
-   must remain bound to loopback.
+1. **Unscoped local authorization**: Zotero 10+ authenticates Local API writes,
+   but a granted key is not restricted to individual libraries or operations.
+   Local reads and Connector endpoints also retain a same-machine trust
+   boundary, so port 23119 must remain on loopback.
 
 2. **Trusted-agent boundary**: An authorized MCP client can invoke write tools.
    Review proposed imports, collection choices, and root-library confirmations.

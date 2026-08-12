@@ -7,15 +7,15 @@
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        VS Code Extension                         │
-│                    (vscode-zotero-mcp v0.6.0)                   │
+│              (vscode-zotero-mcp v0.7.0 candidate)              │
 │       one managed venv / one MCP SDK v2 package set             │
 └──────────────────────────────┬──────────────────────────────────┘
                                │ MCP Protocol (stdio)
            ┌───────────────────┴───────────────────┐
            ▼                                       ▼
 ┌──────────────────────┐              ┌──────────────────────┐
-│ zotero-keeper 2.0.0  │              │ pubmed-search 0.6.1 │
-│ 24 tools/6 resources │◄────────────►│       45 tools       │
+│ zotero-keeper 2.1.0  │              │ pubmed-search 0.6.1 │
+│ 32 tools/6 resources │◄────────────►│       45 tools       │
 │ SDK v2 MCPServer     │ UnifiedArticle│ SDK v2 MCPServer     │
 └──────────┬───────────┘   handoff     └──────────┬───────────┘
            │                                      │
@@ -55,7 +55,8 @@ infrastructure/
 │   ├── client.py         # read/write facade
 │   ├── client_base.py    # transport/configuration
 │   ├── client_read.py    # Local API reads
-│   └── client_write.py   # Connector writes/attachments
+│   ├── client_write.py   # Zotero 7–9 compatible Connector writes
+│   └── client_local.py   # Zotero 10+ authorized Local API writes
 ├── mappers/
 │   ├── pubmed_mapper.py  # PubMed → Zotero 映射
 │   └── zotero_schema.py  # type-aware Zotero schema guard
@@ -66,6 +67,7 @@ infrastructure/
     ├── basic_read_tools.py / search_tools.py
     ├── collection_tools.py / saved_search_tools.py
     ├── attachment_tools.py / analytics_tools.py
+    ├── local_api_tools.py # 8 guarded Local API tools
     ├── unified_import_tools.py # handoff + import_pdf
     ├── interactive_tools.py / batch_tools.py
     └── resources.py      # 6 MCP resources
@@ -119,13 +121,34 @@ infrastructure/
 - **理由**: Registry 收錄不代表 Zotero 官方產品；loopback 無 Web API key 的
   desktop flow 也不能直接延伸到遠端 service
 
+### ADR-008: Zotero 10+ Local API 寫入採 runtime authorization 與封閉工具面
+- **決策**: Keeper `2.1.0` 先 discovery `/api/` 取得 Server-ID，再透過
+  `/api/local/authorize` 取得只存於記憶體的 runtime key；所有 authorize/write
+  requests 必須攜帶 Server-ID。對 agent 只公開 1 個 authorize tool 與 7 個需要
+  `confirm=true` 的 collection/item/note/saved-search/file/full-text mutations，不公開
+  任意 delete surface。
+- **理由**: Zotero 10+ 現已支援本地寫入，但 desktop 授權不是長期 Web API
+  credential；明確工具、local optimistic concurrency 與確認閘能在擴大功能時維持
+  使用者選擇與資料安全。
+- **相容性**: Zotero 7–9 繼續使用既有 Connector 匯入流程；新寫入 capability
+  只在 Zotero 10+ discovery/authorization 成功後啟用。
+- **安全限制**: `localhost:23119` 不得被 bind、proxy 或 forward 至其他主機；
+  preview 前先取得 response-bound Server-ID，所有 confirmed mutation 都要求 proposal
+  中已核准的 `expected_server_id`。item metadata 使用 response-bound object version；
+  full-text 使用 library cursor 與 bulk `/fulltext` POST，不使用 attachment object
+  version。若 authorization identity 不同，必須重新 read、preview 與取得核准。
+
+`v0.6.0-ext` / Keeper `2.0.0` 已於 2026-08-11 完成發布。ADR-008 對應目前仍在
+發布中的 `v0.7.0-ext` / Keeper `2.1.0`，不代表該候選版已上架。
+
 ## 下一步架構改進
 
-1. **先完成 v2 release invariant**: 雙 server 同 resolver 升級與 runtime smoke
+1. **完成 v0.7 release invariant**: 對同一個已 smoke-tested VSIX artifact 執行
+   Marketplace publish 與 GitHub Release，避免重新 package 產生漂移
 2. **拆分大檔案**: 依據上表拆分仍超過 400 行的檔案
 3. **增加 Application Layer**: 如果匯入 orchestration 持續變複雜，考慮加入 services/
 4. **Repository Pattern**: 在 Domain 和 Infrastructure 之間加入抽象
 
 ---
-*Updated: 2026-08-11*
+*Updated: 2026-08-12*
 *符合: CONSTITUTION.md 第 1, 2 條*

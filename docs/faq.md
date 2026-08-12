@@ -16,9 +16,9 @@ Common questions about installing, configuring, and using Zotero Keeper.
 
 ### What is the easiest way to install?
 
-For VS Code users, install the v0.6.0 VSIX from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp). It is the recommended distribution for Zotero Keeper 2.0.0 and PubMed Search MCP 0.6.1.
+For VS Code users, install the v0.7.0 VSIX from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp). It is the recommended distribution for Zotero Keeper 2.1.0 and PubMed Search MCP 0.6.1.
 
-For Claude Desktop or manual setups, use a source checkout with `uv sync`. The separately published `uvx`/PyPI package may still be on the older pre-2.0 line; do not assume this command installs Keeper 2.0.0 until the PyPI release is updated:
+For Claude Desktop or manual setups, use a source checkout with `uv sync`. The separately published `uvx`/PyPI package may still be on an older line; verify its published version rather than assuming this command installs Keeper 2.1.0:
 
 ```bash
 # Legacy pre-2.0 PyPI line only
@@ -61,7 +61,7 @@ Yes. Zotero Keeper is a standard [MCP server](https://modelcontextprotocol.io/).
 
 ### I'm connecting to a remote Zotero instance. What should I set?
 
-Do not expose Zotero's unauthenticated Local/Connector API port to another host. Keep it bound to loopback and run Keeper beside Zotero Desktop on the same trusted machine.
+Do not expose Zotero's Local/Connector API port to another host. Local reads and Connector endpoints do not require authentication. Zotero 10+ Local writes do require a runtime key, but that does not turn port 23119 into a remotely hardened service. Keep it bound to loopback and run Keeper beside Zotero Desktop on the same trusted machine.
 
 For a genuinely remote library, use Zotero's authenticated HTTPS Web API or a purpose-built authenticated service with TLS, authorization, and explicit network access controls.
 
@@ -132,6 +132,7 @@ The public surface is:
 - **Search**: handled by pubmed-search-mcp
 - **Import handoff**: `import_articles` (Zotero Keeper)
 - **Library reads**: all read tools (Zotero Keeper)
+- **Narrow local mutations**: eight Zotero 10+ tools with runtime authorization and explicit confirmation (Zotero Keeper)
 
 All writes fail closed on collection routing. `skip_collection_prompt=True` aborts; `quick_save`, `import_articles`, and `import_pdf` reject a missing collection. Saving to My Library requires explicit user confirmation plus `allow_library_root=true` (and `interactive_save` confirms `ROOT` a second time).
 
@@ -149,19 +150,54 @@ Yes, using `get_item_fulltext`. This returns text that Zotero has already indexe
 
 1. The PDF must be attached to the Zotero item
 2. Zotero must have indexed it (happens automatically in the background)
-3. If you need the file path for external PDF tools, use `get_item_attachments` and set `ZOTERO_DATA_DIR`
+3. If you need the file path for external PDF tools, use `get_item_attachments`
+
+On Zotero 10+, `get_item_attachments` first asks the official Local API for `/items/{attachmentKey}/file/view/url`, safely decodes the returned `file://` URL, and reports `file_path_source: "local_api"`. `ZOTERO_DATA_DIR` is only a fallback for Zotero 7–9 or when that endpoint is unavailable.
 
 ---
 
-## Zotero API Limitations
+### How do Zotero 10+ write confirmations work?
+
+Keeper exposes seven narrow mutation tools plus
+`authorize_local_writes(require_remembered: bool = False)`. Before preview,
+obtain a response-bound `server_id` from an exact Local API read or
+authorization. Use the exact-item response's object version for
+`update_item_fields`, or the response-bound library cursor from
+`get_item_attachments` / `get_item_fulltext` for `set_attachment_fulltext`.
+Call the intended mutation with `confirm=false` and that
+`expected_server_id`; it returns the complete `proposed` change and performs no
+Zotero read, authorization, filesystem probe, or write. After the user approves
+that exact proposal, ensure local authorization and repeat it unchanged with
+`confirm=true` only if the authorization identity matches.
+
+Zotero itself displays **Allow**, **Always Allow**, or **Deny**. The key stays
+only in Keeper memory and never appears in MCP input or output. Use
+`authorize_local_writes(require_remembered=false)` for a single-write operation.
+Before `attach_file_to_item`, use `require_remembered=true`; authorization
+succeeds only when Zotero grants reusable **Always Allow**, because the stored-file
+protocol requires multiple writes. Every confirmed mutation requires the
+reviewed `expected_server_id`. If authorization returns another identity,
+discard the proposal, reread, preview again, and obtain new approval; never add
+identity only after preview. `set_attachment_fulltext` uses a library cursor and
+bulk `POST /api/users/0/fulltext`, not an attachment object version. See the
+official [Local API](https://www.zotero.org/support/dev/web_api/v3/local_api),
+[write-request](https://www.zotero.org/support/dev/web_api/v3/write_requests),
+and [full-text](https://www.zotero.org/support/dev/web_api/v3/fulltext_content)
+documentation.
+
+---
+
+## Zotero API Capabilities & Safety
 
 ### Why can't I delete or move items?
 
-Zotero's local API is **read-only** for most operations. The Connector API (used by Zotero Keeper for writing) only supports **creating new items**; it cannot update, delete, or move them. See the [API Limitations section in the README](../README.md#️-zotero-api-limitations-important).
+The official Zotero 10+ Local API supports item, collection, and saved-search writes, including deletion. Keeper 2.1.0 intentionally exposes **no raw delete MCP tool** and no generic arbitrary PATCH/DELETE surface. Its safe tools can add collection membership, update approved scalar metadata, create collections/notes/saved searches, attach a file, and set attachment full text after confirmation.
+
+`add_items_to_collection` is additive and preserves all existing memberships; it does not remove an item from another collection or move it to My Library root. On Zotero 7–9, these new Local write tools are unavailable, so perform updates in the Zotero UI. These are Keeper safety/product boundaries, not claims that the Zotero 10+ Local API lacks write capability.
 
 **Workarounds:**
 - Delete duplicates: Zotero > Tools > **Merge Duplicates**
-- Move items: **drag and drop** in Zotero's GUI
+- Remove/move collection memberships: **drag and drop** in Zotero's GUI
 - Bulk operations: [Zutilo](https://github.com/wshanks/Zutilo) or [Zotero Actions & Tags](https://github.com/windingwind/zotero-actions-tags) plugins
 
 ---
@@ -175,15 +211,22 @@ The Connector API always creates new items. `import_articles` uses `skip_duplica
 
 ---
 
-### Does Zotero 8 work differently from Zotero 7?
+### Which Zotero versions support each workflow?
 
-Zotero 8 stores PDF annotations as top-level items with `itemType: "annotation"`. Zotero Keeper automatically filters these out from all search, list, and statistics results.
+| Capability | Zotero 7 | Zotero 8 | Zotero 9 | Zotero 10+ |
+|------------|----------|----------|----------|------------|
+| Keeper reads, search, resources | Yes | Yes | Yes | Yes |
+| Connector save/import tools | Yes | Yes | Yes | Yes |
+| Eight authorized Local write tools | No | No | No | Yes |
+| Official attachment file URL | Fallback | Fallback | Fallback | Preferred |
+
+Zotero 8 introduced top-level PDF annotation objects with `itemType: "annotation"`; Keeper filters them from normal bibliographic search, list, and statistics results. `interactive_save`, `quick_save`, `import_articles`, and `import_pdf` remain Connector-compatible across Zotero 7–10+. The new write surface is feature-gated to Zotero 10+ Local API v3.
 
 ---
 
 ## PubMed Integration
 
-The v0.6.0 VSIX pins PubMed Search MCP 0.6.1 at commit `ad85dde`. It exposes 45 MCP SDK v2 tools in 16 categories. `build_research_chronicle` and `read_research_chronicle` replace the three former timeline tools.
+The v0.7.0 VSIX pins PubMed Search MCP 0.6.1 at commit `ad85dde`. It exposes 45 MCP SDK v2 tools in 16 categories. `build_research_chronicle` and `read_research_chronicle` replace the three former timeline tools.
 
 ### Do I need pubmed-search-mcp installed?
 
@@ -193,7 +236,7 @@ Only if you want to **search PubMed** from within Copilot. `import_articles` and
 uv sync --extra pubmed   # in the mcp-server directory
 ```
 
-For the MCP SDK v2 release, prefer the v0.6.0 VSIX or a current source checkout; the PyPI/`uvx` package may still resolve the older release line.
+For the MCP SDK v2 release, prefer the v0.7.0 VSIX or a current source checkout; the PyPI/`uvx` package may still resolve an older release line.
 
 ---
 
@@ -237,7 +280,7 @@ If this started immediately after a VSIX upgrade, run **Zotero MCP: Reinstall Py
 
 ### Is there an official Zotero MCP server?
 
-As of 2026-08-11, we could not find a Zotero-organization repository or Zotero documentation publishing an official MCP server. [`54yyyu/zotero-mcp`](https://github.com/54yyyu/zotero-mcp) is an MCP Registry-listed **community** server with a broad feature set, not a Zotero-official server. An OpenAI-curated Zotero connector is also a separate connector product; it is not evidence of a Zotero-official MCP server, and its tool schema should not be guessed.
+As of 2026-08-12, we could not find a Zotero-organization repository or Zotero documentation publishing an official MCP server. [`54yyyu/zotero-mcp`](https://github.com/54yyyu/zotero-mcp) is an MCP Registry-listed **community** server with a broad feature set, not a Zotero-official server. An OpenAI-curated Zotero connector is also a separate curated connector product; it is not evidence of a Zotero-official MCP server, and only its installed, discoverable contract should be treated as authoritative.
 
 The community server and Keeper both use the Python module name `zotero_mcp`. If you need both, put them in separate virtual environments and run them as separate MCP processes. Never install the community distribution into the extension-managed environment. See [Zotero MCP landscape](ZOTERO_MCP_LANDSCAPE.md).
 

@@ -12,14 +12,16 @@ zotero-keeper/mcp-server/src/zotero_mcp/
 │   ├── zotero_client/             # Local API + Connector DAL
 │   │   ├── client_base.py
 │   │   ├── client_read.py
-│   │   └── client_write.py
+│   │   ├── client_write.py       # Zotero 7–9 compatible Connector writes
+│   │   └── client_local.py       # Zotero 10+ authorized Local API writes
 │   ├── mappers/
 │   │   ├── pubmed_mapper.py       # PubMed/UnifiedArticle → Zotero
 │   │   └── zotero_schema.py       # item-type-aware field guard
 │   ├── pubmed/__init__.py         # v0.6.1 public client adapter
 │   └── mcp/
 │       ├── server.py              # SDK v2 MCPServer assembly
-│       ├── *_tools.py             # 24 default tools
+│       ├── local_api_tools.py     # 8 guarded Local API tools
+│       ├── *_tools.py             # 32 default tools in total
 │       └── resources.py           # 6 resources
 └── main.py                        # transport entrypoint
 ```
@@ -57,7 +59,10 @@ Submodule 與 VSIX installer 都固定到 v0.6.1 commit
 ### 1. Repository / DAL Pattern
 - `zotero_client/client_read.py` 封裝 Local API 讀取
 - `zotero_client/client_write.py` 封裝 Connector 寫入與附件上傳
-- Local/Connector 以 Zotero Desktop loopback 為信任邊界，不需要 Web API key
+- `zotero_client/client_local.py` 封裝 Zotero 10+ discovery、runtime authorization、
+  Server-ID、local-version writes 與三階段 file upload
+- Zotero 7–9 使用 Connector compatibility path；Zotero 10+ 才啟用 authorized
+  Local API write capability
 
 ### 2. Mapper + Schema Guard Pattern
 - `pubmed_mapper.py` 隔離 PubMed / `UnifiedArticle` 格式
@@ -77,21 +82,45 @@ Submodule 與 VSIX installer 都固定到 v0.6.1 commit
   agent 重跑查詢或依賴對話記憶
 
 ### 5. Atomic Managed Package-set Pattern
-- MCP SDK v1/v2 不相容；Keeper `2.0.0` 和 PubMed `0.6.1` 共同約束
+- MCP SDK v1/v2 不相容；Keeper `2.1.0` 和 PubMed `0.6.1` 共同約束
   `mcp>=2,<3`
-- VSIX `0.6.0` 將兩個 fixed-source distributions 交給同一 resolver install，完成
+- `v0.6.0-ext` / Keeper `2.0.0` 已於 2026-08-11 發布；VSIX `0.7.0`
+  候選版仍將兩個 fixed-source distributions 交給同一 resolver install，完成
   後一起檢查 version、`direct_url.json`、install state 及 server tool listing
 - 升級前停止 managed venv 中的舊 MCP processes；任何一步失敗都不得把半升級
   環境標記 ready
 
 ### 6. Security-boundary Pattern
-- **local/Connector**：stdio + loopback Zotero Desktop，collection/import 行為仍遵守
-  user confirmation guardrails
+- **local/Connector**：stdio + loopback Zotero Desktop；`localhost:23119` 不得
+  bind、proxy 或 forward 給其他主機，collection/import 行為仍遵守 user
+  confirmation guardrails
+- **runtime local authorization**：key 僅存 process memory；discovery 取得的
+  Server-ID 必須出現在 authorize 與每個 write request，不可把 desktop key 當作
+  長期 Web API credential
 - **authenticated service**：遠端 HTTP 必須顯式設定 token、tenant identity、bind
   host、Host/Origin 驗證與 tenant-specific data directory
 - 截至 2026-08-11，Zotero 官方組織未發布 MCP server；Registry 收錄的
   `54yyyu/zotero-mcp` 是社群 implementation。因其與 Keeper 共用 `zotero_mcp`
   Python namespace，只能用另一個 venv，不能作為 managed package set 的第三套件
+
+### 7. Guarded Local Mutation Pattern
+- 對 agent 公開的 8 個 Local API tools 是 closed-world surface；不公開任意 delete，
+  且 `confirm=false` 必須在任何 discovery/authorization/network I/O 之前 fail closed
+- preview 的 `expected_server_id` 必須先來自 response-bound read/authorize；七個
+  confirmed mutations 全部要求該 reviewed identity。authorization identity 若
+  改變，就重新 read、preview 與取得核准，不能 preview 後補 identity
+- item metadata update 使用 exact-item response-bound object version；full-text
+  replacement 使用 response-bound library cursor 與 bulk
+  `POST /api/users/0/fulltext`，不得替換成 attachment object version。Zotero Local API
+  的 array PATCH 是完整 replacement，不可暗示 merge
+- attachment upload 固定為 create attachment item → upload bytes with prefix/suffix →
+  register `uploadKey` 三階段；後段失敗必須保留 attachment key 供人工恢復
+
+### 8. Single Release-artifact Pattern
+- release 流程先通過 version、managed install、tag-archive 與 Local API smoke；
+  tag job 再 package VSIX 一次並對該具名檔執行 content inspection
+- Marketplace publish 與 GitHub Release 都使用該同一檔案；publish 階段不得
+  重新 package，避免已檢查內容與實際發布 artifact 漂移
 
 ## VS Code Extension 架構
 
@@ -102,7 +131,7 @@ vscode-extension/
 │   ├── mcpProvider.ts             # two MCP definitions
 │   ├── uvPythonManager.ts         # bundled uv + managed venv
 │   ├── pythonEnvironment.ts       # custom/system Python → managed venv
-│   ├── zoteroKeeperPackage.ts     # Keeper 2.0.0 pin
+│   ├── zoteroKeeperPackage.ts     # Keeper 2.1.0 pin
 │   ├── pubmedSearchPackage.ts     # PubMed 0.6.1 commit pin
 │   └── statusBar.ts
 └── resources/
@@ -121,5 +150,5 @@ vscode-extension/
 | Server | SDK v2 concrete type | `MCPServer` |
 
 ---
-*Updated: 2026-08-11*
+*Updated: 2026-08-12*
 *符合: CONSTITUTION.md, bylaws/ddd-architecture.md*

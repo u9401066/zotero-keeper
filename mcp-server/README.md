@@ -1,8 +1,8 @@
 # Zotero Keeper MCP Server
 
-Zotero Keeper 2.0.0 is an MCP SDK v2 server for managing local Zotero libraries via AI agents. It uses the v2 `MCPServer` API and is intentionally incompatible with an MCP SDK 1.x environment.
+Zotero Keeper 2.1.0 is an MCP SDK v2 server for managing local Zotero libraries via AI agents. It uses the v2 `MCPServer` API and is intentionally incompatible with an MCP SDK 1.x environment.
 
-> The v0.6.0 VS Code extension is the recommended distribution for this 2.0 runtime. The commands below install from this source checkout. The separately published `uvx`/PyPI package may still be on the older release line until its own publication is complete.
+> The v0.7.0 VS Code extension is the recommended distribution for this 2.1 runtime. The commands below install from this source checkout. The separately published `uvx`/PyPI package may still be on an older release line until its own publication is complete.
 
 ## Installation
 
@@ -32,7 +32,7 @@ uv run zotero-keeper
 Copy `.env.example` to `.env` and configure:
 
 ```bash
-# Local Zotero (default; keep the unauthenticated API on loopback)
+# Local Zotero (default; keep port 23119 on loopback)
 ZOTERO_HOST=127.0.0.1
 ZOTERO_PORT=23119
 ZOTERO_TIMEOUT=30
@@ -49,7 +49,7 @@ ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1
 ```
 
 - `ZOTERO_TIMEOUT` controls Zotero API request timeout in seconds.
-- Do not point `ZOTERO_HOST` at a remotely exposed Local/Connector API. For remote libraries, use Zotero's authenticated HTTPS Web API or a purpose-built authenticated service.
+- Do not point `ZOTERO_HOST` at a remotely exposed Local/Connector API. Local reads and Connector endpoints do not require authentication; Zotero 10+ Local writes use a runtime key but are still a loopback-only interface. For remote libraries, use Zotero's authenticated HTTPS Web API or a purpose-built authenticated service.
 - `NCBI_EMAIL` and optional `NCBI_API_KEY` are passed through to pubmed-search-mcp for fetch and ownership-check workflows.
 - `PUBMED_SEARCH_PATH` is only for local development when you want keeper to import a checked-out pubmed-search-mcp instead of the installed package.
 
@@ -57,7 +57,7 @@ By default, zotero-keeper runs in a collaboration-safe mode: PubMed search/disco
 
 ## MCP Tools
 
-### 🌟 Unified Import (Updated in v1.12.0)
+### 🌟 Unified Import
 
 | Tool | Description |
 | ---- | ----------- |
@@ -79,9 +79,78 @@ import_articles(
 
 **Supported sources:** PubMed, Europe PMC, CORE, CrossRef, OpenAlex, Semantic Scholar, RIS
 
-### Public Tool Surface (24 default tools + 6 resources)
+### Public Tool Surface (32 default tools + 6 resources)
 
-The default public surface combines connection, read, collection, save, search, import, analytics, and attachment access tools. MCP SDK v2 advertises six concrete browsable resources plus four parameterized URI templates.
+The default public surface combines connection, read, collection, save, search, import, analytics, attachment access, and narrow Zotero 10+ Local API write tools. MCP SDK v2 advertises six concrete browsable resources plus four parameterized URI templates.
+
+### Zotero Compatibility
+
+| Zotero Desktop | Read/search/resources | Connector save/import | Eight Local write tools | Attachment path discovery |
+| -------------- | --------------------- | --------------------- | ----------------------- | ------------------------- |
+| 7, 8, 9 | Yes | Yes | No; returns `unsupported_local_write` | `ZOTERO_DATA_DIR` fallback |
+| 10+ | Yes | Yes | Yes, after Zotero runtime authorization | Official `/file/view/url`, then fallback |
+
+`interactive_save`, `quick_save`, `import_articles`, and `import_pdf` retain their Connector-based Zotero 7–10+ compatibility. The tools in the next section require Zotero 10+ and [Local API v3](https://www.zotero.org/support/dev/web_api/v3/local_api).
+
+`check_connection()` probes Connector ping plus the non-mutating `GET /api/` capability endpoint and reports Zotero, Connector, Local API/schema, server-ID, and write-availability state. Zotero's Local API uses API version 3 only.
+
+### Zotero 10+ Local Write Tools
+
+```python
+authorize_local_writes(require_remembered: bool = False)
+create_collection(name, parent_collection_key=None, confirm=False, expected_server_id=None)
+add_items_to_collection(item_keys, collection_key, confirm=False, expected_server_id=None)
+update_item_fields(item_key, fields, expected_version, confirm=False, expected_server_id=None)
+create_note(parent_item_key, note_html, confirm=False, expected_server_id=None)
+create_saved_search(name, conditions, confirm=False, expected_server_id=None)
+attach_file_to_item(item_key, file_path, title="Full Text PDF", confirm=False, expected_server_id=None)
+set_attachment_fulltext(
+    attachment_key,
+    content,
+    expected_library_version,
+    indexed_pages=None,
+    total_pages=None,
+    indexed_chars=None,
+    total_chars=None,
+    confirm=False,
+    expected_server_id=None,
+)
+```
+
+All seven mutation tools are fail-closed. First obtain a response-bound
+`server_id` from an exact Local API read or from `authorize_local_writes`; obtain
+the response-bound object version for `update_item_fields`, or the response-bound
+library cursor for `set_attachment_fulltext`. Then call the mutation with
+`confirm=false` **and that `expected_server_id` already present**. The preview
+returns `proposed` plus `confirmation_required=true` and performs no Zotero read,
+authorization, filesystem probe, or write. After the user approves that complete
+proposal, repeat it unchanged with `confirm=true`.
+
+Call `authorize_local_writes(require_remembered=false)` for a single-write
+operation if authorization was not already used to obtain the identity. Zotero
+presents **Allow**, **Always Allow**, or **Deny**; Keeper holds the returned key in
+memory and never exposes it in a tool schema or result. Before
+`attach_file_to_item`, call `authorize_local_writes(require_remembered=true)`:
+Zotero must grant **Always Allow** because the stored-file upload spans multiple
+writes. If authorization returns a different `server_id` from the reviewed
+proposal, discard the proposal, reread all targets/cursors, generate a new preview,
+and obtain approval again. Never add or replace identity only after preview.
+
+Safety constraints include:
+
+- Every supplied Zotero object key must be an exact eight-character key.
+- `add_items_to_collection` accepts at most 50 distinct items, validates the collection and every item before its single batch write, and preserves every existing collection membership. It does not remove or move items to the library root.
+- `update_item_fields` accepts only a non-empty mapping of finite scalar metadata. Structural fields such as `key`, `version`, `itemType`, `collections`, `tags`, `creators`, `relations`, `parentItem`, deletion state, and attachment-storage fields are rejected.
+- Every confirmed mutation requires the same response-bound `expected_server_id`
+  that appeared in its approved preview. `update_item_fields` additionally uses
+  the current exact-item object `expected_version`.
+- `set_attachment_fulltext` uses a response-bound library cursor as
+  `expected_library_version` and writes through bulk `POST /api/users/0/fulltext`
+  with `If-Unmodified-Since-Version`; it does not use the attachment object's
+  version. A stale identity/version is a `412` and is never retried automatically.
+- Keeper 2.1.0 exposes no raw delete MCP tool. Destructive cleanup remains an explicit Zotero UI operation.
+
+See [MCP Tools Reference](../docs/tools-reference.md#zotero-10-local-write-tools) for complete contracts and [Zotero write requests](https://www.zotero.org/support/dev/web_api/v3/write_requests) for the underlying official protocol.
 
 ### Smart Save Behavior
 
@@ -107,14 +176,17 @@ Set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` only if you intentionally want 
 | `get_collection_items` | Get items in a collection |
 | `get_collection_tree` | Get hierarchical tree structure |
 | `find_collection` | Find collection by name |
+| `create_collection` | Zotero 10+: create a top-level or nested collection after confirmation |
+| `add_items_to_collection` | Zotero 10+: add up to 50 items while preserving other memberships |
 
-### Saved Search Tools 🌟 (Local API Exclusive!)
+### Saved Search Tools 🌟 (execution is Local-only)
 
 | Tool | Description |
 | ---- | ----------- |
 | `list_saved_searches` | List all saved searches |
 | `run_saved_search` | Execute a saved search |
 | `get_saved_search_details` | Get search conditions |
+| `create_saved_search` | Zotero 10+: create a saved search after confirmation |
 
 ### Search & Import Tools
 
@@ -138,6 +210,16 @@ Set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` only if you intentionally want 
 | ---- | ----------- |
 | `get_item_attachments` | List attachment metadata and resolved file paths |
 | `get_item_fulltext` | Read Zotero-indexed full text for PDF/EPUB attachments |
+| `attach_file_to_item` | Zotero 10+: attach a stored file to an existing bibliographic item |
+| `set_attachment_fulltext` | Zotero 10+: write indexed full text with a version precondition |
+
+### Metadata & Note Write Helpers
+
+| Tool | Description |
+| ---- | ----------- |
+| `authorize_local_writes` | Request runtime approval; set `require_remembered=true` before an attachment upload |
+| `update_item_fields` | Zotero 10+: update safe scalar metadata with optimistic concurrency |
+| `create_note` | Zotero 10+: create an HTML child note beneath an exact parent item |
 
 ### Other Read Helpers
 
@@ -148,7 +230,7 @@ Set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` only if you intentionally want 
 
 ### PubMed Search MCP boundary
 
-The v0.6.0 VSIX installs PubMed Search MCP 0.6.1 from commit `ad85dde`. That companion MCP SDK v2 server exposes 45 tools in 16 categories. Its two Research Chronicle tools, `build_research_chronicle` and `read_research_chronicle`, replace the previous three timeline tools.
+The v0.7.0 VSIX installs PubMed Search MCP 0.6.1 from commit `ad85dde`. That companion MCP SDK v2 server exposes 45 tools in 16 categories. Its two Research Chronicle tools, `build_research_chronicle` and `read_research_chronicle`, replace the previous three timeline tools.
 
 PubMed discovery, session reuse, full text, citation exploration, export, and Research Chronicle work belong to PubMed Search MCP. Zotero Keeper owns the local library, duplicate check, collection choice, and final `import_articles` handoff.
 
@@ -196,26 +278,44 @@ AI: import_articles(
 
 ### ⚠️ Important Note
 
-Since Local API cannot create collections:
+On Zotero 10+, `create_collection` can create a confirmed top-level or nested collection before a save. On Zotero 7–9, create the collection in the Zotero UI first. In every version:
 
-1. **Create collection structure in Zotero first**
-2. **Let AI classify into existing collections**
-3. **Never omit the destination to imply root**; use the explicit double-confirmation / `allow_library_root=true` path only when the user truly requests My Library
+1. Resolve or create the destination deliberately.
+2. Let the AI classify into that exact collection.
+3. Never omit the destination to imply root; use the explicit double-confirmation / `allow_library_root=true` path only when the user truly requests My Library.
 
 ---
 
-## 🌟 Saved Search Feature (Local API Exclusive!)
+## 🌟 Saved Search Feature (execution is Local-only)
 
-This is a **unique feature** only available via Local API - Web API cannot execute saved searches!
+Zotero APIs can represent saved-search metadata, but the Web API cannot execute saved searches; execution uses the Local API.
 
 ### How It Works
 
-1. **Create Saved Search in Zotero** (one-time setup)
+1. **Create a Saved Search** in Zotero's UI, or on Zotero 10+ with confirmed `create_saved_search`
 2. **AI executes it anytime** via `run_saved_search`
 
 ### Step-by-Step Guide
 
-#### Step 1: Create Saved Search in Zotero
+#### Step 1: Create Saved Search
+
+On Zotero 10+, preview and then confirm the MCP mutation:
+
+```python
+create_saved_search(
+    name="Unread",
+    conditions=[{"condition": "tag", "operator": "isNot", "value": "read"}],
+    confirm=False,
+)
+# After the user approves the exact proposal:
+create_saved_search(
+    name="Unread",
+    conditions=[{"condition": "tag", "operator": "isNot", "value": "read"}],
+    confirm=True,
+)
+```
+
+For Zotero 7–9, or when you prefer the UI:
 
 1. Open Zotero
 2. Press `Ctrl+Shift+F` (or **Edit → Advanced Search**)
@@ -227,10 +327,12 @@ This is a **unique feature** only available via Local API - Web API cannot execu
 
 ```text
 AI: "Which papers don't have PDFs?"
-→ run_saved_search(search_name="Missing PDF")
+→ list_saved_searches()
+→ run_saved_search(search_key="<exact key for Missing PDF>")
 
 AI: "What did I add this week?"
-→ run_saved_search(search_name="Recent Additions")
+→ list_saved_searches()
+→ run_saved_search(search_key="<exact key for Recent Additions>")
 ```
 
 ### Recommended Saved Searches

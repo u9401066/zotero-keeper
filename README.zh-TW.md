@@ -5,7 +5,7 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-v2-green.svg)](https://github.com/modelcontextprotocol/python-sdk)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Zotero 7/8/9](https://img.shields.io/badge/Zotero-7%20%2F%208%20%2F%209-red.svg)](https://www.zotero.org/)
+[![Zotero 7/8/9/10+](https://img.shields.io/badge/Zotero-7%20%2F%208%20%2F%209%20%2F%2010%2B-red.svg)](https://www.zotero.org/)
 [![CI](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml/badge.svg)](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml)
 
 > 🌐 **[English](README.md)** | **繁體中文**
@@ -14,11 +14,11 @@
 
 ## 🚀 建議安裝方式 (VS Code)
 
-> **前置作業**：必須先啟動 [Zotero 7、8 或 9](https://www.zotero.org/download/)
+> **前置作業**：必須先啟動 [Zotero 7、8、9 或 10+](https://www.zotero.org/download/)；新的授權式 Local API 寫入需要 Zotero 10+
 
 [📦 從 VS Code Marketplace 安裝 Zotero + PubMed MCP](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp)
 
-**v0.6.0 VSIX 是目前建議的發佈管道**：擴充套件會建立隔離環境，並安裝 Zotero Keeper 2.0.0 與固定版的 PubMed Search MCP 0.6.1。`uvx` / PyPI 仍可用於舊版的直接 server 安裝，但在 PyPI 更新前，不應當作 2.0 版本來使用。
+**v0.7.0 VSIX 是目前建議的發佈管道**：擴充套件會建立隔離環境，並安裝 Zotero Keeper 2.1.0 與固定版的 PubMed Search MCP 0.6.1。`uvx` / PyPI 仍可用於舊版的直接 server 安裝，但在 PyPI 更新前，不應當作 2.1 版本來使用。
 
 > ⚠️ MCP SDK 2.0 與 1.x 不相容。擴充套件升級後，若 VS Code 仍使用舊環境，請執行 **Zotero MCP: Reinstall Python Environment**。
 
@@ -33,6 +33,7 @@
 - ➕ **新增文獻**：「把這篇 DOI 加到我的 Zotero」（自動取得完整 metadata！）
 - 🤝 **協作式 PubMed 工作流**：先用 pubmed-search-mcp 搜尋，再用 keeper 檢查重複與匯入
 - 📁 **互動式存檔**：列出所有收藏夾讓你選擇！
+- 🗂️ **Zotero 10+ 整理能力**：建立巢狀收藏夾、更新既有項目、建立子筆記，並把檔案附加到書庫中已存在的項目
 - 📚 **現代化文獻發現**：PubMed Search MCP 0.6.1 提供 16 類、45 個工具，包含兩工具組成的 Research Chronicle 工作流程
 
 不用自己開 Zotero、手動搜尋、複製貼上。直接用自然語言告訴 AI，它會幫你完成！
@@ -46,7 +47,7 @@
 - **💬 MCP Elicitation**：使用精確 collection key 做互動式選擇；`ROOT` 一定會再確認一次
 - **🔒 自動取得 Metadata**：DOI/PMID → 自動取得完整摘要 + 所有欄位！
 - **📖 讀取操作**：搜尋、列出、取得本地 Zotero 書目資料
-- **✏️ 寫入操作**：透過 Connector API 將新參考文獻加入 Zotero
+- **✏️ 寫入操作**：Zotero 7–9 保留 Connector 匯入；Zotero 10+ 使用執行時授權的 Local API 寫入
 - **🧠 智慧功能**：重複偵測、參考文獻驗證、智能匯入
 - **📁 Collection 支援**：支援巢狀收藏夾（資料夾層級結構）
 - **🏗️ DDD 架構**：乾淨的領域驅動設計，洋蔥式架構
@@ -60,7 +61,7 @@
 ### 你需要準備
 
 - ✅ [Python 3.12+](https://www.python.org/downloads/)
-- ✅ [Zotero 7、8 或 9](https://www.zotero.org/download/) (要先執行)
+- ✅ [Zotero 7、8、9 或 10+](https://www.zotero.org/download/)（要先執行；Local API 寫入需 10+）
 - ✅ [VS Code](https://code.visualstudio.com/) + GitHub Copilot，或 [Claude Desktop](https://claude.ai/)
 - ✅ [uv](https://docs.astral.sh/uv/getting-started/installation/) 套件管理工具 (推薦)
 
@@ -150,7 +151,7 @@ NCBI_EMAIL=your.email@example.com
 
 ---
 
-## 🔧 可用工具 (預設公開面 24 個 + legacy opt-in 5 個)
+## 🔧 可用工具 (預設公開面 32 個 + legacy opt-in 5 個)
 
 > 💡 **提示**：大部分讀取操作也可透過 [MCP Resources](#-mcp-resources-可瀏覽的資料) 完成，不需呼叫 Tool。
 
@@ -176,6 +177,34 @@ NCBI_EMAIL=your.email@example.com
 | `get_collection_items` | 列出收藏夾內容 | `zotero://collections/{key}/items` |
 | `get_collection_tree` | 取得樹狀結構 | `zotero://collections/tree` |
 | `find_collection` | 用名稱查找 | — (僅 Tool 支援) |
+
+### 🗂️ Zotero 10+ Local API 工具 (local_api_tools.py - 8 工具)
+
+這組工具使用 Zotero 官方 Local API v3 寫入功能。preview 前先由 Local API
+read 或 `authorize_local_writes` 取得 response-bound `server_id`，並以
+`expected_server_id` 放進 proposal。key 只留在 Keeper process 內，不會經由
+MCP 回傳；所有寫入僅限 loopback，並綁定已審核的 Zotero Server-ID。
+
+| 工具 | 說明 | 安全邊界 |
+|------|------|----------|
+| `authorize_local_writes` | 請 Zotero 授權 Keeper；檔案上傳前使用 `require_remembered=true` | 絕不回傳或記錄 key |
+| `create_collection` | 建立頂層或巢狀收藏夾 | 精確 parent key + 明確確認 |
+| `add_items_to_collection` | 把最多 50 個既有項目加入收藏夾，保留原有歸屬 | 寫入前驗證全部 key，再做一次版本化 batch |
+| `update_item_fields` | 更新允許的純量 metadata | 必須提供目前 local object version |
+| `create_note` | 在既有項目下建立子筆記 | 驗證 parent + 明確確認 |
+| `create_saved_search` | 建立 Zotero saved search | 結構化條件 + 明確確認 |
+| `attach_file_to_item` | 把本機檔案附加到既有項目 | remembered authorization + 驗證 loopback upload URL |
+| `set_attachment_fulltext` | 寫入 attachment 的索引文字 | response-bound library cursor + Server-ID + 明確確認 |
+
+Zotero 7–9 無法使用這些操作，並繼續使用現有 Connector 匯入
+路徑。Keeper 刻意不公開任意 raw PATCH 或通用破壞性 DELETE 工具。
+
+每個 mutation 都要在 `confirm=false` proposal 中先放入
+`expected_server_id`；有版本條件時，還要放入同一 response 綁定的 item object
+version 或 full-text library cursor，才請使用者核准。若後續 authorization 回傳
+不同 identity，必須丟棄 proposal、重新 read、preview 與取得核准，不能在
+preview 後才補 identity。`confirm=true` 必須原樣重送已核准 proposal，且不得
+自動重試 412。
 
 ### ✏️ 存檔工具 (interactive_tools.py - 2 工具)
 
@@ -221,7 +250,7 @@ NCBI_EMAIL=your.email@example.com
 
 ### 📎 附件工具 (attachment_tools.py - 2 工具)
 
-> 🗂️ **PDF 存取**：列出附件 PDF 並讀取 Zotero 索引全文。需設定 `ZOTERO_DATA_DIR` 才能取得檔案路徑。
+> 🗂️ **PDF 存取**：Zotero 10+ 會透過官方 Local API 解析附件路徑；`ZOTERO_DATA_DIR` 只保留給舊版 Zotero 或 view URL 不可用時作為 fallback。
 
 | 工具 | 說明 | 範例問法 |
 |------|------|----------|
@@ -382,7 +411,7 @@ Zotero 支援**巢狀收藏夾**。建議的組織方式：
 
 ## 🔬 搭配 PubMed 使用
 
-v0.6.0 VSIX 固定使用 [pubmed-search-mcp 0.6.1](https://github.com/u9401066/pubmed-search-mcp/tree/v0.6.1)（commit `ad85dde`）。它的 MCP SDK v2 server 提供 **16 類、45 個工具**；新的 `build_research_chronicle` 與 `read_research_chronicle` 取代了早期 3 個 timeline 工具。
+v0.7.0 VSIX 固定使用 [pubmed-search-mcp 0.6.1](https://github.com/u9401066/pubmed-search-mcp/tree/v0.6.1)（commit `ad85dde`）。它的 MCP SDK v2 server 提供 **16 類、45 個工具**；新的 `build_research_chronicle` 與 `read_research_chronicle` 取代了早期 3 個 timeline 工具。
 
 ```
 你: 「幫我找 2024 年麻醉 AI 的新論文，我還沒有的」
@@ -411,7 +440,7 @@ uv sync --extra pubmed
 
 ### Zotero MCP 生態定位
 
-截至 2026-08-11，未在 Zotero 組織的 repository 或 Zotero 官方文件找到由 Zotero 發佈的官方 MCP server。[`54yyyu/zotero-mcp`](https://github.com/54yyyu/zotero-mcp) 功能完整，且已收錄於 MCP Registry，但它是**社群 server**，不是 Zotero 官方 server。OpenAI-curated Zotero connector 也是獨立的 connector 產品，不應被寫成 Zotero 官方 MCP server，也不應在沒有可驗證介面時杜撰 tool schema。
+截至 2026-08-12，未在 Zotero 組織的 repository 或 Zotero 官方文件找到由 Zotero 發佈的官方 MCP server。[`54yyyu/zotero-mcp`](https://github.com/54yyyu/zotero-mcp) 功能完整，且已收錄於 MCP Registry，但它是**社群 server**，不是 Zotero 官方 server。OpenAI-curated Zotero connector 也是獨立的 connector 產品，不應被寫成 Zotero 官方 MCP server，也不應在沒有可驗證介面時杜撰 tool schema。
 
 社群 server 與 Zotero Keeper 都使用 Python module/package 名 `zotero_mcp`。若要並用，必須安裝到**不同虛擬環境、以不同 MCP process 啟動**；不要把社群 package 加入擴充套件管理的共用環境。詳見 [MCP 生態比較](docs/ZOTERO_MCP_LANDSCAPE.md)。
 
@@ -419,7 +448,9 @@ uv sync --extra pubmed
 
 ## 🌐 遠端 Zotero 存取
 
-Zotero Local API 與 Connector API 都是沒有身分驗證的本機介面，必須只綁定 loopback。請勿將 23119 port 暴露給 LAN、Internet 或未認證的轉送規則。
+Zotero Local API 讀取與 Connector endpoints 是本機介面；Zotero 10+ 的
+Local API 寫入雖加入執行時授權，但取得的 key 沒有細粒度 scope。因此
+23119 port 仍必須只綁定 loopback，請勿暴露或轉送到 LAN / Internet。
 
 遠端書庫請使用 Zotero 有身分驗證的 HTTPS Web API，或使用具 TLS、授權與網路存取控制的專用服務。如果要使用 Local/Connector 操作，請讓 Zotero Keeper 與 Zotero Desktop 在同一台可信任主機執行。
 
@@ -442,7 +473,8 @@ Zotero Local API 與 Connector API 都是沒有身分驗證的本機介面，必
                                                  ▼
                                     ┌────────────────────────────┐
                                     │    Zotero Desktop Client   │
-                                    │  Local API + Connector API │
+                                    │ Local API read/write (10+) │
+                                    │ + Connector legacy create │
                                     └────────────────────────────┘
 ```
 
@@ -454,75 +486,43 @@ Zotero Local API 與 Connector API 都是沒有身分驗證的本機介面，必
 
 ---
 
-## ⚠️ Zotero API 限制（重要！）
+## ⚠️ Zotero API 能力與安全邊界
 
-### API 能力矩陣
+Zotero 10+ 已大幅升級 Local API：官方平台現在支援 items、collections、
+saved searches 的授權式寫入、tag deletion、full-text write 與完整檔案
+upload。Keeper 2.1 公開的是經過限制的安全子集，而不是把無 scope 的 key
+與任意 API path 直接交給 AI client。
 
-Zotero 提供**兩個本地 API**，但都不支援完整的 CRUD：
+| 介面 | 範圍 | 身分驗證 | Keeper 2.1 用途 |
+|------|------|----------|-----------------|
+| **Local API v3** `/api/...` | 同機讀取；Zotero 10+ 寫入 | 讀取無認證；寫入需執行時由使用者同意 | Zotero 7–10+ 讀取；10+ guarded writes |
+| **Connector API** `/connector/...` | browser-connector save flow | 本機介面 | 向後相容的建立／匯入路徑，包含 Zotero 7–9 |
+| **Web API v3** `https://api.zotero.org` | 遠端與同步書庫 | zotero.org key / OAuth | 遠端存取建議路徑；本機 Keeper tools 不使用 |
 
-| API | 端點 | 讀取 | 新增 | 更新 | 刪除 |
-|-----|------|:----:|:----:|:----:|:----:|
-| **Local API** | `/api/...` | ✅ | ❌ | ❌ | ❌ |
-| **Connector API** | `/connector/...` | ❌ | ✅ | ❌ | ❌ |
+Zotero 10+ 寫入前，Keeper 會先由 discovery/read 或 runtime authorization
+取得 response-bound `Zotero-Server-ID`。該 identity 必須先出現在
+`confirm=false` proposal，所有 confirmed mutation 都以
+`expected_server_id` 帶回。`update_item_fields` 另使用同一 exact-item response
+的 object version；full-text replacement 則使用 response-bound library cursor，
+透過 bulk `POST /api/users/0/fulltext` 與
+`If-Unmodified-Since-Version` 寫入，不使用 attachment object version。若
+authorization 指向不同 database，read、preview 與 approval 必須全部重做。
+資料庫變更或 stale cursor 回傳 `412` 時絕不靜默覆寫；缺少
+identity/precondition (`428`) 與無效授權 (`401`) 也會 fail closed。
 
-### 🔍 技術細節
+Keeper 2.1 已完成過去受限的高價值流程：
 
-**Local API** (port 23119):
-- 設計用於讀取 Zotero 資料（文獻、收藏夾、標籤）
-- 根據[官方原始碼](https://github.com/zotero/zotero/blob/main/chrome/content/zotero/xpcom/server/server_localAPI.js#L28-L43)：**"Write access is not yet supported."**
-- DELETE/PATCH/PUT 方法回傳 `501 Not Implemented`
+- 建立頂層或巢狀 collection；
+- 把既有 items 加入已確認的 collection，同時保留原本歸屬；
+- 更新既有 item 的允許 metadata，並建立 child note；
+- 建立 saved search；
+- 透過官方三階段 upload 把檔案附加到既有 item；
+- 為 attachment 提供 indexed full text；以及
+- 透過官方 Local API 取得 attachment path，不再只能猜測 Zotero data directory。
 
-**Connector API** (port 23119):
-- 設計用於瀏覽器擴充功能**儲存新項目**
-- `saveItems` 端點：**永遠建立新項目，不會更新既有項目**
-- 即使匯入相同 PMID 兩次 → 會建立重複項目
-- 沒有 `updateItem` 或 `deleteItem` 端點
-
-### 🔴 無法執行的操作
-
-| 操作 | API 支援 | 技術原因 |
-|------|---------|----------|
-| ❌ **刪除文獻** | 501 Not Implemented | Local API 唯讀 |
-| ❌ **更新文獻** | 501 Not Implemented | Local API 唯讀 |
-| ❌ **移動文獻到收藏夾** | 無法操作 | Connector API 只能新增，不能更新 |
-| ❌ **為既有文獻加標籤** | 無法操作 | 沒有更新端點 |
-| ❌ **建立 Collection** | 400 Bad Request | Connector API 不支援 |
-| ❌ **刪除 Collection** | 501 Not Implemented | Local API 唯讀 |
-| ❌ **合併重複** | 無 API | 必須使用 Zotero GUI |
-
-### 💡 這意味著什麼？
-
-**「智慧管理」的限制**：
-
-```
-❌ 無法做到：
-- 「把這 10 篇文獻移到另一個收藏夾」
-- 「刪除所有重複的文獻」  
-- 「幫我整理收藏夾」
-- 「把舊文獻移到 Archive」
-
-✅ 可以做到：
-- 「新增文獻時指定收藏夾」（新增時指定）
-- 「搜尋符合條件的文獻」（然後手動處理）
-- 「列出可能重複的文獻」（但需手動刪除）
-```
-
-### 🛠️ 替代方案
-
-| 需求 | 替代做法 |
-|------|----------|
-| 整理收藏夾 | 使用 Zotero GUI 拖拉文獻 |
-| 刪除重複 | Zotero → 工具 → 「合併重複項目」 |
-| 批次操作 | 使用 [Zotero Actions & Tags](https://github.com/windingwind/zotero-actions-tags) 外掛 |
-| 自動分類 | 使用 [Zutilo](https://github.com/wshanks/Zutilo) 外掛 |
-
-### 🔮 未來可能性
-
-Zotero 團隊正在開發 **Local API 寫入功能**：
-- [GitHub Issue #1320](https://github.com/zotero/zotero/issues/1320) - 請求寫入支援
-- 預計在 Zotero 後續版本加入 (8.x+)
-
-**當 Zotero 支援後，我們會立即更新 zotero-keeper！**
+本版不公開通用刪除、任意 raw PATCH、duplicate merge、annotation edit 或
+group-library write。破壞性維護仍請使用 Zotero UI。完整平台能力與 Keeper
+較窄的安全 contract 請見 [docs/ZOTERO_LOCAL_API.md](docs/ZOTERO_LOCAL_API.md)。
 
 ---
 

@@ -1,6 +1,6 @@
 # MCP Tools Reference
 
-Complete reference for all 24 default MCP tools exposed by Zotero Keeper 2.0.0
+Complete reference for all 32 default MCP tools exposed by Zotero Keeper 2.1.0
 on MCP SDK v2, plus five legacy opt-in tools.
 
 > **Tip**: Most read operations can also be performed via [MCP Resources](../README.md#-mcp-resources-browsable-data) (e.g. `zotero://collections`) without calling a tool.
@@ -17,7 +17,9 @@ on MCP SDK v2, plus five legacy opt-in tools.
 6. [Import Tools](#import-tools)
 7. [Analytics Tools](#analytics-tools)
 8. [Attachment & Fulltext Tools](#attachment--fulltext-tools)
-9. [Legacy Tools (opt-in)](#legacy-tools-opt-in)
+9. [Zotero 10+ Local Write Tools](#zotero-10-local-write-tools)
+10. [Legacy Tools (opt-in)](#legacy-tools-opt-in)
+11. [Environment Variables Summary](#environment-variables-summary)
 
 ---
 
@@ -33,9 +35,20 @@ Test connectivity to the local Zotero application.
 ```json
 {
   "connected": true,
-  "endpoint": "http://localhost:23119"
+  "endpoint": "http://localhost:23119",
+  "zotero_version": "10.x",
+  "connector_api_version": "3",
+  "local_api_readable": true,
+  "local_api_version": "3",
+  "capabilities": {
+    "local_api_server_id": "current-zotero-instance-id",
+    "local_api_write_available": true,
+    "local_api_write_authorized": false
+  }
 }
 ```
+
+Keeper probes the bare Local API `GET /api/` capability endpoint. Zotero's Local API speaks only API v3; `local_api_write_available=true` additionally requires the Zotero 10+ `Zotero-Server-ID` contract. Capability probing does not mutate the library.
 
 **Example prompt**: *"Is Zotero running?"*
 
@@ -77,7 +90,11 @@ Retrieve full metadata for a single Zotero item by its key.
 |------|------|---------|-------------|
 | `key` | `str` | required | 8-character Zotero item key (e.g. `"ABC12345"`) |
 
-**Returns**: Full item metadata including abstract, DOI, authors, journal, year, tags, collections.
+**Returns**: Full item metadata including the response-bound `server_id`, object
+`version`, `version_scope: "local"`, abstract, DOI, authors, journal, year, tags,
+and collections. The identity and object version come from the same HTTP
+response snapshot; use that pair for `update_item_fields` and never combine a
+version with a separately cached identity.
 
 **Example prompt**: *"Show me the abstract for key:ABC12345"*
 
@@ -141,7 +158,9 @@ List all collections (folders) in the Zotero library.
 
 **Parameters**: none
 
-**Returns**: Flat list of all collections with keys, names, and parent keys.
+**Returns**: Flat list of all collections with keys, names, parent keys, local
+object versions, and the response-bound `server_id` for that one collection-list
+snapshot.
 
 **Equivalent resource**: `zotero://collections`
 
@@ -156,6 +175,9 @@ Get details for a specific collection.
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | `key` | `str` | required | Collection key |
+
+**Returns**: Collection details with a local object version and the
+response-bound `server_id` from the same exact-collection response.
 
 **Equivalent resource**: `zotero://collections/{key}`
 
@@ -453,7 +475,7 @@ Import a **local PDF file** into Zotero using the Connector API — **no Web API
 | `tags` | `list[str]` | `None` | Extra tags for the parent item (metadata mode) |
 | `allow_library_root` | `bool` | `False` | Explicitly allow a parent/standalone PDF outside every collection |
 
-> ⚠️ Attaching to a **pre-existing** library item is not supported by the Connector API (it is session-scoped). This tool creates the parent item itself, or uses standalone auto-recognition.
+> `import_pdf` remains a Connector/session-scoped Zotero 7–10+ workflow: it creates the parent itself or uses standalone auto-recognition. On Zotero 10+, use the separate confirmed `attach_file_to_item` tool to upload a file beneath a **pre-existing** bibliographic item.
 
 **Example**:
 ```python
@@ -514,7 +536,7 @@ Find items that are not assigned to any collection and/or have no tags—useful 
 
 ## Attachment & Fulltext Tools
 
-> Requires Zotero to have indexed the PDF. Set `ZOTERO_DATA_DIR` (e.g. `~/Zotero`) to get absolute file paths in the response.
+> Zotero must have indexed a PDF before `get_item_fulltext` can return its text. On Zotero 10+, attachment paths are discovered first through the official Local API `/items/{key}/file/view/url` response. Keeper URL-decodes the returned `file://` URL and handles local platform paths; a missing or unsupported endpoint falls back to `ZOTERO_DATA_DIR` when configured.
 
 ### `get_item_attachments`
 
@@ -531,6 +553,8 @@ List all attachments (PDFs, snapshots, etc.) for a Zotero item.
 {
   "item_key": "X42A7DEE",
   "title": "Deep Learning in Medicine",
+  "library_version": 314,
+  "server_id": "current-zotero-instance-id",
   "attachment_count": 1,
   "attachments": [
     {
@@ -541,11 +565,19 @@ List all attachments (PDFs, snapshots, etc.) for a Zotero item.
       "file_path": "/home/user/Zotero/storage/NHZFE5A7/paper.pdf",
       "file_exists": true,
       "file_size": 1048576,
+      "file_path_source": "local_api",
+      "version": 42,
+      "object_version": 42,
+      "server_id": "current-zotero-instance-id",
       "link_mode": "imported_file"
     }
   ]
 }
 ```
+
+`library_version` and `server_id` form the response-bound cursor pair for
+`set_attachment_fulltext`. The per-attachment `object_version` is for object
+metadata operations and must not be substituted for that library cursor.
 
 **Example prompt**: *"Does key:X42A7DEE have a PDF attached?"*
 
@@ -569,13 +601,263 @@ Get Zotero-indexed fulltext content for an item's PDF attachment.
   "content": "Abstract: This paper describes...",
   "indexed_pages": 12,
   "total_pages": 15,
+  "library_version": 314,
+  "server_id": "current-zotero-instance-id",
   "source": "NHZFE5A7 (Full Text PDF)"
 }
 ```
 
+The full-text response binds its `library_version` cursor to `server_id`; pass
+that pair into the preview of `set_attachment_fulltext`.
+
 > If fulltext is not yet indexed, Zotero may need time to process the PDF. You can use `get_item_attachments()` to get the file path for external PDF parsing tools.
 
 **Example prompt**: *"Read the full text of key:X42A7DEE"*
+
+---
+
+## Zotero 10+ Local Write Tools
+
+These eight tools use Zotero 10+'s official [Local API v3](https://www.zotero.org/support/dev/web_api/v3/local_api). Zotero 7–9 continue to support Keeper's read and Connector-based save/import tools, but calls to this section's Local write surface return `unsupported_local_write`.
+
+### Confirmation and authorization workflow
+
+For each of the seven mutation tools:
+
+1. Obtain a response-bound `server_id` from an exact Local API read or from
+   `authorize_local_writes`. For `update_item_fields`, obtain the response-bound
+   object version from the exact-item read. For `set_attachment_fulltext`,
+   obtain the response-bound library cursor from `get_item_attachments` or
+   `get_item_fulltext`.
+2. Call the mutation with `confirm=false` and include that identity as
+   `expected_server_id` (and the relevant version cursor). This performs **zero
+   Zotero reads, authorization requests, filesystem probes, or writes**.
+3. Obtain the user's explicit approval for the complete proposal, including its
+   identity and version cursor.
+4. If authorization is still needed, call
+   `authorize_local_writes(require_remembered=false)`. Before
+   `attach_file_to_item`, use `require_remembered=true`; Zotero must grant
+   **Always Allow** because the upload spans multiple writes. If authorization
+   returns a different identity, discard the proposal, reread, preview again,
+   and obtain new approval.
+5. Call the mutation again with unchanged arguments, `confirm=true`, and the
+   reviewed `expected_server_id`.
+
+The runtime Local API key is retained only in the Keeper process. It is never
+an MCP input and never appears in a tool result. Every confirmed mutation
+requires its reviewed response-bound `expected_server_id`; identity cannot be
+added only after preview. A missing server precondition is reported as HTTP
+428, while a changed server or stale version cursor is reported as HTTP 412.
+Keeper does not retry a 412 write.
+
+All mutation tools are annotated `readOnlyHint=false` and `openWorldHint=false`.
+The two replacement-style operations, `update_item_fields` and
+`set_attachment_fulltext`, honestly advertise `destructiveHint=true`; the
+additive create/organize/upload tools advertise `false`. The collection,
+metadata, and full-text update tools are idempotent; create/upload tools and
+authorization are not. Keeper 2.1.0 deliberately exposes no raw delete MCP
+tool.
+
+The common preview shape is:
+
+```json
+{
+  "success": false,
+  "operation": "create_collection",
+  "confirmation_required": true,
+  "proposed": {
+    "name": "AI Research",
+    "parent_collection_key": null,
+    "expected_server_id": "current-zotero-instance-id"
+  }
+}
+```
+
+Failures use a stable `error` object with `code`, `message`, `http_status`, and `retry_after`. See Zotero's official [write-request preconditions](https://www.zotero.org/support/dev/web_api/v3/write_requests).
+
+### `authorize_local_writes`
+
+```python
+authorize_local_writes(require_remembered: bool = False)
+```
+
+Requests Zotero's own runtime write-authorization dialog through `POST /api/local/authorize`. This is a permission action, not a library mutation.
+
+**Parameters**:
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `require_remembered` | `bool` | `False` | Require reusable **Always Allow** authorization; set `True` before `attach_file_to_item` |
+
+**Returns**:
+
+```json
+{
+  "success": true,
+  "operation": "authorize_local_writes",
+  "authorized": true,
+  "remembered": true,
+  "remembered_required": true,
+  "server_id": "current-zotero-instance-id"
+}
+```
+
+`remembered=true` corresponds to reusable **Always Allow** approval. A one-use **Allow** key is consumed by the first validated write. When `require_remembered=true`, authorization succeeds only with reusable approval; the secret itself is never returned.
+
+---
+
+### `create_collection`
+
+```python
+create_collection(name, parent_collection_key=None, confirm=False, expected_server_id=None)
+```
+
+Create a top-level collection, or a child beneath an exact existing collection.
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `name` | `str` | required | Non-empty collection name |
+| `parent_collection_key` | `str` | `None` | Exact eight-character parent collection key; omit for top level |
+| `confirm` | `bool` | `False` | `False` previews only; `True` performs the confirmed write |
+| `expected_server_id` | `str` | `None` | Response-bound Zotero identity; operationally required in preview and confirmed execution |
+
+When a parent is supplied, Keeper reads and verifies that exact parent before writing. This tool creates collection structure; it does not imply permission to save items to My Library root.
+
+---
+
+### `add_items_to_collection`
+
+```python
+add_items_to_collection(item_keys, collection_key, confirm=False, expected_server_id=None)
+```
+
+Add between one and 50 distinct exact items to a collection.
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `item_keys` | `list[str]` | required | One to 50 exact eight-character item keys; duplicates are coalesced |
+| `collection_key` | `str` | required | Exact eight-character destination collection key |
+| `confirm` | `bool` | `False` | `False` previews only; `True` performs the confirmed batch write |
+| `expected_server_id` | `str` | `None` | Identity from the same response snapshot used to select the collection/items; required for the reviewed operation |
+
+With `confirm=true`, Keeper first completes every destination/item read and exact-key validation. It then merges the destination into each item's **complete** `collections` array, preserving all other memberships, and sends at most one 50-item batch POST. Items already present are `unchanged`. A mixed Zotero batch response has `partial=true` and an ordered per-item `updated`, `unchanged`, or `failed` status; 412 failures are not retried. This tool never removes a membership or moves an item to My Library root.
+
+---
+
+### `update_item_fields`
+
+```python
+update_item_fields(item_key, fields, expected_version, confirm=False, expected_server_id=None)
+```
+
+Patch safe scalar metadata on one exact bibliographic parent item.
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `item_key` | `str` | required | Exact eight-character bibliographic item key |
+| `fields` | `dict[str, scalar]` | required | Non-empty mapping of strings to finite JSON string/number/boolean scalars |
+| `expected_version` | `int` | required | Response-bound object version from the fresh exact-item read |
+| `confirm` | `bool` | `False` | `False` previews only; `True` performs the confirmed PATCH |
+| `expected_server_id` | `str` | `None` | `server_id` paired with `expected_version` in that exact-item response; required for preview and execution |
+
+The tool rejects child notes, attachments, and annotations. It also rejects structural or sensitive fields including `key`, `version`, `itemType`, `collections`, `tags`, `creators`, `relations`, `parentItem`, `deleted`, `dateAdded`, `dateModified`, `linkMode`, `filename`, `contentType`, `charset`, `md5`, `mtime`, and `note`. Use a dedicated safe tool for structure. A stale version returns `version_conflict` with HTTP 412 and no retry.
+
+---
+
+### `create_note`
+
+```python
+create_note(parent_item_key, note_html, confirm=False, expected_server_id=None)
+```
+
+Create an HTML child note beneath an exact bibliographic parent.
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `parent_item_key` | `str` | required | Exact eight-character bibliographic parent key |
+| `note_html` | `str` | required | Non-empty Zotero note HTML |
+| `confirm` | `bool` | `False` | `False` previews the complete HTML; `True` creates the note |
+| `expected_server_id` | `str` | `None` | Response-bound Zotero identity included in the approved preview; required for execution |
+
+Keeper validates the exact parent and rejects attachment, annotation, or note parents. Treat all HTML in the preview as untrusted content when rendering it outside Zotero.
+
+---
+
+### `create_saved_search`
+
+```python
+create_saved_search(name, conditions, confirm=False, expected_server_id=None)
+```
+
+Create a saved-search definition that `run_saved_search` can execute locally.
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `name` | `str` | required | Non-empty saved-search name |
+| `conditions` | `list[dict]` | required | Non-empty condition list |
+| `confirm` | `bool` | `False` | `False` previews only; `True` creates the search |
+| `expected_server_id` | `str` | `None` | Response-bound Zotero identity included in the approved preview; required for execution |
+
+Each condition requires scalar `condition`, `operator`, and `value` fields. Optional supported fields are boolean `required` and string `mode`; unknown fields are rejected. Saved-search metadata can be represented by Zotero APIs, but execution is a Zotero Local API feature.
+
+---
+
+### `attach_file_to_item`
+
+```python
+attach_file_to_item(item_key, file_path, title="Full Text PDF", confirm=False, expected_server_id=None)
+```
+
+Upload a stored local file beneath an exact existing bibliographic parent.
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `item_key` | `str` | required | Exact eight-character bibliographic parent key |
+| `file_path` | `str` | required | Path on the same machine as Keeper and Zotero Desktop |
+| `title` | `str` | `"Full Text PDF"` | Non-empty attachment title |
+| `confirm` | `bool` | `False` | `False` previews without inspecting the filesystem; `True` uploads |
+| `expected_server_id` | `str` | `None` | Identity returned by the remembered authorization/read and included in the approved preview; required for execution |
+
+After confirmation, Keeper verifies the file and parent, creates the attachment object, authorizes the file with MD5/name/size/mtime and a version precondition, uploads bytes to the loopback upload URL, and finalizes the attachment. This implements Zotero's official [three-phase file upload](https://www.zotero.org/support/dev/web_api/v3/file_upload). Local uploads are stored files under 4 GB; the Local API does not provide binary-diff uploads.
+
+Call `authorize_local_writes(require_remembered=true)` before this tool and grant **Always Allow** in Zotero. If a later upload phase fails after the attachment child was created, the structured error can include `partial=true` and `attachment_key`, allowing explicit cleanup in the Zotero UI. No raw delete tool is exposed.
+
+---
+
+### `set_attachment_fulltext`
+
+```python
+set_attachment_fulltext(
+    attachment_key,
+    content,
+    expected_library_version,
+    indexed_pages=None,
+    total_pages=None,
+    indexed_chars=None,
+    total_chars=None,
+    confirm=False,
+    expected_server_id=None,
+)
+```
+
+Write indexed text for one exact attachment using Zotero's [full-text content endpoint](https://www.zotero.org/support/dev/web_api/v3/fulltext_content).
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `attachment_key` | `str` | required | Exact eight-character attachment key |
+| `content` | `str` | required | Non-empty extracted/indexed text |
+| `expected_library_version` | `int` | required | Response-bound library cursor from `get_item_attachments` or `get_item_fulltext`; not an attachment object version |
+| `indexed_pages`, `total_pages` | `int` | `None` | Supply this complete non-negative pair for paged content |
+| `indexed_chars`, `total_chars` | `int` | `None` | Or supply this complete non-negative pair for character-counted content |
+| `confirm` | `bool` | `False` | `False` previews only; `True` performs the confirmed bulk write |
+| `expected_server_id` | `str` | `None` | `server_id` paired with `expected_library_version`; required for preview and execution |
+
+Supply exactly one complete count pair, and keep the indexed count less than or
+equal to its total. The tool verifies the response-bound Server-ID/library
+cursor pair and the exact attachment target, then uses bulk
+`POST /api/users/0/fulltext` with `If-Unmodified-Since-Version`. A stale library
+cursor or changed identity returns HTTP 412 without a write or retry. This sets
+Zotero's searchable index content and does not replace the attachment binary.
 
 ---
 
@@ -606,7 +888,7 @@ ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1
 | `ZOTERO_HOST` | `localhost` | Zotero host address |
 | `ZOTERO_PORT` | `23119` | Zotero local API port |
 | `ZOTERO_TIMEOUT` | `30` | API request timeout (seconds) |
-| `ZOTERO_DATA_DIR` | `""` | Path to Zotero data directory (for attachment file paths) |
+| `ZOTERO_DATA_DIR` | `""` | Optional attachment-path fallback when the official file-view URL is unavailable |
 | `NCBI_EMAIL` | `""` | Email for NCBI/PubMed API (higher rate limits) |
 | `NCBI_API_KEY` | `""` | NCBI API key (optional; raises rate limit from 3 to 10 requests/second) |
 | `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS` | `0` | Enable legacy PubMed bridge tools |

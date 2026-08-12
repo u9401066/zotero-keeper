@@ -1,5 +1,16 @@
 # Zotero + PubMed MCP Extension for VS Code
 
+## What's New in v0.7.0
+
+- **Zotero 10+ Local API writes**: Zotero Keeper 2.1.0 adds runtime-authorized, Server-ID-bound operations for nested collections, existing-item organization and metadata, child notes, saved searches, full-text, and attachments.
+- **Attach to an existing item**: the new `attach_file_to_item` path uses Zotero's official three-phase local upload instead of requiring a Connector session that created the parent.
+- **Private and conflict-safe authorization**: the local key stays inside the Keeper process; writes are loopback-only and version conflicts fail closed without automatic replay.
+- **Explicit upload authorization**: call `authorize_local_writes(require_remembered=true)` and choose **Always Allow** before `attach_file_to_item`, so all three upload phases remain authorized.
+- **32-tool Keeper surface**: the existing 24 tools remain compatible and eight guarded Local API tools are added. Zotero 7–9 continue to use the Connector import path.
+- **Release smoke hardening**: a loopback Local API simulator exercises authorization and a real MCP call, managed installs verify Keeper 2.1.0/PubMed 0.6.1, and one checked VSIX artifact is reused for publishing.
+
+> Install the v0.7.0 VSIX from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp). Zotero 10+ is required for the new authorized Local API writes; read and Connector-import compatibility remains available on Zotero 7–9.
+
 ## What's New in v0.6.0
 
 - **MCP SDK 2.0 runtime**: the managed environment now installs Zotero Keeper 2.0.0 and PubMed Search MCP 0.6.1 on the new `MCPServer` API. MCP SDK 2.x is not compatible with 1.x.
@@ -84,7 +95,8 @@
 This extension provides two MCP (Model Context Protocol) servers that enable AI assistants like GitHub Copilot to:
 
 ### 📚 Zotero Keeper
-- Search and browse your Zotero library through 24 default tools and six concrete resources
+- Search and browse your Zotero library through 32 default tools and six concrete resources
+- On Zotero 10+, authorize guarded Local API writes for collections, existing items, notes, saved searches, attachments, and full text
 - Add references from PubMed or DOI
 - Import local PDFs with `import_pdf`
 - Browse collections/tags and import into a confirmed collection
@@ -125,7 +137,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 ## Requirements
 
 - **VS Code** 1.99.0 or later
-- **Zotero 7, 8, or 9** running locally (for Zotero features)
+- **Zotero 7, 8, 9, or 10+** running locally. Zotero 10+ is required for the authorized Local API write tools.
 
 **Note**: Python is managed automatically by the extension using [uv](https://github.com/astral-sh/uv).
 
@@ -135,7 +147,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 2. The extension will automatically:
    - Download [uv](https://github.com/astral-sh/uv) (fast Python package manager, ~10MB)
    - Create an isolated Python 3.12 environment
-   - Install pinned packages (Zotero Keeper 2.0.0 and PubMed Search MCP 0.6.1 at `ad85dde`)
+   - Install pinned packages (Zotero Keeper 2.1.0 and PubMed Search MCP 0.6.1 at `ad85dde`)
    - Register MCP servers with VS Code
    - **Install official Copilot instructions, workflow guides, `@research` agent, and collaboration hook assets**
 
@@ -206,7 +218,7 @@ This extension uses [uv](https://github.com/astral-sh/uv) from Astral to manage 
 
 The Python environment is completely isolated from your system Python.
 
-Do not add [`54yyyu/zotero-mcp`](https://github.com/54yyyu/zotero-mcp) to this managed environment. It is an MCP Registry-listed community server (not a Zotero-official server) and uses the same Python module name, `zotero_mcp`, as Keeper. If you need both, configure it as a separate MCP process in a separate virtual environment. See the [Zotero MCP landscape](../docs/ZOTERO_MCP_LANDSCAPE.md).
+Do not add [`54yyyu/zotero-mcp`](https://github.com/54yyyu/zotero-mcp) to this managed environment. It is an MCP Registry-listed community server (not a Zotero-official server) and uses the same Python module name, `zotero_mcp`, as Keeper. If you need both, configure it as a separate MCP process in a separate virtual environment. See the [Zotero MCP landscape](https://github.com/u9401066/zotero-keeper/blob/main/docs/ZOTERO_MCP_LANDSCAPE.md).
 
 ## Troubleshooting
 
