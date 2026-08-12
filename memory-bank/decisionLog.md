@@ -52,7 +52,7 @@ Zotero profile 的 version 套用於本機更新。同時，`v0.6.0-ext` / Keepe
   Host/Origin 與資料隔離設計。
 - Zotero 7–9 繼續使用既有 Connector import/PDF path；Zotero 10+ capability 不可用
   時不得把 local-write failure 偷偷降級為不同語意的 Connector mutation。
-- VS Code extension 候選版為 `0.7.0` / `v0.7.0-ext`，維持 Keeper `2.1.0` 與
+- VS Code extension 發布版為 `0.7.0` / `v0.7.0-ext`，維持 Keeper `2.1.0` 與
   PubMed Search MCP `0.6.1`（commit
   `ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d`、45 tools）在同一 managed venv、
   同一 resolver transaction 的 invariant。
@@ -65,8 +65,10 @@ Zotero profile 的 version 套用於本機更新。同時，`v0.6.0-ext` / Keepe
 - 自動化涵蓋 Local API wire contract、authorization/Server-ID、version conflict、
   三階段 upload、`confirm=false` 零 I/O、真實 loopback simulator，以及 opt-in 的
   本機 Zotero read-only live smoke。
-- `v0.6.0-ext` / Keeper `2.0.0` 是已發布穩定基線；`v0.7.0-ext` / Keeper
-  `2.1.0` 截至本決策記錄仍在發布流程中，不得標記為已發布。
+- `v0.7.0-ext` / Keeper `2.1.0` 已於 2026-08-12 發布。GitHub Actions run
+  `31560040966` 從 tag archive 安裝並完成全套 gates，只封裝一次 VSIX，再把同一
+  檔案送往 Marketplace 與 GitHub Release；公開 artifact SHA256 為
+  `11df8af38a6fd804691262dc6182c5ba6f345f5a5cb1c615b218720693eb6c1f`。
 
 ## 2026-08-11
 

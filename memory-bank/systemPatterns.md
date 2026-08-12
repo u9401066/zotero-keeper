@@ -84,8 +84,9 @@ Submodule 與 VSIX installer 都固定到 v0.6.1 commit
 ### 5. Atomic Managed Package-set Pattern
 - MCP SDK v1/v2 不相容；Keeper `2.1.0` 和 PubMed `0.6.1` 共同約束
   `mcp>=2,<3`
-- `v0.6.0-ext` / Keeper `2.0.0` 已於 2026-08-11 發布；VSIX `0.7.0`
-  候選版仍將兩個 fixed-source distributions 交給同一 resolver install，完成
+- `v0.6.0-ext` / Keeper `2.0.0` 已於 2026-08-11 發布；VSIX `0.7.0` / Keeper
+  `2.1.0` 已於 2026-08-12 發布，仍將兩個 fixed-source distributions 交給同一
+  resolver install，完成
   後一起檢查 version、`direct_url.json`、install state 及 server tool listing
 - 升級前停止 managed venv 中的舊 MCP processes；任何一步失敗都不得把半升級
   環境標記 ready

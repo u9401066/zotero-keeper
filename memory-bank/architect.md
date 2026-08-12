@@ -7,7 +7,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        VS Code Extension                         │
-│              (vscode-zotero-mcp v0.7.0 candidate)              │
+│               (vscode-zotero-mcp v0.7.0 release)               │
 │       one managed venv / one MCP SDK v2 package set             │
 └──────────────────────────────┬──────────────────────────────────┘
                                │ MCP Protocol (stdio)
@@ -138,13 +138,13 @@ infrastructure/
   full-text 使用 library cursor 與 bulk `/fulltext` POST，不使用 attachment object
   version。若 authorization identity 不同，必須重新 read、preview 與取得核准。
 
-`v0.6.0-ext` / Keeper `2.0.0` 已於 2026-08-11 完成發布。ADR-008 對應目前仍在
-發布中的 `v0.7.0-ext` / Keeper `2.1.0`，不代表該候選版已上架。
+`v0.6.0-ext` / Keeper `2.0.0` 已於 2026-08-11 完成 MCP v2 migration；
+ADR-008 對應的 `v0.7.0-ext` / Keeper `2.1.0` 已於 2026-08-12 發布。
 
 ## 下一步架構改進
 
-1. **完成 v0.7 release invariant**: 對同一個已 smoke-tested VSIX artifact 執行
-   Marketplace publish 與 GitHub Release，避免重新 package 產生漂移
+1. **監看 v0.7 release**: 追蹤 Zotero 10+ authorization、Server-ID 與 attachment
+   upload 的實際相容性回饋
 2. **拆分大檔案**: 依據上表拆分仍超過 400 行的檔案
 3. **增加 Application Layer**: 如果匯入 orchestration 持續變複雜，考慮加入 services/
 4. **Repository Pattern**: 在 Domain 和 Infrastructure 之間加入抽象

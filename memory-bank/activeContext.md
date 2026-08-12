@@ -1,10 +1,10 @@
 # Active Context
 
 ## 當前焦點
-完成 Zotero Keeper `2.1.0` 與 VS Code extension / VSIX `0.7.0` 的發布工作。
-此候選版把 Zotero 10+ Local API 的 runtime authorization、Server-ID 與 guarded
-writes 納入 Keeper；`v0.6.0-ext` / Keeper `2.0.0` 的 MCP SDK v2 breaking
-release 已於 2026-08-11 完成發布，目前不可把 `v0.7.0-ext` 提前標記為已發布。
+維護已發布的 Zotero Keeper `2.1.0` 與 VS Code extension / VSIX `0.7.0`。
+此版本把 Zotero 10+ Local API 的 runtime authorization、Server-ID 與 guarded
+writes 納入 Keeper；`v0.7.0-ext` 已於 2026-08-12 完成 GitHub Release 與
+Marketplace 發布，PubMed Search MCP 仍固定為 `0.6.1`。
 
 ## 相關檔案
 - `mcp-server/pyproject.toml` - Keeper `2.1.0` 與 `mcp>=2.0,<3`
@@ -44,8 +44,10 @@ release 已於 2026-08-11 完成發布，目前不可把 `v0.7.0-ext` 提前標�
   與 opt-in Zotero live smoke
 - [x] 保留 Zotero 7–9 的 Connector 匯入相容路徑與 managed-venv 單一 resolver
   invariant
-- [ ] 同步最終 assets、分段提交、推送 `main` 與 `v0.7.0-ext` tag，驗證同一
-  VSIX artifact 的 Marketplace / GitHub Release 發布
+- [x] 同步最終 assets、分段提交、推送 `main` 與 `v0.7.0-ext` tag；GitHub
+  Actions `31560040966` 已驗證並把同一 VSIX artifact 發布至 Marketplace 與
+  GitHub Release（SHA256
+  `11df8af38a6fd804691262dc6182c5ba6f345f5a5cb1c615b218720693eb6c1f`）
 
 ## 上下文
 - MCP SDK v2 以 `mcp.server.MCPServer` 取代 v1 `FastMCP` surface；Keeper

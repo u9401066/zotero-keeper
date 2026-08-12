@@ -34,7 +34,8 @@
   VSIX `0.6.0`（2026-08-11）
 - [x] 新增 Zotero 10+ runtime-authorized Local API management，且保留 Zotero
   7–9 Connector 相容性
-- [ ] 發布 Keeper `2.1.0` / VSIX `0.7.0` 的單一 smoke-tested artifact
+- [x] 發布 Keeper `2.1.0` / VSIX `0.7.0` 的單一 smoke-tested artifact
+  （`v0.7.0-ext`，2026-08-12）
 
 ## 🚫 範圍限制
 

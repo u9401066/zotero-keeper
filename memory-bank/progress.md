@@ -49,16 +49,16 @@
   對非 loopback host 啟用 (2026-08-12)
 - [x] 新增 Local API wire tests、真實 loopback simulator smoke、opt-in Zotero live
   smoke，以及單一已檢查 VSIX artifact 的 release workflow guard (2026-08-12)
+- [x] 以三段 commits 推送 `main`，並發布 VSIX `0.7.0` / Keeper `2.1.0` / PubMed
+  `0.6.1` 的 `v0.7.0-ext`；tag workflow、GitHub Release、Marketplace publish 與
+  公開 VSIX checksum 驗證完成 (2026-08-12)
 
 ## Doing
-- [ ] 發布 VS Code extension / VSIX `0.7.0` 與 bundled Keeper `2.1.0`、PubMed
-  Search MCP `0.6.1`；目前只記錄為 release candidate，尚未標記已發布
+目前沒有進行中的發布工作。
 
 ## Next
-- [ ] 完成 assets sync 與全套 Python/extension/managed-install/VSIX smoke
-- [ ] 依 Local API runtime、docs/memory、extension/release 分段提交並推送 `main`
-- [ ] 推送 `v0.7.0-ext` tag，驗證 GitHub Actions、GitHub Release 與 Marketplace
-  使用同一個已 smoke-tested VSIX 檔案
+- [ ] 監看 `0.7.0` 的 Zotero 10+ authorization、Server-ID 與三階段 upload 回饋
+- [ ] 保持 PubMed `0.6.1` fixed-source pin 與雙 server SDK v2 相容性 smoke
 
 ## Blocked
 - [ ] 無

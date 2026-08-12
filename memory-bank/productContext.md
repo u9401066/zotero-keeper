@@ -8,7 +8,7 @@
 - **Runtime**: Python 3.12+
 - **Package Manager**: uv only
 - **Framework**: MCP Python SDK v2 `MCPServer` (`mcp>=2,<3`)
-- **Current candidate set**: Zotero Keeper `2.1.0` + PubMed Search MCP `0.6.1`
+- **Current released set**: Zotero Keeper `2.1.0` + PubMed Search MCP `0.6.1`
 - **Libraries**:
   - biopython (NCBI Entrez)
   - httpx (async HTTP)
@@ -19,8 +19,8 @@
 - **Runtime**: Node.js 18+
 - **Framework**: VS Code Extension API
 - **Language**: TypeScript
-- **Current candidate**: `0.7.0` / `v0.7.0-ext`（尚未發布）
-- **Stable MCP v2 baseline**: `0.6.0` / `v0.6.0-ext`（2026-08-11 已發布）
+- **Current stable release**: `0.7.0` / `v0.7.0-ext`（2026-08-12 已發布）
+- **MCP v2 migration baseline**: `0.6.0` / `v0.6.0-ext`（2026-08-11 已發布）
 
 ## 架構
 
@@ -77,7 +77,7 @@ Current collaboration-safe split:
 
 - MCP SDK v1 與 v2 不相容。VSIX `0.6.0` 已在 2026-08-11 完成 Keeper
   `2.0.0` 與 PubMed `0.6.1` 的同一 extension-managed venv 原子升級。
-- VSIX `0.7.0` 候選版把 Keeper pin 提升為 `2.1.0`，仍在同一 resolver
+- VSIX `0.7.0` 發布版把 Keeper pin 提升為 `2.1.0`，仍在同一 resolver
   transaction 解析、安裝並驗證兩套固定來源；不得讓 package set 部分升級。
 - `external/pubmed-search-mcp` 與 extension installer 固定至 v0.6.1 commit
   `ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d`。

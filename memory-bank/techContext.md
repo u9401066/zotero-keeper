@@ -41,13 +41,12 @@ SDK v1 `FastMCP` 與 SDK v2 不相容。Keeper `2.1.0` 與 PubMed Search MCP
 | Line | Component set | Runtime surface | Status |
 |------|---------------|-----------------|--------|
 | `v0.6.0-ext` | extension `0.6.0`, Keeper `2.0.0`, PubMed `0.6.1` | 24 Keeper tools / 6 resources; 45 PubMed tools; MCP SDK v2 | published 2026-08-11 |
-| `v0.7.0-ext` | extension `0.7.0`, Keeper `2.1.0`, PubMed `0.6.1` | 32 Keeper tools / 6 resources; 45 PubMed tools; Zotero 10+ Local API writes | release in progress |
+| `v0.7.0-ext` | extension `0.7.0`, Keeper `2.1.0`, PubMed `0.6.1` | 32 Keeper tools / 6 resources; 45 PubMed tools; Zotero 10+ Local API writes | published 2026-08-12 |
 | PubMed fixed source | commit `ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d` | upstream `0.6.1` release commit | unchanged |
 
 Previous lines `v0.5.35-ext` (Keeper `1.14.0`, PDF import) and `v0.6.0-ext`
-(Keeper `2.0.0`, SDK v2 migration) are complete. The current release task is
-`v0.7.0-ext`; it must not be described as published until its tag workflow and distribution
-checks complete.
+(Keeper `2.0.0`, SDK v2 migration) are complete. The current stable release is
+`v0.7.0-ext`; its tag workflow and public GitHub Release artifact passed distribution checks.
 
 ## VSIX Managed-install Invariants
 
