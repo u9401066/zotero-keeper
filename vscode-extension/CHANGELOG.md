@@ -2,6 +2,41 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.7.0] - 2026-08-12
+
+### Added
+
+- Bundled Zotero Keeper 2.1.0 with authorized Zotero 10+ Local API v3
+  operations: nested collection creation, safe organization and metadata
+  updates, child notes, saved searches, existing-item file attachments, and
+  full-text writes.
+- Runtime Local API authorization that keeps the Zotero key private and binds
+  every confirmed operation to its reviewed `Zotero-Server-ID`; object
+  updates use the current local object version, full-text writes use a library
+  cursor, and creates use a unique write token.
+- Official `/file/view/url` attachment discovery and three-phase full-file
+  uploads to pre-existing Zotero items.
+- Protocol-level Local API simulator smoke coverage plus stronger managed-venv
+  and packaged-VSIX release checks.
+
+### Changed
+
+- Zotero 7–9 retain the existing Connector import path; Zotero 10+ receives
+  the new Local API write surface without breaking existing MCP tool schemas.
+- Release publishing now inspects and publishes one explicitly selected VSIX
+  artifact, and validates Keeper/extension versions and the release tag as a
+  single version set.
+- The managed environment continues to install Keeper and PubMed Search MCP
+  0.6.1 together with a single resolver transaction.
+
+### Security
+
+- Local API writes are loopback-only, use runtime user authorization, reject
+  stale Server-ID/object or library versions, and never expose the unscoped
+  local key to the MCP client.
+- Destructive raw CRUD is not exposed as a general-purpose MCP escape hatch;
+  public mutations are constrained, preflighted, and confirmation-gated.
+
 ## [0.6.0] - 2026-08-11
 
 ### Breaking changes

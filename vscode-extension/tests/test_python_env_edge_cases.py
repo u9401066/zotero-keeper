@@ -763,7 +763,7 @@ class TestPythonEnvEdgeCases:
         issues = []
         _all_ok = True
         for pkg_name, import_name, min_ver in [
-            ("zotero-keeper", "zotero_mcp", "2.0.0"),
+            ("zotero-keeper", "zotero_mcp", "2.1.0"),
             ("pubmed-search-mcp", "pubmed_search", "0.6.1"),
         ]:
             attr_ver = self._check_package_version(venv_dir, import_name)

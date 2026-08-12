@@ -6,7 +6,7 @@
 ## Goal
 Use Zotero Keeper and PubMed Search MCP as a research assistant for literature search, review, and import.
 
-The v0.6.0 VSIX baseline is Zotero Keeper 2.0.0 (MCP SDK v2; 24 default tools and 6 concrete resources) plus PubMed Search MCP 0.6.1 at `ad85dde` (45 tools in 16 categories).
+The v0.7.0 VSIX baseline is Zotero Keeper 2.1.0 (MCP SDK v2; 32 default tools and 6 concrete resources) plus PubMed Search MCP 0.6.1 at `ad85dde` (45 tools in 16 categories).
 
 ## Response Style
 - Use Traditional Chinese
@@ -27,6 +27,16 @@ The v0.6.0 VSIX baseline is Zotero Keeper 2.0.0 (MCP SDK v2; 24 default tools an
 5. Only use legacy keeper PubMed bridge/import tools when the workspace intentionally enables `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1`
 6. Treat collection routing as fail-closed: `interactive_save` uses an exact collection key or `ROOT`; `ROOT` requires a second confirmation, and `skip_collection_prompt=True` must abort
 7. For `quick_save`, `import_articles`, or `import_pdf`, never omit the collection unless the user explicitly confirms My Library and the call includes `allow_library_root=true`
+
+## Zotero 10+ Library Management
+- Call `authorize_local_writes` only when the user asks for a Local API mutation; it opens Zotero's own approval dialog and never returns the key
+- Before preview, obtain a response-bound `server_id` from an exact read or authorization; every mutation preview and confirmed execution carries it as `expected_server_id`
+- Every mutation first returns a complete proposal with `confirmation_required=true`; obtain user approval before repeating it unchanged with `confirm=true`
+- Use `create_collection` for exact top-level/nested creation and `add_items_to_collection` to preserve all existing memberships
+- Use `update_item_fields` only with the response-bound object version from the latest exact-item read; use the response-bound library cursor, not an attachment object version, for `set_attachment_fulltext`
+- If authorization returns a different identity, discard the proposal, reread, preview, and obtain approval again; never add identity after preview or retry a 412 automatically
+- Before `attach_file_to_item`, call `authorize_local_writes(require_remembered=true)` and have the user choose Always Allow because Zotero's upload is multi-step
+- Do not expose or forward port 23119, and never request or echo a Zotero Local API key
 
 ## Preferred Tooling
 - Quick topic search: `unified_search`

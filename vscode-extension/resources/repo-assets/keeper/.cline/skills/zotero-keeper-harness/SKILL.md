@@ -35,5 +35,16 @@ VSIX install path healthy.
 - Use `import_articles` as the preferred bridge from PubMed results/RIS into Zotero.
 - Require a confirmed collection; set `allow_library_root=true` only after the
   user explicitly approves a My Library root import.
+- For Zotero 10+ Local API mutations, first obtain a response-bound `server_id`
+  from a read or authorization and include it as `expected_server_id` in the
+  `confirm=false` preview. Execute the unchanged proposal only after approval;
+  every confirmed mutation requires that identity, and a changed authorization
+  identity requires a fresh read, preview, and approval.
+- Use a response-bound item object version for `update_item_fields`; use the
+  response-bound library cursor for `set_attachment_fulltext`. Never substitute
+  the attachment object version or replay a 412 conflict.
+- Keep port 23119 on loopback and the Local API key private. Require
+  `authorize_local_writes(require_remembered=true)` plus **Always Allow** before
+  `attach_file_to_item`.
 - Do not bypass the NCBI email policy; use explicit settings or the git email fallback.
 - Treat VSIX install as a first-class path: bundled repo assets must be synced before compile/package.

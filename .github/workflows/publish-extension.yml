@@ -39,6 +39,12 @@ jobs:
         uv run --with pyyaml python scripts/check_cline_skills.py
         uv run python scripts/check_collaboration_safe_docs.py
 
+    - name: Test Keeper and Zotero 10 Local API wire contract
+      working-directory: ./mcp-server
+      run: |
+        uv sync --frozen --group dev
+        uv run pytest tests/ -v --tb=short
+
     - name: Check generated assistant assets are committed
       working-directory: ./vscode-extension
       run: npm run sync-assets:check
@@ -54,26 +60,35 @@ jobs:
     - name: Managed uv package install smoke
       working-directory: ./vscode-extension
       run: uv run python tests/test_uv_managed_install_smoke.py
+      env:
+        ZOTERO_KEEPER_PACKAGE_SOURCE: "https://github.com/${{ github.repository }}/archive/refs/tags/${{ github.ref_name }}.tar.gz#subdirectory=mcp-server"
 
     - name: Package extension
+      id: package
       working-directory: ./vscode-extension
-      run: npm run package
+      shell: bash
+      run: |
+        version="$(node -p 'require("./package.json").version')"
+        filename="vscode-zotero-mcp-${version}.vsix"
+        npm run package -- --out "$filename"
+        echo "filename=$filename" >> "$GITHUB_OUTPUT"
+        echo "repository_path=vscode-extension/$filename" >> "$GITHUB_OUTPUT"
 
     - name: Inspect VSIX contents
       working-directory: ./vscode-extension
       shell: pwsh
-      run: ./scripts/check-vsix-contents.ps1
+      run: ./scripts/check-vsix-contents.ps1 -VsixPath "${{ steps.package.outputs.filename }}"
 
     - name: Publish to VS Code Marketplace
       working-directory: ./vscode-extension
-      run: npm run publish -- -p ${{ secrets.VSCE_PAT }}
+      run: npx vsce publish --packagePath "${{ steps.package.outputs.filename }}"
       env:
         VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
-        files: vscode-extension/*.vsix
+        files: ${{ steps.package.outputs.repository_path }}
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

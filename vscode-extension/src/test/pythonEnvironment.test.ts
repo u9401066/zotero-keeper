@@ -70,7 +70,7 @@ describe('PythonEnvironment', () => {
         it('should pin Zotero Keeper installs to the fixed extension source archive', () => {
             assert.ok(ZOTERO_KEEPER_PACKAGE.includes(ZOTERO_KEEPER_SOURCE_URL));
             assert.ok(ZOTERO_KEEPER_PACKAGE.includes('#subdirectory=mcp-server'));
-            assert.strictEqual(ZOTERO_KEEPER_VERSION, '2.0.0');
+            assert.strictEqual(ZOTERO_KEEPER_VERSION, '2.1.0');
         });
 
         it('should pin PubMed installs to the fixed upstream commit archive', () => {

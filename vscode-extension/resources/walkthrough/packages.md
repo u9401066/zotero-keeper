@@ -14,7 +14,7 @@ When you activate the extension, it will automatically install these packages us
 ```bash
 uv venv <extension-storage>/venv --python 3.12
 uv pip install --upgrade --force-reinstall --python <extension-storage>/venv/bin/python \
-  "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.6.0-ext.tar.gz#subdirectory=mcp-server" \
+  "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.7.0-ext.tar.gz#subdirectory=mcp-server" \
   "pubmed-search-mcp @ https://github.com/u9401066/pubmed-search-mcp/archive/ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d.tar.gz"
 ```
 
@@ -36,7 +36,7 @@ We recommend using a virtual environment to avoid conflicts:
 uv venv ~/.zotero-mcp-venv
 source ~/.zotero-mcp-venv/bin/activate  # Linux/macOS
 uv pip install --upgrade --force-reinstall --python ~/.zotero-mcp-venv/bin/python \
-  "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.6.0-ext.tar.gz#subdirectory=mcp-server" \
+  "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.7.0-ext.tar.gz#subdirectory=mcp-server" \
   "pubmed-search-mcp @ https://github.com/u9401066/pubmed-search-mcp/archive/ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d.tar.gz"
 ```
 

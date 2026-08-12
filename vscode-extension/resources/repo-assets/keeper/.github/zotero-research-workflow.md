@@ -2,7 +2,7 @@
 
 > 這份指南幫助 Copilot 理解如何正確使用 Zotero + PubMed MCP tools
 
-> v0.6.0 VSIX 基線：Zotero Keeper 2.0.0（MCP SDK v2，24 個預設 tools + 6 個具體 resources）與 PubMed Search MCP 0.6.1 `ad85dde`（45 tools / 16 categories）。
+> v0.7.0 VSIX 基線：Zotero Keeper 2.1.0（MCP SDK v2，32 個預設 tools + 6 個具體 resources）與 PubMed Search MCP 0.6.1 `ad85dde`（45 tools / 16 categories）。
 
 ## 🔍 文獻搜尋流程
 
@@ -93,6 +93,26 @@ Collection 路由採 fail-closed：
 ### 書庫分析
 - `get_library_stats` - 統計分析
 - `find_orphan_items` - 找出孤兒文獻（未分類）
+
+### Zotero 10+ 整理與更新
+
+只有使用者要求 mutation 時才呼叫 `authorize_local_writes`。Zotero 會顯示
+自己的授權視窗；Local API key 不會出現在 tool result。preview 前先從 exact
+Local API read 或 authorization 取得 response-bound `server_id`，並在第一次
+`confirm=false` 呼叫時就以 `expected_server_id` 放進 proposal。向使用者確認
+identity、版本 cursor、精確對象與內容後，才以 `confirm=true` 原樣重送。
+
+- `create_collection`：建立頂層／巢狀 collection
+- `add_items_to_collection`：保留既有 memberships，只加入已確認 collection
+- `update_item_fields`：只更新安全純量欄位，並使用 exact-item response 綁定的 object version
+- `create_note` / `create_saved_search`：建立 child note 或 saved search
+- `attach_file_to_item`：先呼叫 `authorize_local_writes(require_remembered=true)`，在 Zotero 選 Always Allow，再把本機檔案掛到既有 item
+- `set_attachment_fulltext`：使用 response-bound library cursor，透過 bulk `POST /api/users/0/fulltext` 寫入；不得使用 attachment object version
+
+七個 confirmed mutation 全部必須帶已核准 proposal 中的
+`expected_server_id`。若 authorization 回傳不同 identity，丟棄原 proposal，
+重新 read、preview 與取得核准；不能在 preview 後才補 identity。收到 412
+version/identity conflict 時不得自動重試。
 
 ---
 

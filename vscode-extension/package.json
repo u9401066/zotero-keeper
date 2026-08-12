@@ -1,8 +1,8 @@
 {
     "name": "vscode-zotero-mcp",
     "displayName": "Zotero + PubMed MCP",
-    "description": "One-click MCP SDK v2 research workspace: Zotero Keeper 2.0 plus PubMed Search MCP 0.6.1 for Copilot, Cline, and Codex.",
-    "version": "0.6.0",
+    "description": "One-click Zotero 10+ Local API and PubMed research workspace for Copilot, Cline, and Codex.",
+    "version": "0.7.0",
     "publisher": "u9401066",
     "license": "Apache-2.0",
     "icon": "resources/icon.png",
@@ -69,7 +69,7 @@
                 "zoteroMcp.zoteroHost": {
                     "type": "string",
                     "default": "localhost",
-                    "description": "Zotero Desktop loopback host. Keep localhost; do not expose or forward the unauthenticated port 23119.",
+                    "description": "Zotero Desktop loopback host. Keep localhost; never expose or forward port 23119.",
                     "order": 10
                 },
                 "zoteroMcp.zoteroPort": {

@@ -15,23 +15,33 @@ import subprocess
 import sys
 import sysconfig
 import tempfile
+import tomllib
 
 
 PYTHON_VERSION = "3.12"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MCP_SERVER = REPO_ROOT / "mcp-server"
-PUBMED_SEARCH_FIXED_COMMIT = (
-    "ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d"  # pragma: allowlist secret
-)
-PUBMED_SEARCH_PACKAGE = (
-    "pubmed-search-mcp @ "
-    f"https://github.com/u9401066/pubmed-search-mcp/archive/{PUBMED_SEARCH_FIXED_COMMIT}.tar.gz"
-)
+KEEPER_VERSION = str(tomllib.loads((MCP_SERVER / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"])
+PUBMED_SEARCH_FIXED_COMMIT = "ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d"  # pragma: allowlist secret
+PUBMED_SEARCH_PACKAGE = f"pubmed-search-mcp @ https://github.com/u9401066/pubmed-search-mcp/archive/{PUBMED_SEARCH_FIXED_COMMIT}.tar.gz"
 
 
-def run(
-    cmd: list[str], timeout: int = 600, env: dict[str, str] | None = None
-) -> subprocess.CompletedProcess[str]:
+def resolve_zotero_keeper_package() -> tuple[str, str]:
+    """Resolve local source by default, with an explicit release-archive override."""
+    override = os.environ.get("ZOTERO_KEEPER_PACKAGE_SOURCE", "").strip()
+    if not override:
+        return str(MCP_SERVER), f"local path: {MCP_SERVER}"
+
+    if override.startswith("zotero-keeper @ "):
+        return override, f"environment requirement: {override}"
+
+    source = override
+    if "://" in source and "#subdirectory=" not in source:
+        source = f"{source}#subdirectory=mcp-server"
+    return f"zotero-keeper @ {source}", f"environment source: {override}"
+
+
+def run(cmd: list[str], timeout: int = 600, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
     merged_env = {
         **os.environ,
         "NO_COLOR": "1",
@@ -85,7 +95,8 @@ def main() -> int:
         if not python.exists():
             raise AssertionError(f"Managed Python not found: {python}")
 
-        print("Installing real extension packages into managed venv")
+        keeper_package, keeper_source = resolve_zotero_keeper_package()
+        print(f"Installing real extension packages into managed venv (Zotero Keeper {KEEPER_VERSION}; {keeper_source})")
         install = run(
             [
                 uv,
@@ -94,7 +105,7 @@ def main() -> int:
                 "--upgrade",
                 "--python",
                 str(python),
-                str(MCP_SERVER),
+                keeper_package,
                 PUBMED_SEARCH_PACKAGE,
                 "numpy",
             ],
@@ -113,7 +124,7 @@ def main() -> int:
                 str(python),
                 "-c",
                 (
-                    "import asyncio, json, sys, sysconfig, numpy; "
+                    "import asyncio, importlib.metadata, json, sys, sysconfig, numpy; "
                     "from mcp.client import Client; "
                     "from pubmed_search.presentation.mcp_server import create_server as create_pubmed_server; "
                     "from zotero_mcp import create_server as create_zotero_server\n"
@@ -130,11 +141,15 @@ def main() -> int:
                     "'base_prefix': sys.base_prefix, "
                     "'purelib': sysconfig.get_paths()['purelib'], "
                     "'numpy': numpy.__file__, "
+                    "'zotero_keeper_version': importlib.metadata.version('zotero-keeper'), "
                     "'zotero_server': type(zotero_server).__name__, "
                     "'pubmed_server': type(pubmed_server).__name__, "
                     "'zotero_tools': len(zotero_tools.tools), "
                     "'pubmed_tools': len(pubmed_tools.tools), "
                     "'has_import_articles': any(t.name == 'import_articles' for t in zotero_tools.tools), "
+                    "'has_authorize_local_writes': any(t.name == 'authorize_local_writes' for t in zotero_tools.tools), "
+                    "'has_create_collection': any(t.name == 'create_collection' for t in zotero_tools.tools), "
+                    "'has_attach_file_to_item': any(t.name == 'attach_file_to_item' for t in zotero_tools.tools), "
                     "'has_unified_search': any(t.name == 'unified_search' for t in pubmed_tools.tools), "
                     "'has_chronicle': any(t.name == 'build_research_chronicle' for t in pubmed_tools.tools)"
                     "}\n"
@@ -162,18 +177,28 @@ def main() -> int:
         assert_inside(purelib, venv, "site-packages")
         assert_inside(numpy_path, venv, "numpy")
 
+        if data["zotero_keeper_version"] != KEEPER_VERSION:
+            raise AssertionError(
+                "Managed install resolved the wrong Zotero Keeper metadata version: "
+                f"expected {KEEPER_VERSION}, got {data['zotero_keeper_version']}; "
+                f"source={keeper_source}"
+            )
         if data["zotero_server"] != "MCPServer" or data["pubmed_server"] != "MCPServer":
             raise AssertionError(f"SDK v2 MCPServer not used by both packages: {data}")
-        if data["zotero_tools"] != 24 or not data["has_import_articles"]:
+        required_keeper_surface = (
+            data["has_import_articles"]
+            and data["has_authorize_local_writes"]
+            and data["has_create_collection"]
+            and data["has_attach_file_to_item"]
+        )
+        if data["zotero_tools"] != 32 or not required_keeper_surface:
             raise AssertionError(f"Unexpected Zotero Keeper tool surface: {data}")
         if data["pubmed_tools"] != 45 or not data["has_unified_search"] or not data["has_chronicle"]:
             raise AssertionError(f"Unexpected PubMed Search MCP tool surface: {data}")
 
         system_purelib = Path(sysconfig.get_paths()["purelib"]).resolve()
         if system_purelib == purelib.resolve():
-            raise AssertionError(
-                f"Managed install reused system site-packages: {system_purelib}"
-            )
+            raise AssertionError(f"Managed install reused system site-packages: {system_purelib}")
 
         print("Managed uv package install smoke passed.")
         return 0

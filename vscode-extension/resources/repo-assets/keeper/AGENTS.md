@@ -26,6 +26,11 @@ articles into Zotero without losing provenance or overwriting user choices.
 6. Before saving to Zotero, call `list_collections` unless the destination is already confirmed.
 7. Check duplicates with `check_articles_owned`.
 8. Use `import_articles` as the default PubMed-to-Zotero handoff.
+9. For Zotero 10+ mutations, first obtain a response-bound `server_id` from a
+   read or authorization, include it as `expected_server_id` in the
+   `confirm=false` preview, and ask the user to approve that complete proposal.
+   Ensure local authorization; if it reports the same identity, repeat the
+   proposal unchanged with `confirm=true`.
 
 ## Repository Work
 
@@ -42,6 +47,17 @@ articles into Zotero without losing provenance or overwriting user choices.
 - Do not repeat searches when session state already contains the relevant PMIDs.
 - Distinguish peer-reviewed articles, preprints, and metadata-only records.
 - Keep NCBI email/API-key and institutional access settings intact.
+- Never expose or forward Zotero port 23119, request a Local API key, or retry
+  a `412` version conflict automatically.
+- Every confirmed Local API mutation requires the `expected_server_id` shown in
+  its approved preview. If later authorization reports a different identity,
+  reread, preview, and request approval again; never add identity after preview.
+- Use the response-bound item object version for `update_item_fields`. Use the
+  response-bound library cursor—not an attachment object version—for
+  `set_attachment_fulltext`.
+- Before `attach_file_to_item`, call
+  `authorize_local_writes(require_remembered=true)` and have the user choose
+  **Always Allow** for the three-phase upload.
 
 ## Related Files
 

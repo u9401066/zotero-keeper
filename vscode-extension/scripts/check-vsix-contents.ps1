@@ -5,6 +5,43 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+$extensionRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
+$sourceManifestPath = Join-Path $extensionRoot "package.json"
+$sourceKeeperPackagePath = Join-Path $extensionRoot "src/zoteroKeeperPackage.ts"
+$sourceManifest = Get-Content -LiteralPath $sourceManifestPath -Raw | ConvertFrom-Json
+$expectedExtensionVersion = [string]$sourceManifest.version
+$sourceKeeperPackage = Get-Content -LiteralPath $sourceKeeperPackagePath -Raw
+
+$keeperVersionMatch = [regex]::Match(
+    $sourceKeeperPackage,
+    'ZOTERO_KEEPER_VERSION\s*=\s*[''"](?<version>\d+\.\d+\.\d+)[''"]'
+)
+if (-not $keeperVersionMatch.Success) {
+    throw "Cannot find ZOTERO_KEEPER_VERSION in $sourceKeeperPackagePath"
+}
+$expectedKeeperVersion = $keeperVersionMatch.Groups["version"].Value
+
+$keeperSourceMatch = [regex]::Match(
+    $sourceKeeperPackage,
+    'ZOTERO_KEEPER_SOURCE_URL\s*=\s*[\r\n ]*[''"](?<url>[^''"]+)[''"]'
+)
+if (-not $keeperSourceMatch.Success) {
+    throw "Cannot find ZOTERO_KEEPER_SOURCE_URL in $sourceKeeperPackagePath"
+}
+$expectedKeeperSourceUrl = $keeperSourceMatch.Groups["url"].Value
+$keeperTagMatch = [regex]::Match(
+    $expectedKeeperSourceUrl,
+    '/tags/(?<tag>v\d+\.\d+\.\d+-ext)\.tar\.gz'
+)
+if (-not $keeperTagMatch.Success) {
+    throw "ZOTERO_KEEPER_SOURCE_URL does not contain a release archive tag: $expectedKeeperSourceUrl"
+}
+$expectedKeeperSourceTag = $keeperTagMatch.Groups["tag"].Value
+$expectedExtensionTag = "v$expectedExtensionVersion-ext"
+if ($expectedKeeperSourceTag -ne $expectedExtensionTag) {
+    throw "Keeper source tag mismatch: expected $expectedExtensionTag, got $expectedKeeperSourceTag"
+}
+
 if (-not $VsixPath) {
     $latest = Get-ChildItem -LiteralPath . -Filter "vscode-zotero-mcp-*.vsix" |
         Sort-Object LastWriteTime -Descending |
@@ -97,6 +134,46 @@ try {
         }
     }
 
+    $packagedManifestPath = Join-Path $unpacked "extension/package.json"
+    $packagedManifest = Get-Content -LiteralPath $packagedManifestPath -Raw | ConvertFrom-Json
+    if ([string]$packagedManifest.version -ne $expectedExtensionVersion) {
+        throw (
+            "Packaged extension version mismatch: expected $expectedExtensionVersion, " +
+            "got $($packagedManifest.version)"
+        )
+    }
+
+    $compiledKeeperPath = Join-Path $unpacked "extension/out/zoteroKeeperPackage.js"
+    $compiledKeeper = Get-Content -LiteralPath $compiledKeeperPath -Raw
+    $compiledKeeperVersionMatch = [regex]::Match(
+        $compiledKeeper,
+        'ZOTERO_KEEPER_VERSION\s*=\s*[''"](?<version>\d+\.\d+\.\d+)[''"]'
+    )
+    if (-not $compiledKeeperVersionMatch.Success) {
+        throw "Cannot find compiled ZOTERO_KEEPER_VERSION in extension/out/zoteroKeeperPackage.js"
+    }
+    $compiledKeeperVersion = $compiledKeeperVersionMatch.Groups["version"].Value
+    if ($compiledKeeperVersion -ne $expectedKeeperVersion) {
+        throw (
+            "Compiled Keeper version mismatch: expected $expectedKeeperVersion, " +
+            "got $compiledKeeperVersion"
+        )
+    }
+    $compiledKeeperSourceMatch = [regex]::Match(
+        $compiledKeeper,
+        'ZOTERO_KEEPER_SOURCE_URL\s*=\s*[''"](?<url>[^''"]+)[''"]'
+    )
+    if (-not $compiledKeeperSourceMatch.Success) {
+        throw "Cannot find compiled ZOTERO_KEEPER_SOURCE_URL in extension/out/zoteroKeeperPackage.js"
+    }
+    $compiledKeeperSourceUrl = $compiledKeeperSourceMatch.Groups["url"].Value
+    if ($compiledKeeperSourceUrl -ne $expectedKeeperSourceUrl) {
+        throw (
+            "Compiled Keeper source mismatch: expected $expectedKeeperSourceUrl " +
+            "got $compiledKeeperSourceUrl"
+        )
+    }
+
     $forbiddenPaths = @(
         "extension/resources/agents/research.agent.md"
     )
@@ -110,6 +187,7 @@ try {
 
     $forbiddenText = @(
         "Python 3.11",
+        "blob/HEAD/../",
         "search_pubmed_exclude_owned",
         "quick_import_pmids",
         "import_from_pmids",
@@ -142,7 +220,11 @@ try {
         }
     }
 
-    Write-Host "VSIX contents check passed: $($resolvedVsix.Path)"
+    Write-Host (
+        "VSIX contents check passed: $($resolvedVsix.Path) " +
+        "(extension $expectedExtensionVersion, Keeper $expectedKeeperVersion, " +
+        "source $expectedKeeperSourceTag)"
+    )
 }
 finally {
     if (Test-Path -LiteralPath $tempRoot) {

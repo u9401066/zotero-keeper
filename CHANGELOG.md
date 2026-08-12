@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.0] - 2026-08-12
+
+### Added
+
+- Zotero 10+ Local API v3 runtime authorization through
+  `authorize_local_writes`. The authorization key stays in process memory and
+  is bound to Zotero's `Zotero-Server-ID`; it is never returned through MCP,
+  logged, or placed in a URL.
+- A guarded Local API tool group for creating nested collections, organizing
+  existing items, updating safe metadata, creating child notes and saved
+  searches, attaching a local file to an existing item, and writing indexed
+  full text.
+- Official three-phase stored-file uploads, removing the old Connector
+  session limitation for attaching a PDF to an item that already exists.
+- Local attachment-path discovery through `/file/view/url`, with
+  `ZOTERO_DATA_DIR` retained only as a compatibility fallback.
+- Wire-level authorization, Server-ID, version-conflict, batch-write, upload,
+  full-text, and in-memory MCP smoke tests. A separate opt-in live smoke
+  remains read-only.
+
+### Changed
+
+- `check_connection` now discovers the Local API at `/api/` and reports API,
+  schema, server identity, and write-authorization capabilities without
+  opening an authorization prompt.
+- Zotero 7–9 keep the existing Connector create/import path. Zotero 10+ gains
+  the new authorized Local API operations without changing the schemas or
+  defaults of the existing 24 public tools.
+
+### Security
+
+- Authorized Local API writes are restricted to literal loopback hosts.
+  Every confirmed operation is pinned to the reviewed Server-ID and private
+  key snapshot. Object updates use a local object-version precondition;
+  full-text replacement uses a response-bound library cursor with the bulk
+  endpoint. 401/412/428 responses fail closed without replaying a mutation.
+- Local write tools expose fixed operations instead of a raw API path or raw
+  unrestricted PATCH. Mutations require explicit confirmation, exact item or
+  collection keys, and preflight validation; collection membership changes
+  preserve existing destinations and never fall through to My Library root.
+- Multi-step file upload requires a remembered Zotero authorization and
+  rejects non-loopback upload URLs before sending file bytes.
+
 ## [2.0.0] - 2026-08-11
 
 ### Breaking changes
