@@ -16,4 +16,4 @@ rapidfuzz>=3.0.0
 structlog>=24.4.0
 
 # Optional: PubMed integration (uncomment to enable)
-# pubmed-search-mcp>=0.6.1
+# pubmed-search-mcp>=0.6.3

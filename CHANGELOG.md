@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.0] - 2026-08-19
+
+### Added
+
+- Nine task-oriented Zotero 10+ Local API mutations for removing collection
+  membership, updating and deleting collections, deleting exact items,
+  updating and deleting saved searches, deleting tags in batches, replacing
+  an existing stored attachment, and writing indexed full text in batches.
+- A GitHub Pages feature site for Zotero Keeper, including the Zotero 10+
+  capability map, authorization flow, installation paths, and security
+  boundaries. PubMed Search remains documented on its separate site.
+
+### Changed
+
+- Updated the fixed PubMed Search MCP snapshot from 0.6.1 to the official
+  0.6.3 release commit. The 45-tool surface now includes governed search-run
+  journaling, systematic/native-semantic search modes, partial-result status,
+  session replay, and richer Research Chronicle output.
+- Expanded the default Keeper surface from 32 to 41 tools while keeping the
+  original tools and Zotero 7–9 Connector workflows compatible.
+
+### Fixed
+
+- Encoded multi-tag deletion with Zotero's required single `tag=a||b` query
+  value and added response-bound library-version preconditions.
+
+### Security
+
+- New destructive tools require an unchanged proposal, exact object keys,
+  response-bound Server-ID and version cursors, and explicit confirmation.
+  Existing-file replacement additionally requires Zotero's remembered
+  authorization and uses the previous MD5 in both upload precondition phases.
+  Version conflicts fail closed and are never retried automatically.
+
 ## [2.1.0] - 2026-08-12
 
 ### Added

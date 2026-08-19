@@ -2,7 +2,7 @@
 
 > 這份指南幫助 Copilot 理解如何正確使用 Zotero + PubMed MCP tools
 
-> v0.7.0 VSIX 基線：Zotero Keeper 2.1.0（MCP SDK v2，32 個預設 tools + 6 個具體 resources）與 PubMed Search MCP 0.6.1 `ad85dde`（45 tools / 16 categories）。
+> v0.8.0 VSIX 基線：Zotero Keeper 2.2.0（MCP SDK v2，41 個預設 tools + 6 個具體 resources）與 PubMed Search MCP 0.6.3 `febf53a`（45 tools / 16 categories）。
 
 ## 🔍 文獻搜尋流程
 
@@ -25,6 +25,10 @@
 - 使用 `get_session_pmids` 取得已搜尋的 PMID
 - **不要重複搜尋相同的關鍵字**
 - `unified_search` 會自動合併去重多個來源的結果
+- 需要特定範圍時可用 `options="trials"` / `"native_semantic"` /
+  `"systematic"`，不要將 systematic 當成無上限擴張搜尋
+- 依 `search_status` 區分合法 `empty`、需附 warning 的 `partial` 與
+  真正 `failed`，不得將 partial/failed 假裝成零結果
 
 ### 步驟 4: 過濾已有文獻
 使用 `check_articles_owned` 檢查搜尋結果中的 PMID 哪些已存在於 Zotero
@@ -76,7 +80,12 @@ Collection 路由採 fail-closed：
 
 ### Research Chronicle
 
-需要建立可持續更新的研究演進紀錄時，先用 `build_research_chronicle`，再用 `read_research_chronicle` 閱讀。這兩個工具已取代舊的 3 個 timeline 工具，不要再呼叫舊名稱。
+需要建立可持續更新的研究演進紀錄時，先用
+`build_research_chronicle`，再用 `read_research_chronicle` 閱讀 map 或
+Mermaid timeline。這兩個工具已取代舊的 3 個 timeline 工具。
+0.6.3 續建既有 chronicle 時，要明確重送原 topic/PMIDs/year/max-events
+scope。SearchRun 恢復則用 `read_session` 的 `search_runs` /
+`search_run` / `replay_search` action，不要盲目重搜。
 
 ---
 
@@ -103,13 +112,16 @@ Local API read 或 authorization 取得 response-bound `server_id`，並在第�
 identity、版本 cursor、精確對象與內容後，才以 `confirm=true` 原樣重送。
 
 - `create_collection`：建立頂層／巢狀 collection
-- `add_items_to_collection`：保留既有 memberships，只加入已確認 collection
-- `update_item_fields`：只更新安全純量欄位，並使用 exact-item response 綁定的 object version
-- `create_note` / `create_saved_search`：建立 child note 或 saved search
-- `attach_file_to_item`：先呼叫 `authorize_local_writes(require_remembered=true)`，在 Zotero 選 Always Allow，再把本機檔案掛到既有 item
-- `set_attachment_fulltext`：使用 response-bound library cursor，透過 bulk `POST /api/users/0/fulltext` 寫入；不得使用 attachment object version
+- `update_collection` / `delete_collection`：使用 exact collection object version 更新、移動或刪除
+- `add_items_to_collection` / `remove_items_from_collection`：只變更目標 membership，保留其他歸屬
+- `update_item_fields` / `delete_item`：使用 exact-item object version 更新安全欄位或刪除精確 item
+- `create_note`：在 exact parent 下建立 child note
+- `create_saved_search` / `update_saved_search` / `delete_saved_search`：使用結構化條件與 object version 管理 saved search
+- `delete_tags`：使用 response-bound library cursor 批次刪除精確 tag 名稱
+- `attach_file_to_item` / `replace_attachment_file`：先呼叫 `authorize_local_writes(require_remembered=true)` 並在 Zotero 選 Always Allow；replace 還要核對 exact attachment version 與原 MD5
+- `set_attachment_fulltext` / `set_attachment_fulltexts`：使用 response-bound library cursor，batch 最多十筆；不得使用 attachment object version
 
-七個 confirmed mutation 全部必須帶已核准 proposal 中的
+十六個 confirmed mutation 全部必須帶已核准 proposal 中的
 `expected_server_id`。若 authorization 回傳不同 identity，丟棄原 proposal，
 重新 read、preview 與取得核准；不能在 preview 後才補 identity。收到 412
 version/identity conflict 時不得自動重試。

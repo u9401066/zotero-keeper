@@ -48,7 +48,7 @@ class McpServerConfig:
     """MCP Server configuration"""
 
     name: str = "Zotero Keeper"
-    version: str = "2.1.0"
+    version: str = "2.2.0"
 
     # Zotero connection
     zotero: ZoteroConfig = field(default_factory=ZoteroConfig)

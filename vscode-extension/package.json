@@ -2,7 +2,7 @@
     "name": "vscode-zotero-mcp",
     "displayName": "Zotero + PubMed MCP",
     "description": "One-click Zotero 10+ Local API and PubMed research workspace for Copilot, Cline, and Codex.",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "publisher": "u9401066",
     "license": "Apache-2.0",
     "icon": "resources/icon.png",
@@ -17,7 +17,7 @@
     "bugs": {
         "url": "https://github.com/u9401066/zotero-keeper/issues"
     },
-    "homepage": "https://github.com/u9401066/zotero-keeper#readme",
+    "homepage": "https://u9401066.github.io/zotero-keeper/",
     "engines": {
         "vscode": "^1.99.0"
     },

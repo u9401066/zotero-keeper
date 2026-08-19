@@ -14,8 +14,8 @@ When you activate the extension, it will automatically install these packages us
 ```bash
 uv venv <extension-storage>/venv --python 3.12
 uv pip install --upgrade --force-reinstall --python <extension-storage>/venv/bin/python \
-  "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.7.0-ext.tar.gz#subdirectory=mcp-server" \
-  "pubmed-search-mcp @ https://github.com/u9401066/pubmed-search-mcp/archive/ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d.tar.gz"
+  "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.8.0-ext.tar.gz#subdirectory=mcp-server" \
+  "pubmed-search-mcp @ https://github.com/u9401066/pubmed-search-mcp/archive/febf53a8ff1ee253a625869ba251365f73a23c68.tar.gz"
 ```
 
 On Windows the Python path is `<extension-storage>\venv\Scripts\python.exe`.
@@ -36,8 +36,8 @@ We recommend using a virtual environment to avoid conflicts:
 uv venv ~/.zotero-mcp-venv
 source ~/.zotero-mcp-venv/bin/activate  # Linux/macOS
 uv pip install --upgrade --force-reinstall --python ~/.zotero-mcp-venv/bin/python \
-  "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.7.0-ext.tar.gz#subdirectory=mcp-server" \
-  "pubmed-search-mcp @ https://github.com/u9401066/pubmed-search-mcp/archive/ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d.tar.gz"
+  "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/v0.8.0-ext.tar.gz#subdirectory=mcp-server" \
+  "pubmed-search-mcp @ https://github.com/u9401066/pubmed-search-mcp/archive/febf53a8ff1ee253a625869ba251365f73a23c68.tar.gz"
 ```
 
 Then set `zoteroMcp.pythonPath` to `~/.zotero-mcp-venv/bin/python`.

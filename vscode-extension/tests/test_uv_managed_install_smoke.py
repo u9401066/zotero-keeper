@@ -22,7 +22,7 @@ PYTHON_VERSION = "3.12"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MCP_SERVER = REPO_ROOT / "mcp-server"
 KEEPER_VERSION = str(tomllib.loads((MCP_SERVER / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"])
-PUBMED_SEARCH_FIXED_COMMIT = "ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d"  # pragma: allowlist secret
+PUBMED_SEARCH_FIXED_COMMIT = "febf53a8ff1ee253a625869ba251365f73a23c68"  # pragma: allowlist secret
 PUBMED_SEARCH_PACKAGE = f"pubmed-search-mcp @ https://github.com/u9401066/pubmed-search-mcp/archive/{PUBMED_SEARCH_FIXED_COMMIT}.tar.gz"
 
 
@@ -150,6 +150,9 @@ def main() -> int:
                     "'has_authorize_local_writes': any(t.name == 'authorize_local_writes' for t in zotero_tools.tools), "
                     "'has_create_collection': any(t.name == 'create_collection' for t in zotero_tools.tools), "
                     "'has_attach_file_to_item': any(t.name == 'attach_file_to_item' for t in zotero_tools.tools), "
+                    "'has_delete_item': any(t.name == 'delete_item' for t in zotero_tools.tools), "
+                    "'has_replace_attachment_file': any(t.name == 'replace_attachment_file' for t in zotero_tools.tools), "
+                    "'has_set_attachment_fulltexts': any(t.name == 'set_attachment_fulltexts' for t in zotero_tools.tools), "
                     "'has_unified_search': any(t.name == 'unified_search' for t in pubmed_tools.tools), "
                     "'has_chronicle': any(t.name == 'build_research_chronicle' for t in pubmed_tools.tools)"
                     "}\n"
@@ -190,8 +193,11 @@ def main() -> int:
             and data["has_authorize_local_writes"]
             and data["has_create_collection"]
             and data["has_attach_file_to_item"]
+            and data["has_delete_item"]
+            and data["has_replace_attachment_file"]
+            and data["has_set_attachment_fulltexts"]
         )
-        if data["zotero_tools"] != 32 or not required_keeper_surface:
+        if data["zotero_tools"] != 41 or not required_keeper_surface:
             raise AssertionError(f"Unexpected Zotero Keeper tool surface: {data}")
         if data["pubmed_tools"] != 45 or not data["has_unified_search"] or not data["has_chronicle"]:
             raise AssertionError(f"Unexpected PubMed Search MCP tool surface: {data}")

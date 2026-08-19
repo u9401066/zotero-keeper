@@ -1,4 +1,4 @@
-"""Tests for PubMed Search MCP v0.6.1 facade integration."""
+"""Tests for PubMed Search MCP v0.6.3 facade integration."""
 
 import sys
 from types import SimpleNamespace
@@ -15,7 +15,7 @@ from zotero_mcp.infrastructure.pubmed import (
 )
 
 
-def test_get_pubmed_client_builds_v061_facade_from_config(monkeypatch):
+def test_get_pubmed_client_builds_v063_facade_from_config(monkeypatch):
     created = {}
 
     class FakeConfig:
@@ -49,7 +49,7 @@ def test_get_pubmed_client_builds_v061_facade_from_config(monkeypatch):
 
 @pytest.mark.asyncio
 @patch("zotero_mcp.infrastructure.pubmed.get_pubmed_client")
-async def test_search_pubmed_raw_uses_v061_search_pubmed(mock_get_client):
+async def test_search_pubmed_raw_uses_v063_search_pubmed(mock_get_client):
     client = MagicMock()
     client.search_pubmed = AsyncMock(return_value=[{"pmid": "12345678"}])
     mock_get_client.return_value = client
@@ -76,11 +76,9 @@ async def test_search_pubmed_raw_uses_v061_search_pubmed(mock_get_client):
 
 @pytest.mark.asyncio
 @patch("zotero_mcp.infrastructure.pubmed.get_pubmed_client")
-async def test_fetch_citation_metrics_uses_v061_searcher_facade(mock_get_client):
+async def test_fetch_citation_metrics_uses_v063_searcher_facade(mock_get_client):
     client = MagicMock()
-    client.searcher.get_citation_metrics = AsyncMock(
-        return_value={"12345678": {"relative_citation_ratio": 1.5}}
-    )
+    client.searcher.get_citation_metrics = AsyncMock(return_value={"12345678": {"relative_citation_ratio": 1.5}})
     mock_get_client.return_value = client
 
     result = await fetch_citation_metrics(["12345678"])

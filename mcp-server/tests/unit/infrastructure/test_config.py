@@ -99,7 +99,7 @@ class TestMcpServerConfig:
         config = McpServerConfig()
 
         assert config.name == "Zotero Keeper"
-        assert config.version == "2.1.0"
+        assert config.version == "2.2.0"
         assert config.zotero is not None
 
     def test_mcp_server_config_instructions(self):

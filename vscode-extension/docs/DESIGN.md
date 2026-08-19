@@ -1,8 +1,8 @@
 # VS Code Extension Design — Zotero Keeper + PubMed Search MCP
 
-> **Active contract (v0.7.0, 2026-08-12):** the VSIX manages one isolated
-> Python 3.12 environment containing Zotero Keeper 2.1.0 and PubMed Search MCP
-> 0.6.1 at commit `ad85dde`. Both servers use MCP SDK 2.x; SDK 1.x is not
+> **Active contract (v0.8.0, 2026-08-19):** the VSIX manages one isolated
+> Python 3.12 environment containing Zotero Keeper 2.2.0 and PubMed Search MCP
+> 0.6.3 at release commit `febf53a`. Both servers use MCP SDK 2.x; SDK 1.x is not
 > compatible with this environment.
 
 ## 1. Product boundary
@@ -10,7 +10,7 @@
 The extension is the installer and runtime coordinator. It does not reimplement
 Zotero or PubMed operations:
 
-- Zotero Keeper owns the 32 default Zotero tools, 5 legacy opt-in tools,
+- Zotero Keeper owns the 41 default Zotero tools, 5 legacy opt-in tools,
   6 concrete resources, and 4 resource templates.
 - PubMed Search MCP owns its 45-tool discovery, full-text, export, and research
   chronicle workflow.
@@ -25,8 +25,8 @@ VS Code / Copilot       Cline                  Codex CLI
                           │ stdio MCP
                           ▼
        extension-managed Python 3.12 environment
-          ├── Zotero Keeper 2.1.0 (MCP SDK v2)
-          └── PubMed Search MCP 0.6.1 @ ad85dde
+          ├── Zotero Keeper 2.2.0 (MCP SDK v2)
+          └── PubMed Search MCP 0.6.3 @ febf53a
                     │                    │
                     │ loopback HTTP     └── biomedical APIs
                     ▼
@@ -74,10 +74,10 @@ versions and PEP 610 source metadata.
 
 The active package pins are:
 
-- `zotero-keeper` 2.1.0 from the `v0.7.0-ext` GitHub tag archive,
+- `zotero-keeper` 2.2.0 from the `v0.8.0-ext` GitHub tag archive,
   `#subdirectory=mcp-server`.
-- `pubmed-search-mcp` 0.6.1 from commit
-  `ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d`.
+- `pubmed-search-mcp` 0.6.3 from release commit
+  `febf53a8ff1ee253a625869ba251365f73a23c68`.
 
 ## 4. MCP registration
 
@@ -85,8 +85,8 @@ The provider starts both servers with the same resolved Python interpreter:
 
 | Label | Entrypoint | Advertised version | Environment boundary |
 |---|---|---|---|
-| Zotero Keeper | `python -m zotero_mcp` | `2.1.0` | `ZOTERO_HOST`, `ZOTERO_PORT` only |
-| PubMed Search | `python -m pubmed_search.presentation.mcp_server` | `0.6.1` | NCBI/source/proxy/OpenURL settings and optional workspace path |
+| Zotero Keeper | `python -m zotero_mcp` | `2.2.0` | `ZOTERO_HOST`, `ZOTERO_PORT` only |
+| PubMed Search | `python -m pubmed_search.presentation.mcp_server` | `0.6.3` | NCBI/source/proxy/OpenURL settings and optional workspace path |
 
 VS Code consumes these definitions natively. Cline and Codex use their own
 configuration formats, so activation updates only entries/blocks that the
@@ -114,8 +114,8 @@ The Connector endpoints remain a supported create/import compatibility path.
 They are the available write path on Zotero 7–9 and may still be used by
 existing import tools on Zotero 10+. A custom Zotero plugin is not required for
 the official basic CRUD transport or stored-file upload on Zotero 10+; Keeper's
-MCP surface deliberately exposes only its confirmed allowlist and no general
-delete/raw-API tool.
+MCP surface deliberately exposes only confirmed, versioned task tools and no
+general raw-API escape hatch.
 
 ## 6. Settings surface
 
@@ -176,9 +176,9 @@ for every downstream action:
 7. attach the same path to the GitHub release.
 
 The release tag is `v<extension-version>-ext` (for this release,
-`v0.7.0-ext`). The tagged archive must be installable by the managed-install
-smoke test and report Keeper 2.1.0 with all 32 default tools, including
-`authorize_local_writes`, `create_collection`, and `attach_file_to_item`.
+`v0.8.0-ext`). The tagged archive must be installable by the managed-install
+smoke test and report Keeper 2.2.0 with all 41 default tools, including
+`authorize_local_writes`, `delete_item`, and `replace_attachment_file`.
 
 ## 10. Compatibility matrix
 
@@ -195,7 +195,7 @@ smoke test and report Keeper 2.1.0 with all 32 default tools, including
 > and pre-bundled wheel directories. Those sketches also showed Keeper 2.0.0,
 > 24 default tools, VSIX 0.6.0, and Local/Connector endpoints as wholly
 > unauthenticated. They describe the pre-Zotero-10 and pre-uv-managed design,
-> not the active v0.7.0 contract.
+> not the active v0.8.0 contract.
 
 The early roadmap proposed these phases:
 

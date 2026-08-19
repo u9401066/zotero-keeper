@@ -1,5 +1,14 @@
 # Zotero + PubMed MCP Extension for VS Code
 
+## What's New in v0.8.0
+
+- **Zotero Keeper 2.2.0**: expands the default surface to 41 tools, including guarded item/collection/saved-search deletion, collection and saved-search updates, membership removal, tag deletion, stored-attachment replacement, and batch full-text writes.
+- **PubMed Search 0.6.3**: pins the official `febf53a` release commit and refreshes SearchRun-aware, systematic-search, Research Chronicle, hook, and assistant assets.
+- **Same safety contract**: every new mutation previews with zero I/O, binds to the reviewed Zotero Server-ID, checks an object or library version, and requires explicit confirmation; attachment replacement additionally requires **Always Allow** authorization and the previous MD5.
+- **Feature site**: [u9401066.github.io/zotero-keeper](https://u9401066.github.io/zotero-keeper/) introduces Keeper, its Zotero 10 capability map, safety flow, and installation. PubMed retains its separate documentation site.
+
+> Use the locally packaged v0.8.0 VSIX, or install v0.8.0 from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp) after it is published. Zotero 10+ is required for authorized Local API writes; read and Connector-import compatibility remains available on Zotero 7–9.
+
 ## What's New in v0.7.0
 
 - **Zotero 10+ Local API writes**: Zotero Keeper 2.1.0 adds runtime-authorized, Server-ID-bound operations for nested collections, existing-item organization and metadata, child notes, saved searches, full-text, and attachments.
@@ -95,8 +104,8 @@
 This extension provides two MCP (Model Context Protocol) servers that enable AI assistants like GitHub Copilot to:
 
 ### 📚 Zotero Keeper
-- Search and browse your Zotero library through 32 default tools and six concrete resources
-- On Zotero 10+, authorize guarded Local API writes for collections, existing items, notes, saved searches, attachments, and full text
+- Search and browse your Zotero library through 41 default tools and six concrete resources
+- On Zotero 10+, authorize guarded Local API writes for item/collection/saved-search lifecycle operations, tags, attachments, and full text
 - Add references from PubMed or DOI
 - Import local PDFs with `import_pdf`
 - Browse collections/tags and import into a confirmed collection
@@ -105,7 +114,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 - **Library analytics** (stats, orphan detection)
 - **PDF attachment access** (list attachments, get indexed fulltext)
 
-### 🔍 PubMed Search (v0.6.1, 45 tools / 16 categories)
+### 🔍 PubMed Search (v0.6.3, 45 tools / 16 categories)
 
 - **`unified_search`** - 統一搜尋入口，自動合併去重多來源結果
 - **Multi-source search** (PubMed, Europe PMC, CORE)
@@ -117,7 +126,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 - **Research Chronicle** - 以 `build_research_chronicle` 建立、`read_research_chronicle` 讀取可持續的研究演進記錄（取代舊 timeline 工具）
 - **生物醫學圖片搜尋** - 搜尋 Open-i 和 Europe PMC 圖片
 - **Full-text access** (Europe PMC, CORE)
-- **Session management** (retrieve previous search results)
+- **SearchRun/session management** (inspect completed/empty/partial/failed runs and replay searches)
 - **NCBI 延伸** (Gene, PubChem, ClinVar)
 - Export in multiple formats (RIS, BibTeX, etc.)
 
@@ -147,7 +156,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 2. The extension will automatically:
    - Download [uv](https://github.com/astral-sh/uv) (fast Python package manager, ~10MB)
    - Create an isolated Python 3.12 environment
-   - Install pinned packages (Zotero Keeper 2.1.0 and PubMed Search MCP 0.6.1 at `ad85dde`)
+   - Install pinned packages (Zotero Keeper 2.2.0 and PubMed Search MCP 0.6.3 at `febf53a`)
    - Register MCP servers with VS Code
    - **Install official Copilot instructions, workflow guides, `@research` agent, and collaboration hook assets**
 

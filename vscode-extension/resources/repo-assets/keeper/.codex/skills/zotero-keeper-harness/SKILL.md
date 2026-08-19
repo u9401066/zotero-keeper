@@ -36,11 +36,14 @@ or the installed Zotero + PubMed MCP workspace harness.
   `confirm=false` preview. Execute the unchanged proposal only after approval;
   every confirmed mutation requires that identity, and a changed authorization
   identity requires a fresh read, preview, and approval.
-- Use a response-bound item object version for `update_item_fields`; use the
-  response-bound library cursor for `set_attachment_fulltext`. Never substitute
-  the attachment object version or replay a 412 conflict.
+- Use the response-bound object version for exact updates and single-object
+  deletes. Use the response-bound library cursor for `delete_tags`,
+  `set_attachment_fulltext`, and `set_attachment_fulltexts`; never substitute
+  an item object version. For `replace_attachment_file`, bind the exact
+  attachment version and previous MD5 to the reviewed response. Never replay a
+  412 conflict.
 - Keep port 23119 on loopback and the Local API key private. Require
   `authorize_local_writes(require_remembered=true)` plus **Always Allow** before
-  `attach_file_to_item`.
+  `attach_file_to_item` or `replace_attachment_file`.
 - Do not bypass NCBI email policy; use explicit settings or git email fallback.
 - Treat VSIX install/update as a first-class path: bundled repo assets must be synced before package.

@@ -104,6 +104,7 @@ try {
         "extension/resources/repo-assets/pubmed-search-mcp/scripts/hooks/copilot/evaluate-results.sh",
         "extension/resources/repo-assets/pubmed-search-mcp/scripts/hooks/copilot/session-cleanup.ps1",
         "extension/resources/repo-assets/pubmed-search-mcp/scripts/hooks/copilot/session-cleanup.sh",
+        "extension/resources/repo-assets/pubmed-search-mcp/scripts/hooks/copilot/hook_runtime.py",
         "extension/resources/repo-assets/pubmed-search-mcp/.codex/skills/pubmed-search-mcp-harness/SKILL.md",
         "extension/resources/repo-assets/pubmed-search-mcp/.cline/skills/pubmed-search-mcp-harness/SKILL.md",
         "extension/resources/repo-assets/pubmed-search-mcp/.clinerules/50-pubmed-project.md",

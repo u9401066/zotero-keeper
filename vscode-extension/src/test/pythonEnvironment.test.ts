@@ -70,7 +70,7 @@ describe('PythonEnvironment', () => {
         it('should pin Zotero Keeper installs to the fixed extension source archive', () => {
             assert.ok(ZOTERO_KEEPER_PACKAGE.includes(ZOTERO_KEEPER_SOURCE_URL));
             assert.ok(ZOTERO_KEEPER_PACKAGE.includes('#subdirectory=mcp-server'));
-            assert.strictEqual(ZOTERO_KEEPER_VERSION, '2.1.0');
+            assert.strictEqual(ZOTERO_KEEPER_VERSION, '2.2.0');
         });
 
         it('should pin PubMed installs to the fixed upstream commit archive', () => {
@@ -80,9 +80,9 @@ describe('PythonEnvironment', () => {
         });
 
         it('should compare version baselines numerically', () => {
-            assert.strictEqual(compareDottedVersions('0.6.0', PUBMED_SEARCH_VERSION) < 0, true);
-            assert.strictEqual(compareDottedVersions(PUBMED_SEARCH_VERSION, '0.6.1'), 0);
-            assert.strictEqual(compareDottedVersions('0.6.2', PUBMED_SEARCH_VERSION) > 0, true);
+            assert.strictEqual(compareDottedVersions('0.6.2', PUBMED_SEARCH_VERSION) < 0, true);
+            assert.strictEqual(compareDottedVersions(PUBMED_SEARCH_VERSION, '0.6.3'), 0);
+            assert.strictEqual(compareDottedVersions('0.6.4', PUBMED_SEARCH_VERSION) > 0, true);
         });
     });
 

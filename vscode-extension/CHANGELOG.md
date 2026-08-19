@@ -2,6 +2,31 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.8.0] - 2026-08-19
+
+### Added
+
+- Bundled Zotero Keeper 2.2.0 with nine additional confirmed Zotero 10+ Local
+  API operations covering guarded deletes, collection and saved-search
+  updates, membership removal, tag deletion, stored-file replacement, and
+  batch full-text writes.
+- Added the Zotero Keeper GitHub Pages feature site and made it the extension
+  homepage; PubMed Search continues to use its independent documentation site.
+
+### Changed
+
+- Updated the fixed PubMed Search MCP package from 0.6.1 to the official 0.6.3
+  release commit and refreshed its bundled hooks and assistant skills.
+- Expanded the default Keeper MCP surface from 32 to 41 tools without changing
+  the Zotero 7–9 Connector compatibility path.
+
+### Security
+
+- All new mutations retain zero-I/O previews, exact Server-ID binding, object
+  or library version preconditions, and explicit confirmation. Attachment
+  replacement requires an **Always Allow** Zotero authorization and never
+  retries a stale-file or 412 conflict.
+
 ## [0.7.0] - 2026-08-12
 
 ### Added

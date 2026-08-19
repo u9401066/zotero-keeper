@@ -52,10 +52,12 @@ articles into Zotero without losing provenance or overwriting user choices.
 - Every confirmed Local API mutation requires the `expected_server_id` shown in
   its approved preview. If later authorization reports a different identity,
   reread, preview, and request approval again; never add identity after preview.
-- Use the response-bound item object version for `update_item_fields`. Use the
-  response-bound library cursor—not an attachment object version—for
-  `set_attachment_fulltext`.
-- Before `attach_file_to_item`, call
+- Use the response-bound object version for exact updates and single-object
+  deletes. Use the response-bound library cursor—not an attachment object
+  version—for `delete_tags`, `set_attachment_fulltext`, and
+  `set_attachment_fulltexts`. For `replace_attachment_file`, bind the reviewed
+  attachment version and previous MD5 to the same response identity.
+- Before `attach_file_to_item` or `replace_attachment_file`, call
   `authorize_local_writes(require_remembered=true)` and have the user choose
   **Always Allow** for the three-phase upload.
 

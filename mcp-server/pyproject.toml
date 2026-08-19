@@ -1,6 +1,6 @@
 [project]
 name = "zotero-keeper"
-version = "2.1.0"
+version = "2.2.0"
 description = "MCP SDK v2 server for safe, collection-aware management of local Zotero libraries"
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -32,22 +32,22 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/u9401066/zotero-keeper"
-Documentation = "https://github.com/u9401066/zotero-keeper#readme"
+Documentation = "https://u9401066.github.io/zotero-keeper/"
 Repository = "https://github.com/u9401066/zotero-keeper.git"
 Issues = "https://github.com/u9401066/zotero-keeper/issues"
 Changelog = "https://github.com/u9401066/zotero-keeper/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 pubmed = [
-    "pubmed-search-mcp>=0.6.1",  # MCP SDK v2 PubMed integration
+    "pubmed-search-mcp>=0.6.3",  # MCP SDK v2 PubMed integration
 ]
 all = [
-    "pubmed-search-mcp>=0.6.1",
+    "pubmed-search-mcp>=0.6.3",
     "rapidfuzz>=3.0.0",
 ]
 dev = [
     "mcp[cli]>=2.0,<3",
-    "pubmed-search-mcp>=0.6.1",
+    "pubmed-search-mcp>=0.6.3",
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.0.0",
@@ -104,7 +104,7 @@ markers = [
 dev = [
     "mcp[cli]>=2.0,<3",
     "mypy>=1.0.0",
-    "pubmed-search-mcp>=0.6.1",
+    "pubmed-search-mcp>=0.6.3",
     "pytest>=9.0.2",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.0.0",

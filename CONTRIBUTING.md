@@ -2,7 +2,7 @@
 
 First off, thank you for considering contributing to Zotero Keeper! 🎉
 
-The current release baseline is Zotero Keeper 2.1.0 in VSIX v0.7.0: 32 default MCP SDK v2 tools, 6 concrete resources, and 4 parameterized URI templates.
+The current release baseline is Zotero Keeper 2.2.0 in VSIX v0.8.0: 41 default MCP SDK v2 tools, 6 concrete resources, and 4 parameterized URI templates.
 
 ## 📋 Table of Contents
 
