@@ -14,8 +14,8 @@
 | Node.js | 18+ | VS Code extension development/runtime tooling |
 | TypeScript | repository lock | VS Code Extension API integration |
 
-SDK v1 `FastMCP` 與 SDK v2 不相容。Keeper `2.1.0` 與 PubMed Search MCP
-`0.6.1` 必須共用同一個 SDK v2 runtime；`mcp-types` 等 v2 transitive packages
+SDK v1 `FastMCP` 與 SDK v2 不相容。Keeper `2.2.0` 與 PubMed Search MCP
+`0.6.3` 必須共用同一個 SDK v2 runtime；`mcp-types` 等 v2 transitive packages
 由 `uv.lock` / resolver 管理，不在兩套應用間另行分叉版本。
 
 ### Development Tools
@@ -42,7 +42,8 @@ SDK v1 `FastMCP` 與 SDK v2 不相容。Keeper `2.1.0` 與 PubMed Search MCP
 |------|---------------|-----------------|--------|
 | `v0.6.0-ext` | extension `0.6.0`, Keeper `2.0.0`, PubMed `0.6.1` | 24 Keeper tools / 6 resources; 45 PubMed tools; MCP SDK v2 | published 2026-08-11 |
 | `v0.7.0-ext` | extension `0.7.0`, Keeper `2.1.0`, PubMed `0.6.1` | 32 Keeper tools / 6 resources; 45 PubMed tools; Zotero 10+ Local API writes | published 2026-08-12 |
-| PubMed fixed source | commit `ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d` | upstream `0.6.1` release commit | unchanged |
+| `v0.8.0-ext` | extension `0.8.0`, Keeper `2.2.0`, PubMed `0.6.3` | 41 Keeper tools / 6 resources; lifecycle/file replacement/batch full text | preparing 2026-08-19 |
+| PubMed fixed source | commit `febf53a8ff1ee253a625869ba251365f73a23c68` | upstream `0.6.3` release commit | current source pin |
 
 Previous lines `v0.5.35-ext` (Keeper `1.14.0`, PDF import) and `v0.6.0-ext`
 (Keeper `2.0.0`, SDK v2 migration) are complete. The current stable release is
@@ -59,12 +60,12 @@ Previous lines `v0.5.35-ext` (Keeper `1.14.0`, PDF import) and `v0.6.0-ext`
 - Stop old MCP processes before replacing the environment. Mark the venv ready only
   after both versions and sources pass verification.
 - Installation smoke must instantiate both concrete SDK v2 servers and call
-  `list_tools` (Keeper 32, PubMed 45); importing modules alone does not detect a v1/v2
+`list_tools` (Keeper 41, PubMed 45); importing modules alone does not detect a v1/v2
   runtime conflict.
 - Assistant harness assets shipped in the VSIX include Copilot instructions, root
   `AGENTS.md`, `.codex/skills`, `.cline/skills`, `.clinerules`, and curated PubMed
-  Claude skills. `npm run sync-assets` is required before packaging; PubMed v0.6.1 adds the
-  `pubmed-research-chronicle` skill.
+  Claude skills. `npm run sync-assets` is required before packaging; PubMed v0.6.3
+  adds governed SearchRun/systematic/Chronicle assets and a centralized hook runtime.
 - The release process first passes version, managed-install, tag-archive and Local API
   smoke gates. The tag workflow then packages one named VSIX exactly once and inspects its
   content; both `vsce publish --packagePath` and GitHub Release consume that same file.
@@ -84,10 +85,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-pubmed = ["pubmed-search-mcp>=0.6.1"]
+pubmed = ["pubmed-search-mcp>=0.6.3"]
 ```
 
-PubMed Search MCP v0.6.1 independently declares `mcp>=2.0,<3` and Python
+PubMed Search MCP v0.6.3 independently declares `mcp>=2.0,<3` and Python
 `>=3.10`; the combined VSIX environment follows Keeper's stricter Python 3.12+
 baseline.
 
@@ -116,7 +117,7 @@ baseline.
 Local API reads remain unauthenticated on the desktop loopback listener. Every
 `/api/local/authorize` and write request carries the Server-ID. The
 response-bound identity is obtained before preview and included as
-`expected_server_id`; all seven confirmed mutations require that reviewed value.
+`expected_server_id`; all 16 confirmed mutations require that reviewed value.
 If authorization returns another identity, reread, preview, and obtain approval
 again. The authorization key is runtime-only and unscoped; Keeper never persists
 or returns it. Missing/mismatched identity (including 428/412), denial/rate

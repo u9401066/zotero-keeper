@@ -1,8 +1,10 @@
 # Zotero Keeper MCP Server
 
-Zotero Keeper 2.1.0 is an MCP SDK v2 server for managing local Zotero libraries via AI agents. It uses the v2 `MCPServer` API and is intentionally incompatible with an MCP SDK 1.x environment.
+Zotero Keeper 2.2.0 is an MCP SDK v2 server for managing local Zotero libraries via AI agents. It uses the v2 `MCPServer` API and is intentionally incompatible with an MCP SDK 1.x environment.
 
-> The v0.7.0 VS Code extension is the recommended distribution for this 2.1 runtime. The commands below install from this source checkout. The separately published `uvx`/PyPI package may still be on an older release line until its own publication is complete.
+> The v0.8.0 VS Code extension is the recommended distribution for this 2.2 runtime. The commands below install from this source checkout. The separately published `uvx`/PyPI package may still be on an older release line until its own publication is complete.
+
+See the [Zotero Keeper feature site](https://u9401066.github.io/zotero-keeper/) for the product tour and the documentation links below for precise tool contracts.
 
 ## Installation
 
@@ -79,14 +81,14 @@ import_articles(
 
 **Supported sources:** PubMed, Europe PMC, CORE, CrossRef, OpenAlex, Semantic Scholar, RIS
 
-### Public Tool Surface (32 default tools + 6 resources)
+### Public Tool Surface (41 default tools + 6 resources)
 
 The default public surface combines connection, read, collection, save, search, import, analytics, attachment access, and narrow Zotero 10+ Local API write tools. MCP SDK v2 advertises six concrete browsable resources plus four parameterized URI templates.
 
 ### Zotero Compatibility
 
-| Zotero Desktop | Read/search/resources | Connector save/import | Eight Local write tools | Attachment path discovery |
-| -------------- | --------------------- | --------------------- | ----------------------- | ------------------------- |
+| Zotero Desktop | Read/search/resources | Connector save/import | 17 Local API tools | Attachment path discovery |
+| -------------- | --------------------- | --------------------- | ------------------ | ------------------------- |
 | 7, 8, 9 | Yes | Yes | No; returns `unsupported_local_write` | `ZOTERO_DATA_DIR` fallback |
 | 10+ | Yes | Yes | Yes, after Zotero runtime authorization | Official `/file/view/url`, then fallback |
 
@@ -100,10 +102,18 @@ The default public surface combines connection, read, collection, save, search, 
 authorize_local_writes(require_remembered: bool = False)
 create_collection(name, parent_collection_key=None, confirm=False, expected_server_id=None)
 add_items_to_collection(item_keys, collection_key, confirm=False, expected_server_id=None)
+remove_items_from_collection(item_keys, collection_key, confirm=False, expected_server_id=None)
 update_item_fields(item_key, fields, expected_version, confirm=False, expected_server_id=None)
+update_collection(collection_key, expected_version, name=None, parent_collection_key=None, move_to_library_root=False, confirm=False, expected_server_id=None)
+delete_collection(collection_key, expected_version, confirm=False, expected_server_id=None)
+delete_item(item_key, expected_version, confirm=False, expected_server_id=None)
 create_note(parent_item_key, note_html, confirm=False, expected_server_id=None)
 create_saved_search(name, conditions, confirm=False, expected_server_id=None)
+update_saved_search(search_key, expected_version, name=None, conditions=None, confirm=False, expected_server_id=None)
+delete_saved_search(search_key, expected_version, confirm=False, expected_server_id=None)
+delete_tags(tags, expected_library_version, confirm=False, expected_server_id=None)
 attach_file_to_item(item_key, file_path, title="Full Text PDF", confirm=False, expected_server_id=None)
+replace_attachment_file(attachment_key, file_path, expected_version, expected_md5, confirm=False, expected_server_id=None)
 set_attachment_fulltext(
     attachment_key,
     content,
@@ -115,12 +125,16 @@ set_attachment_fulltext(
     confirm=False,
     expected_server_id=None,
 )
+set_attachment_fulltexts(entries, expected_library_version, confirm=False, expected_server_id=None)
 ```
 
-All seven mutation tools are fail-closed. First obtain a response-bound
+The surface contains one authorization tool and 16 fail-closed mutation tools.
+First obtain a response-bound
 `server_id` from an exact Local API read or from `authorize_local_writes`; obtain
-the response-bound object version for `update_item_fields`, or the response-bound
-library cursor for `set_attachment_fulltext`. Then call the mutation with
+the response-bound object version for an update or single-object delete, or the
+response-bound library cursor for tag deletion and single/batch full-text writes.
+Attachment replacement additionally binds the reviewed object version and old
+MD5. Then call the mutation with
 `confirm=false` **and that `expected_server_id` already present**. The preview
 returns `proposed` plus `confirmation_required=true` and performs no Zotero read,
 authorization, filesystem probe, or write. After the user approves that complete
@@ -130,9 +144,10 @@ Call `authorize_local_writes(require_remembered=false)` for a single-write
 operation if authorization was not already used to obtain the identity. Zotero
 presents **Allow**, **Always Allow**, or **Deny**; Keeper holds the returned key in
 memory and never exposes it in a tool schema or result. Before
-`attach_file_to_item`, call `authorize_local_writes(require_remembered=true)`:
-Zotero must grant **Always Allow** because the stored-file upload spans multiple
-writes. If authorization returns a different `server_id` from the reviewed
+`attach_file_to_item` or `replace_attachment_file`, call
+`authorize_local_writes(require_remembered=true)`: Zotero must grant **Always
+Allow** because the stored-file upload spans multiple writes. If authorization
+returns a different `server_id` from the reviewed
 proposal, discard the proposal, reread all targets/cursors, generate a new preview,
 and obtain approval again. Never add or replace identity only after preview.
 
@@ -140,15 +155,14 @@ Safety constraints include:
 
 - Every supplied Zotero object key must be an exact eight-character key.
 - `add_items_to_collection` accepts at most 50 distinct items, validates the collection and every item before its single batch write, and preserves every existing collection membership. It does not remove or move items to the library root.
+- `remove_items_from_collection` removes only the reviewed membership from up to 50 items. It rereads every item, uses that response's object version, preserves all other memberships, and can leave an item unfiled when the removed collection was its only membership.
 - `update_item_fields` accepts only a non-empty mapping of finite scalar metadata. Structural fields such as `key`, `version`, `itemType`, `collections`, `tags`, `creators`, `relations`, `parentItem`, deletion state, and attachment-storage fields are rejected.
-- Every confirmed mutation requires the same response-bound `expected_server_id`
-  that appeared in its approved preview. `update_item_fields` additionally uses
-  the current exact-item object `expected_version`.
-- `set_attachment_fulltext` uses a response-bound library cursor as
-  `expected_library_version` and writes through bulk `POST /api/users/0/fulltext`
-  with `If-Unmodified-Since-Version`; it does not use the attachment object's
-  version. A stale identity/version is a `412` and is never retried automatically.
-- Keeper 2.1.0 exposes no raw delete MCP tool. Destructive cleanup remains an explicit Zotero UI operation.
+- `update_collection`, `update_saved_search`, and the three single-object delete tools accept the fresh exact object's `expected_version`; Keeper rereads that exact target and refuses a mismatch.
+- `delete_collection` does not delete its library items, and `delete_saved_search` does not delete matching items. `delete_item` is a permanent single-item operation and may target a bibliographic item, note, attachment, or annotation, so its complete proposal must be reviewed carefully.
+- `delete_tags` accepts one to 50 names and a response-bound library cursor because deleting a tag removes it library-wide. `set_attachment_fulltexts` accepts one to 10 attachment entries under one response-bound library cursor. Neither cursor is an attachment object version.
+- `replace_attachment_file` is restricted to stored `imported_file`/`imported_url` attachments. It requires remembered authorization, the exact attachment version, and its previous MD5; both authenticated file phases use `If-Match` with that old hash.
+- A stale identity, object version, library cursor, or file MD5 is a conflict and is never retried automatically. After HTTP 412, reread, preview, and ask for approval again.
+- Keeper is not a raw Local API client. It does not expose arbitrary structural replacement, batch item/collection/saved-search deletion, or group-library writes. The public delete tools each target one reviewed object; `delete_tags` is the deliberately bounded library-cursor exception.
 
 See [MCP Tools Reference](../docs/tools-reference.md#zotero-10-local-write-tools) for complete contracts and [Zotero write requests](https://www.zotero.org/support/dev/web_api/v3/write_requests) for the underlying official protocol.
 
@@ -178,6 +192,9 @@ Set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` only if you intentionally want 
 | `find_collection` | Find collection by name |
 | `create_collection` | Zotero 10+: create a top-level or nested collection after confirmation |
 | `add_items_to_collection` | Zotero 10+: add up to 50 items while preserving other memberships |
+| `remove_items_from_collection` | Zotero 10+: remove one exact membership from up to 50 items while preserving the rest |
+| `update_collection` | Zotero 10+: rename or move one collection with its exact object version |
+| `delete_collection` | Zotero 10+: delete one confirmed collection with its exact object version |
 
 ### Saved Search Tools 🌟 (execution is Local-only)
 
@@ -187,6 +204,8 @@ Set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` only if you intentionally want 
 | `run_saved_search` | Execute a saved search |
 | `get_saved_search_details` | Get search conditions |
 | `create_saved_search` | Zotero 10+: create a saved search after confirmation |
+| `update_saved_search` | Zotero 10+: change one saved search's name and/or conditions with its exact version |
+| `delete_saved_search` | Zotero 10+: delete one confirmed saved search with its exact version |
 
 ### Search & Import Tools
 
@@ -211,7 +230,9 @@ Set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` only if you intentionally want 
 | `get_item_attachments` | List attachment metadata and resolved file paths |
 | `get_item_fulltext` | Read Zotero-indexed full text for PDF/EPUB attachments |
 | `attach_file_to_item` | Zotero 10+: attach a stored file to an existing bibliographic item |
+| `replace_attachment_file` | Zotero 10+: replace one stored attachment using its object version and old MD5 |
 | `set_attachment_fulltext` | Zotero 10+: write indexed full text with a version precondition |
+| `set_attachment_fulltexts` | Zotero 10+: write one to 10 indexed full-text entries under one library cursor |
 
 ### Metadata & Note Write Helpers
 
@@ -219,6 +240,7 @@ Set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` only if you intentionally want 
 | ---- | ----------- |
 | `authorize_local_writes` | Request runtime approval; set `require_remembered=true` before an attachment upload |
 | `update_item_fields` | Zotero 10+: update safe scalar metadata with optimistic concurrency |
+| `delete_item` | Zotero 10+: delete one exact item with optimistic concurrency |
 | `create_note` | Zotero 10+: create an HTML child note beneath an exact parent item |
 
 ### Other Read Helpers
@@ -226,13 +248,24 @@ Set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` only if you intentionally want 
 | Tool | Description |
 | ---- | ----------- |
 | `list_tags` | List all tags |
+| `delete_tags` | Zotero 10+: remove one to 50 exact tag names library-wide with a library cursor |
 | `get_item_types` | Get available item types |
 
 ### PubMed Search MCP boundary
 
-The v0.7.0 VSIX installs PubMed Search MCP 0.6.1 from commit `ad85dde`. That companion MCP SDK v2 server exposes 45 tools in 16 categories. Its two Research Chronicle tools, `build_research_chronicle` and `read_research_chronicle`, replace the previous three timeline tools.
+The v0.8.0 VSIX pins PubMed Search MCP 0.6.3 at commit
+[`febf53a`](https://github.com/u9401066/pubmed-search-mcp/commit/febf53a8ff1ee253a625869ba251365f73a23c68).
+That companion MCP SDK v2 server keeps its 45-tool, 16-category surface while
+adding a durable SearchRun journal, replay-safe `read_session` views,
+deterministic `systematic` search, bounded provider-native `native_semantic`
+search, explicit source/run status and provenance, and stricter Research
+Chronicle revisions with canonical Mermaid timeline artifacts. `systematic` and
+`native_semantic` are mutually exclusive, and replay returns credential-free
+arguments without executing another search.
 
 PubMed discovery, session reuse, full text, citation exploration, export, and Research Chronicle work belong to PubMed Search MCP. Zotero Keeper owns the local library, duplicate check, collection choice, and final `import_articles` handoff.
+
+Use the [PubMed Search MCP documentation site](https://u9401066.github.io/pubmed-search-mcp/) for its complete search and Chronicle workflows. Use the [Zotero Keeper feature site](https://u9401066.github.io/zotero-keeper/) for Keeper's library-management overview.
 
 See [Zotero MCP landscape](../docs/ZOTERO_MCP_LANDSCAPE.md) before adding another Zotero server. In particular, the MCP Registry-listed community project `54yyyu/zotero-mcp` uses the same Python module name, `zotero_mcp`; it must run in a separate environment and process from Keeper.
 
@@ -299,18 +332,21 @@ Zotero APIs can represent saved-search metadata, but the Web API cannot execute 
 
 #### Step 1: Create Saved Search
 
-On Zotero 10+, preview and then confirm the MCP mutation:
+On Zotero 10+, first obtain a response-bound `server_id`, then preview and
+confirm the unchanged MCP mutation:
 
 ```python
 create_saved_search(
     name="Unread",
     conditions=[{"condition": "tag", "operator": "isNot", "value": "read"}],
+    expected_server_id=server_id,
     confirm=False,
 )
 # After the user approves the exact proposal:
 create_saved_search(
     name="Unread",
     conditions=[{"condition": "tag", "operator": "isNot", "value": "read"}],
+    expected_server_id=server_id,
     confirm=True,
 )
 ```

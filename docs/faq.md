@@ -2,6 +2,8 @@
 
 Common questions about installing, configuring, and using Zotero Keeper.
 
+Start with the [Zotero Keeper feature site](https://u9401066.github.io/zotero-keeper/) for a visual overview, then use this FAQ and the [tool reference](tools-reference.md) for exact contracts.
+
 ---
 
 ## Installation
@@ -16,9 +18,9 @@ Common questions about installing, configuring, and using Zotero Keeper.
 
 ### What is the easiest way to install?
 
-For VS Code users, install the v0.7.0 VSIX from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp). It is the recommended distribution for Zotero Keeper 2.1.0 and PubMed Search MCP 0.6.1.
+For VS Code users, use the v0.8.0 VSIX artifact from this release workspace, or install it from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp) after publication. It is the recommended distribution for Zotero Keeper 2.2.0 and PubMed Search MCP 0.6.3.
 
-For Claude Desktop or manual setups, use a source checkout with `uv sync`. The separately published `uvx`/PyPI package may still be on an older line; verify its published version rather than assuming this command installs Keeper 2.1.0:
+For Claude Desktop or manual setups, use a source checkout with `uv sync`. The separately published `uvx`/PyPI package may still be on an older line; verify its published version rather than assuming this command installs Keeper 2.2.0:
 
 ```bash
 # Legacy pre-2.0 PyPI line only
@@ -132,7 +134,7 @@ The public surface is:
 - **Search**: handled by pubmed-search-mcp
 - **Import handoff**: `import_articles` (Zotero Keeper)
 - **Library reads**: all read tools (Zotero Keeper)
-- **Narrow local mutations**: eight Zotero 10+ tools with runtime authorization and explicit confirmation (Zotero Keeper)
+- **Narrow Local API surface**: 17 Zotero 10+ tools—one authorization action plus 16 explicitly confirmed mutations (Zotero Keeper)
 
 All writes fail closed on collection routing. `skip_collection_prompt=True` aborts; `quick_save`, `import_articles`, and `import_pdf` reject a missing collection. Saving to My Library requires explicit user confirmation plus `allow_library_root=true` (and `interactive_save` confirms `ROOT` a second time).
 
@@ -158,13 +160,15 @@ On Zotero 10+, `get_item_attachments` first asks the official Local API for `/it
 
 ### How do Zotero 10+ write confirmations work?
 
-Keeper exposes seven narrow mutation tools plus
+Keeper exposes 16 narrow mutation tools plus
 `authorize_local_writes(require_remembered: bool = False)`. Before preview,
 obtain a response-bound `server_id` from an exact Local API read or
-authorization. Use the exact-item response's object version for
-`update_item_fields`, or the response-bound library cursor from
-`get_item_attachments` / `get_item_fulltext` for `set_attachment_fulltext`.
-Call the intended mutation with `confirm=false` and that
+authorization. Use the exact-object response's version for updates and
+single-object deletes. Use the response-bound library cursor from `list_tags`
+for `delete_tags`, or from `get_item_attachments` / `get_item_fulltext` for
+single/batch full-text writes. `replace_attachment_file` additionally requires
+the attachment's previous MD5 from the same exact response. Call the intended
+mutation with `confirm=false` and that
 `expected_server_id`; it returns the complete `proposed` change and performs no
 Zotero read, authorization, filesystem probe, or write. After the user approves
 that exact proposal, ensure local authorization and repeat it unchanged with
@@ -173,13 +177,15 @@ that exact proposal, ensure local authorization and repeat it unchanged with
 Zotero itself displays **Allow**, **Always Allow**, or **Deny**. The key stays
 only in Keeper memory and never appears in MCP input or output. Use
 `authorize_local_writes(require_remembered=false)` for a single-write operation.
-Before `attach_file_to_item`, use `require_remembered=true`; authorization
-succeeds only when Zotero grants reusable **Always Allow**, because the stored-file
-protocol requires multiple writes. Every confirmed mutation requires the
+Before `attach_file_to_item` or `replace_attachment_file`, use
+`require_remembered=true`; authorization succeeds only when Zotero grants
+reusable **Always Allow**, because the stored-file protocol requires multiple
+writes. Every confirmed mutation requires the
 reviewed `expected_server_id`. If authorization returns another identity,
 discard the proposal, reread, preview again, and obtain new approval; never add
-identity only after preview. `set_attachment_fulltext` uses a library cursor and
-bulk `POST /api/users/0/fulltext`, not an attachment object version. See the
+identity only after preview. Single and batch full-text tools use a library
+cursor and bulk `POST /api/users/0/fulltext`, not an attachment object version.
+No 412 conflict is retried automatically. See the
 official [Local API](https://www.zotero.org/support/dev/web_api/v3/local_api),
 [write-request](https://www.zotero.org/support/dev/web_api/v3/write_requests),
 and [full-text](https://www.zotero.org/support/dev/web_api/v3/fulltext_content)
@@ -187,17 +193,50 @@ documentation.
 
 ---
 
+### Which Zotero 10+ mutations were added in Keeper 2.2.0?
+
+| Tool | Scope and extra precondition |
+|------|------------------------------|
+| `remove_items_from_collection` | One membership, one to 50 items; confirmed execution rereads each item and preserves every other membership |
+| `update_collection` | One collection; exact object version; constrained name/parent update only |
+| `delete_collection` | One collection; exact object version |
+| `delete_item` | One bibliographic item, note, attachment, or annotation; exact object version; permanent-delete proposal |
+| `update_saved_search` | One saved search's name and/or complete validated condition list; exact object version |
+| `delete_saved_search` | One saved search; exact object version |
+| `delete_tags` | One to 50 names library-wide; `list_tags` library cursor |
+| `replace_attachment_file` | One stored attachment; exact object version, previous MD5, and remembered **Always Allow** authorization |
+| `set_attachment_fulltexts` | One to 10 distinct attachments; one response-bound library cursor and exactly one complete pages or characters count pair per entry |
+
+Every row still requires `expected_server_id`, an approved `confirm=false`
+zero-I/O preview, and an unchanged `confirm=true` call. See the
+[complete Local write contracts](tools-reference.md#zotero-10-local-write-tools)
+for parameter schemas and limits.
+
+---
+
 ## Zotero API Capabilities & Safety
 
-### Why can't I delete or move items?
+### Can I delete or move items safely?
 
-The official Zotero 10+ Local API supports item, collection, and saved-search writes, including deletion. Keeper 2.1.0 intentionally exposes **no raw delete MCP tool** and no generic arbitrary PATCH/DELETE surface. Its safe tools can add collection membership, update approved scalar metadata, create collections/notes/saved searches, attach a file, and set attachment full text after confirmation.
+Yes, but only through dedicated Zotero 10+ contracts. `delete_item`,
+`delete_collection`, and `delete_saved_search` each target one exact object and
+require its response-bound `expected_version`. `remove_items_from_collection`
+removes only one reviewed membership from up to 50 exact items while preserving
+all others. `update_collection` can rename or move one exact collection; making
+it top-level requires the explicit `move_to_library_root=true` argument.
 
-`add_items_to_collection` is additive and preserves all existing memberships; it does not remove an item from another collection or move it to My Library root. On Zotero 7–9, these new Local write tools are unavailable, so perform updates in the Zotero UI. These are Keeper safety/product boundaries, not claims that the Zotero 10+ Local API lacks write capability.
+Keeper is still not a raw Local API client. It exposes no arbitrary structural
+replacement, batch item/collection/saved-search delete, or group-library write.
+`delete_tags` is a separate bounded library-cursor operation for one to 50 tag
+names and removes those tags library-wide without deleting items. On Zotero
+7–9, Local write tools are unavailable, so perform these operations in the
+Zotero UI. These are Keeper safety/product boundaries, not limitations of the
+official Zotero 10+ API.
 
-**Workarounds:**
+For bulk cleanup outside these narrow contracts:
+
 - Delete duplicates: Zotero > Tools > **Merge Duplicates**
-- Remove/move collection memberships: **drag and drop** in Zotero's GUI
+- Review complex collection restructuring in Zotero's GUI
 - Bulk operations: [Zutilo](https://github.com/wshanks/Zutilo) or [Zotero Actions & Tags](https://github.com/windingwind/zotero-actions-tags) plugins
 
 ---
@@ -217,7 +256,7 @@ The Connector API always creates new items. `import_articles` uses `skip_duplica
 |------------|----------|----------|----------|------------|
 | Keeper reads, search, resources | Yes | Yes | Yes | Yes |
 | Connector save/import tools | Yes | Yes | Yes | Yes |
-| Eight authorized Local write tools | No | No | No | Yes |
+| 17 authorized Local API tools | No | No | No | Yes |
 | Official attachment file URL | Fallback | Fallback | Fallback | Preferred |
 
 Zotero 8 introduced top-level PDF annotation objects with `itemType: "annotation"`; Keeper filters them from normal bibliographic search, list, and statistics results. `interactive_save`, `quick_save`, `import_articles`, and `import_pdf` remain Connector-compatible across Zotero 7–10+. The new write surface is feature-gated to Zotero 10+ Local API v3.
@@ -226,7 +265,16 @@ Zotero 8 introduced top-level PDF annotation objects with `itemType: "annotation
 
 ## PubMed Integration
 
-The v0.7.0 VSIX pins PubMed Search MCP 0.6.1 at commit `ad85dde`. It exposes 45 MCP SDK v2 tools in 16 categories. `build_research_chronicle` and `read_research_chronicle` replace the three former timeline tools.
+The v0.8.0 VSIX pins PubMed Search MCP 0.6.3 at commit
+[`febf53a`](https://github.com/u9401066/pubmed-search-mcp/commit/febf53a8ff1ee253a625869ba251365f73a23c68).
+It retains 45 MCP SDK v2 tools in 16 categories and adds SearchRun journaling
+and credential-free replay arguments, deterministic `systematic` search,
+bounded provider-native `native_semantic` search, explicit run/source status,
+and stricter versioned Research Chronicle artifacts including canonical
+Mermaid timelines. `systematic` and `native_semantic` are mutually exclusive;
+replay reports arguments but does not execute another search. See the separate
+[PubMed Search MCP documentation site](https://u9401066.github.io/pubmed-search-mcp/)
+for its search and Chronicle workflows.
 
 ### Do I need pubmed-search-mcp installed?
 
@@ -236,7 +284,7 @@ Only if you want to **search PubMed** from within Copilot. `import_articles` and
 uv sync --extra pubmed   # in the mcp-server directory
 ```
 
-For the MCP SDK v2 release, prefer the v0.7.0 VSIX or a current source checkout; the PyPI/`uvx` package may still resolve an older release line.
+For the MCP SDK v2 release, prefer the v0.8.0 VSIX or a current source checkout; the PyPI/`uvx` package may still resolve an older release line.
 
 ---
 

@@ -4,7 +4,7 @@
 
 > **歷史設計稿（已被取代）**：本頁保留當時的問題分析與舊工具名稱，
 > 不代表 v0.6.0 / MCP SDK v2 現況。請以 [ARCHITECTURE.md](../ARCHITECTURE.md)、
-> [協作流程](COLLABORATION_WORKFLOW.md) 與 PubMed Search MCP 0.6.1 的
+> [協作流程](COLLABORATION_WORKFLOW.md) 與 PubMed Search MCP 0.6.3 的
 > `get_session_log`、`read_session`、`build_research_chronicle`、
 > `read_research_chronicle` 為準。
 

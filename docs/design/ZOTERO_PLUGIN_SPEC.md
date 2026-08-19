@@ -1,10 +1,10 @@
 # Zotero Keeper Plugin — 選配擴充規格書
 
-> **規格版本**: v0.2.0 (Draft)
-> **日期**: 2026-08-12
+> **規格版本**: v0.3.0 (Draft)
+> **日期**: 2026-08-19
 > **作者**: u9401066
 > **狀態**: 📋 選配 Plugin 規劃中；官方基本 CRUD transport 不依賴 Plugin
-> **產品基線**: VSIX 0.7.0 / Zotero Keeper 2.1.0 / MCP SDK v2 / 32 個預設 tools
+> **產品基線**: VSIX 0.8.0 / Zotero Keeper 2.2.0 / MCP SDK v2 / 41 個預設 tools
 
 ---
 
@@ -38,9 +38,9 @@ stored-file upload 的必要元件。
 
 ### 1.2 核心價值
 
-Zotero Keeper 2.1.0 已在 MCP SDK v2 上提供 32 個預設 tools。新增的 8 個
-Local API tools 包含 runtime write authorization、collection/item/note/saved
-search 操作、全文寫入與 stored-file upload。Plugin 的價值因此集中於：
+Zotero Keeper 2.2.0 已在 MCP SDK v2 上提供 41 個預設 tools。17 個
+Local API tools 包含 runtime authorization、task-oriented lifecycle/membership/tag
+操作、single/batch full text 與 stored-file create/replace。Plugin 的價值因此集中於：
 
 | 優先級 | Plugin 適合提供的能力 | 原因 |
 |---|---|---|
@@ -52,16 +52,16 @@ search 操作、全文寫入與 stored-file upload。Plugin 的價值因此集�
 
 以下能力**不應再列為 Plugin 的核心理由**：Zotero 10+ 的官方 item、collection、
 note、saved search CRUD transport、versioned fulltext write 與三階段 stored-file
-upload。Keeper 2.1 已透過官方 Local API v3 提供受限且需確認的 allowlist；它並未
-因此暴露任意 raw Local API 或通用 delete tool。
+upload。Keeper 2.2 已透過官方 Local API v3 提供受限且需確認的 allowlist；它並未
+因此暴露任意 raw Local API 或無限制的 delete tool。
 
 ### 1.3 目前架構定位
 
 ```
-AI Agent / VSIX 0.7.0
+AI Agent / VSIX 0.8.0
         │ MCP SDK v2
         ▼
-Zotero Keeper 2.1.0 (32 default tools)
+Zotero Keeper 2.2.0 (41 default tools)
         ├── Local API v3 : reads + Zotero 10+ authorized writes
         ├── Connector API: create/import compatibility path (Zotero 7–10+)
         └── Optional Plugin
@@ -76,7 +76,7 @@ Zotero Keeper 2.1.0 (32 default tools)
 
 ## 2. 目前架構與 Plugin 定位
 
-### 2.1 官方 Local API v3（Keeper 2.1 的主要路徑）
+### 2.1 官方 Local API v3（Keeper 2.2 的主要路徑）
 
 Zotero 10+ 已提供 runtime-authorized Local API v3 writes。Keeper 在
 `GET /api/` discovery 後記錄 `Zotero-API-Version`、
@@ -91,7 +91,8 @@ object versions 與 cache 綁定該 Server-ID。
   (`If-Unmodified-Since-Version`)；`412` conflict 不自動重播。
 - Stored-file upload 使用官方三階段流程。upload URL 必須仍是設定中的 loopback
   host/port，傳送檔案 bytes 時不得夾帶 Local API key。
-- `attach_file_to_item` 需要 Always Allow，因為流程包含多次 authenticated writes。
+- `attach_file_to_item` / `replace_attachment_file` 需要 Always Allow，
+  因為流程包含多次 authenticated writes。
 
 這些是目前正式架構；不能再以「Local API read-only」、「更新固定回傳 501」或
 「等待官方 write API」描述 Zotero 10+。
@@ -874,8 +875,8 @@ create/import 仍為 7–9 的第一相容選擇；Plugin 只補 Connector 無�
 ### Phase 5：Keeper / VSIX 整合（P2）
 
 - Keeper 在現有 Local API 與 Connector discovery 之外，選配偵測 Plugin
-  capability；沒有 Plugin 時 32-tool 基線仍正常。
-- VSIX 只顯示選配安裝/診斷狀態，不把 Plugin 當成 Keeper 2.1 啟動前置條件。
+  capability；沒有 Plugin 時 41-tool 基線仍正常。
+- VSIX 只顯示選配安裝/診斷狀態，不把 Plugin 當成 Keeper 2.2 啟動前置條件。
 - MCP tools 依能力路由：Zotero 10+ basic writes → Local API v3；create/import
   compatibility → Connector；annotations/events/internal-only ops → Plugin。
 
@@ -1088,7 +1089,7 @@ Keeper integration tests另需證明：Zotero 10+ 的
 ### 13.4 與 MCP Server 的整合方案
 
 ```
-Keeper 2.1 routing:
+Keeper 2.2 routing:
 
 1. Local API v3 client (Zotero 10+)
    - discovery: API/schema version + Zotero-Server-ID
@@ -1103,7 +1104,7 @@ Keeper 2.1 routing:
    - authenticated capability discovery on literal loopback
    - annotations / Reader / Notifier events / Zotero-native UI
    - reviewed internal-only operations and optional Zotero 7–9 fallback
-   - never becomes a prerequisite for the 32-tool Keeper baseline
+   - never becomes a prerequisite for the 41-tool Keeper baseline
 
 4. VSIX integration
    - optional installation/health status only
@@ -1116,5 +1117,6 @@ Keeper 2.1 routing:
 
 | 日期 | 版本 | 變更 |
 |---|---|---|
+| 2026-08-19 | v0.3.0 | 對齊 VSIX 0.8 / Keeper 2.2 / 41 tools；Local API allowlist 擴充 lifecycle/tag/file replacement/batch full text，Plugin 仍專注 native-only 能力 |
 | 2026-08-12 | v0.2.0 | 對齊 VSIX 0.7 / Keeper 2.1 / 32 tools 與 Zotero 10 Local API v3；Plugin 重新定位為 annotations/events/UI/internal-only ops/Zotero 7–9 fallback；舊 HTTP Bridge 明標歷史 |
 | 2025-07-18 | v0.1.0 | 初版規格書 |

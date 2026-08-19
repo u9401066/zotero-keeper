@@ -9,6 +9,9 @@
 [![CI](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml/badge.svg)](https://github.com/u9401066/zotero-keeper/actions/workflows/ci.yml)
 
 > 🌐 **[English](README.md)** | **繁體中文**
+>
+> [Zotero Keeper 功能網站](https://u9401066.github.io/zotero-keeper/) ·
+> [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp)
 
 ---
 
@@ -18,7 +21,7 @@
 
 [📦 從 VS Code Marketplace 安裝 Zotero + PubMed MCP](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp)
 
-**v0.7.0 VSIX 是目前建議的發佈管道**：擴充套件會建立隔離環境，並安裝 Zotero Keeper 2.1.0 與固定版的 PubMed Search MCP 0.6.1。`uvx` / PyPI 仍可用於舊版的直接 server 安裝，但在 PyPI 更新前，不應當作 2.1 版本來使用。
+**v0.8.0 VSIX 是目前建議的發佈管道**：擴充套件會建立隔離環境，並安裝 Zotero Keeper 2.2.0 與固定在正式 release commit 的 PubMed Search MCP 0.6.3。`uvx` / PyPI 仍可用於直接 server 安裝，但應先核對已發佈版本是否與本次原始碼 release 一致。
 
 > ⚠️ MCP SDK 2.0 與 1.x 不相容。擴充套件升級後，若 VS Code 仍使用舊環境，請執行 **Zotero MCP: Reinstall Python Environment**。
 
@@ -33,8 +36,8 @@
 - ➕ **新增文獻**：「把這篇 DOI 加到我的 Zotero」（自動取得完整 metadata！）
 - 🤝 **協作式 PubMed 工作流**：先用 pubmed-search-mcp 搜尋，再用 keeper 檢查重複與匯入
 - 📁 **互動式存檔**：列出所有收藏夾讓你選擇！
-- 🗂️ **Zotero 10+ 整理能力**：建立巢狀收藏夾、更新既有項目、建立子筆記，並把檔案附加到書庫中已存在的項目
-- 📚 **現代化文獻發現**：PubMed Search MCP 0.6.1 提供 16 類、45 個工具，包含兩工具組成的 Research Chronicle 工作流程
+- 🗂️ **Zotero 10+ 整理能力**：建立、移動、更新與刪除 collection，管理歸屬、saved search、tag、attachment 與 full text
+- 📚 **現代化文獻發現**：PubMed Search MCP 0.6.3 提供 16 類、45 個工具，包含可追溯的 SearchRun 與 Research Chronicle 工作流程
 
 不用自己開 Zotero、手動搜尋、複製貼上。直接用自然語言告訴 AI，它會幫你完成！
 
@@ -138,6 +141,7 @@ NCBI_EMAIL=your.email@example.com
 
 ## 📚 文件導覽
 
+- [功能網站](https://u9401066.github.io/zotero-keeper/) — Zotero 10 能力、安全流程與安裝的視覺化總覽
 - [README.md](README.md) — 英文總覽
 - [mcp-server/README.md](mcp-server/README.md) — server 使用方式與工具說明
 - [vscode-extension/README.md](vscode-extension/README.md) — VS Code 擴充功能安裝與使用體驗
@@ -151,7 +155,7 @@ NCBI_EMAIL=your.email@example.com
 
 ---
 
-## 🔧 可用工具 (預設公開面 32 個 + legacy opt-in 5 個)
+## 🔧 可用工具 (預設公開面 41 個 + legacy opt-in 5 個)
 
 > 💡 **提示**：大部分讀取操作也可透過 [MCP Resources](#-mcp-resources-可瀏覽的資料) 完成，不需呼叫 Tool。
 
@@ -178,7 +182,7 @@ NCBI_EMAIL=your.email@example.com
 | `get_collection_tree` | 取得樹狀結構 | `zotero://collections/tree` |
 | `find_collection` | 用名稱查找 | — (僅 Tool 支援) |
 
-### 🗂️ Zotero 10+ Local API 工具 (local_api_tools.py - 8 工具)
+### 🗂️ Zotero 10+ Local API 工具 (local_api_tools.py - 17 工具)
 
 這組工具使用 Zotero 官方 Local API v3 寫入功能。preview 前先由 Local API
 read 或 `authorize_local_writes` 取得 response-bound `server_id`，並以
@@ -189,15 +193,25 @@ MCP 回傳；所有寫入僅限 loopback，並綁定已審核的 Zotero Server-I
 |------|------|----------|
 | `authorize_local_writes` | 請 Zotero 授權 Keeper；檔案上傳前使用 `require_remembered=true` | 絕不回傳或記錄 key |
 | `create_collection` | 建立頂層或巢狀收藏夾 | 精確 parent key + 明確確認 |
+| `update_collection` | 改名或移動一個精確 collection | 目前 object version + 精確 parent 驗證 |
+| `delete_collection` | 刪除一個精確 collection | 破壞性確認 + 目前 object version |
 | `add_items_to_collection` | 把最多 50 個既有項目加入收藏夾，保留原有歸屬 | 寫入前驗證全部 key，再做一次版本化 batch |
+| `remove_items_from_collection` | 移除最多 50 個 collection 歸屬，不刪項目 | 保留其他所有 collection 歸屬 |
 | `update_item_fields` | 更新允許的純量 metadata | 必須提供目前 local object version |
+| `delete_item` | 刪除一個精確 item、note 或 attachment | 破壞性確認 + 目前 object version |
 | `create_note` | 在既有項目下建立子筆記 | 驗證 parent + 明確確認 |
 | `create_saved_search` | 建立 Zotero saved search | 結構化條件 + 明確確認 |
+| `update_saved_search` | 改名或取代一個 saved search 的條件 | 目前 object version + exact-key preflight |
+| `delete_saved_search` | 刪除一個精確 saved search | 破壞性確認 + 目前 object version |
+| `delete_tags` | 刪除最多 50 個精確 tag 名稱 | response-bound library cursor + 單次 atomic request |
 | `attach_file_to_item` | 把本機檔案附加到既有項目 | remembered authorization + 驗證 loopback upload URL |
+| `replace_attachment_file` | 取代既有 stored attachment 的檔案內容 | remembered authorization + 精確 MD5/item-version preflight |
 | `set_attachment_fulltext` | 寫入 attachment 的索引文字 | response-bound library cursor + Server-ID + 明確確認 |
+| `set_attachment_fulltexts` | 一次寫入最多 10 個 attachment 的索引文字 | 單一 response-bound library cursor + 逐筆結果 |
 
 Zotero 7–9 無法使用這些操作，並繼續使用現有 Connector 匯入
-路徑。Keeper 刻意不公開任意 raw PATCH 或通用破壞性 DELETE 工具。
+路徑。破壞性操作只透過精確、帶版本的任務工具公開；Keeper
+仍不提供任意 raw API、任意 PATCH 或任意 DELETE escape hatch。
 
 每個 mutation 都要在 `confirm=false` proposal 中先放入
 `expected_server_id`；有版本條件時，還要放入同一 response 綁定的 item object
@@ -411,7 +425,7 @@ Zotero 支援**巢狀收藏夾**。建議的組織方式：
 
 ## 🔬 搭配 PubMed 使用
 
-v0.7.0 VSIX 固定使用 [pubmed-search-mcp 0.6.1](https://github.com/u9401066/pubmed-search-mcp/tree/v0.6.1)（commit `ad85dde`）。它的 MCP SDK v2 server 提供 **16 類、45 個工具**；新的 `build_research_chronicle` 與 `read_research_chronicle` 取代了早期 3 個 timeline 工具。
+v0.8.0 VSIX 固定使用 [pubmed-search-mcp 0.6.3](https://github.com/u9401066/pubmed-search-mcp/tree/v0.6.3)（release commit `febf53a`）。它的 MCP SDK v2 server 提供 **16 類、45 個工具**，並加入 fail-closed provider contract、`trials` / `native_semantic` / `systematic` 搜尋模式、SearchRun 狀態與 replay，以及更完整的 Research Chronicle map / Mermaid timeline。PubMed 功能請參考[獨立網站](https://u9401066.github.io/pubmed-search-mcp/)。
 
 ```
 你: 「幫我找 2024 年麻醉 AI 的新論文，我還沒有的」
@@ -490,10 +504,10 @@ Local API 寫入雖加入執行時授權，但取得的 key 沒有細粒度 scop
 
 Zotero 10+ 已大幅升級 Local API：官方平台現在支援 items、collections、
 saved searches 的授權式寫入、tag deletion、full-text write 與完整檔案
-upload。Keeper 2.1 公開的是經過限制的安全子集，而不是把無 scope 的 key
+upload。Keeper 2.2 公開的是經過限制的安全子集，而不是把無 scope 的 key
 與任意 API path 直接交給 AI client。
 
-| 介面 | 範圍 | 身分驗證 | Keeper 2.1 用途 |
+| 介面 | 範圍 | 身分驗證 | Keeper 2.2 用途 |
 |------|------|----------|-----------------|
 | **Local API v3** `/api/...` | 同機讀取；Zotero 10+ 寫入 | 讀取無認證；寫入需執行時由使用者同意 | Zotero 7–10+ 讀取；10+ guarded writes |
 | **Connector API** `/connector/...` | browser-connector save flow | 本機介面 | 向後相容的建立／匯入路徑，包含 Zotero 7–9 |
@@ -510,18 +524,19 @@ authorization 指向不同 database，read、preview 與 approval 必須全部�
 資料庫變更或 stale cursor 回傳 `412` 時絕不靜默覆寫；缺少
 identity/precondition (`428`) 與無效授權 (`401`) 也會 fail closed。
 
-Keeper 2.1 已完成過去受限的高價值流程：
+Keeper 2.2 將 My Library 的各類寫入能力映射成明確、任務導向的
+工具，同時保留跨版本的 Connector import：
 
 - 建立頂層或巢狀 collection；
-- 把既有 items 加入已確認的 collection，同時保留原本歸屬；
-- 更新既有 item 的允許 metadata，並建立 child note；
-- 建立 saved search；
-- 透過官方三階段 upload 把檔案附加到既有 item；
-- 為 attachment 提供 indexed full text；以及
+- 新增或移除 collection 歸屬，並保留其他歸屬；
+- 更新既有 item 的允許 metadata、建立 child note，或刪除一個精確 item；
+- 建立、更新或刪除 saved search，並批次刪除精確 tags；
+- 透過官方三階段 upload 新增檔案，或取代既有 stored attachment；
+- 為單筆 attachment 或最多十筆批次提供 indexed full text；以及
 - 透過官方 Local API 取得 attachment path，不再只能猜測 Zotero data directory。
 
-本版不公開通用刪除、任意 raw PATCH、duplicate merge、annotation edit 或
-group-library write。破壞性維護仍請使用 Zotero UI。完整平台能力與 Keeper
+本版仍不公開任意 raw request、無限制的 structural-array replacement、
+duplicate merge、annotation edit、batch object delete 或 group-library write。完整平台能力與 Keeper
 較窄的安全 contract 請見 [docs/ZOTERO_LOCAL_API.md](docs/ZOTERO_LOCAL_API.md)。
 
 ---

@@ -1,31 +1,33 @@
 # Active Context
 
 ## 當前焦點
-維護已發布的 Zotero Keeper `2.1.0` 與 VS Code extension / VSIX `0.7.0`。
-此版本把 Zotero 10+ Local API 的 runtime authorization、Server-ID 與 guarded
-writes 納入 Keeper；`v0.7.0-ext` 已於 2026-08-12 完成 GitHub Release 與
-Marketplace 發布，PubMed Search MCP 仍固定為 `0.6.1`。
+準備 Zotero Keeper `2.2.0` 與 VS Code extension / VSIX `0.8.0`。
+本次擴充 Zotero 10+ Local API 的任務導向 lifecycle、tag、stored-file
+replacement 與 batch full-text 工具，將 PubMed Search MCP 固定至正式
+`0.6.3` release commit，並新增 Keeper GitHub Pages 功能網站。`v0.7.0-ext`
+仍是目前已發布的 stable release。
 
 ## 相關檔案
-- `mcp-server/pyproject.toml` - Keeper `2.1.0` 與 `mcp>=2.0,<3`
+- `mcp-server/pyproject.toml` - Keeper `2.2.0` 與 `mcp>=2.0,<3`
 - `mcp-server/src/zotero_mcp/infrastructure/mcp/server.py` - SDK v2
-  `MCPServer` 組裝與 Keeper 的 32 tools / 6 resources
+  `MCPServer` 組裝與 Keeper 的 41 tools / 6 resources
 - `mcp-server/src/zotero_mcp/infrastructure/zotero_client/client_local.py` -
   Zotero 10+ Local API discovery、runtime authorization、Server-ID、local version
   與三階段 attachment upload
-- `mcp-server/src/zotero_mcp/infrastructure/mcp/local_api_tools.py` - 8 個需要
-  `confirm=true` 的 guarded Local API tools
+- `mcp-server/src/zotero_mcp/infrastructure/mcp/local_api_tools.py` - 17 個
+  guarded Local API tools（1 auth + 16 confirmed mutations）
 - `mcp-server/src/zotero_mcp/infrastructure/pubmed/__init__.py` - PubMed
-  v0.6.1 公開 Python API 整合
-- `external/pubmed-search-mcp` - upstream v0.6.1 commit
-  `ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d`（45 tools，含 Research
-  Chronicle）
+  v0.6.3 公開 Python API 整合
+- `external/pubmed-search-mcp` - upstream v0.6.3 release commit
+  `febf53a8ff1ee253a625869ba251365f73a23c68`（45 tools，含 SearchRun 與
+  Research Chronicle）
 - `vscode-extension/src/uvPythonManager.ts` / `pythonEnvironment.ts` - 同一
   managed venv 的 package-set 升級、來源與版本驗證
 - `vscode-extension/src/zoteroKeeperPackage.ts` / `pubmedSearchPackage.ts` -
-  Keeper `2.1.0` 與 PubMed `0.6.1` reproducible pins；兩者仍由同一 resolver
+  Keeper `2.2.0` 與 PubMed `0.6.3` reproducible pins；兩者仍由同一 resolver
   transaction 管理
-- `vscode-extension/package.json` / `CHANGELOG.md` - VSIX `0.7.0` 發布面
+- `vscode-extension/package.json` / `CHANGELOG.md` - VSIX `0.8.0` 發布面
+- `docs/index.html` / `.github/workflows/pages.yml` - Keeper 功能網站與 Pages 部署
 - `.github/workflows/publish-extension.yml` / `scripts/check_version_sync.py` -
   同一個已檢查 VSIX artifact 的 Marketplace / GitHub Release 發布 invariant
 - `README.md` / `README.zh-TW.md` / `.github/**` - MCP v2、Research
@@ -48,12 +50,17 @@ Marketplace 發布，PubMed Search MCP 仍固定為 `0.6.1`。
   Actions `31560040966` 已驗證並把同一 VSIX artifact 發布至 Marketplace 與
   GitHub Release（SHA256
   `11df8af38a6fd804691262dc6182c5ba6f345f5a5cb1c615b218720693eb6c1f`）
+- [x] 稽核 Zotero 10 寫入類別與 Keeper 公開 surface，補齊 9 個
+  任務工具並修正 multi-tag delete wire contract
+- [x] 將 PubMed 固定至正式 0.6.3 `febf53a`，同步新版 skills/hooks
+- [ ] 完成 Keeper 2.2.0 / VSIX 0.8.0 全套 tests、網站視覺 QA 與 VSIX 產物檢查
 
 ## 上下文
 - MCP SDK v2 以 `mcp.server.MCPServer` 取代 v1 `FastMCP` surface；Keeper
   與 PubMed 共同約束 `mcp>=2,<3`。這個相容性基線已由 `v0.6.0-ext` 發布，
   `v0.7.0-ext` 不改變 PubMed pin。
-- PubMed Search MCP v0.6.1 提供 45 個 tools；Research Chronicle 的
+- PubMed Search MCP v0.6.3 提供 45 個 tools；`read_session` 可查閱/重播
+  SearchRun，Research Chronicle 的
   `build_research_chronicle` / `read_research_chronicle` 取代舊 timeline
   公開工具面。
 - 截至 2026-08-11，Zotero 官方組織未發布 MCP server。
@@ -65,9 +72,9 @@ Marketplace 發布，PubMed Search MCP 仍固定為 `0.6.1`。
   `expected_server_id` 放進 proposal；所有 confirmed mutation 都要求該 identity。
   若 authorization identity 不同，必須重新 read、preview 與取得核准。runtime key
   不寫入設定或 log。
-- Item metadata 更新使用 exact-item response-bound object version；full-text 更新
-  使用 library cursor 與 bulk `POST /api/users/0/fulltext`，不能使用 attachment
-  object version，也不得與 Web API 或另一個 profile 的 version 混用。
+- Exact update/single delete 使用 response-bound object version；tag/full-text 批次
+  操作使用 library cursor；stored-file replacement 額外綁定 attachment
+  version 與 old MD5。所有 cursor 不得與 Web API 或其他 profile 混用。
 - `localhost:23119` 是 loopback trust boundary，禁止 bind、proxy 或 forward 給其他
   主機。任何可遠端存取的 authenticated service 模式都必須另行設計 authentication、
   tenant、Host/Origin 與資料隔離，不可沿用 local-mode 假設。
@@ -76,4 +83,4 @@ Marketplace 發布，PubMed Search MCP 仍固定為 `0.6.1`。
   legacy PubMed tools，也必須以 `allow_library_root=true` 攜帶 root 授權。
 
 ## 更新時間
-2026-08-12 UTC
+2026-08-19 UTC

@@ -10,6 +10,9 @@ Let AI manage your references! A MCP Server connecting VS Code Copilot / Claude 
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 > 🌐 **English** | **[繁體中文](README.zh-TW.md)**
+>
+> [Zotero Keeper feature site](https://u9401066.github.io/zotero-keeper/) ·
+> [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp)
 
 ---
 
@@ -19,7 +22,7 @@ Let AI manage your references! A MCP Server connecting VS Code Copilot / Claude 
 
 [📦 Install Zotero + PubMed MCP from the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp)
 
-The **v0.7.0 VSIX is the recommended distribution**. It creates an isolated environment and installs Zotero Keeper 2.1.0 plus the pinned PubMed Search MCP 0.6.1 snapshot. The `uvx`/PyPI path remains available for older direct-server installs, but it must not be treated as the 2.1 release until PyPI is updated.
+The **v0.8.0 VSIX is the recommended distribution**. It creates an isolated environment and installs Zotero Keeper 2.2.0 plus the pinned PubMed Search MCP 0.6.3 release snapshot. The `uvx`/PyPI path remains available for direct-server installs; verify the published version before assuming it matches this source release.
 
 > ⚠️ MCP SDK 2.0 is not compatible with 1.x. After upgrading the extension, run **Zotero MCP: Reinstall Python Environment** if VS Code still has an older managed environment.
 
@@ -34,8 +37,8 @@ The **v0.7.0 VSIX is the recommended distribution**. It creates an isolated envi
 - ➕ **Add references**: "Add this DOI to my Zotero" (with auto-fetch metadata!)
 - 🔄 **PubMed integration**: "Search PubMed, skip what I already have"
 - 📁 **Interactive save**: Shows collection options for you to choose!
-- 🗂️ **Zotero 10+ organization**: Create nested collections, update existing records, add notes, and attach files to records already in your library
-- 📚 **Modern literature discovery**: PubMed Search MCP 0.6.1 exposes 45 tools in 16 categories, including the two-tool Research Chronicle workflow
+- 🗂️ **Zotero 10+ organization**: Create, move, update, and delete collections; manage memberships, saved searches, tags, attachments, and full text
+- 📚 **Modern literature discovery**: PubMed Search MCP 0.6.3 exposes 45 tools in 16 categories, including governed SearchRun history and the Research Chronicle workflow
 
 No more manually searching, copying, pasting. Just tell your AI in natural language!
 
@@ -143,6 +146,7 @@ NCBI_EMAIL=your.email@example.com
 
 ## 📚 Documentation Map
 
+- [Feature site](https://u9401066.github.io/zotero-keeper/) — visual product overview, Zotero 10 capabilities, safety flow, and installation
 - [README.zh-TW.md](README.zh-TW.md) — Traditional Chinese overview
 - [mcp-server/README.md](mcp-server/README.md) — focused server usage and tool reference
 - [vscode-extension/README.md](vscode-extension/README.md) — VS Code extension setup and UX
@@ -156,7 +160,7 @@ NCBI_EMAIL=your.email@example.com
 
 ---
 
-## 🔧 Available Tools (32 default public + 5 legacy opt-in)
+## 🔧 Available Tools (41 default public + 5 legacy opt-in)
 
 > 💡 **Tip**: Most read operations can also be done via [MCP Resources](#-mcp-resources-browsable-data) without calling tools.
 
@@ -183,7 +187,7 @@ NCBI_EMAIL=your.email@example.com
 | `get_collection_tree` | Hierarchical tree view | `zotero://collections/tree` |
 | `find_collection` | Find by name | — (Tool only) |
 
-### 🗂️ Zotero 10+ Local API Tools (local_api_tools.py - 8 tools)
+### 🗂️ Zotero 10+ Local API Tools (local_api_tools.py - 17 tools)
 
 These tools use Zotero's official Local API v3 write support. Before preview,
 obtain a response-bound `server_id` from a Local API read or
@@ -195,16 +199,26 @@ the reviewed Zotero Server-ID.
 |------|-------------|-----------------|
 | `authorize_local_writes` | Ask Zotero to authorize Keeper; use `require_remembered=true` before file upload | Never returns or logs the key |
 | `create_collection` | Create a top-level or nested collection | Exact parent key + explicit confirmation |
+| `update_collection` | Rename or move one exact collection | Current object version + exact parent validation |
+| `delete_collection` | Delete one exact collection | Destructive confirmation + current object version |
 | `add_items_to_collection` | Add up to 50 existing items without removing other memberships | Validates every key before one versioned batch write |
+| `remove_items_from_collection` | Remove up to 50 memberships without deleting the items | Preserves every other collection membership |
 | `update_item_fields` | Update approved scalar metadata fields | Requires the current local object version |
+| `delete_item` | Delete one exact item, note, or attachment | Destructive confirmation + current object version |
 | `create_note` | Add a child note to an existing item | Validates the parent + explicit confirmation |
 | `create_saved_search` | Create a Zotero saved search | Structured conditions + explicit confirmation |
+| `update_saved_search` | Rename or replace conditions on one saved search | Current object version + exact-key preflight |
+| `delete_saved_search` | Delete one exact saved search | Destructive confirmation + current object version |
+| `delete_tags` | Delete up to 50 exact tag names | Response-bound library cursor + one atomic request |
 | `attach_file_to_item` | Attach a local file to an existing item | Remembered authorization + validated loopback upload URL |
+| `replace_attachment_file` | Replace the bytes of an existing stored attachment | Remembered authorization + exact MD5/item-version preflight |
 | `set_attachment_fulltext` | Write indexed text for an attachment | Response-bound library cursor + Server-ID + explicit confirmation |
+| `set_attachment_fulltexts` | Write indexed text for up to 10 attachments | One response-bound library cursor + per-entry results |
 
 These operations are unavailable on Zotero 7–9, which retain the existing
-Connector import path. Keeper intentionally does not expose an unrestricted raw
-PATCH or general-purpose destructive DELETE tool.
+Connector import path. Destructive operations are exposed only as exact,
+versioned task tools; Keeper still does not expose an unrestricted raw API,
+arbitrary PATCH, or arbitrary DELETE escape hatch.
 
 For each mutation, put `expected_server_id` (and the response-bound item object
 version or full-text library cursor, when applicable) into the `confirm=false`
@@ -415,7 +429,7 @@ Zotero supports **nested collections**. Recommended strategies:
 
 ## 🔬 PubMed Integration
 
-The v0.7.0 VSIX pins [pubmed-search-mcp 0.6.1](https://github.com/u9401066/pubmed-search-mcp/tree/v0.6.1) at commit `ad85dde`. Its MCP SDK v2 server exposes **45 tools across 16 categories**. The new `build_research_chronicle` and `read_research_chronicle` workflow replaces the three earlier timeline tools.
+The v0.8.0 VSIX pins [pubmed-search-mcp 0.6.3](https://github.com/u9401066/pubmed-search-mcp/tree/v0.6.3) at release commit `febf53a`. Its MCP SDK v2 server exposes **45 tools across 16 categories**. This release adds fail-closed provider contracts, `trials`/`native_semantic`/`systematic` search modes, durable SearchRun status and replay through `read_session`, and richer Research Chronicle maps and Mermaid timelines. PubMed has a [separate feature site](https://u9401066.github.io/pubmed-search-mcp/).
 
 ```
 You: "Find new anesthesia AI papers from 2024 that I don't have"
@@ -466,7 +480,7 @@ For remote libraries, use Zotero's authenticated HTTPS Web API, or place a purpo
 │           AI Agent (VS Code / Claude)           │
 └──────────────────────┬──────────────────────────┘
                        │ MCP Protocol
-                       │ ├── Tools (32 default)
+│ ├── Tools (41 default)
                        │ ├── Resources (6 + 4 URI templates)
                        │ └── Elicitation (interactive input)
                        ▼
@@ -476,7 +490,7 @@ For remote libraries, use Zotero's authenticated HTTPS Web API, or place a purpo
 │  │  MCP Layer                                │  │
 │  │  ├── server.py + basic reads (6 tools)      │  │
 │  │  ├── collection_tools.py (5 tools)         │  │
-│  │  ├── local_api_tools.py (8 guarded tools)  │  │
+│  │  ├── local_api_tools.py (17 guarded tools) │  │
 │  │  ├── resources.py (6 resources + 4 templates) │
 │  │  ├── interactive_tools.py (2 save tools)   │  │
 │  │  ├── saved_search_tools.py (3 tools)      │  │
@@ -504,11 +518,11 @@ For remote libraries, use Zotero's authenticated HTTPS Web API, or place a purpo
 
 Zotero 10+ changed the Local API substantially. The platform now supports
 authorized item, collection, and saved-search writes, tag deletion, full-text
-writes, and full file uploads. Keeper 2.1 exposes a deliberately constrained
+writes, and full file uploads. Keeper 2.2 exposes a deliberately constrained
 subset rather than handing an unscoped key and arbitrary API paths to an AI
 client.
 
-| Interface | Scope | Authentication | Keeper 2.1 use |
+| Interface | Scope | Authentication | Keeper 2.2 use |
 |-----------|-------|----------------|----------------|
 | **Local API v3** `/api/...` | Same-machine library reads; Zotero 10+ writes | Reads are unauthenticated; writes require runtime user approval | Reads on Zotero 7–10+; guarded writes on 10+ |
 | **Connector API** `/connector/...` | Browser-connector save flows | Local interface | Backward-compatible create/import path, including Zotero 7–9 |
@@ -526,19 +540,20 @@ all be repeated. A changed database or stale cursor returns `412` and is never
 silently overwritten; missing identity/preconditions (`428`) and invalid
 authorization (`401`) also fail closed.
 
-Keeper 2.1 now supports the previously blocked high-value workflows:
+Keeper 2.2 maps every My Library write family to explicit, task-oriented
+workflows while retaining safer cross-version Connector imports:
 
 - create a top-level or nested collection;
-- add existing items to a confirmed collection while preserving all current memberships;
-- update approved metadata on an existing item and create child notes;
-- create saved searches;
-- attach a local file to an existing item with Zotero's three-phase upload;
-- provide indexed text for an attachment; and
+- add or remove collection memberships while preserving all other memberships;
+- update approved metadata, create child notes, and delete one exact item;
+- create, update, or delete saved searches and delete exact tags in batches;
+- attach a new file or replace an existing stored attachment with Zotero's three-phase upload;
+- provide indexed text for one attachment or a batch of up to ten; and
 - obtain attachment paths through the official Local API instead of guessing the Zotero data directory.
 
-General deletion, arbitrary raw PATCH, duplicate merging, annotation editing,
-and group-library writes are not exposed as public Keeper tools in this release.
-Use Zotero's UI for destructive maintenance. See
+Arbitrary raw requests, unrestricted structural-array replacement, duplicate
+merging, annotation editing, batch object deletion, and group-library writes
+remain outside the public surface. See
 [docs/ZOTERO_LOCAL_API.md](docs/ZOTERO_LOCAL_API.md) for the complete platform
 matrix and Keeper's narrower safety contract.
 

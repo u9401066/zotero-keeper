@@ -1,9 +1,19 @@
 # MCP Tools Reference
 
-Complete reference for all 32 default MCP tools exposed by Zotero Keeper 2.1.0
+Complete reference for all 41 default MCP tools exposed by Zotero Keeper 2.2.0
 on MCP SDK v2, plus five legacy opt-in tools.
 
+For a visual feature overview, start with the
+[Zotero Keeper site](https://u9401066.github.io/zotero-keeper/); use this page
+for exact schemas and safety contracts.
+
 > **Tip**: Most read operations can also be performed via [MCP Resources](../README.md#-mcp-resources-browsable-data) (e.g. `zotero://collections`) without calling a tool.
+
+> **Companion server**: VSIX 0.8.0 pins PubMed Search MCP 0.6.3 at
+> [`febf53a`](https://github.com/u9401066/pubmed-search-mcp/commit/febf53a8ff1ee253a625869ba251365f73a23c68).
+> Its SearchRun journal, `systematic` / `native_semantic` search modes, and
+> Research Chronicle artifacts are documented on the separate
+> [PubMed Search MCP site](https://u9401066.github.io/pubmed-search-mcp/).
 
 ---
 
@@ -93,8 +103,12 @@ Retrieve full metadata for a single Zotero item by its key.
 **Returns**: Full item metadata including the response-bound `server_id`, object
 `version`, `version_scope: "local"`, abstract, DOI, authors, journal, year, tags,
 and collections. The identity and object version come from the same HTTP
-response snapshot; use that pair for `update_item_fields` and never combine a
-version with a separately cached identity.
+response snapshot; use that pair for `update_item_fields` or `delete_item` and
+never combine a version with a separately cached identity.
+
+For an attachment target, the exact response also exposes `md5`, `linkMode`,
+`filename`, and `contentType`. Use its response-bound `version`, `md5`, and
+`server_id` together when previewing `replace_attachment_file`.
 
 **Example prompt**: *"Show me the abstract for key:ABC12345"*
 
@@ -119,7 +133,8 @@ List recent items in the library or a specific collection.
 
 ### `list_tags`
 
-List all tags used in the Zotero library with usage counts.
+List tag names used in the Zotero library. The response includes the total
+count and returns at most the first 100 names.
 
 **Parameters**: none
 
@@ -127,12 +142,14 @@ List all tags used in the Zotero library with usage counts.
 ```json
 {
   "count": 42,
-  "tags": [
-    { "tag": "AI", "count": 15 },
-    { "tag": "review", "count": 8 }
-  ]
+  "library_version": 314,
+  "server_id": "current-zotero-instance-id",
+  "tags": ["AI", "review"]
 }
 ```
+
+`library_version` and `server_id` are the response-bound cursor pair required
+to preview `delete_tags`. Do not combine either value with another read.
 
 **Example prompt**: *"What tags have I used in my library?"*
 
@@ -298,7 +315,9 @@ List all saved searches defined in Zotero.
 
 **Parameters**: none
 
-**Returns**: List of saved searches with keys, names, and condition counts.
+**Returns**: List of saved searches with keys, names, and conditions. Before an
+update or delete, call `get_saved_search_details` for the exact response-bound
+object version and `server_id`.
 
 **Equivalent resource**: `zotero://searches`
 
@@ -334,6 +353,10 @@ Get the conditions/criteria defined in a saved search.
 | `search_key` | `str` | required | Saved search key |
 
 **Equivalent resource**: `zotero://searches/{key}`
+
+**Returns**: The exact saved-search definition with its local object version and
+the `server_id` from that same response. Use the pair for
+`update_saved_search` or `delete_saved_search`.
 
 **Example prompt**: *"What conditions are in the 'Unread' saved search?"*
 
@@ -568,6 +591,7 @@ List all attachments (PDFs, snapshots, etc.) for a Zotero item.
       "file_path_source": "local_api",
       "version": 42,
       "object_version": 42,
+      "md5": "4fa38e3f2c360ca181e633d02bab91f5",
       "server_id": "current-zotero-instance-id",
       "link_mode": "imported_file"
     }
@@ -576,8 +600,9 @@ List all attachments (PDFs, snapshots, etc.) for a Zotero item.
 ```
 
 `library_version` and `server_id` form the response-bound cursor pair for
-`set_attachment_fulltext`. The per-attachment `object_version` is for object
-metadata operations and must not be substituted for that library cursor.
+single/batch full-text writes. The per-attachment `object_version` and `md5`
+bind a `replace_attachment_file` preview and must not be substituted for that
+library cursor.
 
 **Example prompt**: *"Does key:X42A7DEE have a PDF attached?"*
 
@@ -618,17 +643,18 @@ that pair into the preview of `set_attachment_fulltext`.
 
 ## Zotero 10+ Local Write Tools
 
-These eight tools use Zotero 10+'s official [Local API v3](https://www.zotero.org/support/dev/web_api/v3/local_api). Zotero 7–9 continue to support Keeper's read and Connector-based save/import tools, but calls to this section's Local write surface return `unsupported_local_write`.
+These 17 tools use Zotero 10+'s official [Local API v3](https://www.zotero.org/support/dev/web_api/v3/local_api). Zotero 7–9 continue to support Keeper's read and Connector-based save/import tools, but calls to this section's Local write surface return `unsupported_local_write`.
 
 ### Confirmation and authorization workflow
 
-For each of the seven mutation tools:
+For each of the 16 mutation tools:
 
 1. Obtain a response-bound `server_id` from an exact Local API read or from
-   `authorize_local_writes`. For `update_item_fields`, obtain the response-bound
-   object version from the exact-item read. For `set_attachment_fulltext`,
-   obtain the response-bound library cursor from `get_item_attachments` or
-   `get_item_fulltext`.
+   `authorize_local_writes`. For an update or single-object delete, obtain the
+   response-bound object version from the exact-object read. For `delete_tags`
+   and single/batch full-text writes, obtain the response-bound library cursor.
+   File replacement additionally requires the old MD5 from the same exact
+   attachment snapshot.
 2. Call the mutation with `confirm=false` and include that identity as
    `expected_server_id` (and the relevant version cursor). This performs **zero
    Zotero reads, authorization requests, filesystem probes, or writes**.
@@ -636,7 +662,8 @@ For each of the seven mutation tools:
    identity and version cursor.
 4. If authorization is still needed, call
    `authorize_local_writes(require_remembered=false)`. Before
-   `attach_file_to_item`, use `require_remembered=true`; Zotero must grant
+   `attach_file_to_item` or `replace_attachment_file`, use
+   `require_remembered=true`; Zotero must grant
    **Always Allow** because the upload spans multiple writes. If authorization
    returns a different identity, discard the proposal, reread, preview again,
    and obtain new approval.
@@ -647,16 +674,16 @@ The runtime Local API key is retained only in the Keeper process. It is never
 an MCP input and never appears in a tool result. Every confirmed mutation
 requires its reviewed response-bound `expected_server_id`; identity cannot be
 added only after preview. A missing server precondition is reported as HTTP
-428, while a changed server or stale version cursor is reported as HTTP 412.
+428, while a changed server, stale version cursor, or stale file MD5 is reported
+as HTTP 412.
 Keeper does not retry a 412 write.
 
 All mutation tools are annotated `readOnlyHint=false` and `openWorldHint=false`.
-The two replacement-style operations, `update_item_fields` and
-`set_attachment_fulltext`, honestly advertise `destructiveHint=true`; the
-additive create/organize/upload tools advertise `false`. The collection,
-metadata, and full-text update tools are idempotent; create/upload tools and
-authorization are not. Keeper 2.1.0 deliberately exposes no raw delete MCP
-tool.
+Destructive delete/replacement tools advertise `destructiveHint=true`; additive
+create/organize tools advertise `false`. Idempotence metadata follows each
+operation's actual replay behavior. Keeper 2.2.0 exposes only dedicated,
+bounded mutation tools: no raw endpoint, arbitrary structural replacement,
+batch item/collection/saved-search delete, or group-library write surface.
 
 The common preview shape is:
 
@@ -687,7 +714,7 @@ Requests Zotero's own runtime write-authorization dialog through `POST /api/loca
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `require_remembered` | `bool` | `False` | Require reusable **Always Allow** authorization; set `True` before `attach_file_to_item` |
+| `require_remembered` | `bool` | `False` | Require reusable **Always Allow** authorization; set `True` before `attach_file_to_item` or `replace_attachment_file` |
 
 **Returns**:
 
@@ -744,6 +771,88 @@ With `confirm=true`, Keeper first completes every destination/item read and exac
 
 ---
 
+### `remove_items_from_collection`
+
+```python
+remove_items_from_collection(item_keys, collection_key, confirm=False, expected_server_id=None)
+```
+
+Remove one exact collection membership from between one and 50 items.
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `item_keys` | `list[str]` | required | One to 50 exact eight-character item keys; duplicates are coalesced |
+| `collection_key` | `str` | required | Exact eight-character membership to remove |
+| `confirm` | `bool` | `False` | `False` previews only; `True` performs the confirmed batch update |
+| `expected_server_id` | `str` | `None` | Response-bound Zotero identity included in the approved preview; required for preview and execution |
+
+On confirmation, Keeper validates the collection, rereads every exact item,
+removes only `collection_key` from each item's complete `collections` array,
+and preserves every other membership. Each changed entry carries the object
+version from that just-completed read into one bounded batch POST. Items without
+the membership are `unchanged`; mixed results are reported in input order. An
+item can become unfiled if this was its only membership. A 412 is not retried.
+
+---
+
+### `update_collection`
+
+```python
+update_collection(
+    collection_key,
+    expected_version,
+    name=None,
+    parent_collection_key=None,
+    move_to_library_root=False,
+    confirm=False,
+    expected_server_id=None,
+)
+```
+
+Rename and/or move one exact collection through a constrained update.
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `collection_key` | `str` | required | Exact eight-character collection key |
+| `expected_version` | `int` | required | Object version from the fresh exact-collection response |
+| `name` | `str` | `None` | New non-empty name; `None` leaves the name unchanged |
+| `parent_collection_key` | `str` | `None` | Exact new parent key; `None` leaves the parent unchanged |
+| `move_to_library_root` | `bool` | `False` | Explicitly make the collection top-level; mutually exclusive with `parent_collection_key` |
+| `confirm` | `bool` | `False` | `False` previews only; `True` performs the confirmed update |
+| `expected_server_id` | `str` | `None` | `server_id` paired with `expected_version`; required for preview and execution |
+
+At least one change must be supplied. On confirmation, Keeper rereads the exact
+collection, requires the current version to equal `expected_version`, and
+validates a supplied parent before updating only the approved name/parent
+fields. `move_to_library_root=True` is the only way to clear an existing parent;
+the tool is not an arbitrary collection-object replacement. HTTP 412 is not
+retried.
+
+---
+
+### `delete_collection`
+
+```python
+delete_collection(collection_key, expected_version, confirm=False, expected_server_id=None)
+```
+
+Delete one exact collection object.
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `collection_key` | `str` | required | Exact eight-character collection key |
+| `expected_version` | `int` | required | Object version from the fresh exact-collection response |
+| `confirm` | `bool` | `False` | `False` previews the destructive target; `True` performs the delete |
+| `expected_server_id` | `str` | `None` | `server_id` paired with `expected_version`; required for preview and execution |
+
+The confirmed call rereads the same collection and requires an exact object
+version match before issuing the single-object DELETE. It deletes the
+collection object, not its library items. This is not a batch
+collection delete and cannot accept multiple keys. A changed version or
+identity returns 412 and starts a fresh read/preview/approval workflow.
+
+---
+
 ### `update_item_fields`
 
 ```python
@@ -761,6 +870,30 @@ Patch safe scalar metadata on one exact bibliographic parent item.
 | `expected_server_id` | `str` | `None` | `server_id` paired with `expected_version` in that exact-item response; required for preview and execution |
 
 The tool rejects child notes, attachments, and annotations. It also rejects structural or sensitive fields including `key`, `version`, `itemType`, `collections`, `tags`, `creators`, `relations`, `parentItem`, `deleted`, `dateAdded`, `dateModified`, `linkMode`, `filename`, `contentType`, `charset`, `md5`, `mtime`, and `note`. Use a dedicated safe tool for structure. A stale version returns `version_conflict` with HTTP 412 and no retry.
+
+---
+
+### `delete_item`
+
+```python
+delete_item(item_key, expected_version, confirm=False, expected_server_id=None)
+```
+
+Permanently delete one exact Zotero item. The target may be a bibliographic
+item, note, attachment, or annotation, so review its type and parent/children
+from the exact read before approving the key/version proposal.
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `item_key` | `str` | required | Exact eight-character key of the single item to delete |
+| `expected_version` | `int` | required | Object version from the fresh exact-item response |
+| `confirm` | `bool` | `False` | `False` previews the permanent delete; `True` performs it |
+| `expected_server_id` | `str` | `None` | `server_id` paired with `expected_version`; required for preview and execution |
+
+The confirmed call rereads the exact target and requires its current object
+version to equal the approved `expected_version`. Keeper issues only a
+single-object DELETE; it does not expose Zotero's batch item-delete endpoint.
+Neither a 412 nor an ambiguous timeout is automatically replayed.
 
 ---
 
@@ -802,6 +935,85 @@ Each condition requires scalar `condition`, `operator`, and `value` fields. Opti
 
 ---
 
+### `update_saved_search`
+
+```python
+update_saved_search(
+    search_key,
+    expected_version,
+    name=None,
+    conditions=None,
+    confirm=False,
+    expected_server_id=None,
+)
+```
+
+Change the name and/or complete condition list of one exact saved search.
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `search_key` | `str` | required | Exact eight-character saved-search key |
+| `expected_version` | `int` | required | Object version from `get_saved_search_details`' exact response |
+| `name` | `str` | `None` | New non-empty name; `None` leaves it unchanged |
+| `conditions` | `list[dict]` | `None` | New non-empty complete condition list; `None` leaves it unchanged |
+| `confirm` | `bool` | `False` | `False` previews only; `True` performs the confirmed update |
+| `expected_server_id` | `str` | `None` | `server_id` paired with `expected_version`; required for preview and execution |
+
+At least one of `name` or `conditions` is required. Each condition requires
+scalar `condition`, `operator`, and `value`; only boolean `required` and string
+`mode` are accepted as optional fields. On confirmation, Keeper rereads the
+exact search and requires the current object version to match. This dedicated
+tool cannot replace arbitrary saved-search fields, and a 412 is not retried.
+
+---
+
+### `delete_saved_search`
+
+```python
+delete_saved_search(search_key, expected_version, confirm=False, expected_server_id=None)
+```
+
+Delete one exact saved-search definition.
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `search_key` | `str` | required | Exact eight-character saved-search key |
+| `expected_version` | `int` | required | Object version from the fresh exact-search response |
+| `confirm` | `bool` | `False` | `False` previews the destructive target; `True` performs the delete |
+| `expected_server_id` | `str` | `None` | `server_id` paired with `expected_version`; required for preview and execution |
+
+The confirmed call rereads the exact search and requires an exact version
+match before issuing a single-object DELETE. It does not delete matching items
+and does not expose Zotero's batch saved-search deletion endpoint. HTTP 412 is
+returned without retry.
+
+---
+
+### `delete_tags`
+
+```python
+delete_tags(tags, expected_library_version, confirm=False, expected_server_id=None)
+```
+
+Delete between one and 50 exact tag names across the current user's library.
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `tags` | `list[str]` | required | One to 50 non-empty tag names; duplicates are coalesced in input order |
+| `expected_library_version` | `int` | required | Response-bound library cursor from `list_tags`; not any item's object version |
+| `confirm` | `bool` | `False` | `False` previews the library-wide tag deletion; `True` performs it |
+| `expected_server_id` | `str` | `None` | `server_id` paired with the library cursor; required for preview and execution |
+
+Deleting a tag removes that tag from every item that uses it; it does not
+delete those items. Names containing the reserved `||` delimiter are rejected.
+Keeper rereads the response-bound library cursor, requires
+it to equal `expected_library_version`, and sends one official
+`DELETE /api/users/0/tags?tag=a||b` with
+`If-Unmodified-Since-Version`. A changed cursor or Server-ID returns 412 and is
+never retried.
+
+---
+
 ### `attach_file_to_item`
 
 ```python
@@ -820,7 +1032,44 @@ Upload a stored local file beneath an exact existing bibliographic parent.
 
 After confirmation, Keeper verifies the file and parent, creates the attachment object, authorizes the file with MD5/name/size/mtime and a version precondition, uploads bytes to the loopback upload URL, and finalizes the attachment. This implements Zotero's official [three-phase file upload](https://www.zotero.org/support/dev/web_api/v3/file_upload). Local uploads are stored files under 4 GB; the Local API does not provide binary-diff uploads.
 
-Call `authorize_local_writes(require_remembered=true)` before this tool and grant **Always Allow** in Zotero. If a later upload phase fails after the attachment child was created, the structured error can include `partial=true` and `attachment_key`, allowing explicit cleanup in the Zotero UI. No raw delete tool is exposed.
+Call `authorize_local_writes(require_remembered=true)` before this tool and grant **Always Allow** in Zotero. If a later upload phase fails after the attachment child was created, the structured error can include `partial=true` and `attachment_key`. Cleanup must be a new, explicit Zotero UI action or a separately read, previewed, and approved `delete_item` call; Keeper never auto-deletes the partial object.
+
+---
+
+### `replace_attachment_file`
+
+```python
+replace_attachment_file(
+    attachment_key,
+    file_path,
+    expected_version,
+    expected_md5,
+    confirm=False,
+    expected_server_id=None,
+)
+```
+
+Replace the binary of one existing stored attachment with a full local file.
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `attachment_key` | `str` | required | Exact eight-character key of an `imported_file` or `imported_url` attachment |
+| `file_path` | `str` | required | Replacement file on the same machine as Keeper and Zotero Desktop |
+| `expected_version` | `int` | required | Object version from the fresh exact-attachment response |
+| `expected_md5` | `str` | required | 32-character previous MD5 from that same attachment response; normalized to lowercase |
+| `confirm` | `bool` | `False` | `False` previews without probing the file; `True` performs the full replacement |
+| `expected_server_id` | `str` | `None` | `server_id` paired with the version/MD5; required for preview and execution |
+
+Before calling this tool, use
+`authorize_local_writes(require_remembered=true)` and choose **Always Allow**.
+On confirmation, Keeper rereads the attachment, verifies its type, stored-file
+link mode, exact object version, and old MD5, and then validates and hashes the
+replacement file. The upload-authorization and registration phases both carry
+`If-Match: <expected_md5>`. The intermediate byte upload is constrained to the
+loopback upload URL and carries neither the Local API key nor Server-ID. This is
+a full replacement under 4 GB, not a binary-diff PATCH or arbitrary attachment
+metadata update. A 412, MD5 mismatch, ambiguous timeout, or partial failure is
+reported without retry.
 
 ---
 
@@ -858,6 +1107,54 @@ cursor pair and the exact attachment target, then uses bulk
 `POST /api/users/0/fulltext` with `If-Unmodified-Since-Version`. A stale library
 cursor or changed identity returns HTTP 412 without a write or retry. This sets
 Zotero's searchable index content and does not replace the attachment binary.
+
+---
+
+### `set_attachment_fulltexts`
+
+```python
+set_attachment_fulltexts(
+    entries,
+    expected_library_version,
+    confirm=False,
+    expected_server_id=None,
+)
+```
+
+Write indexed text for between one and 10 exact attachments in one official
+bulk full-text request.
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `entries` | `list[dict]` | required | One to 10 distinct attachment entries, in result order |
+| `expected_library_version` | `int` | required | Response-bound library cursor from `get_item_attachments` or `get_item_fulltext` |
+| `confirm` | `bool` | `False` | `False` previews every complete entry; `True` performs the confirmed bulk write |
+| `expected_server_id` | `str` | `None` | `server_id` paired with the library cursor; required for preview and execution |
+
+Each entry has this constrained shape:
+
+```json
+{
+  "attachment_key": "NHZFE5A7",
+  "content": "Indexed text...",
+  "indexed_pages": 12,
+  "total_pages": 12
+}
+```
+
+`attachment_key` must be exact and unique, and `content` must be a non-empty string.
+Supply exactly one complete count pair per entry:
+`indexed_pages`/`total_pages` for paged content or
+`indexed_chars`/`total_chars` for character-counted content. Counts are
+non-negative integers and the indexed count cannot exceed the total.
+
+On confirmation, Keeper validates every exact attachment, rereads the
+response-bound library cursor, and sends one
+`POST /api/users/0/fulltext` with `If-Unmodified-Since-Version`. The result
+preserves input order and reports each entry as updated or failed; a mixed
+response is `partial=true`. A cursor/identity 412 and per-entry failures are
+never retried. This replaces only Zotero's searchable index content, not the
+attachment binaries.
 
 ---
 

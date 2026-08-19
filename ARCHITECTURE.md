@@ -1,7 +1,7 @@
 # Architecture Documentation
 
-This document describes Zotero Keeper 2.1.0, the 32-tool MCP SDK v2 server
-bundled by the v0.7.0 VSIX for safe local Zotero library management.
+This document describes Zotero Keeper 2.2.0, the 41-tool MCP SDK v2 server
+bundled by the v0.8.0 VSIX for safe local Zotero library management.
 
 ---
 
@@ -32,7 +32,7 @@ bundled by the v0.7.0 VSIX for safe local Zotero library management.
 │          └───────────────────┼───────────────────┘                        │
 │                              │                                            │
 │                              │ MCP Protocol (stdio)                       │
-│                              │ ├── Tools (32 default + 5 legacy opt-in)   │
+│                              │ ├── Tools (41 default + 5 legacy opt-in)   │
 │                              │ ├── Resources (6 + 4 URI templates)        │
 │                              │ └── Elicitation (interactive input)        │
 │                              ▼                                            │
@@ -43,7 +43,7 @@ bundled by the v0.7.0 VSIX for safe local Zotero library management.
 │  │  │  ├── server.py (connection tool + setup)                     │  │   │
 │  │  │  ├── basic_read_tools.py (5 tools)                           │  │   │
 │  │  │  ├── collection_tools.py (5 tools)                           │  │   │
-│  │  │  ├── local_api_tools.py (8 guarded Zotero 10+ tools)        │  │   │
+│  │  │  ├── local_api_tools.py (17 guarded Zotero 10+ tools)       │  │   │
 │  │  │  ├── interactive_tools.py (2 tools + elicitation)            │  │   │
 │  │  │  ├── saved_search_tools.py (3 tools)                         │  │   │
 │  │  │  ├── search_tools.py (2 public + 1 legacy tool)              │  │   │
@@ -80,7 +80,7 @@ bundled by the v0.7.0 VSIX for safe local Zotero library management.
 
 Zotero Keeper is designed to work alongside `pubmed-search-mcp` for a complete literature workflow:
 
-The v0.7.0 VSIX pins Keeper 2.1.0 and PubMed Search MCP 0.6.1 at commit `ad85dde`. PubMed contributes 45 MCP SDK v2 tools across 16 categories. Research history is persisted through `build_research_chronicle` and `read_research_chronicle`; those two tools replace the former three-tool timeline surface.
+The v0.8.0 VSIX pins Keeper 2.2.0 and PubMed Search MCP 0.6.3 at release commit `febf53a`. PubMed contributes 45 MCP SDK v2 tools across 16 categories, including governed SearchRun status/replay, bounded systematic and native-semantic modes, and the two-tool Research Chronicle surface.
 
 ```
 ┌────────────────────────────┐    ┌────────────────────────────┐
@@ -205,7 +205,7 @@ src/zotero_mcp/
 │   │   ├── server.py           # Connection tool + server setup
 │   │   ├── basic_read_tools.py # 5 read tools
 │   │   ├── collection_tools.py # 5 collection tools
-│   │   ├── local_api_tools.py # 8 guarded Zotero 10+ write tools
+│   │   ├── local_api_tools.py # 17 guarded Zotero 10+ write tools
 │   │   ├── resources.py        # 6 resources + 4 URI templates
 │   │   ├── interactive_tools.py # 2 save tools with elicitation
 │   │   ├── saved_search_tools.py # 3 saved search tools
@@ -264,7 +264,7 @@ class ZoteroKeeperServer:
     def __init__(self, config: ZoteroMcpConfig = None):
         self._mcp = MCPServer(
             name="zotero-keeper",
-            version="2.1.0",
+            version="2.2.0",
             instructions="Zotero library management and import",
         )
         self._zotero = ZoteroClient(config.zotero)
@@ -327,17 +327,18 @@ overwriting a newer local transaction.
 |----------|---------|------------|
 | `/api/` | GET | Discover API/schema version and Server-ID without prompting |
 | `/api/local/authorize` | POST | Runtime user authorization; key remains private in memory |
-| `/api/users/0/items[/<key>]` | GET/POST/PATCH | Reads, guarded item/note creation, scalar update, batch organization |
-| `/api/users/0/collections[/<key>]` | GET/POST | Reads and confirmed nested collection creation |
-| `/api/users/0/searches[/<key>][/items]` | GET/POST | Saved-search reads/execution and creation |
+| `/api/users/0/items[/<key>]` | GET/POST/PATCH/DELETE | Reads, guarded note creation, scalar update, exact delete, batch organization |
+| `/api/users/0/collections[/<key>]` | GET/POST/PATCH/DELETE | Reads and confirmed collection create/update/move/delete |
+| `/api/users/0/searches[/<key>][/items]` | GET/POST/PATCH/DELETE | Saved-search reads/execution and confirmed lifecycle operations |
+| `/api/users/0/tags` | GET/DELETE | Read tags and delete exact names with a library cursor |
 | `/api/users/0/items/<key>/file/view/url` | GET | Official local attachment path discovery |
-| `/api/users/0/items/<key>/file` | POST | Three-phase stored-file upload |
+| `/api/users/0/items/<key>/file` | POST | Three-phase stored-file creation or MD5-guarded replacement |
 | `/api/users/0/items/<key>/fulltext` | GET | Indexed full-text read and response-bound library cursor |
 | `/api/users/0/fulltext` | POST | Bulk full-text replacement with `If-Unmodified-Since-Version` library cursor |
 
-The client layer implements versioned delete/update primitives for contract
-coverage, but the MCP surface intentionally does not expose arbitrary raw CRUD
-or general deletion.
+The MCP layer exposes task-oriented, versioned lifecycle operations but no
+arbitrary raw endpoint, unrestricted structural-array replacement, batch object
+deletion, or group-library write surface.
 
 ### Zotero Connector compatibility path
 
@@ -426,8 +427,9 @@ AI Agent
 ```text
 response-bound Local API read or authorize
   ├── Zotero-Server-ID
-  ├── exact object version (metadata update), or
-  └── library cursor (full-text replacement)
+  ├── exact object version (update or single-object delete),
+  ├── library cursor (tag or full-text batch), or
+  └── attachment version + previous MD5 (stored-file replacement)
         │
         ▼
 MCP mutation (confirm=false, expected_server_id=...)
@@ -452,8 +454,10 @@ same MCP mutation (confirm=true, unchanged proposal)
 ```
 
 One-shot authorizations and mutations are serialized. Multi-phase attachment
-uploads require an Always Allow authorization; upload bytes are sent only to a
-validated loopback `/api/local/uploads/<key>` URL, without the API-key header.
+creation and replacement require an Always Allow authorization; replacement
+uses the same reviewed MD5 as `If-Match` for authorization and registration.
+Upload bytes are sent only to a validated loopback
+`/api/local/uploads/<key>` URL, without the API-key header.
 
 ---
 
@@ -496,7 +500,7 @@ The 6 original smart tools were redundant with `interactive_save`/`quick_save`. 
   `Elicit(...)`, without relying on a direct context backchannel
 - Explicit resources and resource-template discovery
 
-MCP SDK 2.0 is intentionally incompatible with the old 1.x `FastMCP` interface. Keeper 2.1.0 and PubMed Search MCP 0.6.1 therefore share one SDK v2 runtime in the extension-managed environment.
+MCP SDK 2.0 is intentionally incompatible with the old 1.x `FastMCP` interface. Keeper 2.2.0 and PubMed Search MCP 0.6.3 therefore share one SDK v2 runtime in the extension-managed environment.
 
 ---
 
@@ -533,8 +537,8 @@ loopback.
    - Bind every confirmed mutation to the response-bound Server-ID included in
      its approved preview; a changed authorization identity requires a fresh
      read, preview, and approval
-   - Pair object versions and full-text library cursors with the identity from
-     the same response; never add identity after preview
+   - Pair object versions, tag/full-text library cursors, and attachment MD5s
+     with the identity from the same response; never add identity after preview
 
 2. **Data Validation**: All input validated before sending to Zotero
    - Required field checks
@@ -552,12 +556,12 @@ loopback.
 1. **Multi-Library Support**: Support for group libraries
 2. **Caching Layer**: Cache frequently accessed data
 3. **WebSocket**: Real-time updates when Zotero changes
-4. **Attachment Handling**: broader annotation and replacement workflows; the
-   core existing-item full upload is delivered in 2.1
+4. **Attachment Handling**: broader annotation workflows; creation and
+   replacement of stored files are delivered in 2.2
 5. **Optional Zotero Plugin**: annotations, real-time events, Zotero-native UI,
    selected internal-only operations, and a possible Zotero 7–9 write fallback.
    Zotero 10+ basic CRUD and stored-file upload no longer require a plugin.
 
 ---
 
-*Last updated: August 12, 2026 (Keeper 2.1.0 / MCP SDK v2)*
+*Last updated: August 19, 2026 (Keeper 2.2.0 / MCP SDK v2)*

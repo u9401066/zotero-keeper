@@ -52,13 +52,21 @@
 - [x] 以三段 commits 推送 `main`，並發布 VSIX `0.7.0` / Keeper `2.1.0` / PubMed
   `0.6.1` 的 `v0.7.0-ext`；tag workflow、GitHub Release、Marketplace publish 與
   公開 VSIX checksum 驗證完成 (2026-08-12)
+- [x] 將 PubMed Search MCP 固定至正式 v0.6.3 release commit `febf53a`，
+  同步 SearchRun/systematic/Chronicle skills 與 hooks (2026-08-19)
+- [x] 稽核 Zotero 10 Local API 寫入類別，擴充為 17 個 guarded tools /
+  41 個 default tools，並修正 multi-tag delete contract (2026-08-19)
+- [x] 新增 Keeper-only GitHub Pages 功能網站；PubMed 仅連結其獨立站
+  (2026-08-19)
 
 ## Doing
-目前沒有進行中的發布工作。
+正在完成 Keeper 2.2.0 / VSIX 0.8.0 的全套測試、網站 QA 與可重現
+VSIX 封裝。
 
 ## Next
-- [ ] 監看 `0.7.0` 的 Zotero 10+ authorization、Server-ID 與三階段 upload 回饋
-- [ ] 保持 PubMed `0.6.1` fixed-source pin 與雙 server SDK v2 相容性 smoke
+- [ ] 發布 `v0.8.0-ext` 前先在 GitHub Settings 啟用 Pages / GitHub Actions
+- [ ] 監看 `0.8.0` 的 Local API destructive confirmation 與 file replacement 回饋
+- [ ] 保持 PubMed `0.6.3` fixed-source pin 與雙 server SDK v2 相容性 smoke
 
 ## Blocked
 - [ ] 無

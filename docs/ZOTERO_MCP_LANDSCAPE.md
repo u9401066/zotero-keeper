@@ -1,6 +1,6 @@
 # Zotero MCP Landscape
 
-> Status checked: 2026-08-12. This document distinguishes project ownership from registry or connector distribution.
+> Status checked: 2026-08-19. This document distinguishes project ownership from registry or connector distribution.
 
 ## Short answer
 
@@ -12,7 +12,7 @@ We did not find a Zotero-organization repository or Zotero documentation that pu
 
 | Surface | Ownership / status | Verified positioning | Installation boundary |
 |---------|--------------------|----------------------|-----------------------|
-| Zotero Keeper 2.1.0 | This repository | Local Zotero workflow with 32 default tools and 6 concrete resources: reads, fail-closed Connector imports, and eight confirmed/authorized Zotero 10+ mutations without a raw delete tool | Installed with PubMed Search MCP 0.6.1 in the v0.7.0 VSIX managed environment |
+| Zotero Keeper 2.2.0 | This repository | Local Zotero workflow with 41 default tools and 6 concrete resources: reads, fail-closed Connector imports, and 17 confirmed/authorized Zotero 10+ task tools without a raw API escape hatch | Installed with PubMed Search MCP 0.6.3 in the v0.8.0 VSIX managed environment |
 | `54yyyu/zotero-mcp` | Community project; MCP Registry-listed | Its own documentation describes library/collection/tag browsing, metadata and full-text access, semantic search, annotations and notes, adding records/files, and library-maintenance operations. Consult that project for its current tool contract | Must use a separate virtual environment and MCP process from Keeper |
 | OpenAI-curated Zotero connector | Curated connector product; not a Zotero-organization server | Treat only its installed, discoverable connector contract as authoritative | Configure independently; do not assume its tools match either Python server |
 | Zotero Web API | Official Zotero HTTPS API | Authenticated remote library access and supported CRUD operations | Preferred foundation for remote access |
@@ -28,22 +28,22 @@ Use two isolated environments and two MCP server definitions:
 ```text
 VS Code / MCP client
 ├─ Zotero Keeper process
-│  └─ VSIX-managed venv: Keeper 2.1.0 + PubMed Search MCP 0.6.1
+│  └─ VSIX-managed venv: Keeper 2.2.0 + PubMed Search MCP 0.6.3
 └─ Optional community Zotero MCP process
    └─ separate venv owned by that project
 ```
 
 Do not add the community distribution to the VSIX-managed environment. Reinstalling or upgrading either project in the shared environment could silently change which `zotero_mcp` module starts.
 
-## What the v0.7.0 VSIX guarantees
+## What the v0.8.0 VSIX guarantees
 
-- Zotero Keeper 2.1.0 on `mcp>=2.0,<3`, using the SDK v2 `MCPServer` API.
-- 32 default Keeper tools and 6 concrete resources; four parameterized resource templates are advertised separately.
+- Zotero Keeper 2.2.0 on `mcp>=2.0,<3`, using the SDK v2 `MCPServer` API.
+- 41 default Keeper tools and 6 concrete resources; four parameterized resource templates are advertised separately.
 - Fail-closed collection routing: exact-key or double-confirmed `ROOT` for `interactive_save`, and explicit `allow_library_root=true` after user confirmation for non-interactive root saves.
-- Eight Zotero 10+ Local API tools: `authorize_local_writes` plus seven narrow mutations. Each preview already carries a response-bound `expected_server_id`; `confirm=false` has zero Zotero interactions, runtime keys never cross MCP, and no raw delete tool is exposed.
-- Every confirmed mutation uses the Server-ID from its approved preview. Metadata updates use response-bound object versions; full-text replacement uses a response-bound library cursor and bulk `POST /api/users/0/fulltext`. HTTP 412 conflicts are surfaced and never retried automatically.
-- Official three-phase stored-file upload for attaching a file to an existing parent, and `/items/{key}/file/view/url` path discovery with a `ZOTERO_DATA_DIR` fallback.
-- PubMed Search MCP 0.6.1 pinned to commit `ad85dde`, with 45 tools in 16 categories.
+- Seventeen Zotero 10+ Local API tools: `authorize_local_writes` plus 16 narrow mutations. Each preview already carries a response-bound `expected_server_id`; `confirm=false` has zero Zotero interactions and runtime keys never cross MCP.
+- Every confirmed mutation uses the Server-ID from its approved preview. Exact updates/single deletes use response-bound object versions; tag/full-text batches use a library cursor; stored-file replacement also binds the previous MD5. HTTP 412 conflicts are surfaced and never retried automatically.
+- Official three-phase stored-file creation and replacement, plus `/items/{key}/file/view/url` path discovery with a `ZOTERO_DATA_DIR` fallback.
+- PubMed Search MCP 0.6.3 pinned to release commit `febf53a`, with 45 tools in 16 categories.
 - `build_research_chronicle` and `read_research_chronicle` in place of the former three timeline tools.
 - An isolated Python 3.12 environment. MCP SDK 1.x and 2.x are not mixed.
 
@@ -58,12 +58,12 @@ The separately published PyPI/`uvx` package can remain on an older release line.
 | Authorized Local API write tools | Not available | Supported |
 | Attachment path discovery | `ZOTERO_DATA_DIR` fallback | Official file-view URL, then fallback |
 
-The official Zotero 10+ Local API can POST/PUT/PATCH/DELETE items, collections, and saved searches, write full text, and upload stored files. Keeper exposes a deliberately narrower, confirmation-gated task surface: create a collection/note/saved search, add collection membership, update safe scalar metadata, attach a file, and set indexed full text. Metadata/full-text replacement is accurately marked destructive in MCP annotations, while generic requests and delete tools remain unexposed. API capability does not imply that Keeper provides the full raw API through MCP.
+The official Zotero 10+ Local API can POST/PUT/PATCH/DELETE items, collections, and saved searches, delete tags, write full text, and upload stored files. Keeper maps the common My Library workflows to a narrower confirmation-gated task surface, including exact single-object deletes, membership removal, tag deletion, stored-file replacement, and batch full text. Generic requests, unrestricted structural replacement, batch object deletion, and group writes remain unexposed. API capability does not imply that Keeper provides the full raw API through MCP.
 
 Local writes require a key obtained from Zotero's own approval dialog. **Allow**
 is single-use; **Always Allow** is reusable. Keeper requests the latter
-explicitly with `authorize_local_writes(require_remembered=true)` before its
-multi-write file upload. Every Local API response identifies the instance with
+explicitly with `authorize_local_writes(require_remembered=true)` before file
+creation or replacement. Every Local API response identifies the instance with
 `Zotero-Server-ID`. Keeper obtains that response-bound identity before preview,
 includes it in the approved proposal, and requires it on confirmed execution.
 If authorization identifies another database, the read, preview, and approval

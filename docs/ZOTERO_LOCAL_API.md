@@ -1,13 +1,16 @@
 # Zotero Local API v3: Platform Capabilities and Keeper Contract
 
-Last verified: 2026-08-12 against Zotero's official Local API documentation,
+Last verified: 2026-08-19 against Zotero's official Local API documentation,
 updated 2026-07-29.
 
 This document separates two questions that older project documentation mixed
 together:
 
 1. What does Zotero's official API support?
-2. Which of those operations does Zotero Keeper 2.1 expose safely through MCP?
+2. Which of those operations does Zotero Keeper 2.2.0 expose safely through MCP?
+
+For the product-level overview, see the
+[Zotero Keeper feature site](https://u9401066.github.io/zotero-keeper/).
 
 ## Three different interfaces
 
@@ -105,15 +108,15 @@ invalid or consumed and requires a new explicit authorization. Keeper does not
 silently open a new dialog or replay the mutation.
 
 The multi-step file-upload flow requires a remembered authorization because it
-contains more than one authenticated write. Keeper refuses before creating an
-attachment when only a one-shot key is available. Call
+contains more than one authenticated write. Keeper refuses before creating or
+replacing an attachment when only a one-shot key is available. Call
 `authorize_local_writes(require_remembered=true)` and choose **Always Allow**
-before invoking `attach_file_to_item`.
+before invoking `attach_file_to_item` or `replace_attachment_file`.
 
 ## Zotero 10+ platform capability matrix
 
 `<prefix>` is `/api/users/0` for the current user or `/api/groups/<groupID>`.
-Keeper 2.1 intentionally limits writes to the current user's local library.
+Keeper 2.2.0 intentionally limits writes to the current user's local library.
 
 | Object | Read | Create | Update | Delete |
 |--------|:----:|:------:|:------:|:------:|
@@ -132,7 +135,9 @@ Important write semantics:
   `tags`, `creators`, and `relations` replace the complete array. Read, merge,
   and write the full intended array.
 - Updates carry either the JSON object's `version` or
-  `If-Unmodified-Since-Version`. Keeper uses the explicit header.
+  `If-Unmodified-Since-Version`. Keeper uses the explicit header for
+  single-object and library-cursor operations; its bounded collection-membership
+  batches carry each just-read item version in the JSON object.
 - Deletes require a version precondition. Creates use a 32-character
   `Zotero-Write-Token` or a library-version precondition.
 - A stale object or library version returns `412`; do not refetch and overwrite
@@ -159,7 +164,7 @@ For a stored attachment:
 GET <prefix>/items/<attachmentKey>/file/view/url
 ```
 
-returns the local `file://` URL as plain text. Keeper 2.1 prefers this official
+returns the local `file://` URL as plain text. Keeper 2.2.0 prefers this official
 route and retains `ZOTERO_DATA_DIR/storage/<key>/<filename>` only as a fallback
 for older Zotero releases or unavailable endpoints.
 
@@ -183,34 +188,49 @@ Zotero 10+ uses a three-phase full upload for stored (`imported_file` or
 
 Local API uploads are full uploads; binary-diff `PATCH` is a Web API feature and
 returns `405` locally. Keeper validates that the upload URL stays on the
-configured loopback port before sending bytes. If an upload fails after the
-attachment record was created, the result reports a partial operation and its
-attachment key instead of attempting an unapproved cleanup delete.
+configured loopback port before sending bytes. For replacement, both
+authenticated `/file` phases carry `If-Match: <old-md5>`; the phase-two byte
+upload uses only the constrained upload key and sends neither the Local API key
+nor Server-ID. If an upload fails after a new attachment record was created,
+the result reports a partial operation and its attachment key instead of
+attempting an unapproved cleanup delete. Replacement conflicts are likewise
+returned without replay.
 
-## Keeper 2.1 public Local API tools
+## Keeper 2.2.0 public Local API tools
 
-Keeper preserves its original 24 public tools and adds these eight:
+Keeper preserves its original 24 public tools and exposes these 17 Zotero 10+
+Local API tools, for 41 default tools in total:
 
 | Tool | Exposed operation |
 |------|-------------------|
-| `authorize_local_writes` | Explicitly request Zotero runtime authorization; `require_remembered=true` is required before file upload |
+| `authorize_local_writes` | Explicitly request Zotero runtime authorization; `require_remembered=true` is required before file creation or replacement |
 | `create_collection` | Create a top-level or nested collection |
 | `add_items_to_collection` | Merge one confirmed collection into up to 50 existing items with one versioned batch write |
+| `remove_items_from_collection` | Remove one confirmed collection membership from up to 50 items while preserving every other membership |
 | `update_item_fields` | Update approved scalar metadata fields with an expected object version |
+| `update_collection` | Rename or move one exact collection with its expected object version |
+| `delete_collection` | Delete one exact collection with its expected object version |
+| `delete_item` | Delete one exact item with its expected object version |
 | `create_note` | Create a child note under an existing item |
 | `create_saved_search` | Create a structured saved search |
+| `update_saved_search` | Change one saved search's name and/or conditions with its expected object version |
+| `delete_saved_search` | Delete one exact saved search with its expected object version |
+| `delete_tags` | Delete one to 50 exact tag names library-wide with a response-bound library cursor |
 | `attach_file_to_item` | Upload a local stored file beneath an existing item |
+| `replace_attachment_file` | Replace one stored attachment using its exact object version and previous MD5 |
 | `set_attachment_fulltext` | Write indexed text with a response-bound library cursor through bulk `POST /api/users/0/fulltext` |
+| `set_attachment_fulltexts` | Write indexed text for one to 10 attachments under one response-bound library cursor |
 
-All seven mutation tools accept `expected_server_id`; every confirmed call
-requires it. Before preview, obtain that identity from a response-bound read or
-authorization. `update_item_fields` also receives the object version paired with
-the exact-item response. `set_attachment_fulltext` instead receives the library
-cursor paired with `get_item_attachments` or `get_item_fulltext`; the attachment
-object version is not a full-text write precondition.
+The surface contains one permission tool and 16 mutation tools. Every mutation
+accepts `expected_server_id`; it is required in both the preview and confirmed
+call. Before preview, obtain that identity from a response-bound read or
+authorization. Update and single-object delete tools also receive the object
+version paired with their exact-object response. Tag deletion and single/batch
+full-text updates instead receive a response-bound library cursor. An attachment
+object version is not a tag/full-text library precondition.
 
 The confirmation-only first pass includes `expected_server_id` (and any version
-cursor) in `proposed`. Without `confirm=true`, it performs no Zotero read,
+cursor or MD5) in `proposed`. Without `confirm=true`, it performs no Zotero read,
 authorization, filesystem probe, or write. If authorization later returns a
 different Server-ID, discard that proposal and repeat the read, preview, and
 approval. Identity cannot be supplied only after preview. A 412 starts the same
@@ -221,10 +241,80 @@ single batch request. Metadata updates reject structural fields such as keys,
 versions, item types, parent relations, creators, tags, and collection arrays;
 those require dedicated merge-aware tools rather than a raw PATCH.
 
-Keeper 2.1 does not publicly expose general deletes, arbitrary endpoint access,
-group writes, or replacement of complete structural arrays. The underlying
-client implements the official versioned CRUD primitives for controlled future
-tools and tests, but destructive library maintenance remains in Zotero's UI.
+### Keeper 2.2.0 additions and their preconditions
+
+`remove_items_from_collection(item_keys, collection_key, confirm=false,
+expected_server_id=null)` accepts one to 50 exact item keys plus one exact
+collection key. On confirmed execution it rereads the collection and every
+item, removes only that key from each complete `collections` array, preserves
+all other memberships, and sends each item's just-read object version in one
+bounded batch update. An item that had no other membership may become unfiled;
+the tool never silently selects a different collection.
+
+`update_collection(collection_key, expected_version, name=null,
+parent_collection_key=null, move_to_library_root=false, confirm=false,
+expected_server_id=null)` updates one collection. `name`, when supplied, must be
+non-empty. A new exact parent and `move_to_library_root=true` are mutually
+exclusive; the explicit boolean is required to clear the parent because `null`
+means “do not change this field”. Keeper rereads the exact collection, requires
+its object version to equal `expected_version`, and validates a supplied parent
+before the constrained update.
+
+`delete_collection(collection_key, expected_version, confirm=false,
+expected_server_id=null)` and `delete_item(item_key, expected_version,
+confirm=false, expected_server_id=null)` each delete only one exact object. The
+collection deletion does not delete its library items. The item target may be a
+bibliographic item, note, attachment, or annotation, and its proposal is
+explicitly permanent. The confirmed call rereads that target and requires its
+current object version to equal the approved `expected_version`. Keeper exposes
+no batch object delete.
+
+`update_saved_search(search_key, expected_version, name=null,
+conditions=null, confirm=false, expected_server_id=null)` changes one saved
+search's non-empty name and/or structured condition list. Each supplied
+condition uses scalar `condition`, `operator`, and `value`, with only optional
+boolean `required` and string `mode`; unknown fields are rejected. At least one
+change is required, and the exact saved-search object version must still equal
+`expected_version`.
+
+`delete_saved_search(search_key, expected_version, confirm=false,
+expected_server_id=null)` deletes only one exact saved-search object after the
+same fresh-read object-version check. It is not the official API's batch search
+deletion endpoint.
+
+`delete_tags(tags, expected_library_version, confirm=false,
+expected_server_id=null)` accepts one to 50 non-empty tag names. Tag deletion is
+library-wide; duplicates are coalesced and names containing the reserved `||`
+delimiter are rejected. Keeper binds the preview to the `server_id` and library
+cursor returned together by `list_tags`, rereads that cursor before
+execution, and sends the official single `tag=a||b` query with
+`If-Unmodified-Since-Version`. It does not delete item objects.
+
+`replace_attachment_file(attachment_key, file_path, expected_version,
+expected_md5, confirm=false, expected_server_id=null)` performs a full-file
+replacement for one `imported_file` or `imported_url` attachment. Preview does
+not inspect `file_path`. Confirmed execution requires remembered **Always Allow**
+authorization, rereads the exact attachment, matches both its object version and
+32-character old MD5 from the same `get_item`/`get_item_attachments` snapshot,
+validates and hashes the local replacement file, and uses
+that old MD5 in `If-Match` on both authenticated upload phases. The constrained
+phase-two upload sends only the upload key. Local binary-diff PATCH is not used.
+
+`set_attachment_fulltexts(entries, expected_library_version, confirm=false,
+expected_server_id=null)` accepts one to 10 distinct attachment entries. Each
+entry contains `attachment_key`, non-empty `content`, and exactly one complete
+non-negative pair: `indexed_pages`/`total_pages` or
+`indexed_chars`/`total_chars`, with the indexed value no greater than the total.
+Keeper validates each exact attachment, rereads the response-bound library
+cursor, and submits one official bulk `POST /api/users/0/fulltext`. The ordered
+result can be partial; failures are reported per entry and never retried.
+
+Keeper is deliberately **not** a raw Local API client. It does not expose
+arbitrary endpoint access, arbitrary complete structural-array replacement,
+batch item/collection/saved-search deletion, or group-library writes. Its
+single-object deletes, bounded tag deletion, membership merge/removal, file
+replacement, and bulk full-text tools are dedicated contracts with narrower
+validation and preconditions than the platform's general CRUD surface.
 
 ## Compatibility matrix
 

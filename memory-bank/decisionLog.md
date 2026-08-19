@@ -1,5 +1,33 @@
 # Decision Log
 
+## 2026-08-19
+
+### DEC-032: Zotero 10 任務導向寫入覆蓋、PubMed 0.6.3 與 Keeper Pages
+
+#### 決定
+
+- Keeper `2.2.0` 將 Local API allowlist 由 8 個擴充為 17 個 tools；
+  新增 collection membership removal，collection/item/saved-search 的
+  精確 update/delete，tag batch delete，existing stored-file replacement
+  與 full-text batch write。仍不提供 raw endpoint、arbitrary structural
+  replacement、batch object delete 或 group-library write。
+- 所有 mutation 維持 `confirm=false` 零 I/O，proposal 必須先攜帶
+  response-bound Server-ID。Exact update/single delete 使用 object version；
+  tag/full-text 使用 library cursor；file replacement 使用 exact
+  attachment version + old MD5 並要求 remembered authorization。412 不重試。
+- Extension `0.8.0` 固定 PubMed Search MCP 正式 v0.6.3 release commit
+  `febf53a8ff1ee253a625869ba251365f73a23c68`，不采用未發 tag/PyPI 的
+  master 0.6.5 snapshot。新版仍為 45 tools / 16 categories，主要擴充
+  SearchRun、systematic/native-semantic 與 Research Chronicle contracts。
+- 新增無框架 GitHub Pages 網站，只介紹 Zotero Keeper 功能、
+  Zotero 10 能力與安全流程；PubMed 只連結至其獨立功能站。
+
+#### 理由
+
+正式 release commit 讓 VSIX 安裝可重現；任務導向 allowlist 能覆蓋
+Zotero 10 實用寫入類別，卻不需將未分 scope 的 local key 變成任意
+HTTP escape hatch。Pages 提供產品層功能說明，避免與 PubMed 獨立站重複。
+
 ## 2026-08-12
 
 ### DEC-031: Zotero 10+ authorized Local API 寫入與單一 VSIX 發布 artifact
