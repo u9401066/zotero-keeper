@@ -93,6 +93,7 @@ def register_attachment_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                   expected_version for object-version-protected writes
                 - object_version: Explicit alias of version
                 - server_id: Database identity in which the object version is valid
+                - md5: Current imported-file MD5 for safe If-Match replacement
                 - title: Attachment title
                 - filename: Original filename
                 - content_type: MIME type (e.g. "application/pdf")
@@ -190,6 +191,7 @@ def register_attachment_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                         "object_version": child.get("version", data.get("version")),
                         "version_scope": "local",
                         "server_id": server_id,
+                        "md5": data.get("md5"),
                         "title": data.get("title", ""),
                         "filename": filename,
                         "content_type": content_type,

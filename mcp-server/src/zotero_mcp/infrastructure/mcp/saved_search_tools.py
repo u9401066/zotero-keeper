@@ -198,12 +198,17 @@ def register_saved_search_tools(mcp: MCPServer, zotero: ZoteroClient) -> None:
             }
         """
         try:
-            search = await zotero.get_search(search_key)
+            search, server_id = await zotero.get_search_snapshot(search_key)
             data = search.get("data", search)
+            version = search.get("version", data.get("version"))
             return {
                 "found": True,
+                "server_id": server_id,
                 "search": {
                     "key": search.get("key"),
+                    "version": version,
+                    "version_scope": "local",
+                    "server_id": server_id,
                     "name": data.get("name", ""),
                     "conditions": data.get("conditions", []),
                 },

@@ -75,6 +75,35 @@ async def test_get_item_accepts_version_in_data_payload() -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_item_exposes_attachment_replace_preconditions() -> None:
+    zotero = AsyncMock()
+    zotero.get_item_snapshot.return_value = (
+        {
+            "key": "BCDE3456",
+            "version": 9,
+            "data": {
+                "itemType": "attachment",
+                "title": "Full Text",
+                "linkMode": "imported_file",
+                "filename": "paper.pdf",
+                "contentType": "application/pdf",
+                "md5": "a" * 32,
+            },
+        },
+        "server-A",
+    )
+
+    result = await _registered_tools(zotero)["get_item"]("BCDE3456")
+
+    assert result["item"]["version"] == 9
+    assert result["item"]["server_id"] == "server-A"
+    assert result["item"]["md5"] == "a" * 32
+    assert result["item"]["linkMode"] == "imported_file"
+    assert result["item"]["filename"] == "paper.pdf"
+    assert result["item"]["contentType"] == "application/pdf"
+
+
+@pytest.mark.asyncio
 async def test_list_items_uses_the_collection_response_identity() -> None:
     zotero = AsyncMock()
     zotero._local_server_id = "server-B"
@@ -94,3 +123,23 @@ async def test_list_items_uses_the_collection_response_identity() -> None:
     assert result["server_id"] == "server-A"
     assert result["items"][0]["server_id"] == "server-A"
     assert result["items"][0]["version"] == 9
+
+
+@pytest.mark.asyncio
+async def test_list_tags_exposes_response_bound_library_cursor() -> None:
+    zotero = AsyncMock()
+    zotero.get_tags_snapshot.return_value = (
+        [{"tag": "reviewed"}, {"tag": "needs PDF"}],
+        42,
+        "server-A",
+    )
+
+    result = await _registered_tools(zotero)["list_tags"]()
+
+    assert result == {
+        "count": 2,
+        "tags": ["reviewed", "needs PDF"],
+        "library_version": 42,
+        "server_id": "server-A",
+    }
+    zotero.get_tags_snapshot.assert_awaited_once_with()

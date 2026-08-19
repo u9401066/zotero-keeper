@@ -6,11 +6,28 @@ Tests the saved search functionality for Zotero Local API.
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock
+from typing import Any
 
 from zotero_mcp.infrastructure.mcp.saved_search_tools import (
     _format_creators,
     register_saved_search_tools,
 )
+
+
+def _registered_tools(zotero: AsyncMock) -> dict[str, Any]:
+    tools: dict[str, Any] = {}
+    mcp = MagicMock()
+
+    def tool_decorator():
+        def wrapper(function: Any) -> Any:
+            tools[function.__name__] = function
+            return function
+
+        return wrapper
+
+    mcp.tool = tool_decorator
+    register_saved_search_tools(mcp, zotero)
+    return tools
 
 
 class TestFormatCreators:
@@ -219,6 +236,31 @@ class TestGetSavedSearchDetails:
         mock_mcp.tool = tool_decorator
 
         register_saved_search_tools(mock_mcp, mock_client)
+
+    @pytest.mark.asyncio
+    async def test_details_expose_response_bound_version_and_server_id(self):
+        mock_client = AsyncMock()
+        mock_client.get_search_snapshot.return_value = (
+            {
+                "key": "ABCD2345",
+                "version": 12,
+                "data": {
+                    "name": "Test Search",
+                    "conditions": [{"condition": "title", "operator": "contains", "value": "test"}],
+                },
+            },
+            "server-A",
+        )
+
+        result = await _registered_tools(mock_client)["get_saved_search_details"]("ABCD2345")
+
+        assert result["found"] is True
+        assert result["server_id"] == "server-A"
+        assert result["search"]["key"] == "ABCD2345"
+        assert result["search"]["version"] == 12
+        assert result["search"]["version_scope"] == "local"
+        assert result["search"]["server_id"] == "server-A"
+        mock_client.get_search_snapshot.assert_awaited_once_with("ABCD2345")
 
     @pytest.mark.asyncio
     async def test_search_not_found(self):

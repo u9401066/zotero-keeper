@@ -372,12 +372,21 @@ class TestServerTools:
             "get_item_types",
             "authorize_local_writes",
             "create_collection",
+            "update_collection",
+            "delete_collection",
             "add_items_to_collection",
+            "remove_items_from_collection",
             "update_item_fields",
+            "delete_item",
             "create_note",
             "create_saved_search",
+            "update_saved_search",
+            "delete_saved_search",
+            "delete_tags",
             "attach_file_to_item",
+            "replace_attachment_file",
             "set_attachment_fulltext",
+            "set_attachment_fulltexts",
         ]
 
         for tool_name in expected_tools:

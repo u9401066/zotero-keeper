@@ -22,7 +22,9 @@ import httpx
 from .client_base import LocalOperationBinding, ZoteroAPIError, ZoteroConnectionError
 
 _OBJECT_KEY_RE = re.compile(r"^[23456789ABCDEFGHIJKLMNPQRSTUVWXYZ]{8}$")
+_MD5_RE = re.compile(r"^[a-f0-9]{32}$")
 _MAX_BATCH_SIZE = 50
+_MAX_FULLTEXT_BATCH_SIZE = 10
 _MAX_LOCAL_FILE_SIZE = 4 * 1024**3
 _FILE_CHUNK_SIZE = 1024 * 1024
 
@@ -609,27 +611,58 @@ class ZoteroLocalMixin:
         await self._local_write_raw(
             "DELETE",
             "/api/users/0/tags",
-            params={"tag": tags},
+            # Zotero reads one ``tag`` parameter and splits it on the literal
+            # ``||`` delimiter. Repeated query parameters silently delete only
+            # the first tag.
+            params={"tag": "||".join(tags)},
             headers=self._expected_version_headers(version),
         )
 
-    async def local_set_fulltext(
+    async def local_set_fulltexts(
         self,
-        attachment_key: str,
-        fulltext: dict[str, Any],
+        fulltexts: list[dict[str, Any]],
         *,
         expected_library_version: int,
     ) -> dict[str, Any]:
-        key = self._validate_object_key(attachment_key, label="attachment_key")
-        if not isinstance(fulltext, dict) or not fulltext:
-            raise ValueError("fulltext must be a non-empty object")
-        if "key" in fulltext:
-            raise ValueError("fulltext must not contain the reserved key field")
+        """Write 1..10 attachment full-text entries using one library cursor."""
+        if not isinstance(fulltexts, list) or not 1 <= len(fulltexts) <= _MAX_FULLTEXT_BATCH_SIZE:
+            raise ValueError("fulltexts must contain between 1 and 10 objects")
+
+        payload: list[dict[str, Any]] = []
+        keys: list[str] = []
+        seen: set[str] = set()
+        allowed_fields = {
+            "key",
+            "content",
+            "indexedChars",
+            "totalChars",
+            "indexedPages",
+            "totalPages",
+        }
+        for index, entry in enumerate(fulltexts):
+            if not isinstance(entry, dict):
+                raise ValueError(f"fulltexts[{index}] must be an object")
+            unknown = set(entry) - allowed_fields
+            if unknown:
+                raise ValueError(f"fulltexts[{index}] has unsupported fields: {sorted(unknown)}")
+            key = self._validate_object_key(entry.get("key"), label=f"fulltexts[{index}].key")
+            if key in seen:
+                raise ValueError("fulltexts must not contain duplicate attachment keys")
+            seen.add(key)
+            if not isinstance(entry.get("content"), str) or not entry["content"]:
+                raise ValueError(f"fulltexts[{index}].content must be a non-empty string")
+            for field in ("indexedChars", "totalChars", "indexedPages", "totalPages"):
+                value = entry.get(field)
+                if value is not None and (isinstance(value, bool) or not isinstance(value, int) or value < 0):
+                    raise ValueError(f"fulltexts[{index}].{field} must be a non-negative integer")
+            payload.append(dict(entry))
+            keys.append(key)
+
         library_version = self._validate_expected_version(expected_library_version)
         response = await self._local_write_raw(
             "POST",
             "/api/users/0/fulltext",
-            json_data=[{"key": key, **dict(fulltext)}],
+            json_data=payload,
             headers={
                 "Content-Type": "application/json",
                 **self._expected_version_headers(library_version),
@@ -651,23 +684,46 @@ class ZoteroLocalMixin:
                 response_headers=response.headers,
             )
         successful = payload.get("successful")
+        if successful is None:
+            successful = payload.get("success")
         failed = payload.get("failed")
-        if not isinstance(successful, Mapping) or not isinstance(failed, Mapping) or set(successful) - {"0"} or set(failed) - {"0"}:
+        if not isinstance(successful, Mapping) or not isinstance(failed, Mapping):
             raise ZoteroAPIError(
                 "Zotero Local API returned malformed bulk full-text result maps",
                 response_text=response.text,
                 response_headers=response.headers,
             )
 
-        success_detail = successful.get("0")
-        failure_detail = failed.get("0")
-        if success_detail is not None and failure_detail is not None:
+        valid_indices = {str(index) for index in range(len(keys))}
+        result_indices: set[str] = set()
+        for mapping in (successful, failed):
+            for raw_index in mapping:
+                normalized_index = str(raw_index)
+                if normalized_index not in valid_indices or normalized_index in result_indices:
+                    raise ZoteroAPIError(
+                        "Zotero Local API returned malformed bulk full-text result maps",
+                        response_text=response.text,
+                        response_headers=response.headers,
+                    )
+                result_indices.add(normalized_index)
+        if result_indices != valid_indices:
             raise ZoteroAPIError(
-                "Zotero Local API returned conflicting bulk full-text results",
+                "Zotero Local API omitted an entry from the bulk full-text results",
                 response_text=response.text,
                 response_headers=response.headers,
             )
-        if failure_detail is not None:
+
+        for index, key in enumerate(keys):
+            success_detail = successful.get(str(index), successful.get(index))
+            failure_detail = failed.get(str(index), failed.get(index))
+            if success_detail is not None:
+                if not isinstance(success_detail, Mapping) or success_detail.get("key") != key:
+                    raise ZoteroAPIError(
+                        "Zotero Local API returned a malformed bulk full-text success",
+                        response_text=response.text,
+                        response_headers=response.headers,
+                    )
+                continue
             failure_key = failure_detail.get("key") if isinstance(failure_detail, Mapping) else None
             failure_code = failure_detail.get("code") if isinstance(failure_detail, Mapping) else None
             failure_message = failure_detail.get("message") if isinstance(failure_detail, Mapping) else None
@@ -684,18 +740,6 @@ class ZoteroLocalMixin:
                     response_text=response.text,
                     response_headers=response.headers,
                 )
-            raise ZoteroAPIError(
-                f"Zotero Local API rejected bulk full-text update: {failure_message}",
-                status_code=failure_code,
-                response_text=response.text,
-                response_headers=response.headers,
-            )
-        if not isinstance(success_detail, Mapping) or success_detail.get("key") != key:
-            raise ZoteroAPIError(
-                "Zotero Local API returned no matching bulk full-text success",
-                response_text=response.text,
-                response_headers=response.headers,
-            )
 
         raw_result_version = self._header_value(response.headers, "Last-Modified-Version")
         try:
@@ -712,7 +756,36 @@ class ZoteroLocalMixin:
                 response_text=response.text,
                 response_headers=response.headers,
             )
-        return {"attachment_key": key, "library_version": result_version}
+        return {
+            "successful": dict(successful),
+            "failed": dict(failed),
+            "library_version": result_version,
+        }
+
+    async def local_set_fulltext(
+        self,
+        attachment_key: str,
+        fulltext: dict[str, Any],
+        *,
+        expected_library_version: int,
+    ) -> dict[str, Any]:
+        """Compatibility wrapper for a one-entry bulk full-text write."""
+        key = self._validate_object_key(attachment_key, label="attachment_key")
+        if not isinstance(fulltext, dict) or not fulltext:
+            raise ValueError("fulltext must be a non-empty object")
+        if "key" in fulltext:
+            raise ValueError("fulltext must not contain the reserved key field")
+        result = await self.local_set_fulltexts(
+            [{"key": key, **dict(fulltext)}],
+            expected_library_version=expected_library_version,
+        )
+        failure_detail = result["failed"].get("0", result["failed"].get(0))
+        if isinstance(failure_detail, Mapping):
+            raise ZoteroAPIError(
+                f"Zotero Local API rejected bulk full-text update: {failure_detail['message']}",
+                status_code=failure_detail["code"],
+            )
+        return {"attachment_key": key, "library_version": result["library_version"]}
 
     async def get_item_file_view_url_snapshot(
         self,
@@ -953,3 +1026,119 @@ class ZoteroLocalMixin:
             setattr(exc, "attachment_key", attachment_key)
             setattr(exc, "partial", True)
             raise
+
+    async def local_replace_attachment_file(
+        self,
+        attachment_key: str,
+        file_path: str | Path,
+        *,
+        expected_md5: str,
+    ) -> dict[str, Any]:
+        """Fully replace an existing imported attachment using ``If-Match``.
+
+        The caller must first bind and validate the attachment object's
+        response-bound version and MD5. This method enforces the binary-file
+        precondition on both authenticated phases of Zotero's upload protocol.
+        """
+        key = self._validate_object_key(attachment_key, label="attachment_key")
+        old_md5 = expected_md5.strip().lower() if isinstance(expected_md5, str) else ""
+        if not _MD5_RE.fullmatch(old_md5):
+            raise ValueError("expected_md5 must be a 32-character hexadecimal MD5")
+        await self._ensure_local_write_ready(require_remembered=True)
+
+        path = Path(file_path).expanduser()
+        size, mtime, new_md5 = await asyncio.to_thread(self._file_metadata, path)
+        file_endpoint = f"/api/users/0/items/{key}/file"
+        condition_headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "If-Match": old_md5,
+        }
+
+        authorization_response = await self._local_write_raw(
+            "POST",
+            file_endpoint,
+            data={
+                "md5": new_md5,
+                "filename": path.name,
+                "filesize": str(size),
+                "mtime": str(mtime),
+            },
+            headers=condition_headers,
+            require_remembered=True,
+        )
+        authorization = self._parse_json_response(
+            authorization_response,
+            operation="attachment replacement authorization",
+        )
+        if not isinstance(authorization, dict):
+            raise ZoteroAPIError("Zotero Local API returned an invalid upload authorization")
+        if authorization.get("exists") == 1:
+            return {
+                "attachment_key": key,
+                "previous_md5": old_md5,
+                "md5": new_md5,
+                "uploaded": False,
+                "exists": True,
+                "last_modified_version": self._header_value(
+                    authorization_response.headers,
+                    "Last-Modified-Version",
+                ),
+            }
+
+        upload_key = authorization.get("uploadKey")
+        upload_content_type = authorization.get("contentType")
+        prefix = authorization.get("prefix")
+        suffix = authorization.get("suffix")
+        if not isinstance(upload_key, str) or not isinstance(upload_content_type, str):
+            raise ZoteroAPIError("Zotero Local API returned incomplete upload authorization")
+        if not isinstance(prefix, str) or not isinstance(suffix, str):
+            raise ZoteroAPIError("Zotero Local API returned invalid upload framing")
+        if not upload_content_type or not upload_content_type.isascii() or "\r" in upload_content_type or "\n" in upload_content_type:
+            raise ZoteroAPIError("Zotero Local API returned an invalid upload content type")
+
+        upload_url = self._validated_upload_url(authorization.get("url"), upload_key)
+        prefix_bytes = prefix.encode("utf-8")
+        suffix_bytes = suffix.encode("utf-8")
+        upload_response = await self._request_raw(
+            "POST",
+            str(upload_url),
+            content=self._stream_file(path, prefix_bytes, suffix_bytes),
+            headers={
+                "Content-Type": upload_content_type,
+                "Content-Length": str(len(prefix_bytes) + size + len(suffix_bytes)),
+            },
+        )
+        if upload_response.status_code != 201:
+            raise ZoteroAPIError(
+                "Zotero Local API did not accept the replacement bytes",
+                status_code=upload_response.status_code,
+                response_text=upload_response.text,
+                response_headers=upload_response.headers,
+            )
+
+        register_response = await self._local_write_raw(
+            "POST",
+            file_endpoint,
+            data={"upload": upload_key},
+            headers=condition_headers,
+            require_remembered=True,
+        )
+        if register_response.status_code != 204:
+            raise ZoteroAPIError(
+                "Zotero Local API did not register the replacement upload",
+                status_code=register_response.status_code,
+                response_text=register_response.text,
+                response_headers=register_response.headers,
+            )
+
+        return {
+            "attachment_key": key,
+            "previous_md5": old_md5,
+            "md5": new_md5,
+            "uploaded": True,
+            "exists": False,
+            "last_modified_version": self._header_value(
+                register_response.headers,
+                "Last-Modified-Version",
+            ),
+        }

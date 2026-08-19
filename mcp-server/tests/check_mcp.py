@@ -35,17 +35,26 @@ async def main() -> None:
         "import_pdf",
         "authorize_local_writes",
         "create_collection",
+        "update_collection",
+        "delete_collection",
         "add_items_to_collection",
+        "remove_items_from_collection",
         "update_item_fields",
+        "delete_item",
         "create_note",
         "create_saved_search",
+        "update_saved_search",
+        "delete_saved_search",
+        "delete_tags",
         "attach_file_to_item",
+        "replace_attachment_file",
         "set_attachment_fulltext",
+        "set_attachment_fulltexts",
     }
     missing = sorted(required_tools - tool_names)
     if missing:
         raise RuntimeError(f"Missing required Keeper tools: {missing}")
-    if len(tools) != 32 or len(resources) != 6 or len(templates) != 4:
+    if len(tools) != 41 or len(resources) != 6 or len(templates) != 4:
         raise RuntimeError(f"Unexpected Keeper surface: {len(tools)} tools, {len(resources)} resources, {len(templates)} templates")
 
     print("MCP SDK v2 surface check passed")

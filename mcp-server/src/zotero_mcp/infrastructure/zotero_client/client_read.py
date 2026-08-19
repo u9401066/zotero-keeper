@@ -312,6 +312,33 @@ class ZoteroReadMixin:
         """Get all tags"""
         return await self._request("GET", "/api/users/0/tags")
 
+    async def get_tags_snapshot(self) -> tuple[list[dict[str, Any]], int | None, str | None]:
+        """Get tags with the library cursor and Server-ID on that response."""
+        response = await self._request_raw("GET", "/api/users/0/tags")
+        try:
+            payload = response.json()
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise ZoteroAPIError(
+                "Zotero Local API returned invalid JSON for the tag snapshot",
+                status_code=response.status_code,
+                response_text=response.text,
+                response_headers=response.headers,
+            ) from exc
+        if not isinstance(payload, list):
+            raise ZoteroAPIError(
+                "Zotero Local API returned an invalid tag snapshot",
+                status_code=response.status_code,
+                response_text=response.text,
+                response_headers=response.headers,
+            )
+        server_id = self._header_value(response.headers, "Zotero-Server-ID")
+        library_version = self._response_library_version(
+            response,
+            operation="the tag snapshot",
+            required=server_id is not None,
+        )
+        return cast(list[dict[str, Any]], payload), library_version, server_id
+
     # ==================== Saved Searches ====================
 
     async def get_searches(self) -> list[dict[str, Any]]:
@@ -321,6 +348,14 @@ class ZoteroReadMixin:
     async def get_search(self, search_key: str) -> dict[str, Any]:
         """Get a specific saved search by key"""
         return await self._request("GET", f"/api/users/0/searches/{search_key}")
+
+    async def get_search_snapshot(self, search_key: str) -> tuple[dict[str, Any], str | None]:
+        """Get one saved search and the Server-ID on that exact response."""
+        payload, server_id = await self._request_snapshot(
+            "GET",
+            f"/api/users/0/searches/{search_key}",
+        )
+        return cast(dict[str, Any], payload), server_id
 
     async def execute_search(self, search_key: str, limit: int = 100) -> list[dict[str, Any]]:
         """
@@ -409,6 +444,48 @@ class ZoteroReadMixin:
                 response_headers=response.headers,
             )
         return version
+
+    async def get_library_cursor(self) -> dict[str, Any]:
+        """Read the My Library version cursor with its exact Server-ID.
+
+        Library-wide Local API mutations (for example tag deletion and bulk
+        full-text writes) use ``Last-Modified-Version`` rather than an
+        individual object's version.  Requesting the compact versions format
+        avoids transferring library objects while retaining both response
+        headers that bind the cursor to one Zotero database.
+        """
+        response = await self._request_raw(
+            "GET",
+            "/api/users/0/items",
+            params={"format": "versions", "limit": 1},
+        )
+        try:
+            payload = response.json()
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise ZoteroAPIError(
+                "Zotero Local API returned invalid JSON for the library cursor",
+                status_code=response.status_code,
+                response_text=response.text,
+                response_headers=response.headers,
+            ) from exc
+        if not isinstance(payload, Mapping):
+            raise ZoteroAPIError(
+                "Zotero Local API returned an invalid library versions cursor",
+                status_code=response.status_code,
+                response_text=response.text,
+                response_headers=response.headers,
+            )
+
+        server_id = self._header_value(response.headers, "Zotero-Server-ID")
+        library_version = self._response_library_version(
+            response,
+            operation="the library cursor",
+            required=server_id is not None,
+        )
+        return {
+            "library_version": library_version,
+            "server_id": server_id,
+        }
 
     async def get_item_library_cursor(self, item_key: str) -> dict[str, Any]:
         """Read one exact item's object version and containing library cursor."""

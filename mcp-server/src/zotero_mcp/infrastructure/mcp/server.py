@@ -95,7 +95,7 @@ class ZoteroKeeperServer:
         register_basic_read_tools(self._mcp, self._zotero)
         register_collection_tools(self._mcp, self._zotero)
         register_local_api_tools(self._mcp, self._zotero)
-        logger.info("Zotero 10+ Local API write tools enabled (authorization + 7 confirmed mutations)")
+        logger.info("Zotero 10+ Local API write tools enabled (authorization + 16 confirmed mutations)")
 
         # Register MCP Resources (read-only browsable data)
         register_resources(self._mcp, self._zotero)

@@ -121,6 +121,12 @@ def register_basic_read_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                     "date": data.get("date", ""),
                     "DOI": data.get("DOI", ""),
                     "url": data.get("url", ""),
+                    # Imported attachments expose the exact response-bound
+                    # preconditions required by replace_attachment_file.
+                    "md5": data.get("md5"),
+                    "linkMode": data.get("linkMode", ""),
+                    "filename": data.get("filename", ""),
+                    "contentType": data.get("contentType", ""),
                     "abstract": data.get("abstractNote", ""),
                     "publicationTitle": data.get("publicationTitle", ""),
                     "volume": data.get("volume", ""),
@@ -196,11 +202,13 @@ def register_basic_read_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
             List of tags
         """
         try:
-            tags = await zotero.get_tags()
+            tags, library_version, server_id = await zotero.get_tags_snapshot()
             tag_list = [t.get("tag", str(t)) for t in tags]
             return {
                 "count": len(tag_list),
                 "tags": tag_list[:100],  # Limit to first 100
+                "library_version": library_version,
+                "server_id": server_id,
             }
         except (ZoteroConnectionError, ZoteroAPIError) as e:
             return {"count": 0, "tags": [], "error": str(e)}

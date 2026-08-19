@@ -1023,8 +1023,8 @@ class TestLocalWriteContract:
 
         assert captured[0]["method"] == "DELETE"
         assert captured[0]["path"] == "/api/users/0/tags"
-        assert captured[0]["query"].count("tag=") == 2
-        assert "tag=one" in captured[0]["query"] and "tag=two+words" in captured[0]["query"]
+        assert captured[0]["query"].count("tag=") == 1
+        assert captured[0]["query"] == "b'tag=one%7C%7Ctwo+words'"
         assert captured[0]["version"] == "9"
         assert captured[1] == {
             "method": "POST",
@@ -1034,6 +1034,79 @@ class TestLocalWriteContract:
             "body": [{"key": "ABCD2345", "content": "text", "indexedChars": 4, "totalChars": 4}],
         }
         assert result == {"attachment_key": "ABCD2345", "library_version": 11}
+
+    @pytest.mark.asyncio
+    async def test_bulk_fulltexts_send_one_ten_entry_request_and_preserve_partial_results(self) -> None:
+        captured: dict[str, Any] = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured["method"] = request.method
+            captured["path"] = request.url.path
+            captured["version"] = request.headers.get("if-unmodified-since-version")
+            captured["body"] = json.loads(request.content)
+            return httpx.Response(
+                200,
+                headers={
+                    "Last-Modified-Version": "13",
+                    "Zotero-Server-ID": "server-A",
+                },
+                json={
+                    "successful": {"0": {"key": "ABCD2345"}},
+                    "failed": {"1": {"key": "BCDE3456", "code": 400, "message": "unsupported"}},
+                },
+            )
+
+        fulltexts = [
+            {"key": "ABCD2345", "content": "one", "indexedChars": 3, "totalChars": 3},
+            {"key": "BCDE3456", "content": "two", "indexedPages": 1, "totalPages": 1},
+        ]
+        client = _wire_client(handler)
+        _prime_authorization(client)
+        try:
+            result = await client.local_set_fulltexts(fulltexts, expected_library_version=12)
+        finally:
+            await client.close()
+
+        assert captured == {
+            "method": "POST",
+            "path": "/api/users/0/fulltext",
+            "version": "12",
+            "body": fulltexts,
+        }
+        assert result == {
+            "successful": {"0": {"key": "ABCD2345"}},
+            "failed": {"1": {"key": "BCDE3456", "code": 400, "message": "unsupported"}},
+            "library_version": 13,
+        }
+
+    @pytest.mark.asyncio
+    async def test_library_cursor_reads_response_bound_last_modified_version(self) -> None:
+        captured: dict[str, Any] = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured["path"] = request.url.path
+            captured["params"] = dict(request.url.params)
+            return httpx.Response(
+                200,
+                headers={
+                    "Last-Modified-Version": "0",
+                    "Zotero-Server-ID": "server-A",
+                },
+                json={},
+            )
+
+        client = _wire_client(handler)
+        client._local_server_id = "server-A"
+        try:
+            result = await client.get_library_cursor()
+        finally:
+            await client.close()
+
+        assert captured == {
+            "path": "/api/users/0/items",
+            "params": {"format": "versions", "limit": "1"},
+        }
+        assert result == {"library_version": 0, "server_id": "server-A"}
 
     @pytest.mark.asyncio
     async def test_bulk_fulltext_surfaces_per_index_failure(self) -> None:
@@ -1268,6 +1341,146 @@ class TestLocalFileAccess:
         assert captured[2]["body"] == expected_upload
         assert captured[3]["server_id"] == "server-A"
         assert captured[3]["if_none_match"] == "*"
+
+    @pytest.mark.asyncio
+    async def test_replace_file_uses_old_md5_if_match_on_both_authenticated_phases(self, tmp_path: Path) -> None:
+        replacement = tmp_path / "replacement.pdf"
+        replacement.write_bytes(b"new replacement bytes")
+        captured: list[dict[str, Any]] = []
+        old_md5 = "a" * 32
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            body = await request.aread()
+            captured.append(
+                {
+                    "path": request.url.path,
+                    "if_match": request.headers.get("if-match"),
+                    "if_none_match": request.headers.get("if-none-match"),
+                    "server_id": request.headers.get("zotero-server-id"),
+                    "api_key": request.headers.get("zotero-api-key"),
+                    "body": body,
+                }
+            )
+            if request.url.path == "/api/users/0/items/ABCD2345/file" and b"md5=" in body:
+                return httpx.Response(
+                    200,
+                    headers={"Zotero-Server-ID": "server-A"},
+                    json={
+                        "url": "http://localhost:23119/api/local/uploads/replacement-key",
+                        "uploadKey": "replacement-key",
+                        "contentType": "application/octet-stream",
+                        "prefix": "",
+                        "suffix": "",
+                    },
+                )
+            if request.url.path == "/api/local/uploads/replacement-key":
+                return httpx.Response(201)
+            if request.url.path == "/api/users/0/items/ABCD2345/file" and b"upload=" in body:
+                return httpx.Response(
+                    204,
+                    headers={
+                        "Last-Modified-Version": "14",
+                        "Zotero-Server-ID": "server-A",
+                    },
+                )
+            return httpx.Response(500, text="unexpected request")
+
+        client = _wire_client(handler)
+        _prime_authorization(client)
+        try:
+            result = await client.local_replace_attachment_file(
+                "ABCD2345",
+                replacement,
+                expected_md5=old_md5,
+            )
+        finally:
+            await client.close()
+
+        assert result["attachment_key"] == "ABCD2345"
+        assert result["previous_md5"] == old_md5
+        assert result["uploaded"] is True
+        assert result["last_modified_version"] == "14"
+        assert [entry["path"] for entry in captured] == [
+            "/api/users/0/items/ABCD2345/file",
+            "/api/local/uploads/replacement-key",
+            "/api/users/0/items/ABCD2345/file",
+        ]
+        for index in (0, 2):
+            assert captured[index]["if_match"] == old_md5
+            assert captured[index]["if_none_match"] is None
+            assert captured[index]["server_id"] == "server-A"
+            assert captured[index]["api_key"] == "K" * 32
+        assert captured[1]["if_match"] is None
+        assert captured[1]["server_id"] is None
+        assert captured[1]["api_key"] is None
+
+    @pytest.mark.asyncio
+    async def test_replace_file_requires_remembered_authorization_before_io(self, tmp_path: Path) -> None:
+        replacement = tmp_path / "replacement.pdf"
+        replacement.write_bytes(b"replacement")
+        calls = 0
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal calls
+            calls += 1
+            return httpx.Response(500)
+
+        client = _wire_client(handler)
+        _prime_authorization(client, remembered=False)
+        try:
+            with pytest.raises(ZoteroAPIError, match="Always Allow"):
+                await client.local_replace_attachment_file(
+                    "ABCD2345",
+                    replacement,
+                    expected_md5="a" * 32,
+                )
+        finally:
+            await client.close()
+        assert calls == 0
+
+    @pytest.mark.asyncio
+    async def test_replace_file_register_412_is_not_retried(self, tmp_path: Path) -> None:
+        replacement = tmp_path / "replacement.pdf"
+        replacement.write_bytes(b"replacement")
+        calls = 0
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal calls
+            calls += 1
+            body = await request.aread()
+            if request.url.path.endswith("/file") and b"md5=" in body:
+                return httpx.Response(
+                    200,
+                    headers={"Zotero-Server-ID": "server-A"},
+                    json={
+                        "url": "http://localhost:23119/api/local/uploads/replacement-key",
+                        "uploadKey": "replacement-key",
+                        "contentType": "application/octet-stream",
+                        "prefix": "",
+                        "suffix": "",
+                    },
+                )
+            if request.url.path == "/api/local/uploads/replacement-key":
+                return httpx.Response(201)
+            return httpx.Response(
+                412,
+                headers={"Zotero-Server-ID": "server-A"},
+                text="file changed",
+            )
+
+        client = _wire_client(handler)
+        _prime_authorization(client)
+        try:
+            with pytest.raises(ZoteroAPIError) as captured:
+                await client.local_replace_attachment_file(
+                    "ABCD2345",
+                    replacement,
+                    expected_md5="a" * 32,
+                )
+            assert captured.value.status_code == 412
+        finally:
+            await client.close()
+        assert calls == 3
 
     @pytest.mark.asyncio
     async def test_attach_file_rejects_upload_url_outside_same_origin(self, tmp_path: Path) -> None:

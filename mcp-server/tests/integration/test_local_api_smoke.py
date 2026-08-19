@@ -13,6 +13,7 @@ from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Thread
 from typing import Any
+from urllib.parse import parse_qs, urlsplit
 
 from mcp.client import Client
 import pytest
@@ -88,6 +89,24 @@ class _ZoteroSmokeHandler(BaseHTTPRequestHandler):
         if self.path == "/api/":
             self._send(200, b'{"version":3}')
             return
+        parsed = urlsplit(self.path)
+        if parsed.path == "/api/users/0/tags":
+            self._send(
+                200,
+                b'[{"tag":"reviewed"},{"tag":"needs PDF"}]',
+                headers={"Last-Modified-Version": "7"},
+            )
+            return
+        if parsed.path == "/api/users/0/items" and parse_qs(parsed.query) == {
+            "format": ["versions"],
+            "limit": ["1"],
+        }:
+            self._send(
+                200,
+                b"{}",
+                headers={"Last-Modified-Version": "7"},
+            )
+            return
         self._send(404, b'{"error":"not found"}')
 
     def do_POST(self) -> None:  # noqa: N802 - stdlib handler contract
@@ -147,6 +166,27 @@ class _ZoteroSmokeHandler(BaseHTTPRequestHandler):
             return
 
         self._send(404, b'{"error":"not found"}')
+
+    def do_DELETE(self) -> None:  # noqa: N802 - stdlib handler contract
+        body = self._body()
+        self._record(body)
+        parsed = urlsplit(self.path)
+        if parsed.path != "/api/users/0/tags":
+            self._send(404, b'{"error":"not found"}')
+            return
+        required_headers = {
+            "Zotero-Server-ID": SERVER_ID,
+            "Zotero-API-Key": LOCAL_KEY,
+            "Zotero-API-Version": "3",
+            "If-Unmodified-Since-Version": "7",
+        }
+        if any(self.headers.get(name) != value for name, value in required_headers.items()):
+            self._send(401, b'{"error":"missing write precondition"}')
+            return
+        if parse_qs(parsed.query) != {"tag": ["reviewed||needs PDF"]}:
+            self._send(400, b'{"error":"wrong tag delimiter"}')
+            return
+        self._send(204)
 
 
 @contextmanager
@@ -249,3 +289,59 @@ async def test_public_mcp_connection_failure_is_bounded_and_structured() -> None
     assert result.is_error is False
     assert result.structured_content["connected"] is False
     assert "Zotero" in result.structured_content["message"]
+
+
+@pytest.mark.asyncio
+async def test_public_delete_tags_uses_list_snapshot_cursor_and_single_wire_parameter() -> None:
+    """Exercise the public read/preview/confirmed tag-delete contract end to end."""
+    with _fake_zotero() as (http_server, handler):
+        keeper = create_server(
+            McpServerConfig(
+                zotero=McpZoteroConfig(
+                    host="127.0.0.1",
+                    port=http_server.server_port,
+                    timeout=2,
+                )
+            )
+        )
+        try:
+            async with Client(keeper.mcp) as client:
+                tags = await client.call_tool("list_tags", {})
+                authorization = await client.call_tool("authorize_local_writes", {})
+                request_count_before_preview = len(handler.requests)
+                proposal = await client.call_tool(
+                    "delete_tags",
+                    {
+                        "tags": ["reviewed", "needs PDF"],
+                        "expected_library_version": 7,
+                    },
+                )
+                request_count_after_preview = len(handler.requests)
+                deletion = await client.call_tool(
+                    "delete_tags",
+                    {
+                        "tags": ["reviewed", "needs PDF"],
+                        "expected_library_version": 7,
+                        "confirm": True,
+                        "expected_server_id": SERVER_ID,
+                    },
+                )
+        finally:
+            await keeper._zotero.close()
+
+    assert tags.structured_content["library_version"] == 7
+    assert tags.structured_content["server_id"] == SERVER_ID
+    assert authorization.structured_content["authorized"] is True
+    assert proposal.structured_content["confirmation_required"] is True
+    assert request_count_after_preview == request_count_before_preview
+    assert deletion.structured_content["success"] is True
+
+    paths = [(entry["method"], entry["path"]) for entry in handler.requests]
+    assert paths == [
+        ("GET", "/api/users/0/tags"),
+        ("GET", "/api/"),
+        ("POST", "/api/local/authorize"),
+        ("GET", "/api/"),
+        ("GET", "/api/users/0/items?format=versions&limit=1"),
+        ("DELETE", "/api/users/0/tags?tag=reviewed%7C%7Cneeds+PDF"),
+    ]

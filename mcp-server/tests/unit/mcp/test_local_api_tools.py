@@ -20,17 +20,28 @@ PARENT_KEY = "ABCD2345"
 ITEM_KEY = "BCDE3456"
 SECOND_ITEM_KEY = "CDEF4567"
 ATTACHMENT_KEY = "DEFG5678"
+SECOND_ATTACHMENT_KEY = "EFGH6789"
+SEARCH_KEY = "FGHJ7892"
 SERVER_ID = "test-zotero-server"
 
 TOOL_NAMES = {
     "authorize_local_writes",
     "create_collection",
+    "update_collection",
+    "delete_collection",
     "add_items_to_collection",
+    "remove_items_from_collection",
     "update_item_fields",
+    "delete_item",
     "create_note",
     "create_saved_search",
+    "update_saved_search",
+    "delete_saved_search",
+    "delete_tags",
     "attach_file_to_item",
+    "replace_attachment_file",
     "set_attachment_fulltext",
+    "set_attachment_fulltexts",
 }
 
 
@@ -56,6 +67,25 @@ def _item(
 
 def _collection(key: str = COLLECTION_KEY, name: str = "Research") -> dict[str, Any]:
     return {"key": key, "version": 3, "data": {"key": key, "version": 3, "name": name}}
+
+
+def _attachment(key: str = ATTACHMENT_KEY, *, version: int = 9, md5: str = "a" * 32) -> dict[str, Any]:
+    item = _item(key, version=version, item_type="attachment")
+    item["data"].update({"linkMode": "imported_file", "md5": md5})
+    return item
+
+
+def _search(key: str = SEARCH_KEY, *, version: int = 5) -> dict[str, Any]:
+    return {
+        "key": key,
+        "version": version,
+        "data": {
+            "key": key,
+            "version": version,
+            "name": "AI",
+            "conditions": [{"condition": "title", "operator": "contains", "value": "AI"}],
+        },
+    }
 
 
 def _registered_tools(zotero: AsyncMock) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -95,29 +125,59 @@ def zotero() -> AsyncMock:
         "library_version": 23,
         "server_id": SERVER_ID,
     }
+    client.get_library_cursor.return_value = {
+        "library_version": 23,
+        "server_id": SERVER_ID,
+    }
     client.get_collection.return_value = _collection()
     client.get_item.side_effect = lambda key: _item(key)
+    client.get_search.return_value = _search()
     client.local_create_collection.return_value = {"success": {"0": COLLECTION_KEY}}
     client.local_batch_update_items.return_value = {"successful": {"0": ITEM_KEY}, "unchanged": {}, "failed": {}}
     client.local_update_item.return_value = None
     client.local_create_item.return_value = {"successful": {"0": {"key": ATTACHMENT_KEY}}}
     client.local_create_search.return_value = {"successful": {"0": {"key": "EFGH6789"}}}
     client.local_attach_file.return_value = {"attachment_key": ATTACHMENT_KEY, "uploaded": True}
+    client.local_replace_attachment_file.return_value = {
+        "attachment_key": ATTACHMENT_KEY,
+        "uploaded": True,
+        "md5": "b" * 32,
+    }
     client.local_set_fulltext.return_value = {
         "attachment_key": ATTACHMENT_KEY,
+        "library_version": 24,
+    }
+    client.local_set_fulltexts.return_value = {
+        "successful": {
+            "0": {"key": ATTACHMENT_KEY},
+            "1": {"key": SECOND_ATTACHMENT_KEY},
+        },
+        "failed": {},
         "library_version": 24,
     }
     return client
 
 
 @pytest.mark.asyncio
-async def test_real_mcp_surface_has_eight_closed_world_write_tools(zotero: AsyncMock) -> None:
+async def test_real_mcp_surface_has_seventeen_closed_world_write_tools(zotero: AsyncMock) -> None:
     server: MCPServer[Any] = MCPServer("local-api-tools-test")
     register_local_api_tools(server, zotero)
 
     listed = {tool.name: tool for tool in await server.list_tools()}
     assert set(listed) == TOOL_NAMES
-    destructive_tools = {"update_item_fields", "set_attachment_fulltext"}
+    destructive_tools = {
+        "update_collection",
+        "delete_collection",
+        "remove_items_from_collection",
+        "update_item_fields",
+        "delete_item",
+        "update_saved_search",
+        "delete_saved_search",
+        "delete_tags",
+        "replace_attachment_file",
+        "set_attachment_fulltext",
+        "set_attachment_fulltexts",
+    }
     for name, tool in listed.items():
         assert tool.annotations is not None
         assert tool.annotations.read_only_hint is False
@@ -129,6 +189,16 @@ async def test_real_mcp_surface_has_eight_closed_world_write_tools(zotero: Async
     assert listed["set_attachment_fulltext"].input_schema["required"] == [
         "attachment_key",
         "content",
+        "expected_library_version",
+    ]
+    assert listed["replace_attachment_file"].input_schema["required"] == [
+        "attachment_key",
+        "file_path",
+        "expected_version",
+        "expected_md5",
+    ]
+    assert listed["set_attachment_fulltexts"].input_schema["required"] == [
+        "entries",
         "expected_library_version",
     ]
     assert "key" not in listed["authorize_local_writes"].input_schema["properties"]
@@ -166,15 +236,29 @@ async def test_confirm_false_is_zero_io_for_every_mutation(zotero: AsyncMock, tm
     proposed_file = tmp_path / "does-not-need-to-exist.pdf"
     calls = [
         tools["create_collection"]("Research", None, False),
+        tools["update_collection"](COLLECTION_KEY, 3, name="Renamed", confirm=False),
+        tools["delete_collection"](COLLECTION_KEY, 3, False),
         tools["add_items_to_collection"]([ITEM_KEY], COLLECTION_KEY, False),
+        tools["remove_items_from_collection"]([ITEM_KEY], COLLECTION_KEY, False),
         tools["update_item_fields"](ITEM_KEY, {"title": "New"}, 7, False),
+        tools["delete_item"](ITEM_KEY, 7, False),
         tools["create_note"](PARENT_KEY, "<p>Note</p>", False),
         tools["create_saved_search"](
             "AI",
             [{"condition": "title", "operator": "contains", "value": "AI"}],
             False,
         ),
+        tools["update_saved_search"](SEARCH_KEY, 5, name="Renamed", confirm=False),
+        tools["delete_saved_search"](SEARCH_KEY, 5, False),
+        tools["delete_tags"](["reviewed"], 23, False),
         tools["attach_file_to_item"](PARENT_KEY, str(proposed_file), "Full Text PDF", False),
+        tools["replace_attachment_file"](
+            ATTACHMENT_KEY,
+            str(proposed_file),
+            9,
+            "a" * 32,
+            False,
+        ),
         tools["set_attachment_fulltext"](
             ATTACHMENT_KEY,
             "content",
@@ -182,6 +266,18 @@ async def test_confirm_false_is_zero_io_for_every_mutation(zotero: AsyncMock, tm
             indexed_pages=1,
             total_pages=1,
             confirm=False,
+        ),
+        tools["set_attachment_fulltexts"](
+            [
+                {
+                    "attachment_key": ATTACHMENT_KEY,
+                    "content": "content",
+                    "indexed_chars": 7,
+                    "total_chars": 7,
+                }
+            ],
+            23,
+            False,
         ),
     ]
     results = await asyncio.gather(*calls)
@@ -195,13 +291,23 @@ async def test_confirm_false_is_zero_io_for_every_mutation(zotero: AsyncMock, tm
         "get_collection",
         "get_item",
         "get_item_library_cursor",
+        "get_library_cursor",
+        "get_search",
         "local_create_collection",
+        "local_update_collection",
+        "local_delete_collection",
         "local_batch_update_items",
         "local_update_item",
+        "local_delete_item",
         "local_create_item",
         "local_create_search",
+        "local_update_search",
+        "local_delete_search",
+        "local_delete_tags",
         "local_attach_file",
+        "local_replace_attachment_file",
         "local_set_fulltext",
+        "local_set_fulltexts",
     ):
         getattr(zotero, method_name).assert_not_awaited()
 
@@ -712,3 +818,305 @@ async def test_zotero_error_shape_is_stable(zotero: AsyncMock) -> None:
             "retry_after": None,
         },
     }
+
+
+@pytest.mark.asyncio
+async def test_remove_items_from_collection_uses_fresh_item_versions(zotero: AsyncMock) -> None:
+    tools, _ = _registered_tools(zotero)
+
+    async def get_item(key: str) -> dict[str, Any]:
+        if key == ITEM_KEY:
+            return _item(key, version=10, collections=[COLLECTION_KEY, "GHJK8923"])
+        return _item(key, version=11, collections=["GHJK8923"])
+
+    zotero.get_item.side_effect = get_item
+    zotero.local_batch_update_items.return_value = {
+        "successful": {"0": {"key": ITEM_KEY, "version": 12}},
+        "unchanged": {},
+        "failed": {},
+    }
+
+    result = await tools["remove_items_from_collection"](
+        [ITEM_KEY, ITEM_KEY, SECOND_ITEM_KEY],
+        COLLECTION_KEY,
+        True,
+        expected_server_id=SERVER_ID,
+    )
+
+    assert result["success"] is True
+    assert result["requested_count"] == 2
+    assert result["changed_count"] == 1
+    assert result["unchanged_count"] == 1
+    zotero.local_batch_update_items.assert_awaited_once_with([{"key": ITEM_KEY, "version": 10, "collections": ["GHJK8923"]}])
+
+
+@pytest.mark.asyncio
+async def test_update_collection_checks_exact_version_and_moves_to_root(zotero: AsyncMock) -> None:
+    tools, _ = _registered_tools(zotero)
+    zotero.get_collection.return_value = _collection(COLLECTION_KEY, "Before")
+
+    result = await tools["update_collection"](
+        COLLECTION_KEY,
+        3,
+        name=" After ",
+        move_to_library_root=True,
+        confirm=True,
+        expected_server_id=SERVER_ID,
+    )
+
+    assert result["success"] is True
+    zotero.local_update_collection.assert_awaited_once_with(
+        COLLECTION_KEY,
+        {"name": "After", "parentCollection": False},
+        expected_version=3,
+        replace=False,
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_collection_stale_version_is_zero_write(zotero: AsyncMock) -> None:
+    tools, _ = _registered_tools(zotero)
+    stale = _collection()
+    stale["version"] = 4
+    stale["data"]["version"] = 4
+    zotero.get_collection.return_value = stale
+
+    result = await tools["update_collection"](
+        COLLECTION_KEY,
+        3,
+        name="After",
+        confirm=True,
+        expected_server_id=SERVER_ID,
+    )
+
+    assert result["error"]["code"] == "version_conflict"
+    zotero.local_update_collection.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("tool_name", "key", "version", "read_method", "delete_method", "result_key"),
+    [
+        ("delete_collection", COLLECTION_KEY, 3, "get_collection", "local_delete_collection", "collection_key"),
+        ("delete_item", ITEM_KEY, 7, "get_item", "local_delete_item", "item_key"),
+        ("delete_saved_search", SEARCH_KEY, 5, "get_search", "local_delete_search", "search_key"),
+    ],
+)
+async def test_single_delete_tools_use_exact_object_version(
+    zotero: AsyncMock,
+    tool_name: str,
+    key: str,
+    version: int,
+    read_method: str,
+    delete_method: str,
+    result_key: str,
+) -> None:
+    tools, _ = _registered_tools(zotero)
+    if read_method == "get_item":
+        zotero.get_item.side_effect = None
+        zotero.get_item.return_value = _item(key, version=version)
+    elif read_method == "get_search":
+        zotero.get_search.return_value = _search(key, version=version)
+
+    result = await tools[tool_name](
+        key,
+        version,
+        True,
+        expected_server_id=SERVER_ID,
+    )
+
+    assert result["success"] is True
+    assert result[result_key] == key
+    getattr(zotero, delete_method).assert_awaited_once_with(key, expected_version=version)
+
+
+@pytest.mark.asyncio
+async def test_update_saved_search_uses_exact_version_and_validated_patch(zotero: AsyncMock) -> None:
+    tools, _ = _registered_tools(zotero)
+    conditions = [{"condition": "title", "operator": "contains", "value": "evidence"}]
+
+    result = await tools["update_saved_search"](
+        SEARCH_KEY,
+        5,
+        name=" Evidence ",
+        conditions=conditions,
+        confirm=True,
+        expected_server_id=SERVER_ID,
+    )
+
+    assert result["success"] is True
+    zotero.get_search.assert_awaited_once_with(SEARCH_KEY)
+    zotero.local_update_search.assert_awaited_once_with(
+        SEARCH_KEY,
+        {"name": "Evidence", "conditions": conditions},
+        expected_version=5,
+        replace=False,
+    )
+
+
+@pytest.mark.asyncio
+async def test_delete_tags_refreshes_exact_library_cursor(zotero: AsyncMock) -> None:
+    tools, _ = _registered_tools(zotero)
+
+    result = await tools["delete_tags"](
+        ["reviewed", "reviewed", "needs PDF"],
+        23,
+        True,
+        expected_server_id=SERVER_ID,
+    )
+
+    assert result["success"] is True
+    zotero.get_library_cursor.assert_awaited_once_with()
+    zotero.local_delete_tags.assert_awaited_once_with(
+        ["reviewed", "needs PDF"],
+        expected_version=23,
+    )
+
+
+@pytest.mark.asyncio
+async def test_delete_tags_stale_library_cursor_is_zero_write(zotero: AsyncMock) -> None:
+    tools, _ = _registered_tools(zotero)
+    zotero.get_library_cursor.return_value = {
+        "library_version": 24,
+        "server_id": SERVER_ID,
+    }
+
+    result = await tools["delete_tags"](
+        ["reviewed"],
+        23,
+        True,
+        expected_server_id=SERVER_ID,
+    )
+
+    assert result["error"]["code"] == "version_conflict"
+    zotero.local_delete_tags.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_replace_attachment_file_checks_version_md5_and_imported_mode(
+    zotero: AsyncMock,
+    tmp_path: Path,
+) -> None:
+    tools, _ = _registered_tools(zotero)
+    replacement = tmp_path / "replacement.pdf"
+    replacement.write_bytes(b"replacement")
+    zotero.get_item.side_effect = None
+    zotero.get_item.return_value = _attachment(version=9, md5="a" * 32)
+
+    result = await tools["replace_attachment_file"](
+        ATTACHMENT_KEY,
+        str(replacement),
+        9,
+        "A" * 32,
+        True,
+        expected_server_id=SERVER_ID,
+    )
+
+    assert result["success"] is True
+    zotero.local_replace_attachment_file.assert_awaited_once_with(
+        ATTACHMENT_KEY,
+        replacement.resolve(),
+        expected_md5="a" * 32,
+    )
+
+
+@pytest.mark.asyncio
+async def test_replace_attachment_file_md5_conflict_is_zero_write(
+    zotero: AsyncMock,
+    tmp_path: Path,
+) -> None:
+    tools, _ = _registered_tools(zotero)
+    replacement = tmp_path / "replacement.pdf"
+    replacement.write_bytes(b"replacement")
+    zotero.get_item.side_effect = None
+    zotero.get_item.return_value = _attachment(version=9, md5="b" * 32)
+
+    result = await tools["replace_attachment_file"](
+        ATTACHMENT_KEY,
+        str(replacement),
+        9,
+        "a" * 32,
+        True,
+        expected_server_id=SERVER_ID,
+    )
+
+    assert result["error"]["code"] == "version_conflict"
+    zotero.local_replace_attachment_file.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_set_attachment_fulltexts_validates_all_targets_then_writes_once(zotero: AsyncMock) -> None:
+    tools, _ = _registered_tools(zotero)
+    zotero.get_item.side_effect = lambda key: _attachment(key)
+    entries = [
+        {
+            "attachment_key": ATTACHMENT_KEY,
+            "content": "one",
+            "indexed_pages": 1,
+            "total_pages": 2,
+        },
+        {
+            "attachment_key": SECOND_ATTACHMENT_KEY,
+            "content": "two",
+            "indexed_chars": 3,
+            "total_chars": 3,
+        },
+    ]
+
+    result = await tools["set_attachment_fulltexts"](
+        entries,
+        23,
+        True,
+        expected_server_id=SERVER_ID,
+    )
+
+    assert result["success"] is True
+    assert result["updated_count"] == 2
+    zotero.get_library_cursor.assert_awaited_once_with()
+    zotero.local_set_fulltexts.assert_awaited_once_with(
+        [
+            {"key": ATTACHMENT_KEY, "content": "one", "indexedPages": 1, "totalPages": 2},
+            {"key": SECOND_ATTACHMENT_KEY, "content": "two", "indexedChars": 3, "totalChars": 3},
+        ],
+        expected_library_version=23,
+    )
+
+
+@pytest.mark.asyncio
+async def test_set_attachment_fulltexts_rejects_more_than_ten_without_io(zotero: AsyncMock) -> None:
+    tools, _ = _registered_tools(zotero)
+    entry = {
+        "attachment_key": ATTACHMENT_KEY,
+        "content": "text",
+        "indexed_chars": 4,
+        "total_chars": 4,
+    }
+
+    result = await tools["set_attachment_fulltexts"]([entry] * 11, 23, True, expected_server_id=SERVER_ID)
+
+    assert result["error"]["code"] == "invalid_entries"
+    zotero.begin_local_operation.assert_not_awaited()
+    zotero.local_set_fulltexts.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_set_attachment_fulltexts_rejects_empty_content_without_io(zotero: AsyncMock) -> None:
+    tools, _ = _registered_tools(zotero)
+
+    result = await tools["set_attachment_fulltexts"](
+        [
+            {
+                "attachment_key": ATTACHMENT_KEY,
+                "content": "",
+                "indexed_chars": 0,
+                "total_chars": 0,
+            }
+        ],
+        23,
+        True,
+        expected_server_id=SERVER_ID,
+    )
+
+    assert result["error"]["code"] == "invalid_content"
+    zotero.begin_local_operation.assert_not_awaited()
+    zotero.local_set_fulltexts.assert_not_awaited()

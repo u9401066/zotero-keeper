@@ -101,6 +101,7 @@ class TestGetItemAttachments:
                     "filename": "paper.pdf",
                     "contentType": "application/pdf",
                     "linkMode": "imported_file",
+                    "md5": "a" * 32,
                 },
             },
             {
@@ -162,6 +163,7 @@ class TestGetItemAttachments:
         assert result["attachments"][0]["version_scope"] == "local"
         assert result["attachments"][0]["object_version"] == 12
         assert result["attachments"][0]["server_id"] == "server-A"
+        assert result["attachments"][0]["md5"] == "a" * 32
         assert result["attachments"][0]["content_type"] == "application/pdf"
         assert result["library_version"] == 73
         assert result["server_id"] == "server-A"
