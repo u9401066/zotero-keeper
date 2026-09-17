@@ -22,7 +22,7 @@ Let AI manage your references! A MCP Server connecting VS Code Copilot / Claude 
 
 [📦 Install Zotero + PubMed MCP from the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp)
 
-The **v0.9.0 VSIX is the recommended distribution**. It creates an isolated environment and installs Zotero Keeper 2.3.0 plus the pinned PubMed Search MCP 0.7.3 release snapshot. The `uvx`/PyPI path remains available for direct-server installs; verify the published version before assuming it matches this source release.
+The **v0.9.1 VSIX is the recommended distribution**. It creates an isolated environment and installs Zotero Keeper 2.3.1 plus the pinned PubMed Search MCP 0.7.3 release snapshot. The `uvx`/PyPI path remains available for direct-server installs; verify the published version before assuming it matches this source release.
 
 > ⚠️ MCP SDK 2.0 is not compatible with 1.x. After upgrading the extension, run **Zotero MCP: Reinstall Python Environment** if VS Code still has an older managed environment.
 
@@ -168,9 +168,12 @@ Keeper 2.3 adds seven tools: `get_item_schema`, `get_item_annotations`,
 results and support nested groups and paging. See the [48-tool audit](docs/ZOTERO_10_TOOL_AUDIT.md)
 for exact coverage and deliberate omissions (including group writes and annotation editing).
 
-VSIX 0.9.0 stops automatic harness overwrites. Installation is opt-in, records
+VSIX 0.9.1 stops automatic harness overwrites. Installation is opt-in, records
 SHA-256 ownership, backs up managed upgrades, prevents downgrades and preserves
-custom files/whole skills. [Upgrade and recovery guide](docs/HARNESS_UPGRADES.md).
+custom files/whole skills. Updates use atomic replacements and rollback on
+failure; interrupted updates stop for recovery review. [Upgrade and recovery guide](docs/HARNESS_UPGRADES.md).
+Keeper 2.3.1 streams ownership scans with database/version checks, rejects
+incomplete results, and reports unavailable statistics as unknown rather than zero.
 PubMed 0.7.3 uses `validate_pico_plan` for agent-provided PICO fields and
 `read_session(request={"action":"pmids"})` for cached session reuse.
 
@@ -448,7 +451,7 @@ Zotero supports **nested collections**. Recommended strategies:
 
 ## 🔬 PubMed Integration
 
-The v0.9.0 VSIX pins [pubmed-search-mcp 0.7.3](https://github.com/u9401066/pubmed-search-mcp/tree/v0.7.3) at release commit `fbbaaca`. Its MCP SDK v2 server exposes **41 tools across 16 categories**. This release adds fail-closed provider contracts, `trials`/`native_semantic`/`systematic` search modes, durable SearchRun status and replay through `read_session`, and richer Research Chronicle maps and Mermaid timelines. PubMed has a [separate feature site](https://u9401066.github.io/pubmed-search-mcp/).
+The v0.9.1 VSIX pins [pubmed-search-mcp 0.7.3](https://github.com/u9401066/pubmed-search-mcp/tree/v0.7.3) at release commit `fbbaaca`. Its MCP SDK v2 server exposes **41 tools across 16 categories**. This release adds fail-closed provider contracts, `trials`/`native_semantic`/`systematic` search modes, durable SearchRun status and replay through `read_session`, and richer Research Chronicle maps and Mermaid timelines. PubMed has a [separate feature site](https://u9401066.github.io/pubmed-search-mcp/).
 
 ```
 You: "Find new anesthesia AI papers from 2024 that I don't have"

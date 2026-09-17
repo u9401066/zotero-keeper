@@ -7,7 +7,7 @@
 - **pubmed-search-mcp** owns search, discovery, export, citation metrics, and unified article JSON contracts.
 - **zotero-keeper** owns local-library work: duplicate checks, collection targeting, and the single public import handoff into Zotero.
 - Default posture: keeper exposes only `import_articles` for PubMed handoff; legacy bridge tools stay hidden unless you opt in.
-- Release baseline: VSIX 0.9.0 installs Zotero Keeper 2.3.0 (48 default tools, 6 concrete resources) and PubMed Search MCP 0.7.3 at `fbbaaca` (41 tools, 16 categories).
+- Release baseline: VSIX 0.9.1 installs Zotero Keeper 2.3.1 (48 default tools, 6 concrete resources) and PubMed Search MCP 0.7.3 at `fbbaaca` (41 tools, 16 categories).
 
 ## Setup Checklist
 
@@ -78,6 +78,11 @@ delete_collection(collection_key, expected_version, confirm=False, expected_serv
 add_items_to_collection(item_keys, collection_key, confirm=False, expected_server_id=None)
 remove_items_from_collection(item_keys, collection_key, confirm=False, expected_server_id=None)
 update_item_fields(item_key, fields, expected_version, confirm=False, expected_server_id=None)
+update_item_tags(item_key, expected_version, add=None, remove=None, confirm=False, expected_server_id=None)
+update_item_creators(item_key, creators, expected_version, confirm=False, expected_server_id=None)
+update_note(item_key, note_html, expected_version, confirm=False, expected_server_id=None)
+set_item_trashed(item_key, trashed, expected_version, confirm=False, expected_server_id=None)
+batch_update_item_fields(updates, confirm=False, expected_server_id=None)
 delete_item(item_key, expected_version, confirm=False, expected_server_id=None)
 create_note(parent_item_key, note_html, confirm=False, expected_server_id=None)
 create_saved_search(name, conditions, confirm=False, expected_server_id=None)
@@ -156,6 +161,6 @@ registration. A failure after child creation may return `partial=true` and
 
 ## Quick Verification
 
-- Keeper: `uv run python tests/check_mcp.py` should discover the SDK v2 server surface; the default server has 41 tools, 6 concrete resources, and 4 URI templates.
+- Keeper: `uv run python tests/check_mcp.py` should discover the SDK v2 server surface; the default server has 48 tools, 6 concrete resources, and 4 URI templates.
 - PubMed: start the pinned 0.7.3 server per its README and confirm the client discovers 41 tools before making a real `unified_search` call.
 - Integration: invoke `check_connection` (keeper) and a small `unified_search` → `import_articles` chain before production use.

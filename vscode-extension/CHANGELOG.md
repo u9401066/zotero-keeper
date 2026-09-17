@@ -2,6 +2,26 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.9.1] - 2026-09-17
+
+### Fixed
+
+- Commit harness assets and their ownership ledger as one recoverable update.
+  Atomic replacements prevent truncation; ordinary failures restore prior bytes.
+  Concurrent edits are preserved and interrupted updates block until reviewed.
+- Verify existing recovery backups and reject unsafe ledger paths/invalid versions.
+- Bundle Keeper 2.3.1 with consistent paginated ownership scans, accurate orphan
+  categories, honest partial statistics and shared response identity checks.
+
+### Changed
+
+- Refresh architecture, README and harness recovery instructions. PubMed Search
+  remains pinned to official 0.7.3 (`fbbaaca`, 41 tools); Keeper exposes 48 tools.
+- Exclude compiled unit tests and Mocha configuration from the published VSIX,
+  with a packaging regression guard.
+- Scan every TypeScript source (including top-level runtime modules) with ESLint,
+  remove permissive test casts and require zero warnings across platforms.
+
 ## [0.9.0] - 2026-09-17
 
 ### Changed

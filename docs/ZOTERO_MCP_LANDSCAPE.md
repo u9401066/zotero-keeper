@@ -12,7 +12,7 @@ We did not find a Zotero-organization repository or Zotero documentation that pu
 
 | Surface | Ownership / status | Verified positioning | Installation boundary |
 |---------|--------------------|----------------------|-----------------------|
-| Zotero Keeper 2.3.0 | This repository | Local Zotero workflow with 48 default tools and 6 concrete resources: reads, fail-closed Connector imports, and 22 confirmed/authorized Zotero 10+ task tools without a raw API escape hatch | Installed with PubMed Search MCP 0.7.3 in the v0.9.0 VSIX managed environment |
+| Zotero Keeper 2.3.1 | This repository | Local Zotero workflow with 48 default tools and 6 concrete resources: reads, fail-closed Connector imports, and 22 confirmed/authorized Zotero 10+ task tools without a raw API escape hatch | Installed with PubMed Search MCP 0.7.3 in the v0.9.1 VSIX managed environment |
 | `54yyyu/zotero-mcp` | Community project; MCP Registry-listed | Its own documentation describes library/collection/tag browsing, metadata and full-text access, semantic search, annotations and notes, adding records/files, and library-maintenance operations. Consult that project for its current tool contract | Must use a separate virtual environment and MCP process from Keeper |
 | OpenAI-curated Zotero connector | Curated connector product; not a Zotero-organization server | Treat only its installed, discoverable connector contract as authoritative | Configure independently; do not assume its tools match either Python server |
 | Zotero Web API | Official Zotero HTTPS API | Authenticated remote library access and supported CRUD operations | Preferred foundation for remote access |
@@ -28,16 +28,16 @@ Use two isolated environments and two MCP server definitions:
 ```text
 VS Code / MCP client
 ├─ Zotero Keeper process
-│  └─ VSIX-managed venv: Keeper 2.3.0 + PubMed Search MCP 0.7.3
+│  └─ VSIX-managed venv: Keeper 2.3.1 + PubMed Search MCP 0.7.3
 └─ Optional community Zotero MCP process
    └─ separate venv owned by that project
 ```
 
 Do not add the community distribution to the VSIX-managed environment. Reinstalling or upgrading either project in the shared environment could silently change which `zotero_mcp` module starts.
 
-## What the v0.9.0 VSIX guarantees
+## What the v0.9.1 VSIX guarantees
 
-- Zotero Keeper 2.3.0 on `mcp>=2.0,<3`, using the SDK v2 `MCPServer` API.
+- Zotero Keeper 2.3.1 on `mcp>=2.0,<3`, using the SDK v2 `MCPServer` API.
 - 48 default Keeper tools and 6 concrete resources; four parameterized resource templates are advertised separately.
 - Fail-closed collection routing: exact-key or double-confirmed `ROOT` for `interactive_save`, and explicit `allow_library_root=true` after user confirmation for non-interactive root saves.
 - Seventeen Zotero 10+ Local API tools: `authorize_local_writes` plus 16 narrow mutations. Each preview already carries a response-bound `expected_server_id`; `confirm=false` has zero Zotero interactions and runtime keys never cross MCP.

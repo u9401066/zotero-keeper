@@ -6,7 +6,7 @@
 ## Goal
 Use Zotero Keeper and PubMed Search MCP as a research assistant for literature search, review, and import.
 
-The v0.9.0 VSIX baseline is Zotero Keeper 2.3.0 (MCP SDK v2; 48 default tools and 6 concrete resources) plus PubMed Search MCP 0.7.3 at `fbbaaca` (41 tools in 16 categories).
+The v0.9.1 VSIX baseline is Zotero Keeper 2.3.1 (MCP SDK v2; 48 default tools and 6 concrete resources) plus PubMed Search MCP 0.7.3 at `fbbaaca` (41 tools in 16 categories).
 
 ## Response Style
 - Use Traditional Chinese

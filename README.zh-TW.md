@@ -21,7 +21,7 @@
 
 [📦 從 VS Code Marketplace 安裝 Zotero + PubMed MCP](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp)
 
-**v0.9.0 VSIX 是目前建議的發佈管道**：擴充套件會建立隔離環境，並安裝 Zotero Keeper 2.3.0 與固定在正式 release commit 的 PubMed Search MCP 0.7.3。`uvx` / PyPI 仍可用於直接 server 安裝，但應先核對已發佈版本是否與本次原始碼 release 一致。
+**v0.9.1 VSIX 是目前建議的發佈管道**：擴充套件會建立隔離環境，並安裝 Zotero Keeper 2.3.1 與固定在正式 release commit 的 PubMed Search MCP 0.7.3。`uvx` / PyPI 仍可用於直接 server 安裝，但應先核對已發佈版本是否與本次原始碼 release 一致。
 
 > ⚠️ MCP SDK 2.0 與 1.x 不相容。擴充套件升級後，若 VS Code 仍使用舊環境，請執行 **Zotero MCP: Reinstall Python Environment**。
 
@@ -50,8 +50,11 @@ Keeper 2.3 新增 `get_item_schema`、`get_item_annotations`、`update_item_tags
 Saved search 保留附件／筆記／annotation 結果，支援巢狀條件與分頁。
 完整 48 個工具及刻意未開放的功能，見[設計與覆蓋稽核](docs/ZOTERO_10_TOOL_AUDIT.md)。
 
-VSIX 0.9.0 預設停止啟動時覆寫 harness；改為明確安裝、SHA-256 所有權紀錄、
-升級前備份、防降版，以及整個自訂 skill 的保護。[升級／復原說明](docs/HARNESS_UPGRADES.md)。
+VSIX 0.9.1 預設停止啟動時覆寫 harness；改為明確安裝、SHA-256 所有權紀錄、
+升級前備份、防降版，以及整個自訂 skill 的保護。更新採原子置換，失敗會回復；
+中斷或並行編輯留下復原紀錄，停止後續更新等待檢查。[升級／復原說明](docs/HARNESS_UPGRADES.md)。
+Keeper 2.3.1 的收藏檢查改為逐頁串流，檢查資料庫 identity／版本並拒絕不完整結果；
+統計讀取失敗明確回報未知，不再當作零。
 PubMed 0.7.3 改用 Agent 提取 PICO 後的 `validate_pico_plan`，以及
 `read_session(request={"action":"pmids"})` 等 session 操作。
 
@@ -442,7 +445,7 @@ Zotero 支援**巢狀收藏夾**。建議的組織方式：
 
 ## 🔬 搭配 PubMed 使用
 
-v0.9.0 VSIX 固定使用 [pubmed-search-mcp 0.7.3](https://github.com/u9401066/pubmed-search-mcp/tree/v0.7.3)（release commit `fbbaaca`）。它的 MCP SDK v2 server 提供 **16 類、41 個工具**，並加入 fail-closed provider contract、`trials` / `native_semantic` / `systematic` 搜尋模式、SearchRun 狀態與 replay，以及更完整的 Research Chronicle map / Mermaid timeline。PubMed 功能請參考[獨立網站](https://u9401066.github.io/pubmed-search-mcp/)。
+v0.9.1 VSIX 固定使用 [pubmed-search-mcp 0.7.3](https://github.com/u9401066/pubmed-search-mcp/tree/v0.7.3)（release commit `fbbaaca`）。它的 MCP SDK v2 server 提供 **16 類、41 個工具**，並加入 fail-closed provider contract、`trials` / `native_semantic` / `systematic` 搜尋模式、SearchRun 狀態與 replay，以及更完整的 Research Chronicle map / Mermaid timeline。PubMed 功能請參考[獨立網站](https://u9401066.github.io/pubmed-search-mcp/)。
 
 ```
 你: 「幫我找 2024 年麻醉 AI 的新論文，我還沒有的」

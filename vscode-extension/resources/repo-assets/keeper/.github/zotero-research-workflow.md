@@ -2,7 +2,7 @@
 
 > 這份指南幫助 Copilot 理解如何正確使用 Zotero + PubMed MCP tools
 
-> v0.9.0 VSIX 基線：Zotero Keeper 2.3.0（MCP SDK v2，48 個預設 tools + 6 個具體 resources）與 PubMed Search MCP 0.7.3 `fbbaaca`（41 tools / 16 categories）。
+> v0.9.1 VSIX 基線：Zotero Keeper 2.3.1（MCP SDK v2，48 個預設 tools + 6 個具體 resources）與 PubMed Search MCP 0.7.3 `fbbaaca`（41 tools / 16 categories）。
 
 ## 🔍 文獻搜尋流程
 

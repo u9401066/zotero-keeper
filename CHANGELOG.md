@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.1] - 2026-09-17
+
+### Fixed
+
+- Stream ownership scans page by page, checking response-bound Server-ID,
+  library cursor, totals and duplicate keys; discard partial results on failure.
+  Child attachments/notes/annotations no longer cause false ownership matches.
+- Report failed supplementary statistics as unknown with warnings, reject mixed
+  database identities, and keep orphan lists consistent with their counts.
+- Reject colliding normalized metadata field names instead of silently replacing
+  one reviewed value with another.
+- Make VSIX 0.9.1 harness upgrades recoverable transactions: atomic file/ledger
+  replacement, verified backups, rollback on failure and an interrupted-update
+  stop marker. Preserve concurrent user edits even during rollback.
+
+### Changed
+
+- Extract the shared multi-request read identity contract; refresh architecture
+  and recovery documentation and exclude compiled tests from the VSIX.
+- Fix the shell-dependent lint glob, check all TypeScript sources and enforce
+  zero warnings after tightening test mock types.
+- Publish extension 0.9.1 with Keeper 2.3.1 and unchanged PubMed Search 0.7.3.
+
 ## [2.3.0] - 2026-09-17
 
 ### Added

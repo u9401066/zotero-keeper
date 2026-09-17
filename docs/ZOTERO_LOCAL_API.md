@@ -7,7 +7,7 @@ This document separates two questions that older project documentation mixed
 together:
 
 1. What does Zotero's official API support?
-2. Which of those operations does Zotero Keeper 2.3.0 expose safely through MCP?
+2. Which of those operations does Zotero Keeper 2.3.1 expose safely through MCP?
 
 For the product-level overview, see the
 [Zotero Keeper feature site](https://u9401066.github.io/zotero-keeper/).
@@ -116,7 +116,7 @@ before invoking `attach_file_to_item` or `replace_attachment_file`.
 ## Zotero 10+ platform capability matrix
 
 `<prefix>` is `/api/users/0` for the current user or `/api/groups/<groupID>`.
-Keeper 2.3.0 intentionally limits writes to the current user's local library.
+Keeper 2.3.1 intentionally limits writes to the current user's local library.
 
 | Object | Read | Create | Update | Delete |
 |--------|:----:|:------:|:------:|:------:|
@@ -164,7 +164,7 @@ For a stored attachment:
 GET <prefix>/items/<attachmentKey>/file/view/url
 ```
 
-returns the local `file://` URL as plain text. Keeper 2.3.0 prefers this official
+returns the local `file://` URL as plain text. Keeper 2.3.1 prefers this official
 route and retains `ZOTERO_DATA_DIR/storage/<key>/<filename>` only as a fallback
 for older Zotero releases or unavailable endpoints.
 
@@ -196,7 +196,7 @@ the result reports a partial operation and its attachment key instead of
 attempting an unapproved cleanup delete. Replacement conflicts are likewise
 returned without replay.
 
-## Keeper 2.3.0 public Local API tools
+## Keeper 2.3.1 public Local API tools
 
 New in 2.3: `get_item_schema` and `get_item_annotations` provide runtime schema
 and annotation reads. `update_item_tags`, `update_item_creators`, `update_note`,
@@ -247,7 +247,7 @@ single batch request. Metadata updates reject structural fields such as keys,
 versions, item types, parent relations, creators, tags, and collection arrays;
 those require dedicated merge-aware tools rather than a raw PATCH.
 
-### Keeper 2.3.0 additions and their preconditions
+### Keeper 2.3.1 additions and their preconditions
 
 `remove_items_from_collection(item_keys, collection_key, confirm=false,
 expected_server_id=null)` accepts one to 50 exact item keys plus one exact

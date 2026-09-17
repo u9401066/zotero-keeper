@@ -1,7 +1,7 @@
 # Architecture Documentation
 
-This document describes Zotero Keeper 2.2.0, the 41-tool MCP SDK v2 server
-bundled by the v0.8.0 VSIX for safe local Zotero library management.
+This document describes Zotero Keeper 2.3.1, the 48-tool MCP SDK v2 server
+bundled by the v0.9.1 VSIX for safe local Zotero library management.
 
 ---
 
@@ -32,7 +32,7 @@ bundled by the v0.8.0 VSIX for safe local Zotero library management.
 │          └───────────────────┼───────────────────┘                        │
 │                              │                                            │
 │                              │ MCP Protocol (stdio)                       │
-│                              │ ├── Tools (41 default + 5 legacy opt-in)   │
+│                              │ ├── Tools (48 default + 5 legacy opt-in)   │
 │                              │ ├── Resources (6 + 4 URI templates)        │
 │                              │ └── Elicitation (interactive input)        │
 │                              ▼                                            │
@@ -44,6 +44,7 @@ bundled by the v0.8.0 VSIX for safe local Zotero library management.
 │  │  │  ├── basic_read_tools.py (5 tools)                           │  │   │
 │  │  │  ├── collection_tools.py (5 tools)                           │  │   │
 │  │  │  ├── local_api_tools.py (17 guarded Zotero 10+ tools)       │  │   │
+│  │  │  ├── item_edit_tools.py (7 schema/annotation/edit tools)   │  │   │
 │  │  │  ├── interactive_tools.py (2 tools + elicitation)            │  │   │
 │  │  │  ├── saved_search_tools.py (3 tools)                         │  │   │
 │  │  │  ├── search_tools.py (2 public + 1 legacy tool)              │  │   │
@@ -80,7 +81,7 @@ bundled by the v0.8.0 VSIX for safe local Zotero library management.
 
 Zotero Keeper is designed to work alongside `pubmed-search-mcp` for a complete literature workflow:
 
-The v0.8.0 VSIX pins Keeper 2.2.0 and PubMed Search MCP 0.6.3 at release commit `febf53a`. PubMed contributes 45 MCP SDK v2 tools across 16 categories, including governed SearchRun status/replay, bounded systematic and native-semantic modes, and the two-tool Research Chronicle surface.
+The v0.9.1 VSIX pins Keeper 2.3.1 and PubMed Search MCP 0.7.3 at release commit `fbbaaca`. PubMed contributes 41 MCP SDK v2 tools across 16 categories, including governed SearchRun status/replay, bounded systematic and native-semantic modes, and the two-tool Research Chronicle surface.
 
 ```
 ┌────────────────────────────┐    ┌────────────────────────────┐
@@ -90,7 +91,7 @@ The v0.8.0 VSIX pins Keeper 2.2.0 and PubMed Search MCP 0.6.3 at release commit 
 │  • unified_search          │    │  • search_items            │
 │  • prepare_export (RIS)    │───▶│  • import_articles         │
 │  • fetch_article_details   │    │  • check_articles_owned    │
-│  • parse_pico              │    │  • interactive_save        │
+│  • validate_pico_plan              │    │  • interactive_save        │
 │  • get_citation_metrics    │    │  • quick_save              │
 └────────────────────────────┘    └────────────────────────────┘
 ```
@@ -129,7 +130,8 @@ This two-server environment must not install another Python distribution named `
 | server.py | 1 | `check_connection` |
 | basic_read_tools.py | 5 | `search_items`, `get_item`, `list_items`, `list_tags`, `get_item_types` |
 | collection_tools.py | 5 | `list_collections`, `get_collection`, `get_collection_items`, `get_collection_tree`, `find_collection` |
-| local_api_tools.py | 8 | `authorize_local_writes`, `create_collection`, `add_items_to_collection`, `update_item_fields`, `create_note`, `create_saved_search`, `attach_file_to_item`, `set_attachment_fulltext` |
+| local_api_tools.py | 17 | `authorize_local_writes`, `create_collection`, `update_collection`, `delete_collection`, `add_items_to_collection`, `remove_items_from_collection`, `update_item_fields`, `delete_item`, `create_note`, `create_saved_search`, `update_saved_search`, `delete_saved_search`, `delete_tags`, `attach_file_to_item`, `replace_attachment_file`, `set_attachment_fulltext`, `set_attachment_fulltexts` |
+| item_edit_tools.py | 7 | `get_item_schema`, `get_item_annotations`, `update_item_tags`, `update_item_creators`, `update_note`, `set_item_trashed`, `batch_update_item_fields` |
 | saved_search_tools.py | 3 | `list_saved_searches`, `run_saved_search`, `get_saved_search_details` |
 | search_tools.py | 2 | `advanced_search`, `check_articles_owned` |
 | interactive_tools.py | 2 | `interactive_save`, `quick_save` |
@@ -206,6 +208,8 @@ src/zotero_mcp/
 │   │   ├── basic_read_tools.py # 5 read tools
 │   │   ├── collection_tools.py # 5 collection tools
 │   │   ├── local_api_tools.py # 17 guarded Zotero 10+ write tools
+│   │   ├── item_edit_tools.py # 2 reads + 5 confirmed editing tools
+│   │   ├── read_contracts.py  # Shared multi-request response identity checks
 │   │   ├── resources.py        # 6 resources + 4 URI templates
 │   │   ├── interactive_tools.py # 2 save tools with elicitation
 │   │   ├── saved_search_tools.py # 3 saved search tools
@@ -229,6 +233,23 @@ src/zotero_mcp/
         ├── collection.py
         └── creator.py
 ```
+
+### Read consistency and harness transactions
+
+Library ownership checks stream `client_read.iter_item_pages()` rather than
+retaining every item body. Zotero 10 scans bind all pages to the same response
+Server-ID and library version, validate total counts and reject repeated keys.
+Failures discard the ownership index; they never imply that all papers are new.
+Zotero 7–9 lack locally changing versions, so their reads cannot provide the
+same concurrent-edit guarantee. Analytics remain explicitly bounded to 5,000
+raw items; optional counts may be unknown with warnings.
+
+Extension harness installation separates planning from commit. The content
+ledger and assets form one recoverable transaction, with verified backups,
+atomic per-file replacement, rollback on ordinary failure and a pending journal
+that blocks subsequent updates after interruption. This is not a filesystem-wide
+atomic snapshot or a defense against malicious concurrent filesystem writers.
+See [recovery instructions](docs/HARNESS_UPGRADES.md).
 
 ### smart_tools.py - Helpers Only
 
@@ -264,7 +285,7 @@ class ZoteroKeeperServer:
     def __init__(self, config: ZoteroMcpConfig = None):
         self._mcp = MCPServer(
             name="zotero-keeper",
-            version="2.2.0",
+            version="2.3.1",
             instructions="Zotero library management and import",
         )
         self._zotero = ZoteroClient(config.zotero)
@@ -500,7 +521,7 @@ The 6 original smart tools were redundant with `interactive_save`/`quick_save`. 
   `Elicit(...)`, without relying on a direct context backchannel
 - Explicit resources and resource-template discovery
 
-MCP SDK 2.0 is intentionally incompatible with the old 1.x `FastMCP` interface. Keeper 2.2.0 and PubMed Search MCP 0.6.3 therefore share one SDK v2 runtime in the extension-managed environment.
+MCP SDK 2.0 is intentionally incompatible with the old 1.x `FastMCP` interface. Keeper 2.3.1 and PubMed Search MCP 0.7.3 therefore share one SDK v2 runtime in the extension-managed environment.
 
 ---
 
@@ -564,4 +585,4 @@ loopback.
 
 ---
 
-*Last updated: August 19, 2026 (Keeper 2.2.0 / MCP SDK v2)*
+*Last updated: September 17, 2026 (Keeper 2.3.1 / MCP SDK v2)*

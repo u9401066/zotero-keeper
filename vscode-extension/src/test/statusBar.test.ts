@@ -35,7 +35,7 @@ describe('StatusBarManager', () => {
                 httpsProxy: '',
             });
             (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-            manager.initialize(ctx as any);
+            manager.initialize(ctx);
 
             // Should register showQuickMenu, showStatistics, showApiStatus, resetStatistics
             const registerCalls = (vscode.commands.registerCommand as sinon.SinonStub).getCalls();
@@ -64,7 +64,7 @@ describe('StatusBarManager', () => {
                 sessionsCount: 5,
                 lastUsed: '',
             });
-            manager.initialize(ctx as any);
+            manager.initialize(ctx);
 
             // Should update stats with incremented session count
             assert.ok(ctx.globalState.update.called);
@@ -89,7 +89,7 @@ describe('StatusBarManager', () => {
                 sessionsCount: 0,
                 lastUsed: '',
             });
-            manager.initialize(ctx as any);
+            manager.initialize(ctx);
 
             // Set status to ready - should include version
             manager.setStatus('ready', 'Zotero MCP: Ready');
@@ -116,7 +116,7 @@ describe('StatusBarManager', () => {
                 sessionsCount: 0,
                 lastUsed: '',
             });
-            manager.initialize(ctx as any);
+            manager.initialize(ctx);
             manager.setStatus('ready', 'Zotero MCP: Ready');
             // We just verify it doesn't throw
         });
@@ -139,7 +139,7 @@ describe('StatusBarManager', () => {
                 sessionsCount: 0,
                 lastUsed: '',
             });
-            manager.initialize(ctx as any);
+            manager.initialize(ctx);
 
             const types: Array<'initializing' | 'installing' | 'ready' | 'warning' | 'error'> = [
                 'initializing', 'installing', 'ready', 'warning', 'error'
@@ -170,7 +170,7 @@ describe('StatusBarManager', () => {
                 lastUsed: '2025-01-01T00:00:00.000Z',
             };
             ctx.globalState.get.returns(storedStats);
-            manager.initialize(ctx as any);
+            manager.initialize(ctx);
 
             const stats = manager.getStatistics();
             assert.strictEqual(stats.articlesSearched, 42);
@@ -188,7 +188,7 @@ describe('StatusBarManager', () => {
                 sessionsCount: 0,
                 lastUsed: '',
             });
-            manager.initialize(ctx as any);
+            manager.initialize(ctx);
 
             await manager.incrementStat('articlesSearched');
 
@@ -207,7 +207,7 @@ describe('StatusBarManager', () => {
                 sessionsCount: 0,
                 lastUsed: '',
             });
-            manager.initialize(ctx as any);
+            manager.initialize(ctx);
 
             await manager.incrementStat('articlesImported', 5);
 
@@ -225,7 +225,7 @@ describe('StatusBarManager', () => {
                 sessionsCount: 0,
                 lastUsed: '',
             });
-            manager.initialize(ctx as any);
+            manager.initialize(ctx);
 
             await manager.incrementStat('articlesSearched');
 
@@ -246,7 +246,7 @@ describe('StatusBarManager', () => {
                 sessionsCount: 5,
                 lastUsed: '2025-01-01',
             });
-            manager.initialize(ctx as any);
+            manager.initialize(ctx);
 
             await manager.resetStatistics();
 
@@ -273,7 +273,7 @@ describe('StatusBarManager', () => {
                 semanticScholarApiKey: '',
             });
             (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-            manager.initialize(ctx as any);
+            manager.initialize(ctx);
 
             const apis = manager.getSupportedApis();
             assert.strictEqual(apis.length, 9);
@@ -297,7 +297,7 @@ describe('StatusBarManager', () => {
                 semanticScholarApiKey: '',
             });
             (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-            manager.initialize(ctx as any);
+            manager.initialize(ctx);
 
             const apis = manager.getSupportedApis();
             const core = apis.find(a => a.name === 'CORE (Open Access)');
@@ -315,7 +315,7 @@ describe('StatusBarManager', () => {
                 semanticScholarApiKey: '',
             });
             (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-            manager.initialize(ctx as any);
+            manager.initialize(ctx);
 
             const apis = manager.getSupportedApis();
             const core = apis.find(a => a.name === 'CORE (Open Access)');
@@ -335,7 +335,7 @@ describe('StatusBarManager', () => {
                 httpsProxy: '',
             });
             (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-            manager.initialize(ctx as any);
+            manager.initialize(ctx);
 
             const status = manager.getApiStatus();
             assert.strictEqual(status.hasApiKeys, false);
@@ -354,7 +354,7 @@ describe('StatusBarManager', () => {
                 httpsProxy: '',
             });
             (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-            manager.initialize(ctx as any);
+            manager.initialize(ctx);
 
             const status = manager.getApiStatus();
             assert.strictEqual(status.hasApiKeys, true);

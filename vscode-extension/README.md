@@ -1,5 +1,15 @@
 # Zotero + PubMed MCP Extension for VS Code
 
+## What's New in v0.9.1
+
+- **Recoverable harness upgrades**: atomic asset/ledger writes, verified backups,
+  rollback on failure, and an interrupted-update marker. Concurrent user edits
+  remain untouched; see the [recovery guide](https://github.com/u9401066/zotero-keeper/blob/main/docs/HARNESS_UPGRADES.md).
+- **Keeper 2.3.1 quality fixes**: streaming, version-consistent ownership checks;
+  accurate orphan lists; statistics distinguish unavailable counts from zero.
+- **Same new tool surface**: Keeper 48 tools and pinned PubMed Search 0.7.3
+  (41 tools), with refreshed assistant assets and a smaller production VSIX.
+
 ## What's New in v0.9.0
 
 - **Zotero Keeper 2.3.0 / Zotero 10.0.2 audit**: 48 tools, adding tags, ordered creators, note editing, reversible trash/restore, batch metadata edits, item schema and annotation reads. Saved searches retain all four result levels and nested conditions.
@@ -7,7 +17,7 @@
 - **Harness preservation**: activation no longer rewrites workspace files by default. Use the Zotero MCP: Install Official Assistant Assets command, or explicitly enable `zoteroMcp.autoUpdateHarness`. SHA-256 ownership, backups, version checks and whole-skill preservation protect local edits. Source repositories are skipped.
 - **Refreshed assistant assets**: Codex/Cline harnesses, Copilot instructions/research agent, 11 curated PubMed skills and pipeline hooks match the pinned tool schemas.
 
-See the [48-tool audit](https://github.com/u9401066/zotero-keeper/blob/main/docs/ZOTERO_10_TOOL_AUDIT.md) and [harness upgrade guide](https://github.com/u9401066/zotero-keeper/blob/main/docs/HARNESS_UPGRADES.md). This source release targets VSIX 0.9.0; verify the published Marketplace version before assuming it matches.
+See the [48-tool audit](https://github.com/u9401066/zotero-keeper/blob/main/docs/ZOTERO_10_TOOL_AUDIT.md) and [harness upgrade guide](https://github.com/u9401066/zotero-keeper/blob/main/docs/HARNESS_UPGRADES.md).
 
 ## What's New in v0.8.0
 
@@ -165,7 +175,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 2. The extension will automatically:
    - Download [uv](https://github.com/astral-sh/uv) (fast Python package manager, ~10MB)
    - Create an isolated Python 3.12 environment
-   - Install pinned packages (Zotero Keeper 2.3.0 and PubMed Search MCP 0.7.3 at `fbbaaca`)
+   - Install pinned packages (Zotero Keeper 2.3.1 and PubMed Search MCP 0.7.3 at `fbbaaca`)
    - Register MCP servers with VS Code
    - **Install official Copilot instructions, workflow guides, `@research` agent, and collaboration hook assets**
 

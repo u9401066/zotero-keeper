@@ -2,6 +2,7 @@ import { describe, it, beforeEach } from 'mocha';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
 import { ZoteroMcpServerProvider } from '../mcpProvider.js';
+import { MockWorkspaceConfiguration, workspace as mockWorkspace } from './mock-vscode.js';
 import {
     PUBMED_SEARCH_ENTRYPOINT,
     PUBMED_SEARCH_VERSION,
@@ -20,7 +21,7 @@ describe('ZoteroMcpServerProvider', () => {
     beforeEach(() => {
         sinon.restore();
         provider = new ZoteroMcpServerProvider(mockPythonPath, {} as vscode.ExtensionContext);
-        (vscode.workspace as any).workspaceFolders = undefined;
+        mockWorkspace.workspaceFolders = undefined;
     });
 
     describe('constructor', () => {
@@ -35,7 +36,7 @@ describe('ZoteroMcpServerProvider', () => {
     describe('provideMcpServerDefinitions', () => {
         it('should return both servers when both enabled (default)', () => {
             // Mock config to enable both
-            const mockConfig = new (vscode as any).MockWorkspaceConfiguration({
+            const mockConfig = new MockWorkspaceConfiguration({
                 enableZoteroKeeper: true,
                 enablePubmedSearch: true,
                 zoteroHost: 'localhost',
@@ -58,7 +59,7 @@ describe('ZoteroMcpServerProvider', () => {
         });
 
         it('should return only Zotero when PubMed disabled', () => {
-            const mockConfig = new (vscode as any).MockWorkspaceConfiguration({
+            const mockConfig = new MockWorkspaceConfiguration({
                 enableZoteroKeeper: true,
                 enablePubmedSearch: false,
             });
@@ -70,7 +71,7 @@ describe('ZoteroMcpServerProvider', () => {
         });
 
         it('should return only PubMed when Zotero disabled', () => {
-            const mockConfig = new (vscode as any).MockWorkspaceConfiguration({
+            const mockConfig = new MockWorkspaceConfiguration({
                 enableZoteroKeeper: false,
                 enablePubmedSearch: true,
                 ncbiEmail: '',
@@ -90,7 +91,7 @@ describe('ZoteroMcpServerProvider', () => {
         });
 
         it('should return empty when both disabled', () => {
-            const mockConfig = new (vscode as any).MockWorkspaceConfiguration({
+            const mockConfig = new MockWorkspaceConfiguration({
                 enableZoteroKeeper: false,
                 enablePubmedSearch: false,
             });
@@ -101,7 +102,7 @@ describe('ZoteroMcpServerProvider', () => {
         });
 
         it('should set Zotero host/port from config', () => {
-            const mockConfig = new (vscode as any).MockWorkspaceConfiguration({
+            const mockConfig = new MockWorkspaceConfiguration({
                 enableZoteroKeeper: true,
                 enablePubmedSearch: false,
                 zoteroHost: '192.168.1.100',
@@ -116,7 +117,7 @@ describe('ZoteroMcpServerProvider', () => {
         });
 
         it('should pass API keys to PubMed server environment', () => {
-            const mockConfig = new (vscode as any).MockWorkspaceConfiguration({
+            const mockConfig = new MockWorkspaceConfiguration({
                 enableZoteroKeeper: false,
                 enablePubmedSearch: true,
                 ncbiEmail: 'test@example.com',
@@ -142,7 +143,7 @@ describe('ZoteroMcpServerProvider', () => {
         });
 
         it('should omit empty API keys from environment', () => {
-            const mockConfig = new (vscode as any).MockWorkspaceConfiguration({
+            const mockConfig = new MockWorkspaceConfiguration({
                 enableZoteroKeeper: false,
                 enablePubmedSearch: true,
                 ncbiEmail: '',
@@ -164,7 +165,7 @@ describe('ZoteroMcpServerProvider', () => {
         });
 
         it('should use correct python command and args', () => {
-            const mockConfig = new (vscode as any).MockWorkspaceConfiguration({
+            const mockConfig = new MockWorkspaceConfiguration({
                 enableZoteroKeeper: true,
                 enablePubmedSearch: true,
                 zoteroHost: 'localhost',
@@ -185,7 +186,7 @@ describe('ZoteroMcpServerProvider', () => {
             // Zotero Keeper
             assert.strictEqual(servers[0].command, mockPythonPath);
             assert.deepStrictEqual(servers[0].args, ['-m', 'zotero_mcp']);
-            assert.strictEqual(servers[0].version, '2.3.0');
+            assert.strictEqual(servers[0].version, '2.3.1');
 
             // PubMed Search
             assert.strictEqual(servers[1].command, mockPythonPath);
@@ -194,10 +195,10 @@ describe('ZoteroMcpServerProvider', () => {
         });
 
         it('should pass workspace directory to PubMed server when a workspace is open', () => {
-            (vscode.workspace as any).workspaceFolders = [
+            mockWorkspace.workspaceFolders = [
                 { uri: { fsPath: '/mock/workspace' } },
             ];
-            const mockConfig = new (vscode as any).MockWorkspaceConfiguration({
+            const mockConfig = new MockWorkspaceConfiguration({
                 enableZoteroKeeper: false,
                 enablePubmedSearch: true,
             });
@@ -215,7 +216,7 @@ describe('ZoteroMcpServerProvider', () => {
         });
 
         it('should pass proxy settings to PubMed server', () => {
-            const mockConfig = new (vscode as any).MockWorkspaceConfiguration({
+            const mockConfig = new MockWorkspaceConfiguration({
                 enableZoteroKeeper: false,
                 enablePubmedSearch: true,
                 ncbiEmail: '',

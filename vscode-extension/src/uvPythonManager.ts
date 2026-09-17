@@ -931,7 +931,7 @@ print("OK")
                 fs.rmSync(dirPath, { recursive: true, force: true });
                 return; // Success
             } catch (error: unknown) {
-                const errCode = error instanceof Error ? (error as any).code : undefined;
+                const errCode = error instanceof Error && 'code' in error ? error.code : undefined;
                 if ((errCode === 'EPERM' || errCode === 'EBUSY') && attempt < maxRetries) {
                     this.log(`Retry ${attempt}/${maxRetries}: File locked, waiting before retry...`);
                     await new Promise(resolve => setTimeout(resolve, 2000 * attempt));

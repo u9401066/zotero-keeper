@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import * as vscode from 'vscode';
+import type { SinonStub } from 'sinon';
 import {
     installClineMcpServers,
     removeClineMcpServers,
@@ -15,23 +16,23 @@ import {
 } from '../clineMcpConfig.js';
 
 // Minimal mock of ExtensionContext
-function createMockContext(globalStoragePath: string): any {
+function createMockContext(globalStoragePath: string): vscode.ExtensionContext {
     return {
         globalStorageUri: { fsPath: globalStoragePath },
-    };
+    } as vscode.ExtensionContext;
 }
 
 describe('clineMcpConfig', () => {
     let tmpDir: string;
-    let mockContext: any;
+    let mockContext: vscode.ExtensionContext;
     let clineSettingsPath: string;
 
     beforeEach(() => {
         tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'zotero-mcp-test-'));
         mockContext = createMockContext(path.join(tmpDir, 'globalStorage', 'u9401066.vscode-zotero-mcp'));
         clineSettingsPath = path.join(tmpDir, 'globalStorage', 'saoudrizwan.claude-dev', 'settings', 'cline_mcp_settings.json');
-        (vscode.extensions.getExtension as any).resetBehavior();
-        (vscode.extensions.getExtension as any).returns(undefined);
+        (vscode.extensions.getExtension as SinonStub).resetBehavior();
+        (vscode.extensions.getExtension as SinonStub).returns(undefined);
     });
 
     afterEach(() => {
@@ -50,7 +51,7 @@ describe('clineMcpConfig', () => {
         });
 
         it('should return true when Cline extension is installed but storage is absent', () => {
-            (vscode.extensions.getExtension as any).withArgs('saoudrizwan.claude-dev').returns({ id: 'saoudrizwan.claude-dev' });
+            (vscode.extensions.getExtension as SinonStub).withArgs('saoudrizwan.claude-dev').returns({ id: 'saoudrizwan.claude-dev' });
             assert.strictEqual(isClineInstalled(mockContext), true);
         });
     });
@@ -63,7 +64,7 @@ describe('clineMcpConfig', () => {
         });
 
         it('should create settings when Cline extension exists but storage is absent', () => {
-            (vscode.extensions.getExtension as any).withArgs('saoudrizwan.claude-dev').returns({ id: 'saoudrizwan.claude-dev' });
+            (vscode.extensions.getExtension as SinonStub).withArgs('saoudrizwan.claude-dev').returns({ id: 'saoudrizwan.claude-dev' });
 
             const updated = installClineMcpServers(mockContext, '/usr/bin/python3');
             assert.strictEqual(updated, true);

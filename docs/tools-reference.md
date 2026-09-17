@@ -1,6 +1,6 @@
 # MCP Tools Reference
 
-Complete reference for all 48 default MCP tools exposed by Zotero Keeper 2.3.0
+Complete reference for all 48 default MCP tools exposed by Zotero Keeper 2.3.1
 on MCP SDK v2, plus five legacy opt-in tools.
 
 For a visual feature overview, start with the
@@ -9,7 +9,7 @@ for exact schemas and safety contracts.
 
 > **Tip**: Most read operations can also be performed via [MCP Resources](../README.md#-mcp-resources-browsable-data) (e.g. `zotero://collections`) without calling a tool.
 
-> **Companion server**: VSIX 0.9.0 pins PubMed Search MCP 0.7.3 at
+> **Companion server**: VSIX 0.9.1 pins PubMed Search MCP 0.7.3 at
 > [`fbbaaca`](https://github.com/u9401066/pubmed-search-mcp/commit/fbbaacaba150afbc24bdbc07eb41c77c564017e6).
 > Its SearchRun journal, `systematic` / `native_semantic` search modes, and
 > Research Chronicle artifacts are documented on the separate
@@ -41,9 +41,11 @@ the raw page is full, not proof that another result exists. Child filtering does
 not change the raw page offset. `advanced_search` also accepts `start` and returns
 `next_start`; other bounded list tools retain their existing limits.
 
-Analytics return `scanned_count`, `scan_limit=5000`, and `possibly_truncated` for
-nonempty scans. Ownership checks now traverse all item pages and fail on read
-errors rather than labeling everything new. Full coverage and known limits are
+Analytics return `scanned_count`, `scan_limit=5000`, and `possibly_truncated`, even
+for empty scans. Unavailable supplementary counts are `null` with `warnings`,
+not zero. Ownership checks stream all pages and reject database/version drift,
+repeated keys and incomplete counts instead of returning a partial ownership
+index. Zotero 7–9 cannot guarantee local-edit detection. Full coverage and limits are
 in the [Zotero 10 audit](ZOTERO_10_TOOL_AUDIT.md).
 
 ## Table of Contents
@@ -151,10 +153,8 @@ List recent items in the library or a specific collection.
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `limit` | `int` | `25` | Maximum number of items |
+| `limit` | `int` | `20` | Maximum number of items |
 | `collection_key` | `str` | `None` | Filter to a specific collection key |
-| `sort` | `str` | `"dateAdded"` | Sort field (`dateAdded`, `dateModified`, `title`) |
-| `direction` | `str` | `"desc"` | Sort direction (`asc`, `desc`) |
 
 **Example prompt**: *"List the last 10 papers I added"*
 
@@ -237,7 +237,7 @@ Get all items within a collection.
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `key` | `str` | required | Collection key |
+| `collection_key` | `str` | required | Collection key |
 | `limit` | `int` | `50` | Maximum items |
 
 **Equivalent resource**: `zotero://collections/{key}/items`
@@ -258,14 +258,14 @@ Get hierarchical tree of all collections (nested folder structure).
 
 ### `find_collection`
 
-Find a collection by name (fuzzy match supported).
+Find a collection by exact case-insensitive name; ambiguous names fail closed.
 
 **Parameters**:
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | `name` | `str` | required | Collection name to search |
-| `fuzzy` | `bool` | `True` | Enable fuzzy (approximate) matching |
+| `parent_name` | `str` | `None` | Optional exact parent collection name |
 
 **Returns**: Matching collection(s) with keys and names.
 
@@ -322,6 +322,11 @@ Save a reference directly to a named collection without the interactive picker.
 | `collection_key` | `str` | `None` | Target collection key |
 | `doi` | `str` | `None` | DOI → auto-fetches metadata |
 | `pmid` | `str` | `None` | PubMed ID → auto-fetches metadata + RCR |
+| `isbn` | `str` | `None` | ISBN (for books) |
+| `publication_title` | `str` | `None` | Journal/book name |
+| `date` | `str` | `None` | Publication date |
+| `abstract` | `str` | `None` | Abstract text |
+| `url` | `str` | `None` | URL |
 | `creators` | `list[dict]` | `None` | Author list |
 | `tags` | `list[str]` | `None` | Tags to apply |
 | `force_add` | `bool` | `False` | Explicitly bypass duplicate blocking |
@@ -362,8 +367,11 @@ Execute a saved search and return matching items.
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `search_key` | `str` | required | Saved search key |
-| `limit` | `int` | `50` | Maximum results |
+| `search_key` | `str` | `None` | Exact saved search key; supply key OR name |
+| `search_name` | `str` | `None` | Exact unambiguous saved search name |
+| `limit` | `int` | `50` | Maximum raw results per page (1–1000) |
+| `start` | `int` | `0` | Raw result offset |
+| `include_children` | `bool` | `True` | Preserve attachment/note/annotation results |
 
 **Returns**: Items matching the saved search criteria.
 
@@ -410,6 +418,7 @@ Multi-condition search with itemType filter, tag filter, sort, and search mode o
 | `qmode` | `str` | `"titleCreatorYear"` | Search mode: `titleCreatorYear` or `everything` (searches abstracts too) |
 | `limit` | `int` | `50` | Maximum results |
 | `include_trashed` | `bool` | `False` | Include items in the trash |
+| `start` | `int` | `0` | Raw result offset for pagination |
 
 **Examples**:
 ```python
@@ -549,7 +558,9 @@ import_pdf(
 
 ### `get_library_stats`
 
-Get statistics and distribution analysis of your entire Zotero library.
+Get statistics for a bounded scan of up to 5,000 raw library items. Read coverage
+before treating the result as whole-library statistics. Collection/tag counts
+are separate reads, not a transactional library-wide snapshot.
 
 **Parameters**: none
 
@@ -557,11 +568,16 @@ Get statistics and distribution analysis of your entire Zotero library.
 ```json
 {
   "total_items": 450,
+  "scanned_count": 500,
+  "scan_limit": 5000,
+  "possibly_truncated": false,
+  "server_id": "example-profile",
+  "warnings": [],
   "by_type": { "journalArticle": 380, "book": 40, "thesis": 15 },
   "by_year": { "2024": 60, "2023": 90, "2022": 75 },
   "top_authors": [["Smith J", 20], ["Lee K", 15]],
   "top_journals": [["Nature", 12], ["Science", 10]],
-  "tag_stats": { "total_unique_tags": 85, "most_used": [["AI", 30], ["review", 20]] },
+  "tag_stats": { "total_tags": 85, "items_without_tags": 20, "untagged_percentage": 4.4 },
   "collection_stats": { "total_collections": 12, "items_without_collection": 45 }
 }
 ```
@@ -578,9 +594,13 @@ Find items that are not assigned to any collection and/or have no tags—useful 
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `without_collection` | `bool` | `True` | Include items not in any collection |
-| `without_tags` | `bool` | `False` | Include items with no tags |
-| `limit` | `int` | `50` | Maximum results |
+| `include_no_collection` | `bool` | `True` | Include items not in any collection |
+| `include_no_tags` | `bool` | `True` | Include items with no tags |
+| `limit` | `int` | `50` | Maximum results per category (1–1000) |
+
+Categories overlap: an item with neither collections nor tags appears in both
+enabled lists and `completely_orphan`. Summary counts are inclusive and may
+exceed each returned list's limit. Coverage describes the bounded 5,000-item scan.
 
 **Example prompt**: *"Which papers aren't organized into any collection?"*
 
@@ -710,7 +730,7 @@ Keeper does not retry a 412 write.
 All mutation tools are annotated `readOnlyHint=false` and `openWorldHint=false`.
 Destructive delete/replacement tools advertise `destructiveHint=true`; additive
 create/organize tools advertise `false`. Idempotence metadata follows each
-operation's actual replay behavior. Keeper 2.3.0 exposes only dedicated,
+operation's actual replay behavior. Keeper 2.3.1 exposes only dedicated,
 bounded mutation tools: no raw endpoint, arbitrary structural replacement,
 batch item/collection/saved-search delete, or group-library write surface.
 

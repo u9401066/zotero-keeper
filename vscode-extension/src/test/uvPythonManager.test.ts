@@ -26,7 +26,7 @@ describe('UvPythonManager', () => {
 
     describe('constructor', () => {
         it('should initialize (not ready when no files exist)', () => {
-            manager = new UvPythonManager(ctx as any);
+            manager = new UvPythonManager(ctx);
             // In fresh test context with mock storage path, files don't exist
             assert.strictEqual(manager.isReady(), false);
         });
@@ -34,7 +34,7 @@ describe('UvPythonManager', () => {
 
     describe('isReady', () => {
         it('should return false initially', () => {
-            manager = new UvPythonManager(ctx as any);
+            manager = new UvPythonManager(ctx);
             assert.strictEqual(manager.isReady(), false);
         });
     });
@@ -43,7 +43,7 @@ describe('UvPythonManager', () => {
         it('should return venv python path on Linux', () => {
             if (process.platform === 'win32') { return; }
 
-            manager = new UvPythonManager(ctx as any);
+            manager = new UvPythonManager(ctx);
             const pythonPath = manager.getPythonPath();
             assert.ok(pythonPath.endsWith('bin/python'));
             assert.ok(pythonPath.includes('venv'));
@@ -52,7 +52,7 @@ describe('UvPythonManager', () => {
 
     describe('getPythonVersion', () => {
         it('should return undefined when not ready', async () => {
-            manager = new UvPythonManager(ctx as any);
+            manager = new UvPythonManager(ctx);
             const version = await manager.getPythonVersion();
             assert.strictEqual(version, undefined);
         });
@@ -60,7 +60,7 @@ describe('UvPythonManager', () => {
 
     describe('verifyReady', () => {
         it('should return false when python binary does not exist', async () => {
-            manager = new UvPythonManager(ctx as any);
+            manager = new UvPythonManager(ctx);
             const ready = await manager.verifyReady();
             assert.strictEqual(ready, false);
         });
@@ -105,7 +105,7 @@ describe('UvPythonManager', () => {
 
     describe('showOutput', () => {
         it('should not throw', () => {
-            manager = new UvPythonManager(ctx as any);
+            manager = new UvPythonManager(ctx);
             assert.doesNotThrow(() => manager.showOutput());
         });
     });

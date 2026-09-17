@@ -8,6 +8,7 @@
  */
 
 import * as sinon from 'sinon';
+import type { ExtensionContext } from 'vscode';
 
 // ─── Event & Disposable ───
 
@@ -86,7 +87,7 @@ export class MockWorkspaceConfiguration {
 
 // ─── ExtensionContext ───
 
-export function createMockContext(overrides: Partial<MockExtensionContext> = {}): MockExtensionContext {
+export function createMockContext(overrides: Partial<MockExtensionContext> = {}): MockExtensionContext & ExtensionContext {
     return {
         subscriptions: [],
         extensionPath: '/mock/extension',
@@ -101,7 +102,9 @@ export function createMockContext(overrides: Partial<MockExtensionContext> = {})
             packageJSON: { version: '0.5.28' },
         },
         ...overrides,
-    } as MockExtensionContext;
+    // Deliberately partial fixture: expose Sinon methods while satisfying the
+    // production API at this single boundary, not through any at each call site.
+    } as unknown as MockExtensionContext & ExtensionContext;
 }
 
 export interface MockExtensionContext {
