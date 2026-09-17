@@ -21,6 +21,11 @@ All notable changes to the "Zotero + PubMed MCP" extension will be documented in
   with a packaging regression guard.
 - Scan every TypeScript source (including top-level runtime modules) with ESLint,
   remove permissive test casts and require zero warnings across platforms.
+- Refresh vulnerable development-tool lock entries. Pin Mocha's transitive
+  `diff` and `serialize-javascript` to patched versions while its supported
+  dependency ranges lag behind; these packages are not shipped in the VSIX.
+- Use Node.js 24 LTS for CI/publishing to meet current VSCE requirements, and
+  block CI/release on high-severity npm audit findings.
 
 ## [0.9.0] - 2026-09-17
 

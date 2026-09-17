@@ -9,9 +9,13 @@ paths:
 
 Run from `vscode-extension/`:
 
+Use Node.js 24 LTS for development/packaging (current VSCE needs Node.js 22+).
+This build-tool requirement does not change the extension's VS Code engine range.
+
 - `npm run sync-assets`
 - `npm run compile`
 - `npm test`
+- `npm audit --audit-level=high`
 - `npm run package`
 
 ## Behaviors To Preserve

@@ -312,6 +312,12 @@
         "package": "npm run sync-assets && vsce package",
         "publish": "npm run sync-assets && vsce publish"
     },
+    "overrides": {
+        "mocha": {
+            "diff": "8.0.3",
+            "serialize-javascript": "7.1.1"
+        }
+    },
     "devDependencies": {
         "@types/mocha": "^10.0.10",
         "@types/node": "^20.11.0",

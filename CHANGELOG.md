@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and recovery documentation and exclude compiled tests from the VSIX.
 - Fix the shell-dependent lint glob, check all TypeScript sources and enforce
   zero warnings after tightening test mock types.
+- Refresh vulnerable npm development/build dependencies and apply tested Mocha
+  transitive-dependency overrides for patched diff/serialization packages.
 - Publish extension 0.9.1 with Keeper 2.3.1 and unchanged PubMed Search 0.7.3.
 
 ## [2.3.0] - 2026-09-17

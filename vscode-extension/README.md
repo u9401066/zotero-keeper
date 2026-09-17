@@ -9,6 +9,9 @@
   accurate orphan lists; statistics distinguish unavailable counts from zero.
 - **Same new tool surface**: Keeper 48 tools and pinned PubMed Search 0.7.3
   (41 tools), with refreshed assistant assets and a smaller production VSIX.
+- **Build-tool security**: refreshed npm lockfile and patched Mocha transitive
+  dependencies; CI/release audit gates and Node.js 24 LTS for packaging. This
+  does not change the extension's supported VS Code version.
 
 ## What's New in v0.9.0
 
