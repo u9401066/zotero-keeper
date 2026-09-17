@@ -17,7 +17,9 @@ describe('Harness preservation', () => {
         return file;
     };
     beforeEach(() => {
-        root = fs.mkdtempSync(path.join(os.tmpdir(), 'keeper-harness-'));
+        // macOS aliases /var to /private/var. Failure injection must compare the
+        // same canonical path used by the installer, not a spelling of the alias.
+        root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'keeper-harness-')));
         bundle = path.join(root, 'bundle');
         workspace = path.join(root, 'workspace');
         fs.mkdirSync(workspace);
@@ -122,6 +124,14 @@ describe('Harness preservation', () => {
         write(workspace, 'vscode-extension/scripts/sync-copilot-assets.mjs', 'source');
         assert.match(installHarnessAssets(bundle, workspace, '0.9.0').skipped ?? '', /Source repository/);
         assert.ok(!fs.existsSync(path.join(workspace, 'AGENTS.md')));
+    });
+    it('uses the same ownership ledger when the workspace root is an alias', function () {
+        if (process.platform === 'win32') { this.skip(); }
+        const alias = path.join(root, 'workspace-alias');
+        fs.symlinkSync(workspace, alias, 'dir');
+        assert.strictEqual(installHarnessAssets(bundle, alias, '0.9.0').installed.length, 2);
+        assert.strictEqual(installHarnessAssets(bundle, workspace, '0.9.0').unchanged.length, 2);
+        assert.ok(fs.existsSync(path.join(workspace, HARNESS_MANIFEST)));
     });
     it('does not replace a differing bundle from the same extension version', () => {
         installHarnessAssets(bundle, workspace, '0.9.0');
