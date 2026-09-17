@@ -1,5 +1,14 @@
 # Zotero + PubMed MCP Extension for VS Code
 
+## What's New in v0.9.0
+
+- **Zotero Keeper 2.3.0 / Zotero 10.0.2 audit**: 48 tools, adding tags, ordered creators, note editing, reversible trash/restore, batch metadata edits, item schema and annotation reads. Saved searches retain all four result levels and nested conditions.
+- **PubMed Search 0.7.3**: pinned to official release commit `fbbaaca`, with 41 tools. PICO now uses agent-provided fields with `validate_pico_plan`; all session reads use `read_session(request={...})`. Includes reference verification, literature-note export and scheduling controls.
+- **Harness preservation**: activation no longer rewrites workspace files by default. Use the Zotero MCP: Install Official Assistant Assets command, or explicitly enable `zoteroMcp.autoUpdateHarness`. SHA-256 ownership, backups, version checks and whole-skill preservation protect local edits. Source repositories are skipped.
+- **Refreshed assistant assets**: Codex/Cline harnesses, Copilot instructions/research agent, 11 curated PubMed skills and pipeline hooks match the pinned tool schemas.
+
+See the [48-tool audit](https://github.com/u9401066/zotero-keeper/blob/main/docs/ZOTERO_10_TOOL_AUDIT.md) and [harness upgrade guide](https://github.com/u9401066/zotero-keeper/blob/main/docs/HARNESS_UPGRADES.md). This source release targets VSIX 0.9.0; verify the published Marketplace version before assuming it matches.
+
 ## What's New in v0.8.0
 
 - **Zotero Keeper 2.2.0**: expands the default surface to 41 tools, including guarded item/collection/saved-search deletion, collection and saved-search updates, membership removal, tag deletion, stored-attachment replacement, and batch full-text writes.
@@ -114,12 +123,12 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 - **Library analytics** (stats, orphan detection)
 - **PDF attachment access** (list attachments, get indexed fulltext)
 
-### 🔍 PubMed Search (v0.6.3, 45 tools / 16 categories)
+### 🔍 PubMed Search (v0.7.3, 41 tools / 16 categories)
 
 - **`unified_search`** - 統一搜尋入口，自動合併去重多來源結果
 - **Multi-source search** (PubMed, Europe PMC, CORE)
 - **預印本與多來源篩選** - 透過 `unified_search` 的 sources / filters / options 選擇來源與文獻類型
-- Parse PICO clinical questions
+- Validate agent-extracted PICO fields with `validate_pico_plan`
 - Find related and citing articles
 - Get citation metrics (RCR)
 - **ICD ↔ MeSH 轉換** - 自動轉換 ICD 代碼和 MeSH 術語
@@ -156,7 +165,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 2. The extension will automatically:
    - Download [uv](https://github.com/astral-sh/uv) (fast Python package manager, ~10MB)
    - Create an isolated Python 3.12 environment
-   - Install pinned packages (Zotero Keeper 2.2.0 and PubMed Search MCP 0.6.3 at `febf53a`)
+   - Install pinned packages (Zotero Keeper 2.3.0 and PubMed Search MCP 0.7.3 at `fbbaaca`)
    - Register MCP servers with VS Code
    - **Install official Copilot instructions, workflow guides, `@research` agent, and collaboration hook assets**
 
@@ -184,7 +193,7 @@ Click the status bar item to access:
 The extension installs workflow guides that teach Copilot and Cline:
 
 1. **Search → Review → Ask Collection → Import** workflow
-2. Use `get_session_pmids` instead of re-searching
+2. Use `read_session(request={"action":"pmids"})` instead of re-searching
 3. Use cached articles to save API quota
 4. Check for duplicates before importing
 5. Never infer the library root: ask for a collection; `ROOT` requires a second confirmation, and non-interactive calls require explicit `allow_library_root=true`

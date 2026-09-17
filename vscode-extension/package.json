@@ -2,7 +2,7 @@
     "name": "vscode-zotero-mcp",
     "displayName": "Zotero + PubMed MCP",
     "description": "One-click Zotero 10+ Local API and PubMed research workspace for Copilot, Cline, and Codex.",
-    "version": "0.8.0",
+    "version": "0.9.0",
     "publisher": "u9401066",
     "license": "Apache-2.0",
     "icon": "resources/icon.png",
@@ -54,6 +54,12 @@
         "configuration": {
             "title": "Zotero MCP",
             "properties": {
+                "zoteroMcp.autoUpdateHarness": {
+                    "type": "boolean",
+                    "default": false,
+                    "scope": "resource",
+                    "markdownDescription": "Opt in to installing/upgrading workspace assistant assets on activation. Updates require a matching recorded SHA-256; custom edits, unknown files, deletions and newer harness versions are preserved. Otherwise use **Zotero MCP: Install Official Assistant Assets** manually."
+                },
                 "zoteroMcp.useEmbeddedPython": {
                     "type": "boolean",
                     "default": true,

@@ -2,6 +2,23 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.9.0] - 2026-09-17
+
+### Changed
+
+- Bundle Keeper 2.3.0 (48 tools) and official PubMed Search 0.7.3 at `fbbaaca`
+  (41 tools), including the new PICO validation and unified session request API.
+- Refresh Codex, Cline, Copilot and curated PubMed skills/hooks for this surface.
+
+### Fixed
+
+- Stop unconditional harness overwrites on activation. Automatic updates are
+  opt-in; manual installs also preserve unknown/edited files and entire skills.
+- Track installed SHA-256 hashes, back up unchanged managed assets before
+  upgrades, prevent downgrades, preserve user deletions, skip source workspaces,
+  reject symlink destinations and serialize concurrent installations.
+- Make sync-assets:check read-only and exclude generated Python caches from VSIX.
+
 ## [0.8.0] - 2026-08-19
 
 ### Added

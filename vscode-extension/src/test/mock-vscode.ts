@@ -154,6 +154,7 @@ export const window = {
 };
 
 export const workspace = {
+    isTrusted: true,
     getConfiguration: sinon.stub().callsFake((_section?: string) => {
         return new MockWorkspaceConfiguration();
     }),

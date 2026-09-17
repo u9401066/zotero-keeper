@@ -6,7 +6,7 @@
 ## Goal
 Use Zotero Keeper and PubMed Search MCP as a research assistant for literature search, review, and import.
 
-The v0.7.0 VSIX baseline is Zotero Keeper 2.1.0 (MCP SDK v2; 32 default tools and 6 concrete resources) plus PubMed Search MCP 0.6.1 at `ad85dde` (45 tools in 16 categories).
+The v0.9.0 VSIX baseline is Zotero Keeper 2.3.0 (MCP SDK v2; 48 default tools and 6 concrete resources) plus PubMed Search MCP 0.7.3 at `fbbaaca` (41 tools in 16 categories).
 
 ## Response Style
 - Use Traditional Chinese
@@ -15,8 +15,8 @@ The v0.7.0 VSIX baseline is Zotero Keeper 2.1.0 (MCP SDK v2; 32 default tools an
 
 ## Core Search Workflow
 1. Start with `unified_search` for first-pass literature discovery
-2. For complex or clinical questions, use `parse_pico` and `generate_search_queries`
-3. Reuse session state with `get_session_pmids`, `get_cached_article`, and `get_session_summary`
+2. For complex or clinical questions, use `validate_pico_plan(description=question, p=..., i=..., c=..., o=...)` and `generate_search_queries`
+3. Reuse session state with `read_session(request={"action":"pmids"})`, `read_session(request={"action":"article","pmid":"..."})`, and `read_session(request={"action":"summary"})`
 4. For deeper follow-up, use related/citing/reference/fulltext tools instead of repeating the same search
 
 ## Zotero Import Workflow
@@ -40,14 +40,14 @@ The v0.7.0 VSIX baseline is Zotero Keeper 2.1.0 (MCP SDK v2; 32 default tools an
 
 ## Preferred Tooling
 - Quick topic search: `unified_search`
-- Clinical comparison: `parse_pico` + `generate_search_queries` + `unified_search`
+- Clinical comparison: `validate_pico_plan(description=question, p=..., i=..., c=..., o=...)` + `generate_search_queries` + `unified_search`
 - Comprehensive review: use the PubMed research skills in `.claude/skills/pubmed-*`
 - Paper follow-up: `fetch_article_details`, `find_related_articles`, `find_citing_articles`, `get_article_references`, `build_citation_tree`
 - Export/synthesis: `prepare_export`, fulltext tools, and the Research Chronicle pair `build_research_chronicle` / `read_research_chronicle`
 
 ## Session Discipline
-- Prefer `get_session_pmids` over rerunning the same search
-- Use `get_session_log` or `read_session` to inspect persisted session activity instead of relying on the removed search-history interface
+- Prefer `read_session(request={"action":"pmids"})` over rerunning the same search
+- Use `read_session(request={"action":"log"})` to inspect persisted session activity instead of relying on the removed search-history interface
 - Prefer cached or Zotero-stored data over refetching when possible
 - If a paper is already in Zotero, use Zotero tools to inspect it before calling external APIs again
 
@@ -62,3 +62,11 @@ The v0.7.0 VSIX baseline is Zotero Keeper 2.1.0 (MCP SDK v2; 32 default tools an
 - `.github/zotero-research-workflow.md` - end-user workflow guide
 - `.claude/skills/pubmed-*` - user-facing research skills from PubMed Search MCP
 - `.github/agents/research.agent.md` - research-focused agent profile
+
+## Current Editing and Harness Contract
+
+- Keeper 2.3 exposes 48 tools. Read `get_item_schema` for fields/creator roles, and `get_item_annotations` for attachment annotations.
+- Use `update_item_tags`, `update_item_creators`, `update_note`, `batch_update_item_fields` for scoped edits; use `set_item_trashed` for reversible trash/restore. Permanent deletes remain explicit and irreversible.
+- Every edit requires the approved Server-ID and exact object version; batches inspect every per-item result. Full-text updates use the library cursor instead.
+- `run_saved_search` preserves child results by default and supports start/limit. Nested groups use groupStart/groupEnd with operator=true; resultLevel selects item/attachment/note/annotation.
+- Workspace assets are installed manually by default. Preserve custom files and entire custom/edited skill directories, recorded user deletions, backups, and newer versions. Never overwrite source-repository harness files on extension activation.

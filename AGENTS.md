@@ -19,8 +19,8 @@ articles into Zotero without losing provenance or overwriting user choices.
 ## Core Workflow
 
 1. Start broad literature discovery with `unified_search`.
-2. Use `parse_pico` and `generate_search_queries` for clinical or comparison questions.
-3. Reuse session state with `get_session_pmids`, `get_cached_article`, and `get_session_summary`.
+2. Use `validate_pico_plan(description=question, p=..., i=..., c=..., o=...)` and `generate_search_queries` for clinical or comparison questions.
+3. Reuse session state with `read_session(request={"action":"pmids"})`, `read_session(request={"action":"article","pmid":"..."})`, and `read_session(request={"action":"summary"})`.
 4. Use related/citing/reference/fulltext tools for follow-up instead of rerunning the same search.
 5. Use `build_research_chronicle` and `read_research_chronicle` for persistent research-history artifacts.
 6. Before saving to Zotero, call `list_collections` unless the destination is already confirmed.
@@ -68,3 +68,11 @@ articles into Zotero without losing provenance or overwriting user choices.
 - `.github/zotero-research-workflow.md`
 - `.github/agents/research.agent.md`
 - `.claude/skills/pubmed-*`
+
+## Current Editing and Harness Contract
+
+- Keeper 2.3 exposes 48 tools. Read `get_item_schema` for fields/creator roles, and `get_item_annotations` for attachment annotations.
+- Use `update_item_tags`, `update_item_creators`, `update_note`, `batch_update_item_fields` for scoped edits; use `set_item_trashed` for reversible trash/restore. Permanent deletes remain explicit and irreversible.
+- Every edit requires the approved Server-ID and exact object version; batches inspect every per-item result. Full-text updates use the library cursor instead.
+- `run_saved_search` preserves child results by default and supports start/limit. Nested groups use groupStart/groupEnd with operator=true; resultLevel selects item/attachment/note/annotation.
+- Workspace assets are installed manually by default. Preserve custom files and entire custom/edited skill directories, recorded user deletions, backups, and newer versions. Never overwrite source-repository harness files on extension activation.

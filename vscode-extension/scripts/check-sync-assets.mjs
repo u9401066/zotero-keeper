@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
@@ -18,7 +19,7 @@ function snapshotDirectory(root) {
             ? raw.subarray(3)
             : raw;
 
-        if (['.md', '.json', '.sh', '.ps1'].includes(path.extname(filePath).toLowerCase())) {
+        if (['.md', '.json', '.sh', '.ps1', '.py', '.yaml', '.yml'].includes(path.extname(filePath).toLowerCase())) {
             content = Buffer.from(content.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
         }
 
@@ -71,11 +72,17 @@ function diffSnapshots(before, after) {
 }
 
 const before = snapshotDirectory(assetRoot);
-execFileSync(process.execPath, [syncScript], {
-    cwd: extensionRoot,
-    stdio: 'inherit',
-});
-const after = snapshotDirectory(assetRoot);
+const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'keeper-assets-check-'));
+let after;
+try {
+    execFileSync(process.execPath, [syncScript, '--output', path.join(temporary, 'repo-assets')], {
+        cwd: extensionRoot,
+        stdio: 'pipe',
+    });
+    after = snapshotDirectory(path.join(temporary, 'repo-assets'));
+} finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+}
 const changes = diffSnapshots(before, after);
 
 if (changes.length > 0) {

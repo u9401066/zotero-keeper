@@ -460,11 +460,12 @@ class TestSourceCodePatterns(unittest.TestCase):
         )
 
     def test_ext_installs_codex_harness_assets(self):
-        """VSIX installer should include Codex AGENTS.md and .codex skills."""
-        self.assertIn("AGENTS.md", self.ext_source)
-        self.assertIn(".codex", self.ext_source)
-        self.assertIn("isKeeperCodexAgentsFile", self.ext_source)
-        self.assertIn("CODEX_HARNESS_SKILL_NAMES", self.ext_source)
+        """Activation delegates to the safe installer instead of heading-based ownership."""
+        self.assertIn("installHarnessAssets", self.ext_source)
+        self.assertIn("workspace.isTrusted", self.ext_source)
+        self.assertIn("'autoUpdateHarness', false", self.ext_source)
+        self.assertNotIn("isKeeperCodexAgentsFile", self.ext_source)
+        self.assertNotIn("syncManagedDirectory", self.ext_source)
 
     def test_cline_preserves_user_local_settings(self):
         """Cline sync should preserve Cline-local disabled and alwaysAllow choices."""
@@ -474,7 +475,7 @@ class TestSourceCodePatterns(unittest.TestCase):
 
     def test_zotero_keeper_package_uses_extension_archive(self):
         """Zotero Keeper package should be pinned to the current extension archive."""
-        self.assertIn("v0.8.0-ext.tar.gz", self.zk_pkg_source)
+        self.assertIn("v0.9.0-ext.tar.gz", self.zk_pkg_source)
         self.assertIn("#subdirectory=mcp-server", self.zk_pkg_source)
 
     # ─── Cross-file consistency ───

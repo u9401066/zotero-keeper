@@ -35,3 +35,7 @@ workspace.
 - Keep source identifiers near claims.
 - Do not leave unresolved wikilinks unless they are marked as intentional TODOs.
 - Keep generated notes human-readable and chunkable for LLM retrieval.
+
+## Current Evidence Contract
+
+Reuse PubMed 0.7.3 state with `read_session(request={"action":"pmids"})` or `{"action":"article","pmid":"..."}`. Use `save_literature_notes` for an explicit export request and preserve its source identifiers. Use Zotero `get_item_annotations` for existing attachment annotations; do not mistake annotation extraction for an authorized write.

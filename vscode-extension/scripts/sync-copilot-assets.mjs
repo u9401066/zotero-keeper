@@ -5,7 +5,13 @@ import { fileURLToPath } from 'node:url';
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const extensionRoot = path.resolve(scriptDir, '..');
 const repoRoot = path.resolve(extensionRoot, '..');
-const assetRoot = path.join(extensionRoot, 'resources', 'repo-assets');
+const outputIndex = process.argv.indexOf('--output');
+const assetRoot = outputIndex >= 0
+    ? path.resolve(process.argv[outputIndex + 1])
+    : path.join(extensionRoot, 'resources', 'repo-assets');
+if (outputIndex >= 0 && (path.basename(assetRoot) !== 'repo-assets' || fs.existsSync(assetRoot))) {
+    throw new Error('--output must name a new repo-assets directory (used by read-only checks).');
+}
 
 // Curated user-facing PubMed skills bundled into the VSIX. The upstream
 // repository contains additional maintainer/internal skills; these are
@@ -134,7 +140,7 @@ function normalizeLineEndings(targetPath) {
         ? raw.subarray(3)
         : raw;
 
-    if (['.md', '.json', '.sh', '.ps1'].includes(ext)) {
+    if (['.md', '.json', '.sh', '.ps1', '.py', '.yaml', '.yml'].includes(ext)) {
         const text = content.toString('utf8').replace(/\r\n/g, '\n');
         fs.writeFileSync(targetPath, text, 'utf8');
     }
@@ -145,6 +151,8 @@ function copyRecursive(sourcePath, targetPath) {
     if (stat.isDirectory()) {
         fs.mkdirSync(targetPath, { recursive: true });
         for (const entry of fs.readdirSync(sourcePath, { withFileTypes: true })) {
+            if (entry.name === '__pycache__' || entry.name.endsWith('.pyc') || entry.name === '.DS_Store') { continue; }
+            if (entry.isSymbolicLink()) { throw new Error(`Unexpected source symlink: ${entry.name}`); }
             copyRecursive(path.join(sourcePath, entry.name), path.join(targetPath, entry.name));
         }
         return;
@@ -156,6 +164,13 @@ function copyRecursive(sourcePath, targetPath) {
 }
 
 function main() {
+    // Validate sources before replacing this explicitly generated output directory.
+    for (const mapping of mappings) {
+        if (!fs.existsSync(mapping.source)) { throw new Error(`Missing asset source: ${mapping.source}`); }
+    }
+    if (assetRoot === repoRoot || assetRoot === extensionRoot || assetRoot === path.parse(assetRoot).root) {
+        throw new Error('Refusing unsafe asset output directory.');
+    }
     fs.rmSync(assetRoot, { recursive: true, force: true });
 
     for (const mapping of mappings) {

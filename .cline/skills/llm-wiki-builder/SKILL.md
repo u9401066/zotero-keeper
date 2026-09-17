@@ -36,3 +36,7 @@ wiki or LLM-readable literature wiki.
 - Preserve source provenance close to claims.
 - Ask before bulk rewrites, destructive cleanup, or Zotero imports.
 - Do not leave broken wikilinks hidden in generated files.
+
+## Current Evidence Contract
+
+Reuse PubMed 0.7.3 state with `read_session(request={"action":"pmids"})` or `{"action":"article","pmid":"..."}`. Use `save_literature_notes` for an explicit export request and preserve its source identifiers. Use Zotero `get_item_annotations` for existing attachment annotations; do not mistake annotation extraction for an authorized write.

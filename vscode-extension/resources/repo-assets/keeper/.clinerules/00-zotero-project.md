@@ -35,7 +35,7 @@ These rules are meant for Cline usage in the Zotero Keeper repository.
 ## Prefer Existing Patterns
 
 - Keep MCP tool outputs backward-compatible when possible.
-- Keep Zotero Keeper 2.x and PubMed Search MCP 0.6.x on the same MCP SDK v2
+- Keep Zotero Keeper 2.x and PubMed Search MCP 0.7.x on the same MCP SDK v2
   environment and resolve both managed packages in one install operation.
 - Use `import_articles` for PubMed-to-Zotero import flows unless a legacy path is explicitly requested.
 - Keep extension bundled asset sources and `vscode-extension/resources/repo-assets/` in sync via `npm run sync-assets`.

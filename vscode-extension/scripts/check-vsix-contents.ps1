@@ -71,6 +71,8 @@ try {
         "extension/out/pythonEnvironment.js",
         "extension/out/uvPythonManager.js",
         "extension/out/zoteroKeeperPackage.js",
+        "extension/out/pubmedSearchPackage.js",
+        "extension/out/harnessAssets.js",
         "extension/resources/walkthrough/python.md",
         "extension/resources/walkthrough/packages.md",
         "extension/resources/repo-assets/keeper/AGENTS.md",
@@ -145,6 +147,23 @@ try {
     }
 
     $compiledKeeperPath = Join-Path $unpacked "extension/out/zoteroKeeperPackage.js"
+    $autoHarness = $packagedManifest.contributes.configuration.properties.'zoteroMcp.autoUpdateHarness'
+    if ($autoHarness.default -ne $false) {
+        throw "Harness auto-update must be off by default"
+    }
+    $pubmedSource = Get-Content -LiteralPath (Join-Path $extensionRoot "src/pubmedSearchPackage.ts") -Raw
+    $pubmedCompiled = Get-Content -LiteralPath (Join-Path $unpacked "extension/out/pubmedSearchPackage.js") -Raw
+    foreach ($constant in @("PUBMED_SEARCH_VERSION", "PUBMED_SEARCH_FIXED_COMMIT")) {
+        $pattern = $constant + '\s*=\s*[''"]([^''"]+)[''"]'
+        $expected = [regex]::Match($pubmedSource, $pattern)
+        $actual = [regex]::Match($pubmedCompiled, $pattern)
+        if (-not $expected.Success -or -not $actual.Success -or $expected.Groups[1].Value -ne $actual.Groups[1].Value) {
+            throw "Packaged PubMed pin mismatch: $constant"
+        }
+    }
+    $caches = Get-ChildItem -LiteralPath (Join-Path $unpacked "extension/resources") -Recurse -File |
+        Where-Object { $_.Extension -eq ".pyc" -or $_.FullName -match "__pycache__" }
+    if ($caches) { throw "Packaged assistant assets contain Python caches" }
     $compiledKeeper = Get-Content -LiteralPath $compiledKeeperPath -Raw
     $compiledKeeperVersionMatch = [regex]::Match(
         $compiledKeeper,

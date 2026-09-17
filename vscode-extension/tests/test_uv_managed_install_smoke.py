@@ -22,7 +22,7 @@ PYTHON_VERSION = "3.12"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MCP_SERVER = REPO_ROOT / "mcp-server"
 KEEPER_VERSION = str(tomllib.loads((MCP_SERVER / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"])
-PUBMED_SEARCH_FIXED_COMMIT = "febf53a8ff1ee253a625869ba251365f73a23c68"  # pragma: allowlist secret
+PUBMED_SEARCH_FIXED_COMMIT = "fbbaacaba150afbc24bdbc07eb41c77c564017e6"  # pragma: allowlist secret
 PUBMED_SEARCH_PACKAGE = f"pubmed-search-mcp @ https://github.com/u9401066/pubmed-search-mcp/archive/{PUBMED_SEARCH_FIXED_COMMIT}.tar.gz"
 
 
@@ -126,6 +126,7 @@ def main() -> int:
                 (
                     "import asyncio, importlib.metadata, json, sys, sysconfig, numpy; "
                     "from mcp.client import Client; "
+                    "from mcp.server import MCPServer; "
                     "from pubmed_search.presentation.mcp_server import create_server as create_pubmed_server; "
                     "from zotero_mcp import create_server as create_zotero_server\n"
                     "async def inspect():\n"
@@ -136,6 +137,9 @@ def main() -> int:
                     "        zotero_tools = await zotero_client.list_tools()\n"
                     "    async with Client(pubmed_server) as pubmed_client:\n"
                     "        pubmed_tools = await pubmed_client.list_tools()\n"
+                    "        session = await pubmed_client.call_tool('read_session', {'request': {'action': 'summary'}})\n"
+                    "        session_payload = json.loads(session.content[0].text)\n"
+                    "        assert session_payload.get('has_session') is False, session\n"
                     "    return {"
                     "'prefix': sys.prefix, "
                     "'base_prefix': sys.base_prefix, "
@@ -144,8 +148,12 @@ def main() -> int:
                     "'zotero_keeper_version': importlib.metadata.version('zotero-keeper'), "
                     "'zotero_server': type(zotero_server).__name__, "
                     "'pubmed_server': type(pubmed_server).__name__, "
+                    "'sdk_v2_servers': isinstance(zotero_server, MCPServer) and isinstance(pubmed_server, MCPServer), "
                     "'zotero_tools': len(zotero_tools.tools), "
                     "'pubmed_tools': len(pubmed_tools.tools), "
+                    "'pubmed_version': importlib.metadata.version('pubmed-search-mcp'), "
+                    "'keeper_names': [t.name for t in zotero_tools.tools], "
+                    "'pubmed_names': [t.name for t in pubmed_tools.tools], "
                     "'has_import_articles': any(t.name == 'import_articles' for t in zotero_tools.tools), "
                     "'has_authorize_local_writes': any(t.name == 'authorize_local_writes' for t in zotero_tools.tools), "
                     "'has_create_collection': any(t.name == 'create_collection' for t in zotero_tools.tools), "
@@ -186,7 +194,7 @@ def main() -> int:
                 f"expected {KEEPER_VERSION}, got {data['zotero_keeper_version']}; "
                 f"source={keeper_source}"
             )
-        if data["zotero_server"] != "MCPServer" or data["pubmed_server"] != "MCPServer":
+        if not data["sdk_v2_servers"]:
             raise AssertionError(f"SDK v2 MCPServer not used by both packages: {data}")
         required_keeper_surface = (
             data["has_import_articles"]
@@ -197,10 +205,13 @@ def main() -> int:
             and data["has_replace_attachment_file"]
             and data["has_set_attachment_fulltexts"]
         )
-        if data["zotero_tools"] != 41 or not required_keeper_surface:
+        if data["zotero_tools"] != 48 or not required_keeper_surface:
             raise AssertionError(f"Unexpected Zotero Keeper tool surface: {data}")
-        if data["pubmed_tools"] != 45 or not data["has_unified_search"] or not data["has_chronicle"]:
+        if data["pubmed_tools"] != 41 or data["pubmed_version"] != "0.7.3" or not data["has_unified_search"] or not data["has_chronicle"]:
             raise AssertionError(f"Unexpected PubMed Search MCP tool surface: {data}")
+        assert {"get_item_schema", "get_item_annotations", "update_item_tags", "update_item_creators", "update_note", "set_item_trashed", "batch_update_item_fields"} <= set(data["keeper_names"])
+        assert {"validate_pico_plan", "read_session", "verify_reference_list", "save_literature_notes", "unschedule_pipeline"} <= set(data["pubmed_names"])
+        assert not {"parse_pico", "get_session_pmids", "get_cached_article", "get_session_summary", "get_session_log"} & set(data["pubmed_names"])
 
         system_purelib = Path(sysconfig.get_paths()["purelib"]).resolve()
         if system_purelib == purelib.resolve():
