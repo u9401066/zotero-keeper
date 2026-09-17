@@ -254,16 +254,17 @@ class ZoteroReadMixin:
         """Find a collection by name (case-insensitive)"""
         collections = await self.get_collections()
         name_lower = name.lower().strip()
-
+        matches = []
         for col in collections:
             data = col.get("data", col)
             col_name = data.get("name", "").lower().strip()
             col_parent = data.get("parentCollection")
 
             if col_name == name_lower and (parent_key is None or col_parent == parent_key):
-                return col
-
-        return None
+                matches.append(col)
+        if len(matches) > 1:
+            raise ZoteroAPIError(f"Ambiguous collection name '{name}'; specify collection_key.", status_code=400)
+        return matches[0] if matches else None
 
     async def get_collection_tree(self) -> list[dict[str, Any]]:
         """Get collections organized as a tree structure"""
@@ -374,15 +375,38 @@ class ZoteroReadMixin:
         searches = await self.get_searches()
         name_lower = name.lower().strip()
 
-        for search in searches:
-            data = search.get("data", search)
-            search_name = data.get("name", "").lower().strip()
-            if search_name == name_lower:
-                return search
+        matches = [search for search in searches if search.get("data", search).get("name", "").lower().strip() == name_lower]
+        if len(matches) > 1:
+            raise ZoteroAPIError("Saved-search name is ambiguous; use its exact key", status_code=400)
+        return matches[0] if matches else None
 
-        return None
+    async def execute_search_snapshot(
+        self,
+        search_key: str,
+        limit: int = 100,
+        start: int = 0,
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        """Preserve the identity and all result levels of a saved search page."""
+        payload, server_id = await self._request_snapshot(
+            "GET",
+            f"/api/users/0/searches/{search_key}/items",
+            params={"limit": limit, "start": start},
+        )
+        return cast(list[dict[str, Any]], payload), server_id
 
     # ==================== Schema ====================
+
+    async def get_item_schema_snapshot(self, item_type: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]], str | None]:
+        """Read schema from one database identity, without creating a library object."""
+        if not isinstance(item_type, str) or not item_type.strip():
+            raise ValueError("item_type must be non-empty")
+        fields, fields_id = await self._request_snapshot("GET", "/api/itemTypeFields", params={"itemType": item_type})
+        creators, creators_id = await self._request_snapshot("GET", "/api/itemTypeCreatorTypes", params={"itemType": item_type})
+        if fields_id != creators_id:
+            raise ZoteroAPIError("Zotero Server-ID changed while reading item schema", status_code=412)
+        if not isinstance(fields, list) or not isinstance(creators, list):
+            raise ZoteroAPIError("Zotero returned an invalid item schema")
+        return fields, creators, fields_id
 
     async def get_item_types(self) -> list[dict[str, Any]]:
         """Get available item types"""

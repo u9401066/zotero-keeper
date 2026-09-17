@@ -35,6 +35,47 @@ def _prime_authorization(client: ZoteroClient, *, remembered: bool = True) -> No
     client._local_api_key_remembered = remembered
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("changed", [False, True])
+async def test_schema_snapshot_uses_official_type_routes_and_rejects_profile_change(changed):
+    calls = []
+
+    def handler(request):
+        calls.append(request.url.path)
+        assert request.url.params["itemType"] == "journalArticle"
+        identity = "server-B" if changed and len(calls) == 2 else "server-A"
+        body = [{"field": "title"}] if len(calls) == 1 else [{"creatorType": "author"}]
+        return httpx.Response(200, headers={"Zotero-Server-ID": identity}, json=body)
+
+    client = _wire_client(handler)
+    try:
+        if changed:
+            with pytest.raises(ZoteroAPIError, match="Server-ID changed"):
+                await client.get_item_schema_snapshot("journalArticle")
+        else:
+            fields, roles, identity = await client.get_item_schema_snapshot("journalArticle")
+            assert fields == [{"field": "title"}]
+            assert roles == [{"creatorType": "author"}]
+            assert identity == "server-A"
+        assert calls == ["/api/itemTypeFields", "/api/itemTypeCreatorTypes"]
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_saved_search_snapshot_sends_limit_start_and_retains_identity():
+    def handler(request):
+        assert request.url.path == "/api/users/0/searches/ABCD2345/items"
+        assert dict(request.url.params) == {"limit": "25", "start": "50"}
+        return httpx.Response(200, headers={"Zotero-Server-ID": "server-A"}, json=[])
+
+    client = _wire_client(handler)
+    try:
+        assert await client.execute_search_snapshot("ABCD2345", limit=25, start=50) == ([], "server-A")
+    finally:
+        await client.close()
+
+
 class TestLocalDiscoveryAndAuthorization:
     @pytest.mark.asyncio
     async def test_discovery_binds_api_version_schema_and_server_id(self) -> None:

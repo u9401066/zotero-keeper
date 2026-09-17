@@ -63,14 +63,28 @@ async def get_owned_identifiers(zotero_client, limit: int = 500) -> dict[str, se
             "titles": set of normalized titles,
         }
     """
-    owned = {
+    if type(limit) is not int or limit <= 0:
+        raise ValueError("Ownership page size must be positive")
+    owned: dict[str, set] = {
         "dois": set(),
         "pmids": set(),
         "titles": set(),
     }
 
     try:
+        # limit is the page size, not a library-wide cap. A failed read must
+        # never turn all requested articles into supposedly new articles.
         items = await zotero_client.get_items(limit=limit)
+        seen_pages: set[tuple] = set()
+        while len(items) % limit == 0 and items:
+            signature = tuple(item.get("key") for item in items[-limit:])
+            if signature in seen_pages:
+                raise ValueError("Zotero repeated a page; ownership could not be determined reliably.")
+            seen_pages.add(signature)
+            page = await zotero_client.get_items(limit=limit, start=len(items))
+            if not page:
+                break
+            items.extend(page)
 
         for item in items:
             data = item.get("data", item)
@@ -94,6 +108,7 @@ async def get_owned_identifiers(zotero_client, limit: int = 500) -> dict[str, se
 
     except Exception as e:
         logger.error(f"Failed to load owned items: {e}")
+        raise
 
     return owned
 

@@ -16,6 +16,8 @@ from typing import Any
 from mcp.server import MCPServer
 
 from ..zotero_client.client import ZoteroAPIError, ZoteroClient, ZoteroConnectionError
+from .attachment_tools import _same_server_snapshot
+from .local_api_tools import _normalize_key
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +76,8 @@ def register_saved_search_tools(mcp: MCPServer, zotero: ZoteroClient) -> None:
         search_key: str | None = None,
         search_name: str | None = None,
         limit: int = 50,
+        start: int = 0,
+        include_children: bool = True,
     ) -> dict[str, Any]:
         """
         ▶️ Execute a saved search and return matching items
@@ -86,6 +90,8 @@ def register_saved_search_tools(mcp: MCPServer, zotero: ZoteroClient) -> None:
             search_key: The saved search key (e.g., "ABC12345")
             search_name: OR the saved search name (e.g., "Missing PDF")
             limit: Maximum items to return (default: 50)
+            start: Result-page offset (default: 0)
+            include_children: Preserve Zotero 10 attachment/annotation/note result levels (default: true)
 
         Returns:
             List of items matching the saved search conditions
@@ -103,6 +109,10 @@ def register_saved_search_tools(mcp: MCPServer, zotero: ZoteroClient) -> None:
             - "Show unread papers" → run_saved_search(search_name="Unread")
         """
         try:
+            if isinstance(limit, bool) or not 1 <= limit <= 1000 or isinstance(start, bool) or start < 0:
+                return {"success": False, "error": "limit must be 1–1000 and start must be non-negative"}
+            if search_key and search_name:
+                return {"success": False, "error": "Provide either search_key or search_name, not both"}
             # Resolve search key
             key_to_use = search_key
             search_info = None
@@ -126,26 +136,27 @@ def register_saved_search_tools(mcp: MCPServer, zotero: ZoteroClient) -> None:
                     "error": "Please provide either search_key or search_name",
                 }
 
-            # Get search info if we don't have it yet
-            if not search_info:
-                try:
-                    search_obj = await zotero.get_search(key_to_use)
-                    search_info = search_obj.get("data", search_obj)
-                except ZoteroAPIError:
-                    search_info = {"name": key_to_use}
-
-            # Execute the search
-            items = await zotero.execute_search(key_to_use, limit=limit)
+            key_to_use, error = _normalize_key("run_saved_search", key_to_use, "search_key")
+            if error:
+                return error
+            assert key_to_use is not None
+            search_obj, search_id = await zotero.get_search_snapshot(key_to_use)
+            search_info = search_obj.get("data", search_obj)
+            items, result_id = await zotero.execute_search_snapshot(key_to_use, limit=limit, start=start)
+            server_id = _same_server_snapshot(search_id, result_id)
 
             # Format results
             results = []
             for item in items:
                 data = item.get("data", item)
-                if data.get("itemType") in ("attachment", "annotation"):
-                    continue  # Skip attachments and annotations
+                if not include_children and data.get("itemType") in ("attachment", "annotation", "note"):
+                    continue
                 results.append(
                     {
+                        **data,
                         "key": item.get("key"),
+                        "version": item.get("version", data.get("version")),
+                        "server_id": server_id,
                         "title": data.get("title", ""),
                         "itemType": data.get("itemType", ""),
                         "date": data.get("date", ""),
@@ -162,6 +173,10 @@ def register_saved_search_tools(mcp: MCPServer, zotero: ZoteroClient) -> None:
                     "conditions": search_info.get("conditions", []),
                 },
                 "count": len(results),
+                "server_id": server_id,
+                "start": start,
+                "returned_count": len(items),
+                "next_start": start + len(items) if len(items) == limit else None,
                 "items": results,
                 "note": "🌟 This feature is exclusive to Local API!",
             }

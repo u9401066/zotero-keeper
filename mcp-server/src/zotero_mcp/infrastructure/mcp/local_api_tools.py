@@ -403,9 +403,10 @@ async def _begin_server_operation(
 def _normalize_conditions(
     operation: str, conditions: list[dict[str, Any]] | Any
 ) -> tuple[list[dict[str, Any]] | None, dict[str, Any] | None]:
-    if not isinstance(conditions, list) or not conditions:
-        return None, _error(operation, "invalid_conditions", "conditions must be a non-empty list.")
+    if not isinstance(conditions, list) or not 1 <= len(conditions) <= 200:
+        return None, _error(operation, "invalid_conditions", "conditions must contain 1–200 entries.")
     normalized: list[dict[str, Any]] = []
+    depth = 0
     for index, raw in enumerate(conditions):
         if not isinstance(raw, Mapping):
             return None, _error(operation, "invalid_conditions", f"Condition {index} must be an object.")
@@ -414,7 +415,7 @@ def _normalize_conditions(
             return None, _error(operation, "invalid_conditions", f"Condition {index} has unsupported fields: {sorted(unknown)}")
         condition = raw.get("condition")
         operator = raw.get("operator")
-        value = raw.get("value")
+        value = raw.get("value", "")
         if not isinstance(condition, str) or not condition.strip():
             return None, _error(operation, "invalid_conditions", f"Condition {index} needs a non-empty condition name.")
         if not isinstance(operator, str) or not operator.strip():
@@ -429,12 +430,32 @@ def _normalize_conditions(
         if "required" in raw:
             if not isinstance(raw["required"], bool):
                 return None, _error(operation, "invalid_conditions", f"Condition {index} required must be boolean.")
-            entry["required"] = raw["required"]
+            if raw["required"]:
+                return None, _error(
+                    operation, "invalid_conditions", "Zotero 10 JSON ignores required; express it with explicit groups/joinMode."
+                )
         if "mode" in raw:
             if not isinstance(raw["mode"], str):
                 return None, _error(operation, "invalid_conditions", f"Condition {index} mode must be a string.")
-            entry["mode"] = raw["mode"]
+            mode = raw["mode"].strip()
+            if mode:
+                if "/" in entry["condition"] or "/" in mode:
+                    return None, _error(operation, "invalid_conditions", "Specify search mode once, in condition/name or mode.")
+                entry["condition"] += "/" + mode
+        name = entry["condition"]
+        if name in {"groupStart", "groupEnd"}:
+            if entry["operator"] != "true":
+                return None, _error(operation, "invalid_conditions", "Group markers require operator='true'.")
+            depth += 1 if name == "groupStart" else -1
+            if not 0 <= depth <= 10:
+                return None, _error(operation, "invalid_conditions", "Search groups must balance and may nest at most 10 levels.")
+        if name == "joinMode" and entry["operator"] not in {"all", "any"}:
+            return None, _error(operation, "invalid_conditions", "joinMode operator must be all or any.")
+        if name == "resultLevel" and entry["operator"] not in {"item", "attachment", "note", "annotation"}:
+            return None, _error(operation, "invalid_conditions", "Invalid resultLevel operator.")
         normalized.append(entry)
+    if depth:
+        return None, _error(operation, "invalid_conditions", "Search groups must be balanced.")
     return normalized, None
 
 

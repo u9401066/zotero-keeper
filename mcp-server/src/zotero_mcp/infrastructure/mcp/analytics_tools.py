@@ -52,7 +52,7 @@ def register_analytics_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
             }
         """
         try:
-            # Fetch all items (limit high to get full library)
+            # Bounded scan: expose coverage rather than claiming a complete library.
             items = await zotero.get_items(limit=5000)
 
             if not items:
@@ -128,6 +128,9 @@ def register_analytics_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
 
             return {
                 "total_items": total_items,
+                "scanned_count": len(items),
+                "scan_limit": 5000,
+                "possibly_truncated": len(items) == 5000,
                 "by_type": dict(type_counter.most_common()),
                 "by_year": dict(year_counter.most_common(15)),  # Last 15 years
                 "top_authors": author_counter.most_common(10),
@@ -181,7 +184,7 @@ def register_analytics_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
             }
         """
         try:
-            # Fetch all items
+            # Bounded scan; callers must inspect coverage metadata.
             items = await zotero.get_items(limit=5000)
 
             if not items:
@@ -250,7 +253,10 @@ def register_analytics_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                 and not item.get("data", item).get("tags")
             )
 
-            result = {
+            result: dict[str, Any] = {
+                "scanned_count": len(items),
+                "scan_limit": 5000,
+                "possibly_truncated": len(items) == 5000,
                 "summary": {
                     "no_collection": total_no_collection,
                     "no_tags": total_no_tags,

@@ -38,6 +38,7 @@ from .batch_tools import is_batch_import_available, register_batch_tools
 from .collection_tools import register_collection_tools
 from .config import McpServerConfig, default_config
 from .interactive_tools import register_interactive_save_tools
+from .item_edit_tools import register_item_edit_tools
 from .local_api_tools import register_local_api_tools
 from .pubmed_tools import is_pubmed_available, register_pubmed_tools
 from .resources import register_resources
@@ -95,7 +96,8 @@ class ZoteroKeeperServer:
         register_basic_read_tools(self._mcp, self._zotero)
         register_collection_tools(self._mcp, self._zotero)
         register_local_api_tools(self._mcp, self._zotero)
-        logger.info("Zotero 10+ Local API write tools enabled (authorization + 16 confirmed mutations)")
+        register_item_edit_tools(self._mcp, self._zotero)
+        logger.info("Zotero 10+ tools enabled (authorization + 21 confirmed mutations + schema/annotation reads)")
 
         # Register MCP Resources (read-only browsable data)
         register_resources(self._mcp, self._zotero)

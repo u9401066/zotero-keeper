@@ -617,12 +617,14 @@ async def test_create_note_validates_exact_parent_and_uses_child_payload(zotero:
 @pytest.mark.asyncio
 async def test_create_saved_search_validates_and_preserves_supported_condition_fields(zotero: AsyncMock) -> None:
     tools, _ = _registered_tools(zotero)
-    conditions = [{"condition": "title", "operator": "contains", "value": "AI", "required": True}]
+    conditions = [{"condition": "fulltextContent", "operator": "contains", "value": "AI", "mode": "regexp"}]
 
     result = await tools["create_saved_search"](" AI papers ", conditions, True, expected_server_id=SERVER_ID)
 
     assert result["success"] is True
-    zotero.local_create_search.assert_awaited_once_with({"name": "AI papers", "conditions": conditions})
+    zotero.local_create_search.assert_awaited_once_with(
+        {"name": "AI papers", "conditions": [{"condition": "fulltextContent/regexp", "operator": "contains", "value": "AI"}]}
+    )
 
 
 @pytest.mark.asyncio

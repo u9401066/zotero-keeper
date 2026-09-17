@@ -743,7 +743,7 @@ wheels = [
 
 [[package]]
 name = "pubmed-search-mcp"
-version = "0.6.3"
+version = "0.7.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -763,9 +763,9 @@ dependencies = [
     { name = "toons" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d1/51/c8c2c0166a333c8de74373af03aa96f054d956be9b40057c2dfcd2478a39/pubmed_search_mcp-0.6.3.tar.gz", hash = "sha256:a1d6c66974634712798a6e4a227b46ce8c7462441ad62c82dfd849b8983235c5", size = 692502, upload-time = "2026-08-14T13:00:56.769Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6a/58/c492b50062ab9a4f1a93d4ce4b759da1a72334e1913d8b5af77691ca97cc/pubmed_search_mcp-0.7.3.tar.gz", hash = "sha256:c74ecb3bccb499b1f6660e4d91c1cd504c22ab74c83cc121fc0fd62205e01b35", size = 747107, upload-time = "2026-09-15T08:13:26.336Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f4/33/da4bc775b4089df79f99ccd47799cfbb0f18e9367ff118fa9c15c75cd8ed/pubmed_search_mcp-0.6.3-py3-none-any.whl", hash = "sha256:3a1d44d38d4e0c0702a106c243b518e1a64f82cbc6e49ed1b6e7565e3dfa7c15", size = 790153, upload-time = "2026-08-14T13:00:55.273Z" },
+    { url = "https://files.pythonhosted.org/packages/1d/d7/d1ce02563b6e6d15d3428c5fc653a2e9f1d1edebefb9021c798b4fdd56b6/pubmed_search_mcp-0.7.3-py3-none-any.whl", hash = "sha256:21c4b3aa9ae044226e3fc650b14d8a3bf2f92b694addeab55a595fb6020a0ca0", size = 854728, upload-time = "2026-09-15T08:13:24.612Z" },
 ]
 
 [[package]]
@@ -1385,7 +1385,7 @@ wheels = [
 
 [[package]]
 name = "zotero-keeper"
-version = "2.2.0"
+version = "2.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },
@@ -1433,9 +1433,9 @@ requires-dist = [
     { name = "mcp", specifier = ">=2.0,<3" },
     { name = "mcp", extras = ["cli"], marker = "extra == 'dev'", specifier = ">=2.0,<3" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0.0" },
-    { name = "pubmed-search-mcp", marker = "extra == 'all'", specifier = ">=0.6.3" },
-    { name = "pubmed-search-mcp", marker = "extra == 'dev'", specifier = ">=0.6.3" },
-    { name = "pubmed-search-mcp", marker = "extra == 'pubmed'", specifier = ">=0.6.3" },
+    { name = "pubmed-search-mcp", marker = "extra == 'all'", specifier = ">=0.7.3" },
+    { name = "pubmed-search-mcp", marker = "extra == 'dev'", specifier = ">=0.7.3" },
+    { name = "pubmed-search-mcp", marker = "extra == 'pubmed'", specifier = ">=0.7.3" },
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pydantic-settings", specifier = ">=2.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
@@ -1453,7 +1453,7 @@ provides-extras = ["pubmed", "all", "dev"]
 dev = [
     { name = "mcp", extras = ["cli"], specifier = ">=2.0,<3" },
     { name = "mypy", specifier = ">=1.0.0" },
-    { name = "pubmed-search-mcp", specifier = ">=0.6.3" },
+    { name = "pubmed-search-mcp", specifier = ">=0.7.3" },
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "pytest-asyncio", specifier = ">=0.21.0" },
     { name = "pytest-cov", specifier = ">=4.0.0" },

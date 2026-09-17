@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.0] - 2026-09-17
+
+### Added
+
+- Seven Zotero 10 tools: item schema and annotation reads, tag/creator/note edits,
+  reversible trash/restore, and version-bound scalar metadata batches (48 total).
+- Zotero 10.0.2 endpoint/tool coverage audit with explicit unsupported boundaries.
+
+### Fixed
+
+- Saved searches preserve attachment/note/annotation result levels, paginate, and
+  bind results to the search response's Server-ID. Nested group conditions and
+  mode suffixes match Zotero's JSON contract; ignored required=true is rejected.
+- Item reads retain note/annotation fields; tag lists no longer silently drop
+  entries after the first 100.
+- Extension harness installation is opt-in, content-addressed, backed up, and
+  downgrade-safe. Custom skills, deleted files, source workspaces and user rules
+  are preserved. Asset consistency checks no longer rewrite the checked bundle.
+
+### Changed
+
+- VSIX 0.9.0 pins PubMed Search MCP 0.7.3 (`fbbaaca`, 41 tools), refreshes
+  PICO/session contracts and bundled assistant skills/hooks.
+
 ## [2.2.0] - 2026-08-19
 
 ### Added

@@ -30,6 +30,35 @@ def _registered_tools(zotero: AsyncMock) -> dict[str, Any]:
     return tools
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("include_children,expected", [(True, 4), (False, 1)])
+async def test_run_preserves_result_levels_and_paginates(include_children, expected):
+    client = AsyncMock()
+    client.get_search_snapshot.return_value = ({"key": "ABCD2345", "data": {"name": "Nested", "conditions": []}}, "profile")
+    rows = [
+        {"key": f"ITEM000{i}", "version": 7, "data": {"itemType": kind, "note": "body", "annotationText": "quote"}}
+        for i, kind in enumerate(["journalArticle", "attachment", "note", "annotation"])
+    ]
+    client.execute_search_snapshot.return_value = (rows, "profile")
+    result = await _registered_tools(client)["run_saved_search"](search_key="ABCD2345", limit=4, start=8, include_children=include_children)
+    assert result["success"]
+    assert result["count"] == expected
+    assert result["next_start"] == 12
+    assert result["returned_count"] == 4
+    assert result["items"][-1]["annotationText"] == "quote"
+    client.execute_search_snapshot.assert_awaited_once_with("ABCD2345", limit=4, start=8)
+
+
+@pytest.mark.asyncio
+async def test_run_rejects_profile_change_between_search_and_results():
+    client = AsyncMock()
+    client.get_search_snapshot.return_value = ({"key": "ABCD2345", "data": {}}, "old")
+    client.execute_search_snapshot.return_value = ([], "new")
+    result = await _registered_tools(client)["run_saved_search"](search_key="ABCD2345")
+    assert not result["success"]
+    assert "items" not in result
+
+
 class TestFormatCreators:
     """Tests for _format_creators function."""
 

@@ -107,6 +107,7 @@ def register_basic_read_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                 "found": True,
                 "server_id": server_id,
                 "item": {
+                    **data,
                     "key": item.get("key"),
                     # Zotero 10+ Local API object versions are instance-local.
                     # Mutation tools require this value as expected_version;
@@ -206,7 +207,7 @@ def register_basic_read_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
             tag_list = [t.get("tag", str(t)) for t in tags]
             return {
                 "count": len(tag_list),
-                "tags": tag_list[:100],  # Limit to first 100
+                "tags": tag_list,
                 "library_version": library_version,
                 "server_id": server_id,
             }

@@ -30,13 +30,16 @@ def _find_collection(
 ) -> dict[str, Any] | None:
     """Find a collection within one already identified response snapshot."""
     normalized_name = name.lower().strip()
+    matches = []
     for collection in collections:
         data = collection.get("data", collection)
         if data.get("name", "").lower().strip() != normalized_name:
             continue
         if parent_key is None or data.get("parentCollection") == parent_key:
-            return collection
-    return None
+            matches.append(collection)
+    if len(matches) > 1:
+        raise ZoteroAPIError(f"Ambiguous collection name '{name}'; choose an exact key from list_collections.", status_code=400)
+    return matches[0] if matches else None
 
 
 def _add_tree_server_id(nodes: list[dict[str, Any]], server_id: str | None) -> None:

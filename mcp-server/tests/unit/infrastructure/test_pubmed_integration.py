@@ -1,4 +1,4 @@
-"""Tests for PubMed Search MCP v0.6.3 facade integration."""
+"""Tests for PubMed Search MCP v0.7.3 facade integration."""
 
 import sys
 from types import SimpleNamespace

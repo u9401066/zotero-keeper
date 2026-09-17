@@ -197,11 +197,19 @@ class TestGetOwnedIdentifiers:
         mock_client = AsyncMock()
         mock_client.get_items.side_effect = Exception("API Error")
 
-        owned = await get_owned_identifiers(mock_client)
+        with pytest.raises(Exception, match="API Error"):
+            await get_owned_identifiers(mock_client)
 
-        assert owned["dois"] == set()
-        assert owned["pmids"] == set()
-        assert owned["titles"] == set()
+    @pytest.mark.asyncio
+    async def test_ownership_scans_later_pages(self):
+        client = AsyncMock()
+        client.get_items.side_effect = [
+            [{"key": "A", "data": {"PMID": "1"}}, {"key": "B", "data": {"PMID": "2"}}],
+            [{"key": "C", "data": {"PMID": "3"}}],
+        ]
+        owned = await get_owned_identifiers(client, limit=2)
+        assert owned["pmids"] == {"1", "2", "3"}
+        client.get_items.assert_awaited_with(limit=2, start=2)
 
     @pytest.mark.asyncio
     async def test_respects_limit(self):

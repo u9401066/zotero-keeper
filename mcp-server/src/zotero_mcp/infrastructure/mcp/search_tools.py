@@ -42,6 +42,7 @@ def register_search_tools(mcp, zotero_client, *, enable_pubmed_bridge_tools: boo
         qmode: str = "titleCreatorYear",
         limit: int = 50,
         include_trashed: bool = False,
+        start: int = 0,
     ) -> dict[str, Any]:
         """
         🔍 Advanced search with multiple conditions in Zotero library
@@ -58,11 +59,14 @@ def register_search_tools(mcp, zotero_client, *, enable_pubmed_bridge_tools: boo
             qmode: Search mode (titleCreatorYear, everything)
             limit: Maximum results
             include_trashed: Include trash items
+            start: Result offset for pagination (default: 0)
 
         Returns:
             Search results with formatted output
         """
         try:
+            if type(start) is not int or start < 0 or type(limit) is not int or not 1 <= limit <= 1000:
+                return {"error": "start must be non-negative; limit must be 1–1000"}
             tag_param = tags if tags else tag
 
             items, server_id = await zotero_client.get_items_snapshot(
@@ -74,6 +78,7 @@ def register_search_tools(mcp, zotero_client, *, enable_pubmed_bridge_tools: boo
                 qmode=qmode,
                 limit=limit,
                 include_trashed=include_trashed,
+                **({"start": start} if start else {}),
             )
             # Local object versions are meaningful only within the
             # Zotero-Server-ID on the exact response that supplied them. Do
@@ -105,6 +110,8 @@ def register_search_tools(mcp, zotero_client, *, enable_pubmed_bridge_tools: boo
 
             return {
                 "count": len(items),
+                "start": start,
+                "next_start": start + len(items) if len(items) == limit else None,
                 "server_id": server_id,
                 "items": items,
                 "search_params": {
