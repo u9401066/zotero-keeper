@@ -2,7 +2,9 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { installHarnessAssets, HARNESS_MANIFEST } from '../harnessAssets';
+import fileSystem from 'fs';
+import * as sinon from 'sinon';
+import { installHarnessAssets, HARNESS_MANIFEST, HARNESS_PENDING } from '../harnessAssets';
 
 describe('Harness preservation', () => {
     let root: string;
@@ -23,7 +25,7 @@ describe('Harness preservation', () => {
         write(bundle, 'keeper/AGENTS.md', '# Zotero + PubMed MCP Codex Harness\noriginal');
         write(bundle, 'keeper/.codex/skills/zotero-keeper-harness/SKILL.md', 'original skill');
     });
-    afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
+    afterEach(() => { sinon.restore(); fs.rmSync(root, { recursive: true, force: true }); });
 
     it('installs once and does not rewrite unchanged files or the ledger', () => {
         const first = installHarnessAssets(bundle, workspace, '0.9.0');
@@ -61,7 +63,7 @@ describe('Harness preservation', () => {
         installHarnessAssets(bundle, workspace, '0.10.0');
         write(bundle, 'keeper/AGENTS.md', 'old');
         write(bundle, 'keeper/old.md', 'obsolete');
-        assert.match(installHarnessAssets(bundle, workspace, '0.9.0').skipped!, /Newer/);
+        assert.match(installHarnessAssets(bundle, workspace, '0.9.0').skipped ?? '', /Newer/);
         assert.ok(!fs.existsSync(path.join(workspace, 'old.md')));
     });
     it('preserves unknown files, including empty files, without claiming ownership', () => {
@@ -104,7 +106,7 @@ describe('Harness preservation', () => {
     });
     it('does not install while another window holds the installation lock', () => {
         write(workspace, '.vscode/zotero-mcp-assets.lock', 'other window');
-        assert.match(installHarnessAssets(bundle, workspace, '0.9.0').skipped!, /locked/);
+        assert.match(installHarnessAssets(bundle, workspace, '0.9.0').skipped ?? '', /locked/);
         assert.ok(!fs.existsSync(path.join(workspace, 'AGENTS.md')));
     });
     it('does not write through symlinked harness directories', function () {
@@ -118,12 +120,72 @@ describe('Harness preservation', () => {
     });
     it('skips maintainer source workspaces', () => {
         write(workspace, 'vscode-extension/scripts/sync-copilot-assets.mjs', 'source');
-        assert.match(installHarnessAssets(bundle, workspace, '0.9.0').skipped!, /Source repository/);
+        assert.match(installHarnessAssets(bundle, workspace, '0.9.0').skipped ?? '', /Source repository/);
         assert.ok(!fs.existsSync(path.join(workspace, 'AGENTS.md')));
     });
     it('does not replace a differing bundle from the same extension version', () => {
         installHarnessAssets(bundle, workspace, '0.9.0');
         write(bundle, 'keeper/AGENTS.md', 'different development build');
         assert.deepStrictEqual(installHarnessAssets(bundle, workspace, '0.9.0').preserved, ['AGENTS.md']);
+    });
+    it('rolls back the whole skill, new files and ledger if committing the ledger fails', () => {
+        installHarnessAssets(bundle, workspace, '0.9.0');
+        const ledger = fs.readFileSync(path.join(workspace, HARNESS_MANIFEST));
+        const original = fs.readFileSync(path.join(workspace, 'AGENTS.md'));
+        write(bundle, 'keeper/AGENTS.md', 'upgrade');
+        write(bundle, 'keeper/.codex/skills/zotero-keeper-harness/SKILL.md', 'upgrade skill');
+        write(bundle, 'keeper/.codex/skills/zotero-keeper-harness/new.md', 'new sibling');
+        const rename = fileSystem.renameSync;
+        sinon.stub(fileSystem, 'renameSync').callsFake((source, target) => {
+            if (String(target) === path.join(workspace, HARNESS_MANIFEST)) { throw new Error('disk failure'); }
+            rename(source, target);
+        });
+        assert.throws(() => installHarnessAssets(bundle, workspace, '0.10.0'), /Previous assets and ledger restored/);
+        assert.deepStrictEqual(fs.readFileSync(path.join(workspace, 'AGENTS.md')), original);
+        assert.deepStrictEqual(fs.readFileSync(path.join(workspace, HARNESS_MANIFEST)), ledger);
+        assert.strictEqual(fs.readFileSync(path.join(workspace, '.codex/skills/zotero-keeper-harness/SKILL.md'), 'utf8'), 'original skill');
+        assert.ok(!fs.existsSync(path.join(workspace, '.codex/skills/zotero-keeper-harness/new.md')));
+        assert.ok(!fs.existsSync(path.join(workspace, HARNESS_PENDING)));
+        sinon.restore();
+        assert.strictEqual(installHarnessAssets(bundle, workspace, '0.10.0').updated.length, 2);
+    });
+    it('preserves edits during rollback and blocks further updates pending review', () => {
+        installHarnessAssets(bundle, workspace, '0.9.0');
+        write(bundle, 'keeper/AGENTS.md', 'upgrade');
+        const rename = fileSystem.renameSync;
+        sinon.stub(fileSystem, 'renameSync').callsFake((source, target) => {
+            if (String(target) === path.join(workspace, HARNESS_MANIFEST)) {
+                write(workspace, 'AGENTS.md', 'concurrent user edit');
+                throw new Error('disk failure');
+            }
+            rename(source, target);
+        });
+        assert.throws(() => installHarnessAssets(bundle, workspace, '0.10.0'), /further updates are blocked/);
+        assert.strictEqual(fs.readFileSync(path.join(workspace, 'AGENTS.md'), 'utf8'), 'concurrent user edit');
+        const pending = JSON.parse(fs.readFileSync(path.join(workspace, HARNESS_PENDING), 'utf8'));
+        assert.strictEqual(pending.to, '0.10.0');
+        assert.ok(pending.files.find((f: { path: string }) => f.path === 'AGENTS.md').backup);
+        sinon.restore();
+        assert.match(installHarnessAssets(bundle, workspace, '0.10.0').skipped ?? '', /Interrupted harness update/);
+    });
+    it('refuses a modified recovery backup before upgrading any asset', () => {
+        installHarnessAssets(bundle, workspace, '0.9.0');
+        const ledger = fs.readFileSync(path.join(workspace, HARNESS_MANIFEST));
+        const manifest = JSON.parse(ledger.toString());
+        write(workspace, `.vscode/zotero-mcp-backups/0.9.0/${manifest.files['AGENTS.md']}/AGENTS.md`, 'user-modified backup');
+        write(bundle, 'keeper/AGENTS.md', 'upgrade');
+        assert.throws(() => installHarnessAssets(bundle, workspace, '0.10.0'), /backup was modified/);
+        assert.deepStrictEqual(fs.readFileSync(path.join(workspace, HARNESS_MANIFEST)), ledger);
+        assert.match(fs.readFileSync(path.join(workspace, 'AGENTS.md'), 'utf8'), /original/);
+    });
+    it('rejects unsafe ledger paths and invalid semantic versions before asset writes', () => {
+        installHarnessAssets(bundle, workspace, '0.9.0');
+        const ledger = JSON.parse(fs.readFileSync(path.join(workspace, HARNESS_MANIFEST), 'utf8'));
+        ledger.files['../outside'] = ledger.files['AGENTS.md'];
+        write(workspace, HARNESS_MANIFEST, JSON.stringify(ledger));
+        assert.throws(() => installHarnessAssets(bundle, workspace, '0.10.0'), /Invalid harness path/);
+        for (const version of ['00.9.0', '0.9.0-beta', '9007199254740992.0.0']) {
+            assert.throws(() => installHarnessAssets(bundle, workspace, version), /semantic version/);
+        }
     });
 });

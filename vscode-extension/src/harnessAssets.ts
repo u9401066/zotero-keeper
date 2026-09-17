@@ -1,9 +1,10 @@
 /** Content-addressed workspace harness installation. Never infer ownership from names/headings. */
 import * as fs from 'fs';
 import * as path from 'path';
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 
 export const HARNESS_MANIFEST = '.vscode/zotero-mcp-assets.json';
+export const HARNESS_PENDING = '.vscode/zotero-mcp-assets.pending.json';
 interface Manifest {
     schema: 1;
     extensionVersion: string;
@@ -22,7 +23,8 @@ function digest(data: Buffer): string {
 }
 
 function versionParts(version: string): number[] {
-    if (!/^\d+\.\d+\.\d+$/.test(version)) {
+    if (typeof version !== 'string' || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)
+        || !version.split('.').every(p => Number.isSafeInteger(Number(p)))) {
         throw new Error('Harness version must be a stable semantic version.');
     }
     return version.split('.').map(Number);
@@ -38,7 +40,8 @@ function isOlder(incoming: string, installed: string): boolean {
 }
 
 function safePath(root: string, relative: string): string {
-    if (path.isAbsolute(relative) || relative.split(/[\\/]/).some(p => p === '..' || !p)) {
+    if (path.isAbsolute(relative) || relative.includes('\\') || relative.includes(':')
+        || relative.split('/').some(p => p === '..' || p === '.' || !p)) {
         throw new Error(`Invalid harness path: ${relative}`);
     }
     const parts = relative.split(/[\\/]/);
@@ -74,7 +77,8 @@ function bundleFiles(root: string): Map<string, Buffer> {
             if (entry.isDirectory()) { walk(source, relative); }
             else if (entry.isFile()) {
                 const content = fs.readFileSync(source);
-                if (files.has(relative) && !files.get(relative)!.equals(content)) {
+                const existing = files.get(relative);
+                if (existing && !existing.equals(content)) {
                     throw new Error(`Conflicting bundled harness: ${relative}`);
                 }
                 files.set(relative, content);
@@ -95,6 +99,9 @@ export function installHarnessAssets(bundleRoot: string, workspaceRoot: string, 
         return { installed: [], updated: [], preserved: [], unchanged: [], skipped: 'Source repository: edit harness sources and run sync-assets here.' };
     }
     const root = fs.realpathSync(workspaceRoot);
+    if (fs.existsSync(safePath(root, HARNESS_PENDING))) {
+        return { installed: [], updated: [], preserved: [], unchanged: [], skipped: `Interrupted harness update: review ${HARNESS_PENDING} and its recovery backups before reinstalling. No assets were changed.` };
+    }
     const lock = safePath(root, '.vscode/zotero-mcp-assets.lock');
     fs.mkdirSync(path.dirname(lock), { recursive: true });
     let handle: number;
@@ -119,7 +126,7 @@ function installUnlocked(bundleRoot: string, workspaceRoot: string, extensionVer
     if (fs.existsSync(manifestPath)) {
         // A corrupt/unknown ledger fails before any file is touched.
         previous = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as Manifest;
-        if (previous.schema !== 1 || !previous.files || typeof previous.files !== 'object'
+        if (!previous || previous.schema !== 1 || !previous.files || typeof previous.files !== 'object'
             || Array.isArray(previous.files)
             || !Object.values(previous.files).every(hash => typeof hash === 'string' && /^[a-f0-9]{64}$/.test(hash))) {
             throw new Error('Invalid harness manifest; preserve it and review before reinstalling.');
@@ -127,9 +134,11 @@ function installUnlocked(bundleRoot: string, workspaceRoot: string, extensionVer
         if (isOlder(extensionVersion, previous.extensionVersion)) {
             return { ...result, skipped: `Newer harness ${previous.extensionVersion} is already installed.` };
         }
+        for (const relative of Object.keys(previous.files)) { safePath(root, relative); }
     }
     const files = bundleFiles(bundleRoot);
     const next: Manifest = { schema: 1, extensionVersion, files: { ...previous.files } };
+    const changes: AssetChange[] = [];
     // Preflight every destination so a symlink fails before any installation begins.
     for (const relative of files.keys()) { safePath(root, relative); }
     // A skill is one unit: never mix new scripts/references into a custom or edited skill.
@@ -165,8 +174,7 @@ function installUnlocked(bundleRoot: string, workspaceRoot: string, extensionVer
         const recorded = previous.files[relative];
         if (!fs.existsSync(target)) {
             if (recorded) { result.preserved.push(relative); continue; }
-            fs.mkdirSync(path.dirname(target), { recursive: true });
-            fs.writeFileSync(target, incoming, { flag: 'wx' });
+            changes.push({ relative, incoming });
             next.files[relative] = hash;
             result.installed.push(relative);
             continue;
@@ -179,23 +187,97 @@ function installUnlocked(bundleRoot: string, workspaceRoot: string, extensionVer
         } else if (recorded && digest(current) === recorded) {
             // Same-version bundle divergence isn't an upgrade (e.g. competing development builds).
             if (previous.extensionVersion === extensionVersion) { result.preserved.push(relative); continue; }
-            const backupRelative = `.vscode/zotero-mcp-backups/${previous.extensionVersion}/${recorded}/${relative}`;
-            const backup = safePath(root, backupRelative);
-            fs.mkdirSync(path.dirname(backup), { recursive: true });
-            if (!fs.existsSync(backup)) { fs.writeFileSync(backup, current, { flag: 'wx' }); }
-            // Avoid overwriting an editor save that happened during backup creation.
-            if (!fs.readFileSync(safePath(root, relative)).equals(current)) {
-                result.preserved.push(relative); continue;
-            }
-            fs.writeFileSync(target, incoming);
+            changes.push({ relative, incoming, previous: current, mode: fs.statSync(target).mode });
             next.files[relative] = hash;
             result.updated.push(relative);
         } else { result.preserved.push(relative); }
     }
     const serialized = JSON.stringify(next, null, 2) + '\n';
     if (!fs.existsSync(manifestPath) || fs.readFileSync(manifestPath, 'utf8') !== serialized) {
-        fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
-        fs.writeFileSync(manifestPath, serialized);
+        changes.push({ relative: HARNESS_MANIFEST, incoming: Buffer.from(serialized),
+            previous: fs.existsSync(manifestPath) ? fs.readFileSync(manifestPath) : undefined });
     }
+    commitChanges(root, previous.extensionVersion, extensionVersion, changes);
     return result;
+}
+
+interface AssetChange {
+    relative: string;
+    incoming: Buffer;
+    previous?: Buffer;
+    mode?: number;
+}
+
+/** Stage beside the destination: a failed write cannot truncate the installed file. */
+function atomicWrite(target: string, content: Buffer, exclusive: boolean, mode?: number): void {
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    const temporary = `${target}.${randomUUID()}.tmp`;
+    let handle: number | undefined;
+    try {
+        handle = fs.openSync(temporary, 'wx', mode);
+        fs.writeFileSync(handle, content);
+        fs.fsyncSync(handle);
+        fs.closeSync(handle);
+        handle = undefined;
+        // link is an atomic no-replace installation; rename atomically replaces a managed file.
+        if (exclusive) { fs.linkSync(temporary, target); }
+        else { fs.renameSync(temporary, target); }
+    } finally {
+        if (handle !== undefined) { fs.closeSync(handle); }
+        if (fs.existsSync(temporary)) { fs.unlinkSync(temporary); }
+    }
+}
+
+function matches(root: string, change: AssetChange, expected: Buffer | undefined): boolean {
+    const target = safePath(root, change.relative);
+    if (!fs.existsSync(target)) { return expected === undefined; }
+    return expected !== undefined && fs.lstatSync(target).isFile() && fs.readFileSync(target).equals(expected);
+}
+
+/** One recoverable transaction for assets AND ledger. Crashes leave an explicit stop marker. */
+function commitChanges(root: string, from: string, to: string, changes: AssetChange[]): void {
+    if (!changes.length) { return; }
+    const pending = safePath(root, HARNESS_PENDING);
+    const journal = changes.map(change => {
+        if (!matches(root, change, change.previous)) {
+            throw new Error(`Harness changed during planning: ${change.relative}. Re-run after the editor save completes.`);
+        }
+        let backup: string | undefined;
+        if (change.previous !== undefined) {
+            backup = `.vscode/zotero-mcp-backups/${from}/${digest(change.previous)}/${change.relative}`;
+            const backupPath = safePath(root, backup);
+            if (fs.existsSync(backupPath)) {
+                if (!fs.lstatSync(backupPath).isFile() || !fs.readFileSync(backupPath).equals(change.previous)) {
+                    throw new Error(`Harness recovery backup was modified: ${backup}. No assets were changed.`);
+                }
+            } else { atomicWrite(backupPath, change.previous, true, change.mode); }
+        }
+        return { path: change.relative, before: change.previous === undefined ? null : digest(change.previous),
+            after: digest(change.incoming), backup };
+    });
+    atomicWrite(pending, Buffer.from(JSON.stringify({ schema: 1, from, to, files: journal }, null, 2) + '\n'), true);
+    const applied: AssetChange[] = [];
+    try {
+        for (const change of changes) {
+            if (!matches(root, change, change.previous)) {
+                throw new Error(`Harness changed during update: ${change.relative}.`);
+            }
+            atomicWrite(safePath(root, change.relative), change.incoming, change.previous === undefined, change.mode);
+            applied.push(change);
+        }
+    } catch (error) {
+        let restored = true;
+        for (const change of applied.reverse()) {
+            try {
+                // Never roll back over a user's concurrent edit, even after a failed installation.
+                if (!matches(root, change, change.incoming)) { restored = false; continue; }
+                const target = safePath(root, change.relative);
+                if (change.previous === undefined) { fs.unlinkSync(target); }
+                else { atomicWrite(target, change.previous, false, change.mode); }
+            } catch { restored = false; }
+        }
+        if (restored) { fs.unlinkSync(pending); }
+        throw new Error(`Harness update failed: ${String(error)} ${restored ? 'Previous assets and ledger restored.' : `Review ${HARNESS_PENDING} and recovery backups; further updates are blocked.`}`);
+    }
+    fs.unlinkSync(pending);
 }

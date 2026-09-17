@@ -10,7 +10,8 @@ vsc-extension-quickstart.md
 **/.eslintrc.json
 **/*.map
 **/*.ts
-!out/**/*.js
+out/test/**
+.mocharc.yml
 docs/**
 scripts/**
 resources/skills/**

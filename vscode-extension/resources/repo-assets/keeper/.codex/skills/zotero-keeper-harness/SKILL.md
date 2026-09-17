@@ -54,4 +54,6 @@ or the installed Zotero + PubMed MCP workspace harness.
 - Saved searches support nested groups and resultLevel item/attachment/note/annotation. Keep child results by default; paginate using start/limit. Search modes serialize as condition/mode; required=true is rejected because Zotero JSON ignores it.
 - Workspace harness installation is opt-in (`zoteroMcp.autoUpdateHarness=false`). Never infer ownership from headings or delete skills by prefix. Preserve unknown/edited/deleted files and whole custom skills; hash-matched upgrades require backups and a newer extension version.
 - Source workspaces are not installation targets. `sync-assets:check` is read-only; run `sync-assets` explicitly before packaging.
+- A harness pending-transaction marker blocks installation. Do not delete it or break a stale lock to force an update; inspect the journal, verified backups and concurrent edits using the [recovery guide](https://github.com/u9401066/zotero-keeper/blob/main/docs/HARNESS_UPGRADES.md) first.
+- Ownership scans discard partial results on identity/version drift. Statistics may return unknown counts with warnings; never interpret these as an empty library.
 - Read the [tool audit](https://github.com/u9401066/zotero-keeper/blob/main/docs/ZOTERO_10_TOOL_AUDIT.md) for coverage and deliberate API boundaries.

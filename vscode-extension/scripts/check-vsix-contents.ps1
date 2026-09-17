@@ -62,6 +62,12 @@ try {
     Copy-Item -LiteralPath $resolvedVsix.Path -Destination $zipPath -Force
     Expand-Archive -LiteralPath $zipPath -DestinationPath $unpacked -Force
 
+    foreach ($relative in @("extension/out/test", "extension/.mocharc.yml")) {
+        if (Test-Path -LiteralPath (Join-Path $unpacked $relative)) {
+            throw "VSIX contains development-only test files: $relative"
+        }
+    }
+
     $required = @(
         "extension/package.json",
         "extension/readme.md",

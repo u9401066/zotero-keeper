@@ -1,4 +1,4 @@
-# Workspace harness upgrades (VSIX 0.9.0)
+# Workspace harness upgrades (VSIX 0.9.1)
 
 ## Why files kept changing
 
@@ -29,10 +29,36 @@ That allowed an older installed VSIX to revert newly edited source harness files
 - Symlink destinations fail before installation. A lock prevents competing
   VS Code windows from updating the ledger concurrently. A stale lock is reported
   for manual review; it is never automatically broken.
+- Files and ledger are planned together, backups are verified, and each file is
+  replaced atomically. Ordinary failures roll back the applied changes. A user
+  edit made during the update or rollback is never replaced by recovery code.
+- `.vscode/zotero-mcp-assets.pending.json` records an interrupted transaction,
+  including before/after hashes and backup paths. Its presence blocks subsequent
+  updates even if the lock is removed; no repeated overwrite attempts occur.
+
+## Interrupted-update recovery
+
+Close other VS Code windows using the workspace before reviewing a stale lock.
+Keep a copy of the pending record and any edited files. Each journal entry lists
+the destination, its previous hash (`null` means newly installed), incoming hash,
+and the recovery backup when a previous file existed.
+
+To roll back manually, restore only files still matching the journal's incoming
+hash from their verified backups, including the previous ownership ledger.
+Review newly installed files individually before removing them; never remove
+edited files or a whole skills directory. Files with neither recorded hash are
+user changes and require manual merging. If the old ledger did not exist, do not
+invent ownership for pre-existing files.
+
+Alternatively, when every installed file and the ledger already match the
+completed new bundle, retain that consistent state. Only after checking the
+whole transaction should you archive/remove the pending record and stale lock,
+then run the explicit installer again. Never clear these files just to force an
+upgrade over unresolved edits. Backups and retired assets are not auto-deleted.
 
 ## Upgrading an existing custom workspace
 
-Install 0.9.0, reload VS Code, and invoke Zotero MCP: Install Official Assistant Assets. Review the
+Install 0.9.1, reload VS Code, and invoke Zotero MCP: Install Official Assistant Assets. Review the
 preserved-file count. Existing pre-ledger custom skills will deliberately remain
 unchanged. Compare them with `resources/repo-assets/` from the installed extension
 and merge the desired new tool contracts; keep your changes and backups. An

@@ -27,4 +27,5 @@ Run from `vscode-extension/`:
 - Keep install paths cross-platform: use `path.join`, not string-concatenated separators.
 - Treat package install state as part of versioning; update tests when changing package pins.
 - Preserve user custom files unless the extension can recognize them as managed assets.
+- Test failed harness updates as well as successful ones: assets and ledger must roll back together, concurrent edits must survive, and pending recovery markers must block retries.
 - Keep command titles accurate when behavior expands beyond Copilot-only assets.
