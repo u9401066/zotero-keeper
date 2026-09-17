@@ -129,14 +129,30 @@ class TestExtractPmidFromItem:
 class TestGetOwnedIdentifiers:
     """Tests for get_owned_identifiers function."""
 
+    @staticmethod
+    def client(pages=(), error=None):
+        client = MagicMock()
+
+        async def iterate(**kwargs):
+            for page in pages:
+                yield page
+            if error:
+                raise error
+
+        client.iter_item_pages.side_effect = iterate
+        return client
+
     @pytest.mark.asyncio
     async def test_extracts_dois(self):
         """Test DOI extraction from items."""
-        mock_client = AsyncMock()
-        mock_client.get_items.return_value = [
-            {"data": {"DOI": "10.1234/test1", "title": "Test 1"}},
-            {"data": {"DOI": "10.5678/TEST2", "title": "Test 2"}},
-        ]
+        mock_client = self.client(
+            [
+                [
+                    {"data": {"DOI": "10.1234/test1", "title": "Test 1"}},
+                    {"data": {"DOI": "10.5678/TEST2", "title": "Test 2"}},
+                ]
+            ]
+        )
 
         owned = await get_owned_identifiers(mock_client)
 
@@ -146,10 +162,13 @@ class TestGetOwnedIdentifiers:
     @pytest.mark.asyncio
     async def test_extracts_pmids(self):
         """Test PMID extraction from extra field."""
-        mock_client = AsyncMock()
-        mock_client.get_items.return_value = [
-            {"data": {"extra": "PMID: 12345678", "title": "Test"}},
-        ]
+        mock_client = self.client(
+            [
+                [
+                    {"data": {"extra": "PMID: 12345678", "title": "Test"}},
+                ]
+            ]
+        )
 
         owned = await get_owned_identifiers(mock_client)
 
@@ -158,10 +177,13 @@ class TestGetOwnedIdentifiers:
     @pytest.mark.asyncio
     async def test_extracts_native_pmids(self):
         """Test PMID extraction from native PMID field (Zotero 6+)."""
-        mock_client = AsyncMock()
-        mock_client.get_items.return_value = [
-            {"data": {"PMID": "38353755", "title": "Test Native PMID"}},
-        ]
+        mock_client = self.client(
+            [
+                [
+                    {"data": {"PMID": "38353755", "title": "Test Native PMID"}},
+                ]
+            ]
+        )
 
         owned = await get_owned_identifiers(mock_client)
 
@@ -170,10 +192,13 @@ class TestGetOwnedIdentifiers:
     @pytest.mark.asyncio
     async def test_extracts_titles(self):
         """Test title extraction and normalization."""
-        mock_client = AsyncMock()
-        mock_client.get_items.return_value = [
-            {"data": {"title": "Hello World!"}},
-        ]
+        mock_client = self.client(
+            [
+                [
+                    {"data": {"title": "Hello World!"}},
+                ]
+            ]
+        )
 
         owned = await get_owned_identifiers(mock_client)
 
@@ -182,8 +207,7 @@ class TestGetOwnedIdentifiers:
     @pytest.mark.asyncio
     async def test_handles_empty_items(self):
         """Test handling empty item list."""
-        mock_client = AsyncMock()
-        mock_client.get_items.return_value = []
+        mock_client = self.client()
 
         owned = await get_owned_identifiers(mock_client)
 
@@ -194,32 +218,43 @@ class TestGetOwnedIdentifiers:
     @pytest.mark.asyncio
     async def test_handles_exception(self):
         """Test exception handling."""
-        mock_client = AsyncMock()
-        mock_client.get_items.side_effect = Exception("API Error")
+        mock_client = self.client([[{"data": {"PMID": "1"}}]], error=Exception("API Error"))
 
         with pytest.raises(Exception, match="API Error"):
             await get_owned_identifiers(mock_client)
 
     @pytest.mark.asyncio
     async def test_ownership_scans_later_pages(self):
-        client = AsyncMock()
-        client.get_items.side_effect = [
-            [{"key": "A", "data": {"PMID": "1"}}, {"key": "B", "data": {"PMID": "2"}}],
-            [{"key": "C", "data": {"PMID": "3"}}],
-        ]
+        client = self.client(
+            [
+                [{"key": "A", "data": {"PMID": "1"}}, {"key": "B", "data": {"PMID": "2"}}],
+                [{"key": "C", "data": {"PMID": "3"}}],
+            ]
+        )
         owned = await get_owned_identifiers(client, limit=2)
         assert owned["pmids"] == {"1", "2", "3"}
-        client.get_items.assert_awaited_with(limit=2, start=2)
+        client.iter_item_pages.assert_called_once_with(page_size=2)
 
     @pytest.mark.asyncio
     async def test_respects_limit(self):
         """Test that limit parameter is passed."""
-        mock_client = AsyncMock()
-        mock_client.get_items.return_value = []
+        mock_client = self.client()
 
         await get_owned_identifiers(mock_client, limit=100)
 
-        mock_client.get_items.assert_called_once_with(limit=100)
+        mock_client.iter_item_pages.assert_called_once_with(page_size=100)
+
+    @pytest.mark.asyncio
+    async def test_children_do_not_create_false_owned_matches(self):
+        client = self.client(
+            [
+                [
+                    {"data": {"itemType": kind, "title": "Not a paper", "DOI": "10/child", "PMID": "1"}}
+                    for kind in ("note", "annotation", "attachment")
+                ]
+            ]
+        )
+        assert await get_owned_identifiers(client) == {"dois": set(), "pmids": set(), "titles": set()}
 
 
 class TestIsOwned:

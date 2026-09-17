@@ -265,6 +265,8 @@ def _safe_fields(operation: str, fields: Mapping[str, Any] | Any) -> tuple[dict[
         if not isinstance(raw_name, str) or not raw_name.strip():
             return None, _error(operation, "invalid_fields", "Every metadata field name must be a non-empty string.")
         name = raw_name.strip()
+        if name in normalized:
+            return None, _error(operation, "invalid_fields", f"Metadata field '{name}' appears more than once after normalization.")
         if name in _FORBIDDEN_ITEM_FIELDS:
             return None, _error(operation, "forbidden_field", f"Field '{name}' requires a dedicated safe tool.")
         if not _is_json_scalar(value):

@@ -13,7 +13,7 @@ Provides read operations:
 import json
 import logging
 import os
-from collections.abc import Mapping
+from collections.abc import AsyncIterator, Mapping
 from pathlib import Path
 from typing import Any, cast
 
@@ -52,6 +52,55 @@ class ZoteroReadMixin:
         return payload, self._header_value(response.headers, "Zotero-Server-ID")
 
     # ==================== Items ====================
+
+    async def iter_item_pages(self, page_size: int = 500) -> AsyncIterator[list[dict[str, Any]]]:
+        """Scan without retaining all item bodies; reject mixed snapshots, never retry.
+
+        Zotero 10 supplies instance-local library versions. Older clients lack
+        that local-change guarantee, but duplicate keys and response shape are
+        still checked. Consumers must discard accumulated results on failure.
+        """
+        if type(page_size) is not int or not 1 <= page_size <= 5000:
+            raise ValueError("Item page size must be between 1 and 5000")
+        start = 0
+        seen: set[str] = set()
+        identity: tuple[str | None, int | None, int | None] | None = None
+        while True:
+            response = await self._request_raw(
+                "GET", "/api/users/0/items", params={"limit": page_size, "start": start, "sort": "dateModified", "direction": "desc"}
+            )
+            try:
+                items = response.json()
+            except ValueError as exc:
+                raise ZoteroAPIError("Invalid JSON in library scan") from exc
+            if not isinstance(items, list) or any(not isinstance(item, dict) for item in items):
+                raise ZoteroAPIError("Invalid item page in library scan")
+            server_id = self._header_value(response.headers, "Zotero-Server-ID")
+            version = self._response_library_version(response, operation="library scan", required=server_id is not None)
+            raw_total = self._header_value(response.headers, "Total-Results")
+            if raw_total is not None and (not raw_total.isascii() or not raw_total.isdecimal()):
+                raise ZoteroAPIError("Invalid Total-Results in library scan")
+            total = int(raw_total) if raw_total is not None else None
+            current = (server_id, version, total)
+            if identity is None:
+                identity = current
+            elif identity != current:
+                raise ZoteroAPIError("Library changed during scan; discard partial results and start a fresh read.", status_code=412)
+            for item in items:
+                key = item.get("key")
+                if not isinstance(key, str) or not key or key in seen:
+                    raise ZoteroAPIError("Missing or repeated item key in library scan; results are incomplete.")
+                seen.add(key)
+            start += len(items)
+            if total is not None and (start > total or (not items and start < total)):
+                raise ZoteroAPIError("Incomplete or inconsistent item count in library scan")
+            if items:
+                yield items
+            if total is not None:
+                if start == total:
+                    return
+            elif len(items) < page_size:
+                return
 
     async def get_items(
         self,

@@ -16,7 +16,7 @@ from typing import Any
 from mcp.server import MCPServer
 
 from ..zotero_client.client import ZoteroAPIError, ZoteroClient, ZoteroConnectionError
-from .attachment_tools import _same_server_snapshot
+from .read_contracts import same_server_snapshot as _same_server_snapshot
 from .local_api_tools import _normalize_key
 
 logger = logging.getLogger(__name__)

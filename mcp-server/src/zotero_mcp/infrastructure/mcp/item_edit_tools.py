@@ -6,7 +6,7 @@ from mcp.server import MCPServer
 from mcp.types import ToolAnnotations
 
 from ..zotero_client.client import ZoteroAPIError, ZoteroClient, ZoteroConnectionError
-from .attachment_tools import _same_server_snapshot
+from .read_contracts import same_server_snapshot as _same_server_snapshot
 from .local_api_tools import (
     _batch_membership_result,
     _begin_server_operation,

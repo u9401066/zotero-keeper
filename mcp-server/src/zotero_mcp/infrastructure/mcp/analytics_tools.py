@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from ..zotero_client.client import ZoteroClient
 
 from ..zotero_client.client import ZoteroAPIError, ZoteroConnectionError
+from .read_contracts import same_server_snapshot
 
 logger = logging.getLogger(__name__)
 
@@ -53,13 +54,7 @@ def register_analytics_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
         """
         try:
             # Bounded scan: expose coverage rather than claiming a complete library.
-            items = await zotero.get_items(limit=5000)
-
-            if not items:
-                return {
-                    "total_items": 0,
-                    "message": "Library is empty",
-                }
+            items, server_id = await zotero.get_items_snapshot(limit=5000)
 
             # Initialize counters
             type_counter: Counter = Counter()
@@ -110,24 +105,35 @@ def register_analytics_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                 if not tags:
                     items_without_tags += 1
 
-            # Get collection stats
+            # Missing supplemental reads are unknown, never a fabricated zero.
+            warnings = []
+            collection_count = None
             try:
-                collections = await zotero.get_collections()
+                collections, collection_id = await zotero.get_collections_snapshot()
+                same_server_snapshot(server_id, collection_id)
                 collection_count = len(collections)
-            except Exception:
-                collection_count = 0
+            except (ZoteroAPIError, ZoteroConnectionError) as exc:
+                if isinstance(exc, ZoteroAPIError) and exc.status_code == 412:
+                    raise
+                warnings.append({"section": "collections", "error": str(exc)})
 
             # Get tag stats
+            tag_count = None
             try:
-                tags = await zotero.get_tags()
+                tags, _, tag_id = await zotero.get_tags_snapshot()
+                same_server_snapshot(server_id, tag_id)
                 tag_count = len(tags)
-            except Exception:
-                tag_count = 0
+            except (ZoteroAPIError, ZoteroConnectionError) as exc:
+                if isinstance(exc, ZoteroAPIError) and exc.status_code == 412:
+                    raise
+                warnings.append({"section": "tags", "error": str(exc)})
 
             total_items = sum(type_counter.values())
 
             return {
                 "total_items": total_items,
+                "server_id": server_id,
+                "warnings": warnings,
                 "scanned_count": len(items),
                 "scan_limit": 5000,
                 "possibly_truncated": len(items) == 5000,
@@ -183,22 +189,16 @@ def register_analytics_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                 "summary": {"no_collection": 25, "no_tags": 40, "completely_orphan": 15}
             }
         """
+        if type(limit) is not int or not 1 <= limit <= 1000:
+            return {"error": "limit must be between 1 and 1000"}
         try:
             # Bounded scan; callers must inspect coverage metadata.
-            items = await zotero.get_items(limit=5000)
-
-            if not items:
-                return {
-                    "no_collection": [],
-                    "no_tags": [],
-                    "completely_orphan": [],
-                    "summary": {"no_collection": 0, "no_tags": 0, "completely_orphan": 0},
-                    "message": "Library is empty",
-                }
+            items, server_id = await zotero.get_items_snapshot(limit=5000)
 
             no_collection = []
             no_tags = []
             completely_orphan = []
+            total_no_collection = total_no_tags = total_completely_orphan = 0
 
             for item in items:
                 data = item.get("data", item)
@@ -223,37 +223,20 @@ def register_analytics_tools(mcp: MCPServer, zotero: "ZoteroClient") -> None:
                 has_tags = bool(tags)
 
                 if not has_collection and not has_tags:
+                    total_completely_orphan += 1
                     if len(completely_orphan) < limit:
                         completely_orphan.append(item_info)
-                elif not has_collection and include_no_collection:
-                    if len(no_collection) < limit:
+                if not has_collection:
+                    total_no_collection += 1
+                    if include_no_collection and len(no_collection) < limit:
                         no_collection.append(item_info)
-                elif not has_tags and include_no_tags:
-                    if len(no_tags) < limit:
+                if not has_tags:
+                    total_no_tags += 1
+                    if include_no_tags and len(no_tags) < limit:
                         no_tags.append(item_info)
 
-            # Count totals (might be more than limit)
-            total_no_collection = sum(
-                1
-                for item in items
-                if item.get("data", item).get("itemType") not in ("attachment", "note", "annotation")
-                and not item.get("data", item).get("collections")
-            )
-            total_no_tags = sum(
-                1
-                for item in items
-                if item.get("data", item).get("itemType") not in ("attachment", "note", "annotation")
-                and not item.get("data", item).get("tags")
-            )
-            total_completely_orphan = sum(
-                1
-                for item in items
-                if item.get("data", item).get("itemType") not in ("attachment", "note", "annotation")
-                and not item.get("data", item).get("collections")
-                and not item.get("data", item).get("tags")
-            )
-
             result: dict[str, Any] = {
+                "server_id": server_id,
                 "scanned_count": len(items),
                 "scan_limit": 5000,
                 "possibly_truncated": len(items) == 5000,

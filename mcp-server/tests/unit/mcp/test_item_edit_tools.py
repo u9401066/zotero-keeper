@@ -6,10 +6,17 @@ import pytest
 
 from zotero_mcp.infrastructure.mcp.item_edit_tools import register_item_edit_tools
 from zotero_mcp.infrastructure.mcp.local_api_tools import _normalize_conditions
+from zotero_mcp.infrastructure.mcp.local_api_tools import _safe_fields
 
 KEY = "ABCD2345"
 OTHER = "BCDE3456"
 SERVER = "profile-1"
+
+
+def test_ambiguous_normalized_metadata_fields_are_rejected():
+    fields, error = _safe_fields("update_item_fields", {"title": "reviewed", " title ": "different"})
+    assert fields is None
+    assert error["error"]["code"] == "invalid_fields"
 
 
 @pytest.mark.asyncio

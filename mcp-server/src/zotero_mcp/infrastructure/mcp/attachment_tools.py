@@ -20,21 +20,9 @@ if TYPE_CHECKING:
     from ..zotero_client.client import ZoteroClient
 
 from ..zotero_client.client import ZoteroAPIError, ZoteroConnectionError
+from .read_contracts import same_server_snapshot as _same_server_snapshot
 
 logger = logging.getLogger(__name__)
-
-
-def _same_server_snapshot(*server_ids: str | None) -> str | None:
-    """Require all parts of a Zotero 10+ read to come from one database."""
-    present = {server_id for server_id in server_ids if server_id is not None}
-    if present and (len(present) != 1 or any(server_id is None for server_id in server_ids)):
-        actual = next((server_id for server_id in reversed(server_ids) if server_id), "")
-        raise ZoteroAPIError(
-            "Zotero Server-ID changed while reading attachment metadata",
-            status_code=412,
-            response_headers={"Zotero-Server-ID": actual},
-        )
-    return next(iter(present), None)
 
 
 def _file_url_to_path(value: Any) -> Path | None:
