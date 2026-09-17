@@ -248,7 +248,7 @@
         <div class="section-heading section-heading-left">
           <h2 id="api-title">Zotero 10 Local API，對應常用寫入工作</h2>
           <p>
-            以任務導向工具涵蓋項目、collection、saved search、標籤、附件與全文；保留 Zotero 的版本衝突保護。
+            Keeper 2.3 提供 48 個工具，依 Zotero 10.0.2 核對項目、collection、saved search、標籤、附件與全文能力；保留版本衝突保護。
           </p>
         </div>
         <div class="capability-table-wrap">
@@ -257,7 +257,7 @@
             <tbody>
               <tr>
                 <th scope="row"><svg aria-hidden="true"><use href="#icon-file"></use></svg>項目</th>
-                <td>建立子註記／附件、更新欄位、單筆刪除與 membership</td>
+                <td>欄位／作者／筆記編輯、批次欄位更新、垃圾桶還原與明確刪除</td>
               </tr>
               <tr>
                 <th scope="row"><svg aria-hidden="true"><use href="#icon-folder"></use></svg>Collection</th>
@@ -265,15 +265,15 @@
               </tr>
               <tr>
                 <th scope="row"><svg aria-hidden="true"><use href="#icon-search"></use></svg>Saved search</th>
-                <td>建立、更新與刪除</td>
+                <td>建立、更新、刪除；巢狀條件與四種結果層級</td>
               </tr>
               <tr>
                 <th scope="row"><svg aria-hidden="true"><use href="#icon-tag"></use></svg>標籤</th>
-                <td>批次刪除</td>
+                <td>保留既有標籤的新增／移除，以及批次刪除</td>
               </tr>
               <tr>
                 <th scope="row"><svg aria-hidden="true"><use href="#icon-paperclip"></use></svg>附件檔案</th>
-                <td>新增與替換 stored attachment</td>
+                <td>新增／替換 stored attachment，讀取 annotation 內容</td>
               </tr>
               <tr>
                 <th scope="row"><svg aria-hidden="true"><use href="#icon-book"></use></svg>全文索引</th>
@@ -285,6 +285,10 @@
       </section>
 
       <section class="safety-section section-shell" id="safety" aria-labelledby="safety-title">
+        <p>VSIX 0.9.0 預設不自動覆寫 harness。內容指紋、升級備份、防降版與整個自訂 skill 保護，讓工作區保留你的設定。
+          <a href="https://github.com/u9401066/zotero-keeper/blob/main/docs/HARNESS_UPGRADES.md">升級說明</a> ·
+          <a href="https://github.com/u9401066/zotero-keeper/blob/main/docs/ZOTERO_10_TOOL_AUDIT.md">48 個工具的完整稽核與限制</a>
+        </p>
         <div class="section-heading ruled-heading">
           <h2 id="safety-title">先看清楚，再真的寫入</h2>
         </div>

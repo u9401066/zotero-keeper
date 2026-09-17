@@ -22,7 +22,7 @@ Let AI manage your references! A MCP Server connecting VS Code Copilot / Claude 
 
 [📦 Install Zotero + PubMed MCP from the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp)
 
-The **v0.8.0 VSIX is the recommended distribution**. It creates an isolated environment and installs Zotero Keeper 2.2.0 plus the pinned PubMed Search MCP 0.6.3 release snapshot. The `uvx`/PyPI path remains available for direct-server installs; verify the published version before assuming it matches this source release.
+The **v0.9.0 VSIX is the recommended distribution**. It creates an isolated environment and installs Zotero Keeper 2.3.0 plus the pinned PubMed Search MCP 0.7.3 release snapshot. The `uvx`/PyPI path remains available for direct-server installs; verify the published version before assuming it matches this source release.
 
 > ⚠️ MCP SDK 2.0 is not compatible with 1.x. After upgrading the extension, run **Zotero MCP: Reinstall Python Environment** if VS Code still has an older managed environment.
 
@@ -38,7 +38,7 @@ The **v0.8.0 VSIX is the recommended distribution**. It creates an isolated envi
 - 🔄 **PubMed integration**: "Search PubMed, skip what I already have"
 - 📁 **Interactive save**: Shows collection options for you to choose!
 - 🗂️ **Zotero 10+ organization**: Create, move, update, and delete collections; manage memberships, saved searches, tags, attachments, and full text
-- 📚 **Modern literature discovery**: PubMed Search MCP 0.6.3 exposes 45 tools in 16 categories, including governed SearchRun history and the Research Chronicle workflow
+- 📚 **Modern literature discovery**: PubMed Search MCP 0.7.3 exposes 41 tools in 16 categories, including governed SearchRun history and the Research Chronicle workflow
 
 No more manually searching, copying, pasting. Just tell your AI in natural language!
 
@@ -160,7 +160,21 @@ NCBI_EMAIL=your.email@example.com
 
 ---
 
-## 🔧 Available Tools (41 default public + 5 legacy opt-in)
+## Zotero 10.0.2 alignment and safe harness upgrades
+
+Keeper 2.3 adds seven tools: `get_item_schema`, `get_item_annotations`,
+`update_item_tags`, `update_item_creators`, `update_note`, `set_item_trashed`, and
+`batch_update_item_fields`. Saved searches preserve attachment/note/annotation
+results and support nested groups and paging. See the [48-tool audit](docs/ZOTERO_10_TOOL_AUDIT.md)
+for exact coverage and deliberate omissions (including group writes and annotation editing).
+
+VSIX 0.9.0 stops automatic harness overwrites. Installation is opt-in, records
+SHA-256 ownership, backs up managed upgrades, prevents downgrades and preserves
+custom files/whole skills. [Upgrade and recovery guide](docs/HARNESS_UPGRADES.md).
+PubMed 0.7.3 uses `validate_pico_plan` for agent-provided PICO fields and
+`read_session(request={"action":"pmids"})` for cached session reuse.
+
+## 🔧 Available Tools (48 default public + 5 legacy opt-in)
 
 > 💡 **Tip**: Most read operations can also be done via [MCP Resources](#-mcp-resources-browsable-data) without calling tools.
 
@@ -187,7 +201,7 @@ NCBI_EMAIL=your.email@example.com
 | `get_collection_tree` | Hierarchical tree view | `zotero://collections/tree` |
 | `find_collection` | Find by name | — (Tool only) |
 
-### 🗂️ Zotero 10+ Local API Tools (local_api_tools.py - 17 tools)
+### 🗂️ Zotero 10+ Local API Write Tools (authorization + 21 mutations)
 
 These tools use Zotero's official Local API v3 write support. Before preview,
 obtain a response-bound `server_id` from a Local API read or
@@ -204,6 +218,11 @@ the reviewed Zotero Server-ID.
 | `add_items_to_collection` | Add up to 50 existing items without removing other memberships | Validates every key before one versioned batch write |
 | `remove_items_from_collection` | Remove up to 50 memberships without deleting the items | Preserves every other collection membership |
 | `update_item_fields` | Update approved scalar metadata fields | Requires the current local object version |
+| `update_item_tags` | Add/remove exact item tags, retaining unrelated tags | Exact object version + approved identity |
+| `update_item_creators` | Replace an ordered creator list | Runtime creator-role validation + object version |
+| `update_note` | Replace an exact note's HTML | Retains its parent; empty HTML explicitly clears |
+| `set_item_trashed` | Move to Trash or restore | Recoverable alternative to permanent deletion |
+| `batch_update_item_fields` | Update scalar metadata on up to 50 items | All versions preflighted; inspect per-item results |
 | `delete_item` | Delete one exact item, note, or attachment | Destructive confirmation + current object version |
 | `create_note` | Add a child note to an existing item | Validates the parent + explicit confirmation |
 | `create_saved_search` | Create a Zotero saved search | Structured conditions + explicit confirmation |
@@ -429,7 +448,7 @@ Zotero supports **nested collections**. Recommended strategies:
 
 ## 🔬 PubMed Integration
 
-The v0.8.0 VSIX pins [pubmed-search-mcp 0.6.3](https://github.com/u9401066/pubmed-search-mcp/tree/v0.6.3) at release commit `febf53a`. Its MCP SDK v2 server exposes **45 tools across 16 categories**. This release adds fail-closed provider contracts, `trials`/`native_semantic`/`systematic` search modes, durable SearchRun status and replay through `read_session`, and richer Research Chronicle maps and Mermaid timelines. PubMed has a [separate feature site](https://u9401066.github.io/pubmed-search-mcp/).
+The v0.9.0 VSIX pins [pubmed-search-mcp 0.7.3](https://github.com/u9401066/pubmed-search-mcp/tree/v0.7.3) at release commit `fbbaaca`. Its MCP SDK v2 server exposes **41 tools across 16 categories**. This release adds fail-closed provider contracts, `trials`/`native_semantic`/`systematic` search modes, durable SearchRun status and replay through `read_session`, and richer Research Chronicle maps and Mermaid timelines. PubMed has a [separate feature site](https://u9401066.github.io/pubmed-search-mcp/).
 
 ```
 You: "Find new anesthesia AI papers from 2024 that I don't have"
@@ -480,7 +499,7 @@ For remote libraries, use Zotero's authenticated HTTPS Web API, or place a purpo
 │           AI Agent (VS Code / Claude)           │
 └──────────────────────┬──────────────────────────┘
                        │ MCP Protocol
-│ ├── Tools (41 default)
+│ ├── Tools (48 default)
                        │ ├── Resources (6 + 4 URI templates)
                        │ └── Elicitation (interactive input)
                        ▼
@@ -491,6 +510,7 @@ For remote libraries, use Zotero's authenticated HTTPS Web API, or place a purpo
 │  │  ├── server.py + basic reads (6 tools)      │  │
 │  │  ├── collection_tools.py (5 tools)         │  │
 │  │  ├── local_api_tools.py (17 guarded tools) │  │
+│  │  ├── item_edit_tools.py (7 task tools)     │  │
 │  │  ├── resources.py (6 resources + 4 templates) │
 │  │  ├── interactive_tools.py (2 save tools)   │  │
 │  │  ├── saved_search_tools.py (3 tools)      │  │
@@ -518,11 +538,11 @@ For remote libraries, use Zotero's authenticated HTTPS Web API, or place a purpo
 
 Zotero 10+ changed the Local API substantially. The platform now supports
 authorized item, collection, and saved-search writes, tag deletion, full-text
-writes, and full file uploads. Keeper 2.2 exposes a deliberately constrained
+writes, and full file uploads. Keeper 2.3 exposes a deliberately constrained
 subset rather than handing an unscoped key and arbitrary API paths to an AI
 client.
 
-| Interface | Scope | Authentication | Keeper 2.2 use |
+| Interface | Scope | Authentication | Keeper 2.3 use |
 |-----------|-------|----------------|----------------|
 | **Local API v3** `/api/...` | Same-machine library reads; Zotero 10+ writes | Reads are unauthenticated; writes require runtime user approval | Reads on Zotero 7–10+; guarded writes on 10+ |
 | **Connector API** `/connector/...` | Browser-connector save flows | Local interface | Backward-compatible create/import path, including Zotero 7–9 |
@@ -540,7 +560,7 @@ all be repeated. A changed database or stale cursor returns `412` and is never
 silently overwritten; missing identity/preconditions (`428`) and invalid
 authorization (`401`) also fail closed.
 
-Keeper 2.2 maps every My Library write family to explicit, task-oriented
+Keeper 2.3 maps every My Library write family to explicit, task-oriented
 workflows while retaining safer cross-version Connector imports:
 
 - create a top-level or nested collection;

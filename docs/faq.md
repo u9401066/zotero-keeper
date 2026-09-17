@@ -18,9 +18,9 @@ Start with the [Zotero Keeper feature site](https://u9401066.github.io/zotero-ke
 
 ### What is the easiest way to install?
 
-For VS Code users, use the v0.8.0 VSIX artifact from this release workspace, or install it from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp) after publication. It is the recommended distribution for Zotero Keeper 2.2.0 and PubMed Search MCP 0.6.3.
+For VS Code users, use the v0.9.0 VSIX artifact from this release workspace, or install it from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp) after publication. It is the recommended distribution for Zotero Keeper 2.3.0 and PubMed Search MCP 0.7.3.
 
-For Claude Desktop or manual setups, use a source checkout with `uv sync`. The separately published `uvx`/PyPI package may still be on an older line; verify its published version rather than assuming this command installs Keeper 2.2.0:
+For Claude Desktop or manual setups, use a source checkout with `uv sync`. The separately published `uvx`/PyPI package may still be on an older line; verify its published version rather than assuming this command installs Keeper 2.3.0:
 
 ```bash
 # Legacy pre-2.0 PyPI line only
@@ -134,7 +134,7 @@ The public surface is:
 - **Search**: handled by pubmed-search-mcp
 - **Import handoff**: `import_articles` (Zotero Keeper)
 - **Library reads**: all read tools (Zotero Keeper)
-- **Narrow Local API surface**: 17 Zotero 10+ tools—one authorization action plus 16 explicitly confirmed mutations (Zotero Keeper)
+- **Narrow Local API surface**: 22 Zotero 10+ tools—one authorization action plus 16 explicitly confirmed mutations (Zotero Keeper)
 
 All writes fail closed on collection routing. `skip_collection_prompt=True` aborts; `quick_save`, `import_articles`, and `import_pdf` reject a missing collection. Saving to My Library requires explicit user confirmation plus `allow_library_root=true` (and `interactive_save` confirms `ROOT` a second time).
 
@@ -193,7 +193,7 @@ documentation.
 
 ---
 
-### Which Zotero 10+ mutations were added in Keeper 2.2.0?
+### Which Zotero 10+ mutations were added in Keeper 2.3.0?
 
 | Tool | Scope and extra precondition |
 |------|------------------------------|
@@ -265,8 +265,8 @@ Zotero 8 introduced top-level PDF annotation objects with `itemType: "annotation
 
 ## PubMed Integration
 
-The v0.8.0 VSIX pins PubMed Search MCP 0.6.3 at commit
-[`febf53a`](https://github.com/u9401066/pubmed-search-mcp/commit/febf53a8ff1ee253a625869ba251365f73a23c68).
+The v0.9.0 VSIX pins PubMed Search MCP 0.7.3 at commit
+[`fbbaaca`](https://github.com/u9401066/pubmed-search-mcp/commit/fbbaacaba150afbc24bdbc07eb41c77c564017e6).
 It retains 45 MCP SDK v2 tools in 16 categories and adds SearchRun journaling
 and credential-free replay arguments, deterministic `systematic` search,
 bounded provider-native `native_semantic` search, explicit run/source status,
@@ -284,7 +284,7 @@ Only if you want to **search PubMed** from within Copilot. `import_articles` and
 uv sync --extra pubmed   # in the mcp-server directory
 ```
 
-For the MCP SDK v2 release, prefer the v0.8.0 VSIX or a current source checkout; the PyPI/`uvx` package may still resolve an older release line.
+For the MCP SDK v2 release, prefer the v0.9.0 VSIX or a current source checkout; the PyPI/`uvx` package may still resolve an older release line.
 
 ---
 

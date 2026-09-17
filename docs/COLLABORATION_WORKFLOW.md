@@ -7,7 +7,7 @@
 - **pubmed-search-mcp** owns search, discovery, export, citation metrics, and unified article JSON contracts.
 - **zotero-keeper** owns local-library work: duplicate checks, collection targeting, and the single public import handoff into Zotero.
 - Default posture: keeper exposes only `import_articles` for PubMed handoff; legacy bridge tools stay hidden unless you opt in.
-- Release baseline: VSIX 0.8.0 installs Zotero Keeper 2.2.0 (41 default tools, 6 concrete resources) and PubMed Search MCP 0.6.3 at `febf53a` (45 tools, 16 categories).
+- Release baseline: VSIX 0.9.0 installs Zotero Keeper 2.3.0 (48 default tools, 6 concrete resources) and PubMed Search MCP 0.7.3 at `fbbaaca` (41 tools, 16 categories).
 
 ## Setup Checklist
 
@@ -48,10 +48,10 @@ Guidance:
 - Use `collection_name` to route saves safely; Keeper validates against existing collections. On Zotero 10+, a missing destination collection can first be proposed and explicitly confirmed with `create_collection`. On Zotero 7–9, create it in the UI.
 - Collection routing is fail-closed. `interactive_save` needs an exact collection key or double-confirmed `ROOT`; `skip_collection_prompt=True` aborts. `quick_save`, `import_articles`, and `import_pdf` reject a missing collection unless explicit user approval is represented by `allow_library_root=true`.
 - Skip legacy tools unless a workflow explicitly requires them.
-- Use SearchRun status and `read_session` replay instead of silently rerunning a
-  partial/failed search. Use `build_research_chronicle` and
-  `read_research_chronicle` for durable history; with 0.6.3, explicitly repeat
-  the original scope when continuing a chronicle.
+- Inspect SearchRun status with `read_session(request={"action":"search_runs"})`;
+  replay is a deliberate provider rerun, not a cache read. Use
+  `build_research_chronicle` and `read_research_chronicle` for durable history.
+  In 0.7.3, continuing with only `chronicle_id` preserves the prior retrieval scope.
 
 ## Zotero 7–10+ Capability Matrix
 
@@ -68,7 +68,7 @@ Zotero 8's top-level annotation representation remains filtered from normal bibl
 
 ## Confirmed Zotero 10+ Mutations
 
-The 17 Zotero 10+ tools are:
+The 22 Zotero 10+ tools are:
 
 ```python
 authorize_local_writes(require_remembered: bool = False)
@@ -128,7 +128,7 @@ identity only after preview. See Zotero's official [Local API](https://www.zoter
 Collection membership tools validate the exact collection and all one-to-50
 items before one batch write, preserve every unrelated membership, and report
 per-item partial failures. Destructive tools delete only an exact reviewed
-object or exact tag names; Keeper 2.2 still exposes no raw API, arbitrary
+object or exact tag names; Keeper 2.3 still exposes no raw API, arbitrary
 structural-array replacement, batch object delete, or group write.
 
 `attach_file_to_item` and `replace_attachment_file` implement Zotero's
@@ -157,5 +157,5 @@ registration. A failure after child creation may return `partial=true` and
 ## Quick Verification
 
 - Keeper: `uv run python tests/check_mcp.py` should discover the SDK v2 server surface; the default server has 41 tools, 6 concrete resources, and 4 URI templates.
-- PubMed: start the pinned 0.6.3 server per its README and confirm the client discovers 45 tools before making a real `unified_search` call.
+- PubMed: start the pinned 0.7.3 server per its README and confirm the client discovers 41 tools before making a real `unified_search` call.
 - Integration: invoke `check_connection` (keeper) and a small `unified_search` → `import_articles` chain before production use.

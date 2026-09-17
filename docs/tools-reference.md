@@ -1,6 +1,6 @@
 # MCP Tools Reference
 
-Complete reference for all 41 default MCP tools exposed by Zotero Keeper 2.2.0
+Complete reference for all 48 default MCP tools exposed by Zotero Keeper 2.3.0
 on MCP SDK v2, plus five legacy opt-in tools.
 
 For a visual feature overview, start with the
@@ -9,13 +9,42 @@ for exact schemas and safety contracts.
 
 > **Tip**: Most read operations can also be performed via [MCP Resources](../README.md#-mcp-resources-browsable-data) (e.g. `zotero://collections`) without calling a tool.
 
-> **Companion server**: VSIX 0.8.0 pins PubMed Search MCP 0.6.3 at
-> [`febf53a`](https://github.com/u9401066/pubmed-search-mcp/commit/febf53a8ff1ee253a625869ba251365f73a23c68).
+> **Companion server**: VSIX 0.9.0 pins PubMed Search MCP 0.7.3 at
+> [`fbbaaca`](https://github.com/u9401066/pubmed-search-mcp/commit/fbbaacaba150afbc24bdbc07eb41c77c564017e6).
 > Its SearchRun journal, `systematic` / `native_semantic` search modes, and
 > Research Chronicle artifacts are documented on the separate
 > [PubMed Search MCP site](https://u9401066.github.io/pubmed-search-mcp/).
 
 ---
+
+## Keeper 2.3 additions
+
+All five editing tools below use `confirm=False` previews and
+`expected_server_id` from the reviewed exact read. Execute the identical proposal
+with `confirm=True` only after approval. Their `expected_version` is the local
+object version, not a Web API version. No 412 is retried.
+
+| Tool / signature | Contract |
+|---|---|
+| `get_item_schema(item_type)` | Read valid fields and creator roles for a runtime item type; both responses must have the same Server-ID |
+| `get_item_annotations(attachment_key)` | Exact attachment's child annotations, including raw data, versions and Server-ID; no annotation writes |
+| `update_item_tags(item_key, expected_version, add=None, remove=None, confirm=False, expected_server_id=None)` | 1–100 disjoint exact tag additions/removals; retain unrelated/manual/automatic tags |
+| `update_item_creators(item_key, creators, expected_version, confirm=False, expected_server_id=None)` | Replace ordered creators on a bibliographic item; each has creatorType and either name or lastName/firstName; runtime role validation; `[]` explicitly clears |
+| `update_note(item_key, note_html, expected_version, confirm=False, expected_server_id=None)` | Replace exact note HTML without reparenting; empty string explicitly clears; not a bibliographic item's abstract |
+| `set_item_trashed(item_key, trashed, expected_version, confirm=False, expected_server_id=None)` | True moves to Trash; false restores. Prefer this recoverable operation over permanent delete_item |
+| `batch_update_item_fields(updates, confirm=False, expected_server_id=None)` | 1–50 unique `{item_key, expected_version, fields}` objects, safe scalar bibliographic fields only; all preflight before one POST, inspect per-item partial failures |
+
+`run_saved_search(search_key=None, search_name=None, limit=50, start=0,
+include_children=True)` requires exactly one key/name, rejects ambiguous names,
+and preserves all four result levels. `next_start` is a continuation hint when
+the raw page is full, not proof that another result exists. Child filtering does
+not change the raw page offset. `advanced_search` also accepts `start` and returns
+`next_start`; other bounded list tools retain their existing limits.
+
+Analytics return `scanned_count`, `scan_limit=5000`, and `possibly_truncated` for
+nonempty scans. Ownership checks now traverse all item pages and fail on read
+errors rather than labeling everything new. Full coverage and known limits are
+in the [Zotero 10 audit](ZOTERO_10_TOOL_AUDIT.md).
 
 ## Table of Contents
 
@@ -643,7 +672,7 @@ that pair into the preview of `set_attachment_fulltext`.
 
 ## Zotero 10+ Local Write Tools
 
-These 17 tools use Zotero 10+'s official [Local API v3](https://www.zotero.org/support/dev/web_api/v3/local_api). Zotero 7–9 continue to support Keeper's read and Connector-based save/import tools, but calls to this section's Local write surface return `unsupported_local_write`.
+These 22 tools use Zotero 10+'s official [Local API v3](https://www.zotero.org/support/dev/web_api/v3/local_api). Zotero 7–9 continue to support Keeper's read and Connector-based save/import tools, but calls to this section's Local write surface return `unsupported_local_write`.
 
 ### Confirmation and authorization workflow
 
@@ -681,7 +710,7 @@ Keeper does not retry a 412 write.
 All mutation tools are annotated `readOnlyHint=false` and `openWorldHint=false`.
 Destructive delete/replacement tools advertise `destructiveHint=true`; additive
 create/organize tools advertise `false`. Idempotence metadata follows each
-operation's actual replay behavior. Keeper 2.2.0 exposes only dedicated,
+operation's actual replay behavior. Keeper 2.3.0 exposes only dedicated,
 bounded mutation tools: no raw endpoint, arbitrary structural replacement,
 batch item/collection/saved-search delete, or group-library write surface.
 
@@ -931,7 +960,7 @@ Create a saved-search definition that `run_saved_search` can execute locally.
 | `confirm` | `bool` | `False` | `False` previews only; `True` creates the search |
 | `expected_server_id` | `str` | `None` | Response-bound Zotero identity included in the approved preview; required for execution |
 
-Each condition requires scalar `condition`, `operator`, and `value` fields. Optional supported fields are boolean `required` and string `mode`; unknown fields are rejected. Saved-search metadata can be represented by Zotero APIs, but execution is a Zotero Local API feature.
+Each condition requires `condition` and `operator` strings; scalar `value` defaults to an empty string for markers. Optional `mode` is serialized as a condition suffix (`fulltextContent/regexp`). `required=true` is rejected because Zotero 10 JSON ignores it; use explicit nested groups. Group markers require the string operator `"true"`. `resultLevel` accepts item/attachment/note/annotation. Unknown fields and unbalanced groups are rejected. Search execution is a Zotero Local API feature.
 
 ---
 

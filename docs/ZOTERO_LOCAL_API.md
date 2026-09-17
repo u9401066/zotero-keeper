@@ -7,7 +7,7 @@ This document separates two questions that older project documentation mixed
 together:
 
 1. What does Zotero's official API support?
-2. Which of those operations does Zotero Keeper 2.2.0 expose safely through MCP?
+2. Which of those operations does Zotero Keeper 2.3.0 expose safely through MCP?
 
 For the product-level overview, see the
 [Zotero Keeper feature site](https://u9401066.github.io/zotero-keeper/).
@@ -116,7 +116,7 @@ before invoking `attach_file_to_item` or `replace_attachment_file`.
 ## Zotero 10+ platform capability matrix
 
 `<prefix>` is `/api/users/0` for the current user or `/api/groups/<groupID>`.
-Keeper 2.2.0 intentionally limits writes to the current user's local library.
+Keeper 2.3.0 intentionally limits writes to the current user's local library.
 
 | Object | Read | Create | Update | Delete |
 |--------|:----:|:------:|:------:|:------:|
@@ -164,7 +164,7 @@ For a stored attachment:
 GET <prefix>/items/<attachmentKey>/file/view/url
 ```
 
-returns the local `file://` URL as plain text. Keeper 2.2.0 prefers this official
+returns the local `file://` URL as plain text. Keeper 2.3.0 prefers this official
 route and retains `ZOTERO_DATA_DIR/storage/<key>/<filename>` only as a fallback
 for older Zotero releases or unavailable endpoints.
 
@@ -196,10 +196,16 @@ the result reports a partial operation and its attachment key instead of
 attempting an unapproved cleanup delete. Replacement conflicts are likewise
 returned without replay.
 
-## Keeper 2.2.0 public Local API tools
+## Keeper 2.3.0 public Local API tools
 
-Keeper preserves its original 24 public tools and exposes these 17 Zotero 10+
-Local API tools, for 41 default tools in total:
+New in 2.3: `get_item_schema` and `get_item_annotations` provide runtime schema
+and annotation reads. `update_item_tags`, `update_item_creators`, `update_note`,
+`set_item_trashed`, and `batch_update_item_fields` add version-bound task editing.
+See [all 48 tools and endpoint boundaries](ZOTERO_10_TOOL_AUDIT.md) and the
+[exact new signatures](tools-reference.md#keeper-23-additions).
+
+Keeper preserves its original 24 public tools, adds two schema/annotation reads, and exposes these 22 Zotero 10+
+Local API tools, for 48 default tools in total:
 
 | Tool | Exposed operation |
 |------|-------------------|
@@ -241,7 +247,7 @@ single batch request. Metadata updates reject structural fields such as keys,
 versions, item types, parent relations, creators, tags, and collection arrays;
 those require dedicated merge-aware tools rather than a raw PATCH.
 
-### Keeper 2.2.0 additions and their preconditions
+### Keeper 2.3.0 additions and their preconditions
 
 `remove_items_from_collection(item_keys, collection_key, confirm=false,
 expected_server_id=null)` accepts one to 50 exact item keys plus one exact
@@ -273,7 +279,9 @@ no batch object delete.
 conditions=null, confirm=false, expected_server_id=null)` changes one saved
 search's non-empty name and/or structured condition list. Each supplied
 condition uses scalar `condition`, `operator`, and `value`, with only optional
-boolean `required` and string `mode`; unknown fields are rejected. At least one
+string `mode` (serialized as a condition suffix). `required=true` is rejected
+because Zotero 10's JSON loader ignores it; use explicit groups instead. Unknown
+fields are rejected. At least one
 change is required, and the exact saved-search object version must still equal
 `expected_version`.
 
