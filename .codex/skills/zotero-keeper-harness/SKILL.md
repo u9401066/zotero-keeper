@@ -46,9 +46,10 @@ or the installed Zotero + PubMed MCP workspace harness.
 - Do not bypass NCBI email policy; use explicit settings or git email fallback.
 - Treat VSIX install/update as a first-class path: bundled repo assets must be synced before package.
 
-## Zotero 10.0.2 / Keeper 2.3 Contract
+## Zotero 10.0.5 / Keeper 2.4 Contract
 
-- Default surface: 48 tools; use `get_item_schema` before creator/field edits and `get_item_annotations` for raw annotation data.
+- Default surface: 50 tools; use `get_item_schema` before creator/field edits and `get_item_annotations` for raw annotation data.
+- For manuscript citations use read-only `export_items(item_keys, format="bibtex"|"ris"|"csljson"|…)` and `get_bibliography(item_keys, style="apa", output="bib"|"citation"|"both")` on exact Zotero keys (max 50). Check `missing_count`/`missing_keys`; never hand-build citations from search snippets.
 - Use `update_item_tags`, `update_item_creators`, `update_note`, and `batch_update_item_fields` for their narrow tasks. Batches contain 1–50 exact keys/object versions; inspect partial results, never replay blindly.
 - Prefer reversible `set_item_trashed` to permanent `delete_item`. Confirm restore operations too.
 - Saved searches support nested groups and resultLevel item/attachment/note/annotation. Keep child results by default; paginate using start/limit. Search modes serialize as condition/mode; required=true is rejected because Zotero JSON ignores it.

@@ -71,7 +71,8 @@ articles into Zotero without losing provenance or overwriting user choices.
 
 ## Current Editing and Harness Contract
 
-- Keeper 2.3 exposes 48 tools. Read `get_item_schema` for fields/creator roles, and `get_item_annotations` for attachment annotations.
+- Keeper 2.4 exposes 50 tools. Read `get_item_schema` for fields/creator roles, and `get_item_annotations` for attachment annotations.
+- For citations of items already in Zotero, use read-only `export_items` (BibTeX/RIS/CSL JSON/…) or `get_bibliography` (CSL style such as apa/vancouver) with exact item keys; check `missing_count` / `missing_keys`.
 - Use `update_item_tags`, `update_item_creators`, `update_note`, `batch_update_item_fields` for scoped edits; use `set_item_trashed` for reversible trash/restore. Permanent deletes remain explicit and irreversible.
 - Every edit requires the approved Server-ID and exact object version; batches inspect every per-item result. Full-text updates use the library cursor instead.
 - `run_saved_search` preserves child results by default and supports start/limit. Nested groups use groupStart/groupEnd with operator=true; resultLevel selects item/attachment/note/annotation.

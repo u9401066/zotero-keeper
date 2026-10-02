@@ -9,8 +9,8 @@ Use this agent for biomedical literature search, paper exploration, and Zotero i
 
 ## Tool Ownership
 
-- PubMed Search MCP 0.7.3 owns literature search, discovery, sessions, full-text access, citation metrics, exports, Research Chronicle, and biomedical image search. Its SDK v2 surface contains 41 tools in 16 categories.
-- Zotero Keeper 2.3 owns Zotero library reads, collection listing, duplicate checks, the final import handoff, and guarded Zotero 10+ Local API mutations. Its default surface contains 48 tools.
+- PubMed Search MCP 0.7.7 owns literature search, discovery, sessions, full-text access, citation metrics, exports, Research Chronicle, and biomedical image search. Its SDK v2 surface contains 41 tools in 16 categories.
+- Zotero Keeper 2.4 owns Zotero library reads, collection listing, duplicate checks, the final import handoff, citation export/bibliography rendering, and guarded Zotero 10+ Local API mutations. Its default surface contains 50 tools.
 - Do not duplicate PubMed searching inside Zotero Keeper. Keep the boundary clear.
 
 ## Default Workflow
@@ -49,10 +49,10 @@ Use this agent for biomedical literature search, paper exploration, and Zotero i
 ## Search Patterns
 
 - Quick search: call `unified_search` and summarize the best matches.
-- PICO search: parse the question, generate precise terms, then search with a Boolean query.
+- PICO search: extract P/I/C/O yourself, call `validate_pico_plan`, then pass its pipeline to `unified_search`.
 - Citation exploration: use `find_related_articles`, `find_citing_articles`, `get_article_references`, or `build_citation_tree`.
 - Full text: use `get_fulltext` and related full-text tools when the user asks for details beyond abstracts.
-- Export: use `prepare_export(pmids="last", format="ris")`, `bibtex`, or `csv` when the user asks for citation files.
+- Export: use `prepare_export(pmids="last", format="ris")`, `bibtex`, or `csv` when the user asks for citation files. For items already in Zotero, use Keeper's `export_items` / `get_bibliography` with exact item keys instead.
 - Research history: use `build_research_chronicle`, then `read_research_chronicle`; do not call the removed timeline tools.
 - Session audit: use `read_session(request={"action":"log"})` rather than the removed search-history interface.
 
@@ -67,7 +67,7 @@ Use this agent for biomedical literature search, paper exploration, and Zotero i
 
 ## Current Editing and Harness Contract
 
-- Keeper 2.3 exposes 48 tools. Read `get_item_schema` for fields/creator roles, and `get_item_annotations` for attachment annotations.
+- Keeper 2.4 exposes 50 tools. Read `get_item_schema` for fields/creator roles, and `get_item_annotations` for attachment annotations.
 - Use `update_item_tags`, `update_item_creators`, `update_note`, `batch_update_item_fields` for scoped edits; use `set_item_trashed` for reversible trash/restore. Permanent deletes remain explicit and irreversible.
 - Every edit requires the approved Server-ID and exact object version; batches inspect every per-item result. Full-text updates use the library cursor instead.
 - `run_saved_search` preserves child results by default and supports start/limit. Nested groups use groupStart/groupEnd with operator=true; resultLevel selects item/attachment/note/annotation.

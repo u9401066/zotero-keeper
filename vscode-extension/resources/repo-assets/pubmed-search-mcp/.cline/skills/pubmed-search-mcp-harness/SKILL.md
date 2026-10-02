@@ -36,8 +36,10 @@ a dependable loop for literature-search tools, pipeline behavior, and release ch
 - Respect NCBI email/API-key policy and institutional access configuration.
 - Keep exported citations reproducible: PMIDs, DOI, source, date filters, and query strategy matter.
 
-## Pinned 0.7.3 Interface (41 tools)
+## Pinned 0.7.7 Interface (41 tools)
 
+- Interface unchanged since 0.7.3 (no tool added/removed in 0.7.4–0.7.7). 0.7.5 applies one input contract to all 41 tools: safe auto-correction of JSON containers/code fences, numeric/boolean text, enum spelling and PMID/PMCID/DOI batches (URLs, lists, JSON). Invalid input returns a structured pre-execution error with a stable code and JSON Pointer; fix the named argument and retry once. Only argument validation asserts `executed: false`.
+- `unified_search(fulltext="prefetch")` (0.7.6) opts in to non-blocking PMC XML preparation for the top three results; each prefetch row carries a native `get_fulltext` `read_request`. Do not poll; read directly, and never treat abstract-only XML as full text.
 - The agent extracts P/I/C/O, then calls `validate_pico_plan(description=question, p=..., i=..., c=..., o=...)`; pass its pipeline to `unified_search(query=question, pipeline=plan["pipeline"])`.
 - Read state with `read_session(request={"action":"pmids","search_index":-1})`, `{"action":"article","pmid":"..."}`, `{"action":"summary"}`, or `{"action":"log"}`. The request object is required; action is not a top-level parameter.
 - SearchRun actions include search_runs, search_run and replay_search; replay may call providers again and is not a cache read. Request it only for deliberate reruns.

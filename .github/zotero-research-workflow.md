@@ -2,7 +2,7 @@
 
 > 這份指南幫助 Copilot 理解如何正確使用 Zotero + PubMed MCP tools
 
-> v0.9.1 VSIX 基線：Zotero Keeper 2.3.1（MCP SDK v2，48 個預設 tools + 6 個具體 resources）與 PubMed Search MCP 0.7.3 `fbbaaca`（41 tools / 16 categories）。
+> v0.10.0 VSIX 基線：Zotero Keeper 2.4.0（MCP SDK v2，50 個預設 tools + 6 個具體 resources）與 PubMed Search MCP 0.7.7 `8247af2`（41 tools / 16 categories）。
 
 ## 🔍 文獻搜尋流程
 
@@ -150,7 +150,8 @@ Copilot 動作:
 
 ## Current Editing and Harness Contract
 
-- Keeper 2.3 exposes 48 tools. Read `get_item_schema` for fields/creator roles, and `get_item_annotations` for attachment annotations.
+- Keeper 2.4 exposes 50 tools. Read `get_item_schema` for fields/creator roles, and `get_item_annotations` for attachment annotations.
+- For citations of items already in Zotero, use read-only `export_items` (BibTeX/RIS/CSL JSON/…) or `get_bibliography` (CSL style such as apa/vancouver) with exact item keys; check `missing_count` / `missing_keys`.
 - Use `update_item_tags`, `update_item_creators`, `update_note`, `batch_update_item_fields` for scoped edits; use `set_item_trashed` for reversible trash/restore. Permanent deletes remain explicit and irreversible.
 - Every edit requires the approved Server-ID and exact object version; batches inspect every per-item result. Full-text updates use the library cursor instead.
 - `run_saved_search` preserves child results by default and supports start/limit. Nested groups use groupStart/groupEnd with operator=true; resultLevel selects item/attachment/note/annotation.

@@ -39,4 +39,4 @@ wiki or LLM-readable literature wiki.
 
 ## Current Evidence Contract
 
-Reuse PubMed 0.7.3 state with `read_session(request={"action":"pmids"})` or `{"action":"article","pmid":"..."}`. Use `save_literature_notes` for an explicit export request and preserve its source identifiers. Use Zotero `get_item_annotations` for existing attachment annotations; do not mistake annotation extraction for an authorized write.
+Reuse PubMed 0.7.7 state with `read_session(request={"action":"pmids"})` or `{"action":"article","pmid":"..."}`. Use `save_literature_notes` for an explicit export request and preserve its source identifiers. Use Zotero `get_item_annotations` for existing attachment annotations; do not mistake annotation extraction for an authorized write.

@@ -6,7 +6,7 @@
 ## Goal
 Use Zotero Keeper and PubMed Search MCP as a research assistant for literature search, review, and import.
 
-The v0.9.1 VSIX baseline is Zotero Keeper 2.3.1 (MCP SDK v2; 48 default tools and 6 concrete resources) plus PubMed Search MCP 0.7.3 at `fbbaaca` (41 tools in 16 categories).
+The v0.10.0 VSIX baseline is Zotero Keeper 2.4.0 (MCP SDK v2; 50 default tools and 6 concrete resources) plus PubMed Search MCP 0.7.7 at `8247af2` (41 tools in 16 categories).
 
 ## Response Style
 - Use Traditional Chinese
@@ -65,7 +65,8 @@ The v0.9.1 VSIX baseline is Zotero Keeper 2.3.1 (MCP SDK v2; 48 default tools an
 
 ## Current Editing and Harness Contract
 
-- Keeper 2.3 exposes 48 tools. Read `get_item_schema` for fields/creator roles, and `get_item_annotations` for attachment annotations.
+- Keeper 2.4 exposes 50 tools. Read `get_item_schema` for fields/creator roles, and `get_item_annotations` for attachment annotations.
+- For citations of items already in Zotero, use read-only `export_items` (BibTeX/RIS/CSL JSON/…) or `get_bibliography` (CSL style such as apa/vancouver) with exact item keys; check `missing_count` / `missing_keys`.
 - Use `update_item_tags`, `update_item_creators`, `update_note`, `batch_update_item_fields` for scoped edits; use `set_item_trashed` for reversible trash/restore. Permanent deletes remain explicit and irreversible.
 - Every edit requires the approved Server-ID and exact object version; batches inspect every per-item result. Full-text updates use the library cursor instead.
 - `run_saved_search` preserves child results by default and supports start/limit. Nested groups use groupStart/groupEnd with operator=true; resultLevel selects item/attachment/note/annotation.
