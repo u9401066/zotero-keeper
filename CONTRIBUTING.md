@@ -78,13 +78,21 @@ uv sync --extra dev --extra all
 cp ../.env.example .env
 # Edit .env with your Zotero settings
 
-# 4. Run tests
-uv run pytest tests/ -v --tb=short
+# 4. Run the whole local gate (guards, ruff, mypy, pytest incl. stdio smoke, extension build/lint/mocha)
+cd .. && python scripts/pretest.py          # add --full to also package the VSIX + managed install smoke
+scripts/install-hooks.sh                    # optional: run it automatically on `git push`
 
-# 5. Run linting / type checks
-uv run ruff check src/
-uv run mypy src/ --ignore-missing-imports
+# 5. Or run pieces individually
+cd mcp-server
+uv run pytest tests/ -v --tb=short
+uv run ruff check src/ tests/
+uv run mypy src/
 ```
+
+GitHub Actions deliberately does **not** repeat these deterministic checks. CI only runs what a
+developer machine cannot reproduce: a clean `uv sync --frozen`/`npm ci`, Windows + Linux runtime
+smoke tests, VSIX packaging/inspection, the managed install, and release-tag publication
+(macOS install smoke is available through *Run workflow* with `macos` enabled).
 
 ### Testing with Zotero
 
@@ -179,6 +187,7 @@ Use the official specifications as the protocol source of truth:
 ### Before Submitting
 
 - [ ] Code follows project style guidelines
+- [ ] Local gate passes (`python scripts/pretest.py`)
 - [ ] Tests pass locally (`uv run pytest tests/ -v --tb=short`)
 - [ ] Linting passes (`uv run ruff check src/`)
 - [ ] Docs guard passes when documentation changes (`uv run python ../scripts/check_collaboration_safe_docs.py`)

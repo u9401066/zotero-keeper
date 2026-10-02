@@ -13,4 +13,9 @@ cp "$SCRIPT_DIR/pre-commit" "$HOOKS_DIR/pre-commit"
 chmod +x "$HOOKS_DIR/pre-commit"
 echo "  ✓ pre-commit hook installed"
 
+# Pre-push hook: full deterministic gate (scripts/pretest.py)
+cp "$SCRIPT_DIR/pre-push" "$HOOKS_DIR/pre-push"
+chmod +x "$HOOKS_DIR/pre-push"
+echo "  ✓ pre-push hook installed (runs scripts/pretest.py)"
+
 echo "Done! Git hooks are now active."

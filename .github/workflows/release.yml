@@ -1,5 +1,7 @@
 name: Release
 
+# Lint/type/unit tests run locally (scripts/pretest.py) and the same commit must have
+# a green CI run. This job verifies the built *artifact* and publishes it.
 on:
   push:
     tags:
@@ -11,66 +13,40 @@ jobs:
   release:
     if: ${{ !endsWith(github.ref_name, '-ext') }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: pypi
     permissions:
       contents: write
       id-token: write  # Required for trusted publishing
+      actions: read    # read CI status for the tagged commit
 
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@v5
-
-    - name: Guard repository metadata and assistant assets
+    - name: Require a green CI run for this commit
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        uv run python scripts/check_no_pip.py
-        uv run python scripts/check_version_sync.py
-        uv run --with pyyaml python scripts/check_cline_skills.py
-        uv run python scripts/check_collaboration_safe_docs.py
+        conclusion="$(gh run list --workflow ci.yml --commit "$GITHUB_SHA" --json conclusion,status --jq '[.[] | select(.status=="completed")][0].conclusion')"
+        if [ "$conclusion" != "success" ]; then
+          echo "::error::No successful CI run for $GITHUB_SHA (got '${conclusion:-none}'). Push the commit to main and wait for CI, or dispatch CI manually."
+          exit 1
+        fi
 
-    - name: Install dependencies
-      working-directory: ./mcp-server
-      run: |
-        uv venv --python 3.12
-        uv pip install -e ".[dev]"
+    - uses: astral-sh/setup-uv@v5
 
-    - name: Lint with ruff
-      working-directory: ./mcp-server
-      run: uv run ruff check src/
-
-    - name: Type check with mypy
-      working-directory: ./mcp-server
-      run: |
-        uv run mypy src/ --ignore-missing-imports \
-          --disable-error-code type-arg \
-          --disable-error-code attr-defined \
-          --disable-error-code no-any-return \
-          --disable-error-code no-untyped-def \
-          --disable-error-code untyped-decorator \
-          --disable-error-code no-untyped-call \
-          --disable-error-code var-annotated \
-          --disable-error-code assignment \
-          --disable-error-code dict-item \
-          --disable-error-code union-attr \
-          --disable-error-code unused-ignore \
-          --disable-error-code redundant-cast
-
-    - name: Run tests
-      working-directory: ./mcp-server
-      run: uv run pytest tests/ -v --tb=short
+    - name: Tag and version agreement
+      run: uv run python scripts/check_version_sync.py
 
     - name: Build package
       working-directory: ./mcp-server
-      run: |
-        uv build
+      run: uv build
+
+    - name: Smoke-test the built wheel in an isolated environment
+      working-directory: ./mcp-server
+      run: uv run --isolated --no-project --with dist/*.whl python tests/check_mcp.py
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1

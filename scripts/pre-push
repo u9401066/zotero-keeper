@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Git pre-push hook: run the local gate so GitHub CI only has to cover what a
+# developer machine cannot (clean installs, cross-OS runtime, release tags).
+# Install: scripts/install-hooks.sh   Skip once: git push --no-verify
+set -e
+cd "$(git rev-parse --show-toplevel)"
+exec python scripts/pretest.py

@@ -1,124 +1,69 @@
 name: CI
 
+# Deterministic checks (ruff, mypy, pytest, mocha, guards, asset sync) run locally
+# via `python scripts/pretest.py` (pre-push hook). This workflow only covers what a
+# developer machine cannot reproduce: a clean checkout with locked dependencies,
+# real Linux + Windows runtime behavior, and the packaged VSIX / managed install.
 on:
   push:
     branches: [ main ]
+    paths-ignore: [ '**/*.md', 'docs/**', 'memory-bank/**' ]
   pull_request:
     branches: [ main ]
+    paths-ignore: [ '**/*.md', 'docs/**', 'memory-bank/**' ]
+  workflow_dispatch:
+    inputs:
+      macos:
+        description: 'Also run the (10x cost) macOS install smoke'
+        type: boolean
+        default: false
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.12', '3.13']
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@v5
-
-    - name: Set up Python ${{ matrix.python-version }}
-      run: uv python install ${{ matrix.python-version }}
-
-    - name: Install dependencies
-      working-directory: ./mcp-server
-      run: |
-        uv venv --python ${{ matrix.python-version }}
-        uv pip install -e ".[dev]"
-
-    - name: Lint with ruff
-      working-directory: ./mcp-server
-      run: |
-        uv run ruff check src/
-
-    - name: Type check with mypy
-      working-directory: ./mcp-server
-      run: |
-        uv run mypy src/ --ignore-missing-imports \
-          --disable-error-code type-arg \
-          --disable-error-code attr-defined \
-          --disable-error-code no-any-return \
-          --disable-error-code no-untyped-def \
-          --disable-error-code untyped-decorator \
-          --disable-error-code no-untyped-call \
-          --disable-error-code var-annotated \
-          --disable-error-code assignment \
-          --disable-error-code dict-item \
-          --disable-error-code union-attr \
-          --disable-error-code unused-ignore \
-          --disable-error-code redundant-cast
-
-    - name: Run tests
-      working-directory: ./mcp-server
-      run: |
-        uv run pytest tests/ -v --tb=short
-
-  lint:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./mcp-server
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@v5
-
-    - name: Set up Python
-      run: uv python install 3.12
-
-    - name: Guard repository metadata and assistant assets
-      working-directory: .
-      run: |
-        uv run python scripts/check_no_pip.py
-        uv run python scripts/check_version_sync.py
-        uv run --with pyyaml python scripts/check_cline_skills.py
-
-    - name: Install linters
-      run: |
-        uv venv
-        uv pip install ruff
-
-    - name: Guard collaboration-safe docs
-      working-directory: ./mcp-server
-      run: |
-        uv run python ../scripts/check_collaboration_safe_docs.py
-
-    - name: Check code formatting
-      run: |
-        uv run ruff check src/
-
-  extension:
-    name: VSIX smoke (${{ matrix.os }})
+  clean-install:
+    name: Clean install + runtime smoke (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-15-intel, macos-14]
+        os: [ubuntu-latest, windows-latest]
 
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - uses: actions/setup-node@v4
       with:
         node-version: '24'
+        cache: npm
+        cache-dependency-path: vscode-extension/package-lock.json
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v5
+    - uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
 
-    - name: Set up Python 3.12
-      run: uv python install 3.12
+    - name: Locked Keeper environment (fails if uv.lock drifts)
+      working-directory: ./mcp-server
+      run: uv sync --frozen --group dev
 
-    - name: Install extension dependencies
+    - name: Stdio + wire smoke tests (real process, loopback fake Zotero)
+      working-directory: ./mcp-server
+      run: uv run pytest tests/integration -q -n 0
+
+    - name: Cross-version smoke (Python 3.13)
+      if: runner.os == 'Linux'
+      working-directory: ./mcp-server
+      run: uv run --python 3.13 --isolated --group dev pytest tests/integration -q -n 0
+
+    - name: Clean extension install (lockfile)
       working-directory: ./vscode-extension
       run: npm ci
 
@@ -126,22 +71,6 @@ jobs:
       if: runner.os == 'Linux'
       working-directory: ./vscode-extension
       run: npm audit --audit-level=high
-
-    - name: Check generated assistant assets are committed
-      working-directory: ./vscode-extension
-      run: npm run sync-assets:check
-
-    - name: Compile and test extension
-      working-directory: ./vscode-extension
-      run: npm test
-
-    - name: Cross-platform Python install smoke
-      working-directory: ./vscode-extension
-      run: uv run python tests/test_mac_compatibility.py
-
-    - name: Managed uv package install smoke
-      working-directory: ./vscode-extension
-      run: uv run python tests/test_uv_managed_install_smoke.py
 
     - name: Package VSIX
       working-directory: ./vscode-extension
@@ -151,3 +80,21 @@ jobs:
       working-directory: ./vscode-extension
       shell: pwsh
       run: ./scripts/check-vsix-contents.ps1
+
+    - name: Managed uv install of the pinned packages
+      working-directory: ./vscode-extension
+      run: uv run python tests/test_uv_managed_install_smoke.py
+
+  macos:
+    name: Managed install smoke (macOS, manual)
+    if: github.event_name == 'workflow_dispatch' && inputs.macos
+    runs-on: macos-14
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - uses: astral-sh/setup-uv@v5
+    - name: Managed uv install of the pinned packages
+      working-directory: ./vscode-extension
+      run: uv run python tests/test_uv_managed_install_smoke.py
