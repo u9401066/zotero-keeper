@@ -10,6 +10,7 @@ Provides:
 import asyncio
 import json
 import os
+import re
 from collections.abc import AsyncIterable, Mapping
 from contextvars import ContextVar, Token
 from dataclasses import dataclass, field
@@ -17,6 +18,8 @@ from ipaddress import ip_address
 from typing import Any
 
 import httpx
+
+_SAFE_REQUEST_PATH = re.compile(r"/(?:api|connector)/[A-Za-z0-9_./-]*")
 
 
 class ZoteroConnectionError(Exception):
@@ -51,13 +54,41 @@ class ZoteroAPIError(Exception):
         return None
 
 
+def env_int(name: str, default: int, *, minimum: int, maximum: int) -> int:
+    """Read a bounded integer setting; fail with an actionable message, not a bare traceback."""
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        value = int(raw.strip())
+    except ValueError:
+        raise ValueError(f"{name} must be an integer between {minimum} and {maximum}, got {raw!r}") from None
+    if not minimum <= value <= maximum:
+        raise ValueError(f"{name} must be an integer between {minimum} and {maximum}, got {value}")
+    return value
+
+
+def env_timeout(name: str, default: float) -> float:
+    """Read a positive finite timeout in seconds."""
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        value = float(raw.strip())
+    except ValueError:
+        raise ValueError(f"{name} must be a positive number of seconds, got {raw!r}") from None
+    if not 0 < value < float("inf"):
+        raise ValueError(f"{name} must be a positive number of seconds, got {raw!r}")
+    return value
+
+
 @dataclass
 class ZoteroConfig:
-    """Zotero connection configuration"""
+    """Zotero connection configuration (the single source of truth for host/port/timeout)."""
 
     host: str = field(default_factory=lambda: os.getenv("ZOTERO_HOST", "localhost"))
-    port: int = field(default_factory=lambda: int(os.getenv("ZOTERO_PORT", "23119")))
-    timeout: float = field(default_factory=lambda: float(os.getenv("ZOTERO_TIMEOUT", "30")))
+    port: int = field(default_factory=lambda: env_int("ZOTERO_PORT", 23119, minimum=1, maximum=65535))
+    timeout: float = field(default_factory=lambda: env_timeout("ZOTERO_TIMEOUT", 30.0))
 
     @property
     def base_url(self) -> str:
@@ -303,6 +334,14 @@ class ZoteroClientBase:
         ``headers`` may override per-request values such as ``Content-Type``.
         """
         client = await self._get_client()
+
+        # Keys are interpolated into fixed API paths. Refuse anything that could redirect
+        # a read to another endpoint ("..", "?", "#", "%2e", whitespace) before httpx
+        # normalizes the URL.
+        if path.startswith(("/api/", "/connector/")) and (
+            not _SAFE_REQUEST_PATH.fullmatch(path) or any(segment in {".", ".."} for segment in path.split("/"))
+        ):
+            raise ZoteroAPIError("Refused an unsafe Zotero request path", status_code=400)
 
         try:
             if content is not None and data is not None:

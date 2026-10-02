@@ -12,10 +12,6 @@ from zotero_mcp.infrastructure.mcp.metadata_fetcher import (
     fetch_metadata_from_doi as _fetch_metadata_from_doi,
     merge_metadata as _merge_metadata,
 )
-from zotero_mcp.infrastructure.mcp.collection_utils import (
-    format_collection_options as _format_collection_options,
-    num_to_collection_key as _num_to_collection_key,
-)
 from zotero_mcp.infrastructure.mcp.validation import (
     normalize_title as _normalize_title,
     get_required_fields as _get_required_fields,
@@ -130,94 +126,6 @@ class TestMergeMetadata:
         assert result["title"] == "Fetched Title"
         assert result["abstract"] == "Fetched Abstract"
         assert result["tags"] == ["tag1"]
-
-
-class TestFormatCollectionOptions:
-    """Tests for _format_collection_options function."""
-
-    def test_basic_formatting(self):
-        """Test basic collection formatting."""
-        collections = [
-            {"key": "ABC123", "name": "Collection A", "itemCount": 10},
-            {"key": "DEF456", "name": "Collection B", "itemCount": 5},
-        ]
-
-        text, key_to_num = _format_collection_options(collections)
-
-        assert "Collection A" in text
-        assert "Collection B" in text
-        assert "10 items" in text
-        assert key_to_num["ABC123"] == 1
-        assert key_to_num["DEF456"] == 2
-
-    def test_with_suggestions(self):
-        """Test formatting with suggestions."""
-        collections = [
-            {"key": "ABC123", "name": "Collection A", "itemCount": 10},
-        ]
-        suggestions = [
-            {"key": "ABC123", "name": "Collection A", "score": 85, "reason": "Title match"},
-        ]
-
-        text, key_to_num = _format_collection_options(collections, suggestions)
-
-        assert "Suggested" in text
-        assert "85%" in text or "match: 85" in text
-
-    def test_includes_no_collection_option(self):
-        """Test that 'no collection' option is included."""
-        collections = [{"key": "ABC123", "name": "Test", "itemCount": 5}]
-
-        text, key_to_num = _format_collection_options(collections)
-
-        assert "0." in text
-        assert "My Library" in text
-
-    def test_empty_collections(self):
-        """Test handling empty collections."""
-        text, key_to_num = _format_collection_options([])
-
-        assert "0." in text  # Should still have no-collection option
-        assert key_to_num == {}
-
-
-class TestNumToCollectionKey:
-    """Tests for _num_to_collection_key function."""
-
-    def test_valid_number(self):
-        """Test valid number conversion."""
-        key_to_num = {"ABC123": 1, "DEF456": 2}
-
-        assert _num_to_collection_key("1", key_to_num) == "ABC123"
-        assert _num_to_collection_key("2", key_to_num) == "DEF456"
-
-    def test_zero_returns_none(self):
-        """Test that 0 returns None (no collection)."""
-        key_to_num = {"ABC123": 1}
-
-        result = _num_to_collection_key("0", key_to_num)
-
-        assert result is None
-
-    def test_invalid_number(self):
-        """Test invalid number handling."""
-        key_to_num = {"ABC123": 1}
-
-        assert _num_to_collection_key("99", key_to_num) is None
-        assert _num_to_collection_key("-1", key_to_num) is None
-
-    def test_non_numeric_input(self):
-        """Test non-numeric input handling."""
-        key_to_num = {"ABC123": 1}
-
-        assert _num_to_collection_key("abc", key_to_num) is None
-        assert _num_to_collection_key("", key_to_num) is None
-
-    def test_whitespace_handling(self):
-        """Test whitespace is stripped."""
-        key_to_num = {"ABC123": 1}
-
-        assert _num_to_collection_key("  1  ", key_to_num) == "ABC123"
 
 
 class TestNormalizeTitle:

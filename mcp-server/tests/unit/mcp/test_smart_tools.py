@@ -280,6 +280,7 @@ class TestFindDuplicates:
 
         mock_client.get_items.assert_called_once_with(limit=50)
 
+
 class TestConstants:
     """Tests for module constants."""
 

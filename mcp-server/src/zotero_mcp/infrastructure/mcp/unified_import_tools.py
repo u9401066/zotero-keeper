@@ -195,11 +195,19 @@ def _coerce_creator(value: Any, creator_type: str = "author") -> dict[str, str] 
         return {"lastName": text, "firstName": "", "creatorType": creator_type}
 
     if isinstance(value, dict):
-        family = value.get("family_name") or value.get("lastName") or value.get("last_name") or ""
-        given = value.get("given_name") or value.get("firstName") or value.get("first_name") or ""
+
+        def _text(*keys: str) -> str:
+            for key in keys:
+                candidate = value.get(key)
+                if isinstance(candidate, str) and candidate.strip():
+                    return candidate.strip()
+            return ""
+
+        family = _text("family_name", "lastName", "last_name")
+        given = _text("given_name", "firstName", "first_name")
         if family or given:
             return {"lastName": family, "firstName": given, "creatorType": creator_type}
-        name = value.get("name") or value.get("full_name") or value.get("display_name") or ""
+        name = _text("name", "full_name", "display_name")
         if name:
             parts = name.split()
             if len(parts) >= 2:
@@ -239,81 +247,10 @@ def _unified_article_to_zotero(article: dict[str, Any]) -> dict[str, Any]:
 
     # === Authors ===
     creators = []
-    authors = article.get("authors", [])
-
-    for author in authors:
-        if isinstance(author, str):
-            # Simple string format: "John Smith" or "Smith J"
-            if "," in author:
-                family, given = author.split(",", 1)
-                creators.append(
-                    {
-                        "lastName": family.strip(),
-                        "firstName": given.strip(),
-                        "creatorType": "author",
-                    }
-                )
-            else:
-                parts = author.split()
-                if len(parts) >= 2:
-                    # Assume "FirstName LastName" or "LastName Initials"
-                    if len(parts[-1]) <= 2:  # Likely "Smith J" format
-                        creators.append(
-                            {
-                                "lastName": " ".join(parts[:-1]),
-                                "firstName": parts[-1],
-                                "creatorType": "author",
-                            }
-                        )
-                    else:  # Likely "John Smith" format
-                        creators.append(
-                            {
-                                "firstName": parts[0],
-                                "lastName": " ".join(parts[1:]),
-                                "creatorType": "author",
-                            }
-                        )
-                else:
-                    creators.append(
-                        {
-                            "lastName": author,
-                            "firstName": "",
-                            "creatorType": "author",
-                        }
-                    )
-        elif isinstance(author, dict):
-            # Dict format from UnifiedArticle
-            name = author.get("name") or author.get("full_name") or author.get("display_name", "")
-            family = author.get("family_name") or author.get("lastName", "")
-            given = author.get("given_name") or author.get("firstName", "")
-
-            if family or given:
-                creators.append(
-                    {
-                        "lastName": family,
-                        "firstName": given,
-                        "creatorType": "author",
-                    }
-                )
-            elif name:
-                # Parse full name
-                parts = name.split()
-                if len(parts) >= 2:
-                    creators.append(
-                        {
-                            "firstName": parts[0],
-                            "lastName": " ".join(parts[1:]),
-                            "creatorType": "author",
-                        }
-                    )
-                else:
-                    creators.append(
-                        {
-                            "lastName": name,
-                            "firstName": "",
-                            "creatorType": "author",
-                        }
-                    )
+    for author in article.get("authors") or []:
+        creator = _coerce_creator(author, "author")
+        if creator:  # skip blank/None/unsupported entries instead of sending empty creators
+            creators.append(creator)
 
     # === Editors / additional contributors ===
     for editor in article.get("editors", []) or []:
@@ -521,9 +458,12 @@ def _unified_article_to_zotero(article: dict[str, Any]) -> dict[str, Any]:
     return finalize_item_for_schema(item)
 
 
-def _parse_ris_to_articles(ris_text: str) -> list[dict[str, Any]]:
+def _parse_ris(ris_text: str) -> tuple[list[dict[str, Any]], int]:
     """
     Parse RIS format text to article dicts.
+
+    Returns ``(articles, untitled_count)``; records without a title cannot be
+    imported, and the caller must report them instead of dropping them silently.
 
     Captures bibliographic fields across item types (journal articles, books,
     book chapters, conference papers, theses, reports, web pages, software,
@@ -535,6 +475,8 @@ def _parse_ris_to_articles(ris_text: str) -> list[dict[str, Any]]:
     current_authors: list[str] = []
     current_editors: list[str] = []
     current_keywords: list[str] = []
+    current_pages: dict[str, str] = {}
+    untitled = 0
 
     # RIS reference type -> unified article type
     type_map = {
@@ -557,14 +499,30 @@ def _parse_ris_to_articles(ris_text: str) -> list[dict[str, Any]]:
     }
 
     def _flush() -> None:
-        if current_article and current_article.get("title"):
-            if current_authors:
-                current_article["authors"] = list(current_authors)
-            if current_editors:
-                current_article["editors"] = list(current_editors)
-            if current_keywords:
-                current_article["keywords"] = list(current_keywords)
-            articles.append(current_article)
+        nonlocal untitled
+        if not current_article:
+            return
+        if not current_article.get("title"):
+            untitled += 1
+            return
+        if current_authors:
+            current_article["authors"] = list(current_authors)
+        if current_editors:
+            current_article["editors"] = list(current_editors)
+        if current_keywords:
+            current_article["keywords"] = list(current_keywords)
+        # SP/EP may arrive in either order.
+        if current_pages.get("start") and current_pages.get("end"):
+            current_article["pages"] = f"{current_pages['start']}-{current_pages['end']}"
+        elif current_pages:
+            current_article["pages"] = next(iter(current_pages.values()))
+        articles.append(current_article)
+
+    def _reset() -> None:
+        current_authors.clear()
+        current_editors.clear()
+        current_keywords.clear()
+        current_pages.clear()
 
     for line in ris_text.strip().split("\n"):
         line = line.strip()
@@ -584,15 +542,11 @@ def _parse_ris_to_articles(ris_text: str) -> list[dict[str, Any]]:
                 "primary_source": "ris",
                 "article_type": type_map.get(value, "journal-article"),
             }
-            current_authors = []
-            current_editors = []
-            current_keywords = []
+            _reset()
         elif tag == "ER":
             _flush()
             current_article = {}
-            current_authors = []
-            current_editors = []
-            current_keywords = []
+            _reset()
         elif tag in ("TI", "T1"):
             current_article["title"] = value
         elif tag in ("AU", "A1"):
@@ -614,12 +568,9 @@ def _parse_ris_to_articles(ris_text: str) -> list[dict[str, Any]]:
         elif tag == "IS":
             current_article["issue"] = value
         elif tag == "SP":
-            current_article["pages"] = value
+            current_pages["start"] = value
         elif tag == "EP":
-            if current_article.get("pages"):
-                current_article["pages"] += f"-{value}"
-            else:
-                current_article["pages"] = value
+            current_pages["end"] = value
         elif tag == "PB":
             current_article["publisher"] = value
         elif tag in ("CY", "PP"):
@@ -652,7 +603,12 @@ def _parse_ris_to_articles(ris_text: str) -> list[dict[str, Any]]:
     # Don't forget the last article
     _flush()
 
-    return articles
+    return articles, untitled
+
+
+def _parse_ris_to_articles(ris_text: str) -> list[dict[str, Any]]:
+    """Parse RIS text and return only the importable articles (see ``_parse_ris``)."""
+    return _parse_ris(ris_text)[0]
 
 
 def register_unified_import_tools(mcp, zotero_client):
@@ -751,11 +707,13 @@ def register_unified_import_tools(mcp, zotero_client):
 
             # === Step 2: Parse RIS if provided ===
             if ris_text and not articles:
-                articles = _parse_ris_to_articles(ris_text)
+                articles, ris_untitled = _parse_ris(ris_text)
+                if ris_untitled:
+                    result["warnings"] = [f"{ris_untitled} RIS record(s) had no title and were not imported"]
                 if not articles:
                     result["error"] = "No valid articles found in RIS text"
                     return result
-                logger.info(f"Parsed {len(articles)} articles from RIS text")
+                logger.info(f"Parsed {len(articles)} articles from RIS text ({ris_untitled} untitled record(s) skipped)")
 
             articles = articles or []
 
@@ -899,6 +857,8 @@ def register_unified_import_tools(mcp, zotero_client):
 
             if skipped_count > 0:
                 result["message"] += f" ({skipped_count} duplicates skipped)"
+            if result.get("warnings"):
+                result["message"] += f" ({result['warnings'][0]})"
 
             # Collection info
             return attach_saved_to_info(result, target_key=target_key, target_name=target_name)

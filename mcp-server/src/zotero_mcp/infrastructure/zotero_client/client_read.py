@@ -247,6 +247,52 @@ class ZoteroReadMixin:
         """Search items and retain the exact response's Server-ID."""
         return await self.get_items_snapshot(q=query, limit=limit)
 
+    # ==================== Export / Bibliography ====================
+
+    async def export_items_snapshot(
+        self,
+        item_keys: list[str],
+        export_format: str,
+    ) -> tuple[str, str | None, int | None]:
+        """Export exact items with Zotero's own translators.
+
+        Returns the serialized text, the response's Server-ID and the
+        ``Total-Results`` count so callers can detect silently dropped keys.
+        """
+        response = await self._request_raw(
+            "GET",
+            "/api/users/0/items",
+            params={"itemKey": ",".join(item_keys), "format": export_format, "limit": len(item_keys)},
+        )
+        raw_total = self._header_value(response.headers, "Total-Results")
+        total = int(raw_total) if raw_total is not None and raw_total.isascii() and raw_total.isdecimal() else None
+        return response.text, self._header_value(response.headers, "Zotero-Server-ID"), total
+
+    async def get_bibliography_snapshot(
+        self,
+        item_keys: list[str],
+        *,
+        style: str,
+        include: str,
+        linkwrap: bool = False,
+        locale: str | None = None,
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        """Render formatted ``bib``/``citation`` HTML for exact items with a CSL style."""
+        params: dict[str, Any] = {
+            "itemKey": ",".join(item_keys),
+            "include": include,
+            "style": style,
+            "limit": len(item_keys),
+        }
+        if linkwrap:
+            params["linkwrap"] = "1"
+        if locale:
+            params["locale"] = locale
+        payload, server_id = await self._request_snapshot("GET", "/api/users/0/items", params=params)
+        if not isinstance(payload, list) or any(not isinstance(row, dict) for row in payload):
+            raise ZoteroAPIError("Zotero returned an invalid bibliography response")
+        return cast(list[dict[str, Any]], payload), server_id
+
     # ==================== Collections ====================
 
     async def get_collections(self) -> list[dict[str, Any]]:

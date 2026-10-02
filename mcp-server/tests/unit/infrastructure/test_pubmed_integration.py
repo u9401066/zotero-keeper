@@ -1,4 +1,4 @@
-"""Tests for PubMed Search MCP v0.7.3 facade integration."""
+"""Tests for PubMed Search MCP v0.7.7 facade integration."""
 
 import sys
 from types import SimpleNamespace
@@ -42,7 +42,7 @@ def test_get_pubmed_client_builds_v063_facade_from_config(monkeypatch):
     assert isinstance(client, FakeClient)
     assert created["config"] == {
         "email": "researcher@example.com",
-        "api_key": "test-key",
+        "api_key": "test-key",  # pragma: allowlist secret
     }
     assert created["client_config"] is not None
 

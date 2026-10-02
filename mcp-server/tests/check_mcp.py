@@ -57,11 +57,13 @@ async def main() -> None:
         "update_note",
         "set_item_trashed",
         "batch_update_item_fields",
+        "export_items",
+        "get_bibliography",
     }
     missing = sorted(required_tools - tool_names)
     if missing:
         raise RuntimeError(f"Missing required Keeper tools: {missing}")
-    if len(tools) != 48 or len(resources) != 6 or len(templates) != 4:
+    if len(tools) != 50 or len(resources) != 6 or len(templates) != 4:
         raise RuntimeError(f"Unexpected Keeper surface: {len(tools)} tools, {len(resources)} resources, {len(templates)} templates")
 
     print("MCP SDK v2 surface check passed")

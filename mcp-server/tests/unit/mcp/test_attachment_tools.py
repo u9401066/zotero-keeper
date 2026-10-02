@@ -7,6 +7,7 @@ Tests:
 - resolve_attachment_path: File system path resolution
 """
 
+import os
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
@@ -62,8 +63,15 @@ class TestFileUrlToPath:
     def test_decodes_file_url_and_rejects_non_file_scheme(self):
         from zotero_mcp.infrastructure.mcp.attachment_tools import _file_url_to_path
 
-        assert _file_url_to_path("file:///tmp/folder%20name/paper.pdf") == Path("/tmp/folder name/paper.pdf")
+        # A POSIX-style path is not absolute on Windows, so use a native absolute form.
+        if os.name == "nt":
+            url, expected = "file:///C:/tmp/folder%20name/paper.pdf", Path("C:/tmp/folder name/paper.pdf")
+        else:
+            url, expected = "file:///tmp/folder%20name/paper.pdf", Path("/tmp/folder name/paper.pdf")
+        assert _file_url_to_path(url) == expected
         assert _file_url_to_path("https://example.test/paper.pdf") is None
+        assert _file_url_to_path("file:///tmp/x.pdf?x=1") is None
+        assert _file_url_to_path(None) is None
 
     def test_preserves_unc_authority(self):
         from zotero_mcp.infrastructure.mcp.attachment_tools import _file_url_to_path

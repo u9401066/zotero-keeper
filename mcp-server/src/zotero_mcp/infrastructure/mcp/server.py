@@ -30,13 +30,14 @@ from mcp.server import MCPServer
 
 from zotero_mcp import __version__
 
-from ..zotero_client.client import ZoteroClient, ZoteroConfig, ZoteroConnectionError
+from ..zotero_client.client import ZoteroClient, ZoteroConnectionError
 from .analytics_tools import register_analytics_tools
 from .attachment_tools import register_attachment_tools
 from .basic_read_tools import register_basic_read_tools
 from .batch_tools import is_batch_import_available, register_batch_tools
 from .collection_tools import register_collection_tools
 from .config import McpServerConfig, default_config
+from .export_tools import register_export_tools
 from .interactive_tools import register_interactive_save_tools
 from .item_edit_tools import register_item_edit_tools
 from .local_api_tools import register_local_api_tools
@@ -69,18 +70,14 @@ class ZoteroKeeperServer:
         )
 
         # Create Zotero client
-        zotero_config = ZoteroConfig(
-            host=self._config.zotero.host,
-            port=self._config.zotero.port,
-            timeout=self._config.zotero.timeout,
-        )
-        self._zotero = ZoteroClient(zotero_config)
+        # The server owns one config object; the client uses it directly.
+        self._zotero = ZoteroClient(self._config.zotero)
 
         # Register all tools
         self._register_all_tools()
 
         logger.info("Zotero Keeper MCP Server initialized")
-        logger.info(f"Zotero endpoint: {zotero_config.base_url}")
+        logger.info(f"Zotero endpoint: {self._config.zotero.base_url}")
 
     @property
     def mcp(self) -> MCPServer[Any]:
@@ -98,6 +95,9 @@ class ZoteroKeeperServer:
         register_local_api_tools(self._mcp, self._zotero)
         register_item_edit_tools(self._mcp, self._zotero)
         logger.info("Zotero 10+ tools enabled (authorization + 21 confirmed mutations + schema/annotation reads)")
+
+        register_export_tools(self._mcp, self._zotero)
+        logger.info("Export tools enabled (export_items, get_bibliography) read-only Zotero translators/CSL")
 
         # Register MCP Resources (read-only browsable data)
         register_resources(self._mcp, self._zotero)

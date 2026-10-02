@@ -10,7 +10,7 @@ Recommended Workflow:
 3. zotero-keeper: import_ris_to_zotero(ris_text) → Zotero items
 
 Alternative (requires pubmed extra):
-1. pubmed-search: get_session_pmids() → PMIDs
+1. pubmed-search: read_session(request={"action": "pmids"}) → PMIDs
 2. zotero-keeper: import_from_pmids(pmids) → Zotero items
 """
 
@@ -276,7 +276,7 @@ def register_pubmed_tools(mcp, zotero_client):
         - 未指定 collection 時預設拒絕；只有明確確認後才可設定 allow_library_root
 
         Alternative workflow (without pubmed extra):
-        1. pubmed: get_session_pmids() → PMIDs
+        1. pubmed: read_session(request={"action": "pmids"}) → PMIDs
         2. keeper: import_from_pmids(pmids, collection_name="My Collection")
 
         Args:
@@ -384,7 +384,7 @@ def register_pubmed_tools(mcp, zotero_client):
         一鍵匯入 PMIDs 到 Zotero - 最簡單的匯入方式！
 
         ⭐ THIS IS THE EASIEST WAY TO IMPORT FROM PUBMED:
-        - Just provide PMIDs (from search results or get_session_pmids)
+        - Just provide PMIDs (from search results or read_session pmids)
         - Automatically fetches complete metadata
         - Optional: specify collection and tags
 
@@ -400,7 +400,7 @@ def register_pubmed_tools(mcp, zotero_client):
 
         💡 GET PMIDs FROM:
         - search_pubmed_exclude_owned → new_pmids field
-        - pubmed-search-mcp's get_session_pmids tool
+        - pubmed-search-mcp's read_session tool (action="pmids")
         - Direct user input
 
         Compared to other import tools:

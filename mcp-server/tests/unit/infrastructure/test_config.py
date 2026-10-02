@@ -1,184 +1,75 @@
-"""
-Unit tests for ZoteroConfig and McpServerConfig.
-"""
+"""Configuration contract and edge tests (environment parsing, loopback rules, single config type)."""
+
+import pytest
+
+from zotero_mcp import __version__
+from zotero_mcp.infrastructure.mcp.config import McpServerConfig
+from zotero_mcp.infrastructure.mcp.config import ZoteroConfig as McpLayerZoteroConfig
+from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
 
 
-class TestZoteroConfig:
-    """Test ZoteroConfig dataclass."""
-
-    def test_zotero_config_defaults(self, clean_env):
-        """Test ZoteroConfig default values."""
-        from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
-
-        config = ZoteroConfig()
-
-        assert config.host == "localhost"
-        assert config.port == 23119
-        assert config.timeout == 30.0
-
-    def test_zotero_config_from_env(self, mock_env):
-        """Test ZoteroConfig reads from environment."""
-        from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
-
-        config = ZoteroConfig()
-
-        assert config.host == "test-host"
-        assert config.port == 12345
-        assert config.timeout == 60.0
-
-    def test_zotero_config_explicit_values(self):
-        """Test ZoteroConfig with explicit values."""
-        from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
-
-        config = ZoteroConfig(host="custom-host", port=9999, timeout=120.0)
-
-        assert config.host == "custom-host"
-        assert config.port == 9999
-        assert config.timeout == 120.0
-
-    def test_zotero_config_base_url(self):
-        """Test base_url property."""
-        from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
-
-        config = ZoteroConfig(host="example.com", port=8080)
-
-        assert config.base_url == "http://example.com:8080"
-
-    def test_zotero_config_base_url_localhost(self):
-        """Test base_url with localhost."""
-        from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
-
-        config = ZoteroConfig(host="localhost", port=23119)
-
-        assert config.base_url == "http://localhost:23119"
-
-    def test_zotero_config_host_header(self):
-        """Test host_header property."""
-        from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
-
-        config = ZoteroConfig(host="192.168.1.100", port=23119)
-
-        assert config.host_header == "127.0.0.1:23119"
-
-    def test_zotero_config_needs_host_header_localhost(self):
-        """Test needs_host_header is False for localhost."""
-        from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
-
-        config = ZoteroConfig(host="localhost")
-        assert config.needs_host_header is False
-
-    def test_zotero_config_needs_host_header_127(self):
-        """Test needs_host_header is False for 127.0.0.1."""
-        from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
-
-        config = ZoteroConfig(host="127.0.0.1")
-        assert config.needs_host_header is False
-
-    def test_zotero_config_needs_host_header_remote(self):
-        """Test needs_host_header is True for remote host."""
-        from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
-
-        config = ZoteroConfig(host="192.168.1.100")
-        assert config.needs_host_header is True
-
-    def test_zotero_config_needs_host_header_hostname(self):
-        """Test needs_host_header is True for hostname."""
-        from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
-
-        config = ZoteroConfig(host="zotero-server.local")
-        assert config.needs_host_header is True
+def test_one_zotero_config_type_serves_both_layers():
+    assert McpLayerZoteroConfig is ZoteroConfig
+    assert isinstance(McpServerConfig().zotero, ZoteroConfig)
 
 
-class TestMcpServerConfig:
-    """Test McpServerConfig dataclass."""
+def test_defaults_and_environment_are_read(clean_env, monkeypatch):
+    config = ZoteroConfig()
+    assert (config.host, config.port, config.timeout) == ("localhost", 23119, 30.0)
 
-    def test_mcp_server_config_defaults(self):
-        """Test McpServerConfig default values."""
-        from zotero_mcp.infrastructure.mcp.config import McpServerConfig
-
-        config = McpServerConfig()
-
-        assert config.name == "Zotero Keeper"
-        assert config.version == "2.3.1"
-        assert config.zotero is not None
-
-    def test_mcp_server_config_instructions(self):
-        """Test McpServerConfig instructions contain expected content."""
-        from zotero_mcp.infrastructure.mcp.config import McpServerConfig
-
-        config = McpServerConfig()
-
-        assert "Zotero Keeper" in config.instructions
-        assert "search_items" in config.instructions
-        assert "import_articles" in config.instructions
-        assert "check_articles_owned" in config.instructions
-        assert "ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1" in config.instructions
-        assert "add_reference" not in config.instructions
-
-    def test_mcp_server_config_has_zotero_config(self):
-        """Test McpServerConfig contains ZoteroConfig."""
-        from zotero_mcp.infrastructure.mcp.config import McpServerConfig, ZoteroConfig
-
-        config = McpServerConfig()
-
-        assert isinstance(config.zotero, ZoteroConfig)
+    monkeypatch.setenv("ZOTERO_HOST", "127.0.0.1")
+    monkeypatch.setenv("ZOTERO_PORT", " 12345 ")
+    monkeypatch.setenv("ZOTERO_TIMEOUT", "2.5")
+    config = ZoteroConfig()
+    assert (config.host, config.port, config.timeout) == ("127.0.0.1", 12345, 2.5)
 
 
-class TestDefaultConfig:
-    """Test default_config instance."""
-
-    def test_default_config_exists(self):
-        """Test default_config is available."""
-        from zotero_mcp.infrastructure.mcp.config import default_config
-
-        assert default_config is not None
-        assert default_config.name == "Zotero Keeper"
+@pytest.mark.parametrize("value", ["abc", "0", "-1", "65536", "1.5", "23119; rm"])
+def test_invalid_port_environment_fails_with_actionable_message(clean_env, monkeypatch, value):
+    monkeypatch.setenv("ZOTERO_PORT", value)
+    with pytest.raises(ValueError, match="ZOTERO_PORT must be an integer between 1 and 65535"):
+        ZoteroConfig()
 
 
-class TestZoteroClientConfig:
-    """Test ZoteroConfig from client module."""
-
-    def test_config_dataclass_fields(self):
-        """Test ZoteroConfig has expected fields."""
-        from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
-
-        config = ZoteroConfig()
-
-        assert hasattr(config, "host")
-        assert hasattr(config, "port")
-        assert hasattr(config, "timeout")
-        assert hasattr(config, "base_url")
-        assert hasattr(config, "host_header")
-        assert hasattr(config, "needs_host_header")
+@pytest.mark.parametrize("value", ["abc", "0", "-5", "inf", "nan"])
+def test_invalid_timeout_environment_fails_with_actionable_message(clean_env, monkeypatch, value):
+    monkeypatch.setenv("ZOTERO_TIMEOUT", value)
+    with pytest.raises(ValueError, match="ZOTERO_TIMEOUT"):
+        ZoteroConfig()
 
 
-class TestConfigEdgeCases:
-    """Test edge cases for configuration."""
+def test_blank_environment_values_fall_back_to_defaults(clean_env, monkeypatch):
+    monkeypatch.setenv("ZOTERO_PORT", "  ")
+    monkeypatch.setenv("ZOTERO_TIMEOUT", "")
+    config = ZoteroConfig()
+    assert (config.port, config.timeout) == (23119, 30.0)
 
-    def test_config_zero_timeout(self):
-        """Test config with zero timeout."""
-        from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
 
-        config = ZoteroConfig(timeout=0.0)
-        assert config.timeout == 0.0
+@pytest.mark.parametrize(
+    ("host", "loopback", "base_url"),
+    [
+        ("localhost", True, "http://localhost:23119"),
+        ("127.0.0.1", True, "http://127.0.0.1:23119"),
+        ("::1", True, "http://[::1]:23119"),
+        ("192.168.1.100", False, "http://192.168.1.100:23119"),
+        ("zotero-server.local", False, "http://zotero-server.local:23119"),
+    ],
+)
+def test_loopback_detection_and_url_formation(host, loopback, base_url):
+    config = ZoteroConfig(host=host)
+    assert config.is_loopback is loopback
+    assert config.needs_host_header is (not loopback)
+    assert config.base_url == base_url
 
-    def test_config_negative_port(self):
-        """Test config with negative port (invalid but accepted)."""
-        from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
 
-        config = ZoteroConfig(port=-1)
-        assert config.port == -1
-
-    def test_config_empty_host(self):
-        """Test config with empty host."""
-        from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
-
-        config = ZoteroConfig(host="")
-        assert config.base_url == "http://:23119"
-
-    def test_config_unicode_host(self):
-        """Test config with unicode host."""
-        from zotero_mcp.infrastructure.zotero_client.client import ZoteroConfig
-
-        config = ZoteroConfig(host="日本語ホスト.local")
-        assert "日本語" in config.host
+def test_server_version_has_a_single_source_and_instructions_cover_core_tools():
+    config = McpServerConfig()
+    assert config.version == __version__
+    for name in (
+        "import_articles",
+        "check_articles_owned",
+        "export_items",
+        "get_bibliography",
+        "ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1",
+    ):
+        assert name in config.instructions

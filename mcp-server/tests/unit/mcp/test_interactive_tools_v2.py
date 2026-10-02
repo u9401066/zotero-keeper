@@ -30,9 +30,7 @@ TOOL_ARGUMENTS = {
 
 
 @contextmanager
-def interactive_server(
-    *, duplicates: list[dict[str, Any]] | None = None
-) -> Iterator[tuple[MCPServer[Any], AsyncMock, AsyncMock]]:
+def interactive_server(*, duplicates: list[dict[str, Any]] | None = None) -> Iterator[tuple[MCPServer[Any], AsyncMock, AsyncMock]]:
     """Create a real MCPServer while replacing every external read/write boundary."""
     zotero = AsyncMock()
     zotero.get_collections.return_value = [{"key": "COL1", "data": {"name": "Research"}}]
@@ -186,9 +184,7 @@ async def test_skip_collection_prompt_is_a_noninteractive_abort() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("confirm_root, expected_success", [(False, False), (True, True)])
-async def test_library_root_requires_a_second_explicit_confirmation(
-    confirm_root: bool, expected_success: bool
-) -> None:
+async def test_library_root_requires_a_second_explicit_confirmation(confirm_root: bool, expected_success: bool) -> None:
     prompts: list[str] = []
 
     async def answer(_context: Any, params: types.ElicitRequestParams) -> types.ElicitResult:

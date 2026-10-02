@@ -49,14 +49,10 @@ def test_publish_workflow_reuses_the_checked_vsix() -> None:
     assert "npm run publish" not in workflow
 
 
-def test_publish_workflow_runs_keeper_and_local_api_wire_tests_before_packaging() -> None:
+def test_publish_workflow_requires_green_ci_before_publishing() -> None:
     workflow = (REPO_ROOT / ".github" / "workflows" / "publish-extension.yml").read_text(encoding="utf-8")
 
-    test_step = workflow.index("Test Keeper and Zotero 10 Local API wire contract")
-    package_step = workflow.index("Package extension")
-    assert test_step < package_step
-    assert "uv sync --frozen --group dev" in workflow[test_step:package_step]
-    assert "uv run pytest tests/" in workflow[test_step:package_step]
+    assert workflow.index("Require a green CI run") < workflow.index("Publish to VS Code Marketplace")
 
 
 def test_tag_publish_smoke_installs_the_tag_archive() -> None:

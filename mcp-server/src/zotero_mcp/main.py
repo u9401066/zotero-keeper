@@ -20,6 +20,8 @@ import argparse
 import logging
 import os
 
+from .infrastructure.zotero_client.client_base import ZoteroConfig, env_int
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
@@ -28,9 +30,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def main():
-    """Main entry point"""
+def build_parser() -> argparse.ArgumentParser:
+    """Build the CLI parser; defaults are resolved later so bad env values yield a clean usage error."""
     parser = argparse.ArgumentParser(
+        prog="zotero-keeper",
         description="Zotero Keeper MCP Server",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
@@ -54,24 +57,38 @@ VS Code Copilot Configuration:
     parser.add_argument("--transport", "-t", choices=["stdio", "sse"], default="stdio", help="Transport mode (default: stdio)")
     parser.add_argument(
         "--host",
-        default=os.environ.get("ZOTERO_HOST", "localhost"),
-        help="Zotero Desktop loopback host (default: localhost; do not expose port 23119)",
+        default=None,
+        help="Zotero Desktop loopback host (default: ZOTERO_HOST or localhost; do not expose port 23119)",
     )
-    parser.add_argument(
-        "--port", type=int, default=int(os.environ.get("ZOTERO_PORT", "23119")), help="Zotero port (default: 23119 or ZOTERO_PORT env)"
-    )
+    parser.add_argument("--port", type=int, default=None, help="Zotero port (default: ZOTERO_PORT or 23119)")
+    return parser
 
-    args = parser.parse_args()
 
-    # Set environment variables for config
-    os.environ["ZOTERO_HOST"] = args.host
-    os.environ["ZOTERO_PORT"] = str(args.port)
+def main(argv: list[str] | None = None) -> None:
+    """Main entry point"""
+    parser = build_parser()
+    args = parser.parse_args(argv)
+
+    try:
+        host = args.host or os.environ.get("ZOTERO_HOST", "localhost")
+        if args.port is not None:
+            if not 1 <= args.port <= 65535:
+                raise ValueError(f"--port must be between 1 and 65535, got {args.port}")
+            port = args.port
+        else:
+            port = env_int("ZOTERO_PORT", 23119, minimum=1, maximum=65535)
+        # Validate every setting before importing the server, which reads them at import time.
+        os.environ["ZOTERO_HOST"] = host
+        os.environ["ZOTERO_PORT"] = str(port)
+        ZoteroConfig()
+    except ValueError as exc:
+        parser.error(str(exc))
 
     logger.info("=" * 60)
     logger.info("Zotero Keeper MCP Server")
     logger.info("=" * 60)
     logger.info(f"Transport: {args.transport}")
-    logger.info(f"Zotero: http://{args.host}:{args.port}")
+    logger.info(f"Zotero: http://{host}:{port}")
     logger.info("=" * 60)
 
     # Import and run server

@@ -135,7 +135,7 @@ def register_batch_tools(mcp, zotero_client):
 
         Workflow:
             1. (可選) zotero-keeper: list_collections() → 確認目標 collection 名稱
-            2. pubmed-search: unified_search("AI anesthesia") → get_session_pmids()
+            2. pubmed-search: unified_search("AI anesthesia") → read_session(request={"action": "pmids"})
             3. zotero-keeper: batch_import_from_pubmed(pmids, collection_name="xxx")
         """
         if not BATCH_IMPORT_AVAILABLE:

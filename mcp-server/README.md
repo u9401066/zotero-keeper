@@ -1,6 +1,6 @@
 # Zotero Keeper MCP Server
 
-Zotero Keeper 2.2.0 is an MCP SDK v2 server for managing local Zotero libraries via AI agents. It uses the v2 `MCPServer` API and is intentionally incompatible with an MCP SDK 1.x environment.
+Zotero Keeper 2.4.0 is an MCP SDK v2 server for managing local Zotero libraries via AI agents. It uses the v2 `MCPServer` API and is intentionally incompatible with an MCP SDK 1.x environment.
 
 > The v0.8.0 VS Code extension is the recommended distribution for this 2.2 runtime. The commands below install from this source checkout. The separately published `uvx`/PyPI package may still be on an older release line until its own publication is complete.
 
@@ -81,9 +81,9 @@ import_articles(
 
 **Supported sources:** PubMed, Europe PMC, CORE, CrossRef, OpenAlex, Semantic Scholar, RIS
 
-### Public Tool Surface (41 default tools + 6 resources)
+### Public Tool Surface (50 default tools + 6 resources)
 
-The default public surface combines connection, read, collection, save, search, import, analytics, attachment access, and narrow Zotero 10+ Local API write tools. MCP SDK v2 advertises six concrete browsable resources plus four parameterized URI templates.
+The default public surface combines connection, read, collection, save, search, import, analytics, attachment access, read-only citation export (`export_items`, `get_bibliography`), and narrow Zotero 10+ Local API write tools. MCP SDK v2 advertises six concrete browsable resources plus four parameterized URI templates.
 
 ### Zotero Compatibility
 
@@ -253,12 +253,13 @@ Set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` only if you intentionally want 
 
 ### PubMed Search MCP boundary
 
-The v0.8.0 VSIX pins PubMed Search MCP 0.6.3 at commit
-[`febf53a`](https://github.com/u9401066/pubmed-search-mcp/commit/febf53a8ff1ee253a625869ba251365f73a23c68).
-That companion MCP SDK v2 server keeps its 45-tool, 16-category surface while
-adding a durable SearchRun journal, replay-safe `read_session` views,
+The v0.10.0 VSIX pins PubMed Search MCP 0.7.7 at commit
+[`8247af2`](https://github.com/u9401066/pubmed-search-mcp/commit/8247af2a5bc53e218c1f1e5b310c45535e11368c).
+That companion MCP SDK v2 server exposes 41 tools in 16 categories (unchanged since 0.7.3) with
+a durable SearchRun journal, replay-safe `read_session` views,
 deterministic `systematic` search, bounded provider-native `native_semantic`
-search, explicit source/run status and provenance, and stricter Research
+search, explicit source/run status and provenance, one validated input contract
+for every tool, opt-in `fulltext="prefetch"`, and stricter Research
 Chronicle revisions with canonical Mermaid timeline artifacts. `systematic` and
 `native_semantic` are mutually exclusive, and replay returns credential-free
 arguments without executing another search.

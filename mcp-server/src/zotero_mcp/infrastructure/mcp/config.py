@@ -7,6 +7,10 @@ Configuration for the Zotero Keeper MCP Server.
 import os
 from dataclasses import dataclass, field
 
+from zotero_mcp import __version__
+
+from ..zotero_client.client_base import ZoteroConfig
+
 
 def _env_flag(name: str, default: bool = False) -> bool:
     """Parse boolean-like environment flags."""
@@ -17,38 +21,11 @@ def _env_flag(name: str, default: bool = False) -> bool:
 
 
 @dataclass
-class ZoteroConfig:
-    """Zotero connection configuration"""
-
-    host: str = field(default_factory=lambda: os.getenv("ZOTERO_HOST", "localhost"))
-    port: int = field(default_factory=lambda: int(os.getenv("ZOTERO_PORT", "23119")))
-    timeout: float = field(default_factory=lambda: float(os.getenv("ZOTERO_TIMEOUT", "30")))
-
-    @property
-    def base_url(self) -> str:
-        return f"http://{self.host}:{self.port}"
-
-    @property
-    def host_header(self) -> str:
-        """Legacy Host override retained for compatibility tests."""
-        return f"127.0.0.1:{self.port}"
-
-    @property
-    def needs_host_header(self) -> bool:
-        """Whether a legacy non-loopback configuration needs a Host override.
-
-        Supported deployments keep Zotero's Local/Connector API on loopback.
-        Zotero 10+ write authorization does not make port forwarding safe.
-        """
-        return self.host not in ("localhost", "127.0.0.1")
-
-
-@dataclass
 class McpServerConfig:
     """MCP Server configuration"""
 
     name: str = "Zotero Keeper"
-    version: str = "2.3.1"
+    version: str = __version__
 
     # Zotero connection
     zotero: ZoteroConfig = field(default_factory=ZoteroConfig)
@@ -83,6 +60,13 @@ Zotero Keeper - MCP Server for managing local Zotero libraries.
 - `interactive_save(...)` - Manual save with elicitation and optional metadata fetch
 - `quick_save(...)` - Manual save without prompts
 - `check_articles_owned(pmids=[...])` - Check whether PubMed records already exist locally
+
+### Citation Export (read-only)
+- `export_items(item_keys, format="bibtex")` - BibTeX/RIS/CSL JSON/... for up to
+  50 exact item keys via Zotero's own translators; check `missing_count`
+- `get_bibliography(item_keys, style="apa", output="bib")` - CSL-formatted
+  references / in-text citations; check `missing_keys`
+- Use these on Zotero keys instead of rebuilding citations from search snippets
 
 ### Zotero 10+ Local API Management
 - `authorize_local_writes(require_remembered=false)` - Ask Zotero for runtime
