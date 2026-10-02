@@ -17,6 +17,7 @@ scripts/**
 resources/skills/**
 tests/**
 .pytest_cache/**
+**/*.vsix
 
 # Exclude AI agent skill folders (not needed in extension)
 .agent/**

@@ -90,13 +90,17 @@ def validate_release_tag(
             ref_name = ref[len(prefix) :]
 
     if not ref_name:
-        errors.append("GitHub tag validation: GITHUB_REF_TYPE=tag but no tag name was provided")
+        errors.append(
+            "GitHub tag validation: GITHUB_REF_TYPE=tag but no tag name was provided"
+        )
         return
 
     expected_extension_tag = f"v{extension_version}-ext"
     expected_keeper_tag = f"v{keeper_version}"
     if ref_name not in {expected_extension_tag, expected_keeper_tag}:
-        errors.append(f"TAG MISMATCH: {ref_name} is neither extension tag {expected_extension_tag} nor Keeper tag {expected_keeper_tag}")
+        errors.append(
+            f"TAG MISMATCH: {ref_name} is neither extension tag {expected_extension_tag} nor Keeper tag {expected_keeper_tag}"
+        )
 
 
 def collect_version_errors(
@@ -108,37 +112,27 @@ def collect_version_errors(
     extension_root = repo_root / "vscode-extension"
     keeper_root = repo_root / "mcp-server"
 
-    extension_package = _load_json(extension_root / "package.json", "vscode-extension/package.json", errors)
+    extension_package = _load_json(
+        extension_root / "package.json", "vscode-extension/package.json", errors
+    )
     extension_version = str(extension_package.get("version", ""))
     if not re.fullmatch(SEMVER, extension_version):
-        errors.append("vscode-extension/package.json: version must use X.Y.Z semantic versioning")
+        errors.append(
+            "vscode-extension/package.json: version must use X.Y.Z semantic versioning"
+        )
     expected_extension_tag = f"v{extension_version}-ext"
 
-    keeper_pyproject = _load_toml(keeper_root / "pyproject.toml", "mcp-server/pyproject.toml", errors)
+    keeper_pyproject = _load_toml(
+        keeper_root / "pyproject.toml", "mcp-server/pyproject.toml", errors
+    )
     keeper_version = str(keeper_pyproject.get("project", {}).get("version", ""))
     if not re.fullmatch(SEMVER, keeper_version):
-        errors.append("mcp-server/pyproject.toml: project.version must use X.Y.Z semantic versioning")
+        errors.append(
+            "mcp-server/pyproject.toml: project.version must use X.Y.Z semantic versioning"
+        )
 
-    # Extension release surface.
+    # Extension release surface (runtime reads package.json; only docs/locks carry a copy).
     extension_versions = [
-        (
-            "vscode-extension/src/statusBar.ts private version",
-            _extract(
-                extension_root / "src" / "statusBar.ts",
-                "vscode-extension/src/statusBar.ts private version",
-                rf"private\s+version:\s*string\s*=\s*['\"](?P<version>{SEMVER})['\"]",
-                errors,
-            ),
-        ),
-        (
-            "vscode-extension/src/statusBar.ts package fallback",
-            _extract(
-                extension_root / "src" / "statusBar.ts",
-                "vscode-extension/src/statusBar.ts package fallback",
-                rf"packageJson\.version\s*\|\|\s*['\"](?P<version>{SEMVER})['\"]",
-                errors,
-            ),
-        ),
         (
             "vscode-extension/CHANGELOG.md first entry",
             _extract(
@@ -170,17 +164,16 @@ def collect_version_errors(
             errors.append(f"{label}: version is missing")
         _compare(label, str(actual), extension_version, errors)
 
-    extension_readme = _read_text(extension_root / "README.md", "vscode-extension/README.md", errors)
-    if extension_readme and f"What's New in v{extension_version}" not in extension_readme:
-        errors.append(f"vscode-extension/README.md: missing current What's New heading for v{extension_version}")
-
-    walkthrough = _read_text(
-        extension_root / "resources" / "walkthrough" / "packages.md",
-        "vscode-extension/resources/walkthrough/packages.md",
-        errors,
+    extension_readme = _read_text(
+        extension_root / "README.md", "vscode-extension/README.md", errors
     )
-    if walkthrough and expected_extension_tag not in walkthrough:
-        errors.append(f"vscode-extension/resources/walkthrough/packages.md: missing extension package tag {expected_extension_tag}")
+    if (
+        extension_readme
+        and f"What's New in v{extension_version}" not in extension_readme
+    ):
+        errors.append(
+            f"vscode-extension/README.md: missing current What's New heading for v{extension_version}"
+        )
 
     keeper_package_ts = extension_root / "src" / "zoteroKeeperPackage.ts"
     runtime_extension_tag = _extract(
@@ -194,18 +187,7 @@ def collect_version_errors(
             f"TAG MISMATCH: vscode-extension/src/zoteroKeeperPackage.ts={runtime_extension_tag} != expected={expected_extension_tag}"
         )
 
-    mac_test_extension_tag = _extract(
-        extension_root / "tests" / "test_mac_compatibility.py",
-        "vscode-extension/tests/test_mac_compatibility.py archive assertion",
-        rf"assertIn\(['\"](?P<version>v{SEMVER}-ext)\.tar\.gz",
-        errors,
-    )
-    if mac_test_extension_tag and mac_test_extension_tag != expected_extension_tag:
-        errors.append(
-            f"TAG MISMATCH: vscode-extension/tests/test_mac_compatibility.py={mac_test_extension_tag} != expected={expected_extension_tag}"
-        )
-
-    # Keeper package/runtime/install pins and hard-coded release assertions.
+    # Keeper package/runtime/install pins and release metadata.
     keeper_versions = [
         (
             "mcp-server/src/zotero_mcp/__init__.py",
@@ -213,16 +195,6 @@ def collect_version_errors(
                 keeper_root / "src" / "zotero_mcp" / "__init__.py",
                 "mcp-server/src/zotero_mcp/__init__.py",
                 rf"^__version__\s*=\s*['\"](?P<version>{SEMVER})['\"]",
-                errors,
-                flags=re.MULTILINE,
-            ),
-        ),
-        (
-            "mcp-server/src/zotero_mcp/infrastructure/mcp/config.py",
-            _extract(
-                keeper_root / "src" / "zotero_mcp" / "infrastructure" / "mcp" / "config.py",
-                "mcp-server/src/zotero_mcp/infrastructure/mcp/config.py",
-                rf"^\s*version:\s*str\s*=\s*['\"](?P<version>{SEMVER})['\"]",
                 errors,
                 flags=re.MULTILINE,
             ),
@@ -246,52 +218,20 @@ def collect_version_errors(
                 flags=re.MULTILINE,
             ),
         ),
-        (
-            "mcp-server/tests/unit/infrastructure/test_config.py",
-            _extract(
-                keeper_root / "tests" / "unit" / "infrastructure" / "test_config.py",
-                "mcp-server/tests/unit/infrastructure/test_config.py",
-                rf"config\.version\s*==\s*['\"](?P<version>{SEMVER})['\"]",
-                errors,
-            ),
-        ),
-        (
-            "vscode-extension/src/test/pythonEnvironment.test.ts",
-            _extract(
-                extension_root / "src" / "test" / "pythonEnvironment.test.ts",
-                "vscode-extension/src/test/pythonEnvironment.test.ts",
-                rf"strictEqual\(ZOTERO_KEEPER_VERSION,\s*['\"](?P<version>{SEMVER})['\"]",
-                errors,
-            ),
-        ),
-        (
-            "vscode-extension/src/test/mcpProvider.test.ts",
-            _extract(
-                extension_root / "src" / "test" / "mcpProvider.test.ts",
-                "vscode-extension/src/test/mcpProvider.test.ts",
-                rf"strictEqual\(servers\[0\]\.version,\s*['\"](?P<version>{SEMVER})['\"]",
-                errors,
-            ),
-        ),
-        (
-            "vscode-extension/tests/test_python_env_edge_cases.py",
-            _extract(
-                extension_root / "tests" / "test_python_env_edge_cases.py",
-                "vscode-extension/tests/test_python_env_edge_cases.py",
-                rf"\(['\"]zotero-keeper['\"],\s*['\"]zotero_mcp['\"],\s*['\"](?P<version>{SEMVER})['\"]\)",
-                errors,
-            ),
-        ),
     ]
     for label, actual in keeper_versions:
         _compare(label, actual, keeper_version, errors)
 
     keeper_lock = _load_toml(keeper_root / "uv.lock", "mcp-server/uv.lock", errors)
     keeper_lock_packages = [
-        package for package in keeper_lock.get("package", []) if isinstance(package, dict) and package.get("name") == "zotero-keeper"
+        package
+        for package in keeper_lock.get("package", [])
+        if isinstance(package, dict) and package.get("name") == "zotero-keeper"
     ]
     if len(keeper_lock_packages) != 1:
-        errors.append("mcp-server/uv.lock: expected exactly one zotero-keeper project package")
+        errors.append(
+            "mcp-server/uv.lock: expected exactly one zotero-keeper project package"
+        )
     else:
         lock_keeper_version = str(keeper_lock_packages[0].get("version", ""))
         if not lock_keeper_version:
@@ -320,8 +260,12 @@ def main() -> int:
         print("Version sync check FAILED:")
         for error in errors:
             print(f"  - {error}")
-        print(f"\nExpected versions: VSIX {extension_version or '<missing>'}; Zotero Keeper {keeper_version or '<missing>'}")
-        print("Fix: update package metadata, runtime pins, locks, changelogs, tests, walkthroughs, and release tags together.")
+        print(
+            f"\nExpected versions: VSIX {extension_version or '<missing>'}; Zotero Keeper {keeper_version or '<missing>'}"
+        )
+        print(
+            "Fix: update package metadata, runtime pins, locks, changelogs, tests, walkthroughs, and release tags together."
+        )
         return 1
 
     print(f"Version sync OK: VSIX {extension_version}; Zotero Keeper {keeper_version}")

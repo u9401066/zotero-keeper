@@ -5,8 +5,12 @@
 import { describe, it, beforeEach, afterEach } from 'mocha';
 import * as assert from 'assert';
 import * as fs from 'fs';
+import fileSystem from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import * as sinon from 'sinon';
+import type { SinonStub } from 'sinon';
+import * as vscode from 'vscode';
 import {
     installCodexMcpServers,
     removeCodexMcpServers,
@@ -15,6 +19,7 @@ import {
     isCodexAvailable,
     __test__,
 } from '../codexMcpConfig.js';
+import { MockWorkspaceConfiguration } from './mock-vscode.js';
 
 describe('codexMcpConfig', () => {
     let tmpDir: string;
@@ -26,9 +31,11 @@ describe('codexMcpConfig', () => {
         originalCodexHome = process.env.CODEX_HOME;
         process.env.CODEX_HOME = tmpDir;
         configPath = path.join(tmpDir, 'config.toml');
+        (vscode.workspace.getConfiguration as SinonStub).returns(new MockWorkspaceConfiguration({}));
     });
 
     afterEach(() => {
+        sinon.restore();
         if (originalCodexHome === undefined) {
             delete process.env.CODEX_HOME;
         } else {
@@ -225,6 +232,109 @@ describe('codexMcpConfig', () => {
         it('returns false when config file does not exist', () => {
             const removed = removeCodexMcpServers();
             assert.strictEqual(removed, false);
+        });
+    });
+
+    describe('edge cases', () => {
+        const managed = (): string => fs.readFileSync(configPath, 'utf-8');
+
+        it('escapes every control character so the TOML stays valid', () => {
+            assert.strictEqual(__test__.escapeTomlString('a\u0001b\u007fc\nd'), 'a\\u0001b\\u007fc\\nd');
+        });
+
+        it('only treats an exact key (plus dotted subtables) as managed', () => {
+            const input = [
+                '[mcp_servers.zotero-keeper-fork]',
+                'command = "mine"',
+                '',
+                '[mcp_servers.zotero-keeper.tools.search]',
+                'approval_mode = "approve"',
+                '',
+                '[after]',
+                'x = 1',
+                '',
+            ].join('\n');
+            const result = __test__.stripManagedBlock(input, 'zotero-keeper');
+            assert.ok(result.content.includes('[mcp_servers.zotero-keeper-fork]'));
+            assert.ok(result.content.includes('command = "mine"'));
+            assert.ok(!result.content.includes('approval_mode'));
+            assert.ok(result.content.includes('[after]'));
+        });
+
+        it('preserves CRLF line endings of a Windows-edited file and stays idempotent', () => {
+            fs.writeFileSync(configPath, '# mine\r\n[other]\r\nkey = "v"\r\n', 'utf-8');
+
+            assert.strictEqual(installCodexMcpServers('/usr/bin/python3'), true);
+            const written = managed();
+            assert.ok(written.includes('[mcp_servers.zotero-keeper]'));
+            assert.ok(!/(^|[^\r])\n/.test(written), 'bare LF found in a CRLF file');
+
+            assert.strictEqual(installCodexMcpServers('/usr/bin/python3'), false);
+        });
+
+        it('does not rewrite a file that lacks a final newline when everything is disabled and nothing is ours', () => {
+            (vscode.workspace.getConfiguration as SinonStub).returns(
+                new MockWorkspaceConfiguration({ enableZoteroKeeper: false, enablePubmedSearch: false })
+            );
+            fs.writeFileSync(configPath, '[other]\nkey = "v"', 'utf-8');
+            assert.strictEqual(installCodexMcpServers('/usr/bin/python3'), false);
+            assert.strictEqual(managed(), '[other]\nkey = "v"');
+        });
+
+        it('removes both blocks when disabled and ends the file with one newline', () => {
+            installCodexMcpServers('/usr/bin/python3');
+            (vscode.workspace.getConfiguration as SinonStub).returns(
+                new MockWorkspaceConfiguration({ enableZoteroKeeper: false, enablePubmedSearch: false })
+            );
+            fs.appendFileSync(configPath, '\n[other]\nkey = "v"');
+
+            assert.strictEqual(installCodexMcpServers('/usr/bin/python3'), true);
+            assert.strictEqual(managed(), '[other]\nkey = "v"\n');
+        });
+
+        it('handles a file that starts with a UTF-8 BOM before our own header', () => {
+            installCodexMcpServers('/old/python');
+            fs.writeFileSync(configPath, '\uFEFF' + managed(), 'utf-8');
+
+            installCodexMcpServers('/new/python');
+            const content = managed();
+            assert.strictEqual((content.match(/\[mcp_servers\.zotero-keeper\]/g) ?? []).length, 1);
+            assert.ok(content.includes('/new/python') && !content.includes('/old/python'));
+        });
+
+        it('refuses to replace a config it cannot read', () => {
+            fs.writeFileSync(configPath, '[precious]\nkey = "v"\n', 'utf-8');
+            sinon.stub(fileSystem, 'readFileSync').callsFake(((file: fs.PathOrFileDescriptor) => {
+                if (String(file) === configPath) { throw Object.assign(new Error('EACCES'), { code: 'EACCES' }); }
+                return '';
+            }) as typeof fs.readFileSync);
+
+            assert.throws(() => installCodexMcpServers('/usr/bin/python3'), /EACCES/);
+            sinon.restore();
+            assert.strictEqual(managed(), '[precious]\nkey = "v"\n');
+        });
+
+        it('keeps the permissions of an existing config, and creates new ones owner-only', function () {
+            if (process.platform === 'win32') { this.skip(); }
+            installCodexMcpServers('/usr/bin/python3');
+            assert.strictEqual(fs.statSync(configPath).mode & 0o777, 0o600);
+
+            fs.chmodSync(configPath, 0o640);
+            installCodexMcpServers('/other/python');
+            assert.strictEqual(fs.statSync(configPath).mode & 0o777, 0o640);
+        });
+
+        it('does not clobber a read-only config and leaves no temp files', function () {
+            if (typeof process.getuid === 'function' && process.getuid() === 0) { this.skip(); }
+            fs.writeFileSync(configPath, '[other]\nkey = "v"\n', 'utf-8');
+            fs.chmodSync(configPath, 0o444);
+            try {
+                assert.strictEqual(installCodexMcpServers('/usr/bin/python3'), false);
+                assert.strictEqual(managed(), '[other]\nkey = "v"\n');
+                assert.deepStrictEqual(fs.readdirSync(tmpDir), ['config.toml']);
+            } finally {
+                fs.chmodSync(configPath, 0o644);
+            }
         });
     });
 });

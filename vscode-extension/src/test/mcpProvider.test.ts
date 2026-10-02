@@ -1,268 +1,107 @@
-import { describe, it, beforeEach } from 'mocha';
+import { describe, it, beforeEach, afterEach } from 'mocha';
+import * as assert from 'assert';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
+import childProcess from 'child_process';
 import { ZoteroMcpServerProvider } from '../mcpProvider.js';
+import { resetGitEmailCache } from '../mcpServerConfig.js';
 import { MockWorkspaceConfiguration, workspace as mockWorkspace } from './mock-vscode.js';
 import {
     PUBMED_SEARCH_ENTRYPOINT,
     PUBMED_SEARCH_VERSION,
     PUBMED_WORKSPACE_DIR_ENV,
 } from '../pubmedSearchPackage.js';
-
-// Use chai for assertions – install in next step if needed
-// For now we use Node.js built-in assert as fallback
-import * as assert from 'assert';
+import { ZOTERO_KEEPER_VERSION } from '../zoteroKeeperPackage.js';
 
 describe('ZoteroMcpServerProvider', () => {
+    const python = '/usr/bin/python3';
+    const token = { isCancellationRequested: false } as vscode.CancellationToken;
     let provider: ZoteroMcpServerProvider;
-    const mockPythonPath = '/usr/bin/python3';
-    const mockToken = { isCancellationRequested: false } as vscode.CancellationToken;
+
+    const useConfig = (values: Record<string, unknown>): void => {
+        (vscode.workspace.getConfiguration as sinon.SinonStub).returns(new MockWorkspaceConfiguration(values));
+    };
+    const provide = (): vscode.McpStdioServerDefinition[] =>
+        provider.provideMcpServerDefinitions(token) as vscode.McpStdioServerDefinition[];
 
     beforeEach(() => {
         sinon.restore();
-        provider = new ZoteroMcpServerProvider(mockPythonPath, {} as vscode.ExtensionContext);
+        resetGitEmailCache();
+        // No developer's global git identity may leak into assertions.
+        sinon.stub(childProcess, 'execFileSync').throws(new Error('git unavailable'));
+        provider = new ZoteroMcpServerProvider(python);
         mockWorkspace.workspaceFolders = undefined;
     });
 
-    describe('constructor', () => {
-        it('should store the python path', () => {
-            // Access via public method
-            const servers = provider.provideMcpServerDefinitions(mockToken) as vscode.McpStdioServerDefinition[];
-            // Default config returns both servers enabled
-            assert.ok(Array.isArray(servers));
+    afterEach(() => {
+        sinon.restore();
+        resetGitEmailCache();
+        mockWorkspace.workspaceFolders = undefined;
+    });
+
+    it('provides both servers with the pinned versions, in a stable order', () => {
+        useConfig({});
+        const [keeper, pubmed] = provide();
+
+        assert.strictEqual(keeper.label, 'Zotero Keeper');
+        assert.strictEqual(keeper.command, python);
+        assert.deepStrictEqual(keeper.args, ['-m', 'zotero_mcp']);
+        assert.strictEqual(keeper.version, ZOTERO_KEEPER_VERSION);
+        assert.deepStrictEqual(keeper.env, { ZOTERO_HOST: 'localhost', ZOTERO_PORT: '23119' });
+
+        assert.strictEqual(pubmed.label, 'PubMed Search');
+        assert.deepStrictEqual(pubmed.args, ['-m', PUBMED_SEARCH_ENTRYPOINT]);
+        assert.strictEqual(pubmed.version, PUBMED_SEARCH_VERSION);
+    });
+
+    it('honours the per-server enable switches', () => {
+        useConfig({ enableZoteroKeeper: true, enablePubmedSearch: false });
+        assert.deepStrictEqual(provide().map(s => s.label), ['Zotero Keeper']);
+
+        useConfig({ enableZoteroKeeper: false, enablePubmedSearch: true });
+        assert.deepStrictEqual(provide().map(s => s.label), ['PubMed Search']);
+
+        useConfig({ enableZoteroKeeper: false, enablePubmedSearch: false });
+        assert.deepStrictEqual(provide(), []);
+    });
+
+    it('passes Zotero host/port and the PubMed environment through', () => {
+        mockWorkspace.workspaceFolders = [{ uri: { fsPath: '/mock/workspace' } }];
+        useConfig({
+            zoteroHost: '192.168.1.100',
+            zoteroPort: 9999,
+            ncbiEmail: 'test@example.com',
+            ncbiApiKey: 'key123',
+            httpsProxy: 'https://proxy:8443',
+        });
+        const [keeper, pubmed] = provide();
+
+        assert.strictEqual(keeper.env?.ZOTERO_HOST, '192.168.1.100');
+        assert.strictEqual(keeper.env?.ZOTERO_PORT, '9999');
+        assert.deepStrictEqual(pubmed.env, {
+            NCBI_EMAIL: 'test@example.com',
+            NCBI_API_KEY: 'key123',
+            HTTPS_PROXY: 'https://proxy:8443',
+            [PUBMED_WORKSPACE_DIR_ENV]: '/mock/workspace',
         });
     });
 
-    describe('provideMcpServerDefinitions', () => {
-        it('should return both servers when both enabled (default)', () => {
-            // Mock config to enable both
-            const mockConfig = new MockWorkspaceConfiguration({
-                enableZoteroKeeper: true,
-                enablePubmedSearch: true,
-                zoteroHost: 'localhost',
-                zoteroPort: 23119,
-                ncbiEmail: '',
-                ncbiApiKey: '',
-                coreApiKey: '',
-                semanticScholarApiKey: '',
-                httpProxy: '',
-                httpsProxy: '',
-                openUrlResolver: '',
-                openUrlPreset: '',
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-
-            const servers = provider.provideMcpServerDefinitions(mockToken) as vscode.McpStdioServerDefinition[];
-            assert.strictEqual(servers.length, 2);
-            assert.strictEqual(servers[0].label, 'Zotero Keeper');
-            assert.strictEqual(servers[1].label, 'PubMed Search');
-        });
-
-        it('should return only Zotero when PubMed disabled', () => {
-            const mockConfig = new MockWorkspaceConfiguration({
-                enableZoteroKeeper: true,
-                enablePubmedSearch: false,
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-
-            const servers = provider.provideMcpServerDefinitions(mockToken) as vscode.McpStdioServerDefinition[];
-            assert.strictEqual(servers.length, 1);
-            assert.strictEqual(servers[0].label, 'Zotero Keeper');
-        });
-
-        it('should return only PubMed when Zotero disabled', () => {
-            const mockConfig = new MockWorkspaceConfiguration({
-                enableZoteroKeeper: false,
-                enablePubmedSearch: true,
-                ncbiEmail: '',
-                ncbiApiKey: '',
-                coreApiKey: '',
-                semanticScholarApiKey: '',
-                httpProxy: '',
-                httpsProxy: '',
-                openUrlResolver: '',
-                openUrlPreset: '',
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-
-            const servers = provider.provideMcpServerDefinitions(mockToken) as vscode.McpStdioServerDefinition[];
-            assert.strictEqual(servers.length, 1);
-            assert.strictEqual(servers[0].label, 'PubMed Search');
-        });
-
-        it('should return empty when both disabled', () => {
-            const mockConfig = new MockWorkspaceConfiguration({
-                enableZoteroKeeper: false,
-                enablePubmedSearch: false,
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-
-            const servers = provider.provideMcpServerDefinitions(mockToken) as vscode.McpStdioServerDefinition[];
-            assert.strictEqual(servers.length, 0);
-        });
-
-        it('should set Zotero host/port from config', () => {
-            const mockConfig = new MockWorkspaceConfiguration({
-                enableZoteroKeeper: true,
-                enablePubmedSearch: false,
-                zoteroHost: '192.168.1.100',
-                zoteroPort: 9999,
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-
-            const servers = provider.provideMcpServerDefinitions(mockToken) as vscode.McpStdioServerDefinition[];
-            assert.strictEqual(servers.length, 1);
-            assert.strictEqual(servers[0].env?.ZOTERO_HOST, '192.168.1.100');
-            assert.strictEqual(servers[0].env?.ZOTERO_PORT, '9999');
-        });
-
-        it('should pass API keys to PubMed server environment', () => {
-            const mockConfig = new MockWorkspaceConfiguration({
-                enableZoteroKeeper: false,
-                enablePubmedSearch: true,
-                ncbiEmail: 'test@example.com',
-                ncbiApiKey: 'key123',
-                coreApiKey: 'core456',
-                openAlexApiKey: 'oa789',
-                semanticScholarApiKey: 's2key',
-                httpProxy: '',
-                httpsProxy: '',
-                openUrlResolver: '',
-                openUrlPreset: '',
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-
-            const servers = provider.provideMcpServerDefinitions(mockToken) as vscode.McpStdioServerDefinition[];
-            assert.strictEqual(servers.length, 1);
-            const pubmed = servers[0];
-            assert.strictEqual(pubmed.env?.NCBI_EMAIL, 'test@example.com');
-            assert.strictEqual(pubmed.env?.NCBI_API_KEY, 'key123');
-            assert.strictEqual(pubmed.env?.CORE_API_KEY, 'core456');
-            assert.strictEqual(pubmed.env?.OPENALEX_API_KEY, 'oa789');
-            assert.strictEqual(pubmed.env?.S2_API_KEY, 's2key');
-        });
-
-        it('should omit empty API keys from environment', () => {
-            const mockConfig = new MockWorkspaceConfiguration({
-                enableZoteroKeeper: false,
-                enablePubmedSearch: true,
-                ncbiEmail: '',
-                ncbiApiKey: '',
-                coreApiKey: '',
-                semanticScholarApiKey: '',
-                httpProxy: '',
-                httpsProxy: '',
-                openUrlResolver: '',
-                openUrlPreset: '',
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-
-            const servers = provider.provideMcpServerDefinitions(mockToken) as vscode.McpStdioServerDefinition[];
-            const pubmed = servers[0];
-            // NCBI_EMAIL may be auto-detected from git config (v0.5.13+)
-            // So we only check that empty config keys (API keys) are omitted
-            assert.strictEqual(pubmed.env?.NCBI_API_KEY, undefined);
-        });
-
-        it('should use correct python command and args', () => {
-            const mockConfig = new MockWorkspaceConfiguration({
-                enableZoteroKeeper: true,
-                enablePubmedSearch: true,
-                zoteroHost: 'localhost',
-                zoteroPort: 23119,
-                ncbiEmail: '',
-                ncbiApiKey: '',
-                coreApiKey: '',
-                semanticScholarApiKey: '',
-                httpProxy: '',
-                httpsProxy: '',
-                openUrlResolver: '',
-                openUrlPreset: '',
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-
-            const servers = provider.provideMcpServerDefinitions(mockToken) as vscode.McpStdioServerDefinition[];
-
-            // Zotero Keeper
-            assert.strictEqual(servers[0].command, mockPythonPath);
-            assert.deepStrictEqual(servers[0].args, ['-m', 'zotero_mcp']);
-            assert.strictEqual(servers[0].version, '2.3.1');
-
-            // PubMed Search
-            assert.strictEqual(servers[1].command, mockPythonPath);
-            assert.deepStrictEqual(servers[1].args, ['-m', PUBMED_SEARCH_ENTRYPOINT]);
-            assert.strictEqual(servers[1].version, PUBMED_SEARCH_VERSION);
-        });
-
-        it('should pass workspace directory to PubMed server when a workspace is open', () => {
-            mockWorkspace.workspaceFolders = [
-                { uri: { fsPath: '/mock/workspace' } },
-            ];
-            const mockConfig = new MockWorkspaceConfiguration({
-                enableZoteroKeeper: false,
-                enablePubmedSearch: true,
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-
-            const servers = provider.provideMcpServerDefinitions(mockToken) as vscode.McpStdioServerDefinition[];
-            assert.strictEqual(servers.length, 1);
-            assert.strictEqual(servers[0].env?.[PUBMED_WORKSPACE_DIR_ENV], '/mock/workspace');
-        });
-
-        it('should return empty when pythonPath is empty', () => {
-            const emptyProvider = new ZoteroMcpServerProvider('', {} as vscode.ExtensionContext);
-            const servers = emptyProvider.provideMcpServerDefinitions(mockToken) as vscode.McpStdioServerDefinition[];
-            assert.strictEqual(servers.length, 0);
-        });
-
-        it('should pass proxy settings to PubMed server', () => {
-            const mockConfig = new MockWorkspaceConfiguration({
-                enableZoteroKeeper: false,
-                enablePubmedSearch: true,
-                ncbiEmail: '',
-                ncbiApiKey: '',
-                coreApiKey: '',
-                semanticScholarApiKey: '',
-                httpProxy: 'http://proxy:8080',
-                httpsProxy: 'https://proxy:8443',
-                openUrlResolver: 'https://resolver.example.com',
-                openUrlPreset: 'my-university',
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-
-            const servers = provider.provideMcpServerDefinitions(mockToken) as vscode.McpStdioServerDefinition[];
-            const pubmed = servers[0];
-            assert.strictEqual(pubmed.env?.HTTP_PROXY, 'http://proxy:8080');
-            assert.strictEqual(pubmed.env?.HTTPS_PROXY, 'https://proxy:8443');
-            assert.strictEqual(pubmed.env?.OPENURL_RESOLVER, 'https://resolver.example.com');
-            assert.strictEqual(pubmed.env?.OPENURL_PRESET, 'my-university');
-        });
+    it('provides nothing (and does not throw) while no interpreter is known', () => {
+        useConfig({});
+        assert.deepStrictEqual(
+            new ZoteroMcpServerProvider('').provideMcpServerDefinitions(token),
+            [],
+        );
     });
 
-    describe('setPythonPath', () => {
-        it('should update python path and trigger refresh', () => {
-            const newPath = '/new/python';
-            let refreshFired = false;
-            provider.onDidChangeMcpServerDefinitions(() => { refreshFired = true; });
+    it('switches interpreter and notifies VS Code to re-read the definitions', () => {
+        useConfig({});
+        let notifications = 0;
+        provider.onDidChangeMcpServerDefinitions(() => { notifications++; });
 
-            provider.setPythonPath(newPath);
-            assert.strictEqual(refreshFired, true);
-        });
-    });
+        provider.setPythonPath('/new/python');
 
-    describe('resolveMcpServerDefinition', () => {
-        it('should return the same server definition', () => {
-            const server = new vscode.McpStdioServerDefinition(
-                'Test', '/python', ['-m', 'test'], {}, '1.0'
-            );
-            const result = provider.resolveMcpServerDefinition(server, mockToken);
-            assert.strictEqual(result, server);
-        });
-    });
-
-    describe('dispose', () => {
-        it('should not throw', () => {
-            assert.doesNotThrow(() => provider.dispose());
-        });
+        assert.strictEqual(notifications, 1);
+        assert.ok(provide().every(server => server.command === '/new/python'));
     });
 });

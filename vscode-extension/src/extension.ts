@@ -43,6 +43,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     pythonEnv = new PythonEnvironment(context);
     uvPython = new UvPythonManager(context);
     statusBar = new StatusBarManager();
+    // Output channels and the status bar item are released with the extension.
+    context.subscriptions.push(pythonEnv, uvPython, statusBar);
 
     // Initialize status bar with context for statistics
     statusBar.initialize(context);
@@ -232,7 +234,7 @@ function registerOrUpdateMcpProvider(
             'zotero-mcp.servers',
             mcpProvider
         );
-        context.subscriptions.push(providerDisposable);
+        context.subscriptions.push(providerDisposable, mcpProvider);
         return;
     }
 
@@ -397,7 +399,12 @@ function registerCommands(context: vscode.ExtensionContext): void {
     // Setup Wizard - one-click setup
     context.subscriptions.push(
         vscode.commands.registerCommand('zoteroMcp.setupWizard', async () => {
-            await runSetupWizard();
+            try {
+                await runSetupWizard();
+            } catch (error) {
+                statusBar.setStatus('error', 'Zotero MCP: Setup failed');
+                vscode.window.showErrorMessage(`Zotero MCP setup failed: ${error}`);
+            }
         })
     );
 
@@ -521,7 +528,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
  * Run setup wizard - handles all setup in one go
  */
 async function runSetupWizard(): Promise<void> {
-    const progress = await vscode.window.withProgress(
+    const succeeded = await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
             title: 'Zotero MCP Setup',
@@ -567,7 +574,7 @@ async function runSetupWizard(): Promise<void> {
         }
     );
 
-    if (progress) {
+    if (succeeded) {
         if (resolvedPythonPath) {
             syncRuntimeConsumers(extensionContext, resolvedPythonPath, true);
         }
@@ -595,12 +602,13 @@ async function checkZoteroConnection(): Promise<boolean> {
     const config = vscode.workspace.getConfiguration('zoteroMcp');
     const host = config.get<string>('zoteroHost', 'localhost');
     const port = config.get<number>('zoteroPort', 23119);
+    const urlHost = host.includes(':') && !host.startsWith('[') ? `[${host}]` : host;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     try {
-        const response = await fetch(`http://${host}:${port}/connector/ping`, {
+        const response = await fetch(`http://${urlHost}:${port}/connector/ping`, {
             signal: controller.signal,
         });
         const text = await response.text();
@@ -656,8 +664,18 @@ interface ExtensionStatus {
     };
 }
 
+function escapeHtml(value: string | number): string {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 /**
- * Generate status webview HTML
+ * Generate status webview HTML (every dynamic value originates from user settings or the
+ * environment and is escaped).
  */
 function getStatusWebviewContent(status: ExtensionStatus): string {
     const checkmark = '✅';
@@ -706,15 +724,15 @@ function getStatusWebviewContent(status: ExtensionStatus): string {
         <h2>Python Environment</h2>
         <div class="item">
             <span>Type:</span>
-            <span class="info">${status.pythonType}</span>
+            <span class="info">${escapeHtml(status.pythonType)}</span>
         </div>
         <div class="item">
             <span>Python Path:</span>
-            <span style="font-size: 12px; word-break: break-all;">${status.pythonPath}</span>
+            <span style="font-size: 12px; word-break: break-all;">${escapeHtml(status.pythonPath)}</span>
         </div>
         <div class="item">
             <span>Python Version:</span>
-            <span>${status.pythonVersion}</span>
+            <span>${escapeHtml(status.pythonVersion)}</span>
         </div>
         <div class="item">
             <span>Packages Installed:</span>
@@ -728,7 +746,7 @@ function getStatusWebviewContent(status: ExtensionStatus): string {
         <h2>Zotero Connection</h2>
         <div class="item">
             <span>Host:</span>
-            <span>${status.zoteroHost}:${status.zoteroPort}</span>
+            <span>${escapeHtml(status.zoteroHost)}:${escapeHtml(status.zoteroPort)}</span>
         </div>
         <div class="item">
             <span>Connected:</span>
@@ -761,6 +779,6 @@ function getStatusWebviewContent(status: ExtensionStatus): string {
  * Extension deactivation
  */
 export function deactivate(): void {
+    // Everything is disposed through context.subscriptions.
     console.log('Zotero MCP extension is deactivating...');
-    statusBar?.dispose();
 }

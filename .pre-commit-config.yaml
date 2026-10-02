@@ -51,7 +51,8 @@ repos:
     hooks:
       - id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
-        exclude: '(\.lock|package-lock\.json)$'
+        # Test fixtures use fake keys/URLs with credentials on purpose (platform-independent path match).
+        exclude: '(\.lock|package-lock\.json)$|(^|/)(tests|src/test)/'
 
   # ============================================================
   # 5. Commit message convention
@@ -79,7 +80,7 @@ repos:
       # 7. Version sync check
       # ============================================================
       - id: version-sync-check
-        name: Check version sync (package.json == statusBar.ts)
+        name: Check release version sync (package.json, pyproject, locks, changelogs, tags)
         entry: python scripts/check_version_sync.py
         language: python
         files: '(package\.json|statusBar\.ts|CHANGELOG\.md)$'

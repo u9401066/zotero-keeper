@@ -5,8 +5,10 @@
 import { describe, it, beforeEach, afterEach } from 'mocha';
 import * as assert from 'assert';
 import * as fs from 'fs';
+import fileSystem from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import * as sinon from 'sinon';
 import * as vscode from 'vscode';
 import type { SinonStub } from 'sinon';
 import {
@@ -14,6 +16,7 @@ import {
     removeClineMcpServers,
     isClineInstalled,
 } from '../clineMcpConfig.js';
+import { MockWorkspaceConfiguration } from './mock-vscode.js';
 
 // Minimal mock of ExtensionContext
 function createMockContext(globalStoragePath: string): vscode.ExtensionContext {
@@ -33,9 +36,11 @@ describe('clineMcpConfig', () => {
         clineSettingsPath = path.join(tmpDir, 'globalStorage', 'saoudrizwan.claude-dev', 'settings', 'cline_mcp_settings.json');
         (vscode.extensions.getExtension as SinonStub).resetBehavior();
         (vscode.extensions.getExtension as SinonStub).returns(undefined);
+        (vscode.workspace.getConfiguration as SinonStub).returns(new MockWorkspaceConfiguration({}));
     });
 
     afterEach(() => {
+        sinon.restore();
         fs.rmSync(tmpDir, { recursive: true, force: true });
     });
 
@@ -192,6 +197,95 @@ describe('clineMcpConfig', () => {
 
             const updated = removeClineMcpServers(mockContext);
             assert.strictEqual(updated, false);
+        });
+    });
+
+    describe('hostile or unusual settings files', () => {
+        const backups = (): string[] => fs.readdirSync(path.dirname(clineSettingsPath)).filter(n => n.endsWith('.bak'));
+        const seed = (content: string): void => {
+            fs.mkdirSync(path.dirname(clineSettingsPath), { recursive: true });
+            fs.writeFileSync(clineSettingsPath, content, 'utf-8');
+        };
+
+        for (const [label, content] of [
+            ['a JSON array', '[]'],
+            ['JSON null', 'null'],
+            ['a bare string', '"hello"'],
+            ['an empty file', ''],
+            ['JSON with comments', '{ // my servers\n "mcpServers": {} }'],
+        ] as const) {
+            it(`backs up ${label} and still installs the managed servers`, () => {
+                seed(content);
+                assert.strictEqual(installClineMcpServers(mockContext, '/usr/bin/python3'), true);
+
+                const written = JSON.parse(fs.readFileSync(clineSettingsPath, 'utf-8'));
+                assert.ok(written.mcpServers['zotero-keeper']);
+                assert.strictEqual(backups().length, 1);
+                assert.strictEqual(fs.readFileSync(path.join(path.dirname(clineSettingsPath), backups()[0]), 'utf-8'), content);
+            });
+        }
+
+        it('reads a UTF-8 BOM file (Windows editors) without discarding the user\'s other servers', () => {
+            seed('\uFEFF' + JSON.stringify({ mcpServers: { mine: { command: 'node', args: ['x.js'] } } }));
+            assert.strictEqual(installClineMcpServers(mockContext, '/usr/bin/python3'), true);
+
+            const written = JSON.parse(fs.readFileSync(clineSettingsPath, 'utf-8'));
+            assert.deepStrictEqual(written.mcpServers.mine, { command: 'node', args: ['x.js'] });
+            assert.strictEqual(backups().length, 0);
+        });
+
+        it('keeps unknown top-level keys and repairs a non-object mcpServers', () => {
+            seed(JSON.stringify({ theme: 'dark', mcpServers: [] }));
+            installClineMcpServers(mockContext, '/usr/bin/python3');
+
+            const written = JSON.parse(fs.readFileSync(clineSettingsPath, 'utf-8'));
+            assert.strictEqual(written.theme, 'dark');
+            assert.ok(written.mcpServers['zotero-keeper']);
+        });
+
+        it('never touches a user-owned server that merely reuses a managed key', () => {
+            const mine = { command: 'node', args: ['my-zotero.js'], env: { A: '1' } };
+            seed(JSON.stringify({ mcpServers: { 'zotero-keeper': mine } }));
+
+            installClineMcpServers(mockContext, '/usr/bin/python3');
+            let written = JSON.parse(fs.readFileSync(clineSettingsPath, 'utf-8'));
+            assert.deepStrictEqual(written.mcpServers['zotero-keeper'], mine);
+
+            (vscode.workspace.getConfiguration as SinonStub).returns(new MockWorkspaceConfiguration({ enableZoteroKeeper: false }));
+            installClineMcpServers(mockContext, '/usr/bin/python3');
+            written = JSON.parse(fs.readFileSync(clineSettingsPath, 'utf-8'));
+            assert.deepStrictEqual(written.mcpServers['zotero-keeper'], mine);
+        });
+
+        it('removes its own entries when a server is disabled, leaving the other one', () => {
+            seed(JSON.stringify({ mcpServers: {} }));
+            installClineMcpServers(mockContext, '/usr/bin/python3');
+            (vscode.workspace.getConfiguration as SinonStub).returns(new MockWorkspaceConfiguration({ enablePubmedSearch: false }));
+
+            assert.strictEqual(installClineMcpServers(mockContext, '/usr/bin/python3'), true);
+            const written = JSON.parse(fs.readFileSync(clineSettingsPath, 'utf-8'));
+            assert.ok(written.mcpServers['zotero-keeper']);
+            assert.strictEqual(written.mcpServers['pubmed-search-mcp'], undefined);
+        });
+
+        it('refuses to overwrite the only copy of an unparsable file when the backup fails', () => {
+            seed('{ not json');
+            sinon.stub(fileSystem, 'copyFileSync').throws(new Error('backup disk full'));
+
+            assert.throws(() => installClineMcpServers(mockContext, '/usr/bin/python3'), /backup disk full/);
+            sinon.restore();
+            assert.strictEqual(fs.readFileSync(clineSettingsPath, 'utf-8'), '{ not json');
+        });
+
+        it('leaves no temp files and keeps the old settings when the write fails', () => {
+            seed(JSON.stringify({ mcpServers: { mine: { command: 'node', args: [] } } }));
+            const before = fs.readFileSync(clineSettingsPath, 'utf-8');
+            sinon.stub(fileSystem, 'renameSync').throws(new Error('EBUSY'));
+
+            assert.strictEqual(installClineMcpServers(mockContext, '/usr/bin/python3'), false);
+            sinon.restore();
+            assert.strictEqual(fs.readFileSync(clineSettingsPath, 'utf-8'), before);
+            assert.deepStrictEqual(fs.readdirSync(path.dirname(clineSettingsPath)), ['cline_mcp_settings.json']);
         });
     });
 });

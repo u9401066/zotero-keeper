@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.0] - 2026-10-02
+
+### Added
+
+- `export_items`: read-only export of up to 50 exact item keys through Zotero's own
+  translators (`bibtex`, `biblatex`, `ris`, `csljson`, `csv`, `mods`, …); reports
+  requested/exported/missing counts.
+- `get_bibliography`: read-only CSL bibliography and/or in-text citation HTML for up
+  to 50 exact item keys with a validated style id and locale; lists unrendered keys.
+
+### Fixed
+
+- Refuse unsafe request paths (`..`, `?`, `#`, `%`, whitespace, non-ASCII) before any
+  Zotero request. Read tools interpolate keys into fixed API paths; `get_item("../collections")`
+  previously redirected the read to another Local API endpoint.
+- RIS import: `EP` before `SP` no longer loses the end page, and records without a title
+  are reported (`warnings`) instead of being dropped silently.
+- Never send empty creators (blank/`None`/non-string authors, whitespace-only names); a
+  non-string `name` no longer raises.
+- Invalid `ZOTERO_PORT`/`ZOTERO_TIMEOUT` (non-numeric, out of range, `nan`/`inf`) and bad
+  `--port` now exit with a usage error instead of a traceback. Server version has one source.
+
+### Removed
+
+- Unused `domain.entities.Reference/Collection/Creator`, `infrastructure.logging_config`
+  and `mcp.collection_utils` (never imported by the server) together with their ~100
+  tests; the duplicate `ZoteroConfig` in `mcp.config` (now one definition in the client).
+- Vacuous unit tests that restated constants or exercised dataclass defaults; replaced by
+  behavior/edge tests and a real-process stdio smoke test (`tests/integration/test_stdio_smoke.py`).
+
+### Changed
+
+- `scripts/pretest.py` (pre-push hook) is the local gate; GitHub CI now only runs clean-install,
+  Windows/Linux runtime smoke, VSIX packaging and release-tag steps (macOS on demand).
+- Require `pubmed-search-mcp>=0.7.7` for the optional PubMed extra; the PubMed tool
+  interface (41 tools) is unchanged. Remove stale `get_session_pmids` references
+  from legacy bridge tool documentation.
+- Re-audit against Zotero 10.0.5 (`docs/ZOTERO_10_TOOL_AUDIT.md`): no Local API
+  contract change affects Keeper; native item creation and write-token replay were
+  reviewed and deliberately not implemented.
+- Default surface is now 50 tools, 6 resources and 4 resource templates.
+
+---
+
 ## [2.3.1] - 2026-09-17
 
 ### Fixed

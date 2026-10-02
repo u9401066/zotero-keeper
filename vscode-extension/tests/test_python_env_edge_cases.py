@@ -18,6 +18,7 @@ Usage:
 """
 
 import os
+import re
 import sys
 import shutil
 import subprocess
@@ -33,11 +34,24 @@ UV_VERSION = "0.5.14"
 PYTHON_VERSION = "3.12"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LOCAL_MCP_SERVER = REPO_ROOT / "mcp-server"
-DEFAULT_RELEASE_ZOTERO_KEEPER_PACKAGE = (
-    "zotero-keeper @ https://github.com/u9401066/zotero-keeper/archive/refs/tags/"
-    "v0.9.1-ext.tar.gz#subdirectory=mcp-server"
+EXTENSION_SRC = Path(__file__).resolve().parents[1] / "src"
+
+
+def read_pin(filename: str, constant: str) -> str:
+    """Read a pinned string constant from the extension sources (single source of truth)."""
+    text = (EXTENSION_SRC / filename).read_text(encoding="utf-8")
+    match = re.search(rf"{constant}\s*=\s*\n?\s*['\"]([^'\"]+)['\"]", text)
+    if not match:
+        raise RuntimeError(f"{constant} not found in {filename}")
+    return match.group(1)
+
+
+ZOTERO_KEEPER_VERSION = read_pin("zoteroKeeperPackage.ts", "ZOTERO_KEEPER_VERSION")
+PUBMED_SEARCH_VERSION = read_pin("pubmedSearchPackage.ts", "PUBMED_SEARCH_VERSION")
+DEFAULT_RELEASE_ZOTERO_KEEPER_PACKAGE = f"zotero-keeper @ {read_pin('zoteroKeeperPackage.ts', 'ZOTERO_KEEPER_SOURCE_URL')}#subdirectory=mcp-server"
+PUBMED_SEARCH_FIXED_COMMIT = read_pin(
+    "pubmedSearchPackage.ts", "PUBMED_SEARCH_FIXED_COMMIT"
 )
-PUBMED_SEARCH_FIXED_COMMIT = "fbbaacaba150afbc24bdbc07eb41c77c564017e6"
 PUBMED_SEARCH_PACKAGE = (
     "pubmed-search-mcp @ "
     f"https://github.com/u9401066/pubmed-search-mcp/archive/{PUBMED_SEARCH_FIXED_COMMIT}.tar.gz"
@@ -763,8 +777,8 @@ class TestPythonEnvEdgeCases:
         issues = []
         _all_ok = True
         for pkg_name, import_name, min_ver in [
-            ("zotero-keeper", "zotero_mcp", "2.3.1"),
-            ("pubmed-search-mcp", "pubmed_search", "0.7.3"),
+            ("zotero-keeper", "zotero_mcp", ZOTERO_KEEPER_VERSION),
+            ("pubmed-search-mcp", "pubmed_search", PUBMED_SEARCH_VERSION),
         ]:
             attr_ver = self._check_package_version(venv_dir, import_name)
             pip_ver = self._check_installed_version_via_pip(venv_dir, pkg_name)

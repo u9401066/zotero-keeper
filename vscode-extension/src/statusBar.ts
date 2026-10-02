@@ -9,6 +9,7 @@
  */
 
 import * as vscode from 'vscode';
+import { redactCredentials } from './mcpServerConfig.js';
 
 type StatusType = 'initializing' | 'installing' | 'ready' | 'warning' | 'error';
 
@@ -16,12 +17,11 @@ type StatusType = 'initializing' | 'installing' | 'ready' | 'warning' | 'error';
 const STATS_KEY = 'zoteroMcp.statistics';
 
 export interface UsageStatistics {
-    articlesSearched: number;
-    articlesImported: number;
-    fulltextsAccessed: number;
     sessionsCount: number;
     lastUsed: string;
 }
+
+const EMPTY_STATISTICS: UsageStatistics = { sessionsCount: 0, lastUsed: '' };
 
 /**
  * Supported API information
@@ -38,7 +38,7 @@ export interface ApiInfo {
 export class StatusBarManager {
     private statusBarItem: vscode.StatusBarItem;
     private context: vscode.ExtensionContext | undefined;
-    private version: string = '0.9.1';
+    private version: string = '0.0.0';
 
     constructor() {
         this.statusBarItem = vscode.window.createStatusBarItem(
@@ -57,7 +57,7 @@ export class StatusBarManager {
 
         // Get version from package.json
         const packageJson = context.extension.packageJSON;
-        this.version = packageJson.version || '0.9.1';
+        this.version = packageJson.version || this.version;
 
         // Register quick menu command
         context.subscriptions.push(
@@ -123,7 +123,7 @@ export class StatusBarManager {
             },
             {
                 label: '$(graph) Usage Statistics',
-                description: `${stats.articlesSearched} searches, ${stats.articlesImported} imports`,
+                description: `${stats.sessionsCount} sessions`,
                 detail: 'View detailed usage statistics'
             },
             {
@@ -390,18 +390,6 @@ export class StatusBarManager {
 
     <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-number">${stats.articlesSearched}</div>
-            <div class="stat-label">🔍 Searches Performed</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">${stats.articlesImported}</div>
-            <div class="stat-label">📥 Articles Imported</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">${stats.fulltextsAccessed}</div>
-            <div class="stat-label">📄 Full-texts Accessed</div>
-        </div>
-        <div class="stat-card">
             <div class="stat-number">${stats.sessionsCount}</div>
             <div class="stat-label">🚀 Sessions</div>
         </div>
@@ -409,7 +397,7 @@ export class StatusBarManager {
 
     <div class="info">
         <strong>Last Activity:</strong> ${lastUsed}<br>
-        <small>Statistics are stored locally and never shared.</small>
+        <small>Statistics are stored locally and never shared. The extension cannot observe individual MCP tool calls, so only editor sessions are counted.</small>
     </div>
 </body>
 </html>`;
@@ -420,22 +408,10 @@ export class StatusBarManager {
      */
     getStatistics(): UsageStatistics {
         if (!this.context) {
-            return {
-                articlesSearched: 0,
-                articlesImported: 0,
-                fulltextsAccessed: 0,
-                sessionsCount: 0,
-                lastUsed: ''
-            };
+            return { ...EMPTY_STATISTICS };
         }
 
-        return this.context.globalState.get<UsageStatistics>(STATS_KEY, {
-            articlesSearched: 0,
-            articlesImported: 0,
-            fulltextsAccessed: 0,
-            sessionsCount: 0,
-            lastUsed: ''
-        });
+        return { ...EMPTY_STATISTICS, ...this.context.globalState.get<Partial<UsageStatistics>>(STATS_KEY, {}) };
     }
 
     /**
@@ -457,13 +433,7 @@ export class StatusBarManager {
     async resetStatistics(): Promise<void> {
         if (!this.context) return;
 
-        await this.context.globalState.update(STATS_KEY, {
-            articlesSearched: 0,
-            articlesImported: 0,
-            fulltextsAccessed: 0,
-            sessionsCount: 0,
-            lastUsed: ''
-        });
+        await this.context.globalState.update(STATS_KEY, { ...EMPTY_STATISTICS });
     }
 
     /**
@@ -513,7 +483,7 @@ export class StatusBarManager {
         const httpProxy = config.get<string>('httpProxy', '');
         const httpsProxy = config.get<string>('httpsProxy', '');
         if (httpProxy || httpsProxy) {
-            details.push(`🌐 Proxy: ${httpProxy || httpsProxy}`);
+            details.push(`🌐 Proxy: ${redactCredentials(httpProxy || httpsProxy)}`);
         }
 
         return { hasApiKeys, details };
@@ -538,7 +508,7 @@ export class StatusBarManager {
         const { details } = this.getApiStatus();
         const stats = this.getStatistics();
         const apiInfo = details.slice(0, 3).join(' | ');
-        const statsInfo = `📊 ${stats.articlesSearched} searches | ${stats.articlesImported} imports`;
+        const statsInfo = `📊 ${stats.sessionsCount} sessions`;
 
         switch (type) {
             case 'initializing':

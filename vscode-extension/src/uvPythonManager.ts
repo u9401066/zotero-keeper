@@ -14,42 +14,60 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as https from 'https';
-import * as http from 'http';
-import { execSync } from 'child_process';
+import type * as http from 'http';
+import { execFile, execFileSync } from 'child_process';
+import { createHash } from 'crypto';
+import { promisify } from 'util';
 import * as os from 'os';
 import { PUBMED_SEARCH_PACKAGE, PUBMED_SEARCH_SOURCE_URL, PUBMED_SEARCH_VERSION } from './pubmedSearchPackage.js';
 import { ZOTERO_KEEPER_PACKAGE, ZOTERO_KEEPER_SOURCE_URL, ZOTERO_KEEPER_VERSION } from './zoteroKeeperPackage.js';
+import { buildAtomicPackageInstallArgs } from './uvCommands.js';
 
-// UV download URLs from GitHub releases
-// Using latest stable version
+const execFileAsync = promisify(execFile);
+
+// UV download URLs from GitHub releases. The version is pinned and every
+// archive is verified against the SHA-256 published with that release
+// (<archive>.sha256), so a truncated or tampered download never gets executed.
 const UV_VERSION = '0.5.14';
-const UV_DOWNLOADS: Record<string, { url: string; executable: string }> = {
+const UV_RELEASE_BASE = `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}`;
+interface UvDownload {
+    url: string;
+    executable: string;
+    sha256: string;
+}
+const UV_DOWNLOADS: Record<string, UvDownload> = {
     // Windows
     'win32-x64': {
-        url: `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-pc-windows-msvc.zip`,
-        executable: 'uv.exe'
+        url: `${UV_RELEASE_BASE}/uv-x86_64-pc-windows-msvc.zip`,
+        executable: 'uv.exe',
+        sha256: 'ee2468e40320a0a2a36435e66bbd0d861228c4c06767f22d97876528138f4ba0', // pragma: allowlist secret
     },
     'win32-ia32': {
-        url: `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-i686-pc-windows-msvc.zip`,
-        executable: 'uv.exe'
+        url: `${UV_RELEASE_BASE}/uv-i686-pc-windows-msvc.zip`,
+        executable: 'uv.exe',
+        sha256: '2ea709cf816b70661c6aa43d6aff7526faebafc2d45f7167d3192c5b9bb0a28f', // pragma: allowlist secret
     },
     // Linux
     'linux-x64': {
-        url: `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz`,
-        executable: 'uv'
+        url: `${UV_RELEASE_BASE}/uv-x86_64-unknown-linux-gnu.tar.gz`,
+        executable: 'uv',
+        sha256: '22034760075b92487b326da5aa1a2a3e1917e2e766c12c0fd466fccda77013c7', // pragma: allowlist secret
     },
     'linux-arm64': {
-        url: `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-aarch64-unknown-linux-gnu.tar.gz`,
-        executable: 'uv'
+        url: `${UV_RELEASE_BASE}/uv-aarch64-unknown-linux-gnu.tar.gz`,
+        executable: 'uv',
+        sha256: '1c9cdb265b0c24ce2e74b7795a00842dc6d487c11ba49aa6c9ca1c784b82755a', // pragma: allowlist secret
     },
     // macOS
     'darwin-x64': {
-        url: `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-apple-darwin.tar.gz`,
-        executable: 'uv'
+        url: `${UV_RELEASE_BASE}/uv-x86_64-apple-darwin.tar.gz`,
+        executable: 'uv',
+        sha256: '8caf91b936ede1167abaebae07c2a1cbb22473355fa0ad7ebb2580307e84fb47', // pragma: allowlist secret
     },
     'darwin-arm64': {
-        url: `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-aarch64-apple-darwin.tar.gz`,
-        executable: 'uv'
+        url: `${UV_RELEASE_BASE}/uv-aarch64-apple-darwin.tar.gz`,
+        executable: 'uv',
+        sha256: 'd548dffc256014c4c8c693e148140a3a21bcc2bf066a35e1d5f0d24c91d32112', // pragma: allowlist secret
     },
 };
 
@@ -57,16 +75,13 @@ const UV_DOWNLOADS: Record<string, { url: string; executable: string }> = {
 // Python 3.12+ required for type parameter syntax (PEP 695), TaskGroup, etc.
 const PYTHON_VERSION = '3.12';
 
-// Required packages with minimum versions
-// IMPORTANT: Update these when extension depends on new package features
-// Python 3.12+ required for new core module features
+// Required packages (pinned archives, see zoteroKeeperPackage.ts / pubmedSearchPackage.ts)
 const REQUIRED_PACKAGES = [
     ZOTERO_KEEPER_PACKAGE,
     PUBMED_SEARCH_PACKAGE,
 ];
 
-// Minimum versions for verification (extracted from REQUIRED_PACKAGES)
-// IMPORTANT: Keep in sync with REQUIRED_PACKAGES above!
+// Minimum versions for verification, keyed by import name
 const MIN_VERSIONS: Record<string, string> = {
     'zotero_mcp': ZOTERO_KEEPER_VERSION,
     'pubmed_search': PUBMED_SEARCH_VERSION,
@@ -78,10 +93,10 @@ const SOURCE_URLS: Record<string, string> = {
 };
 
 // Timeout constants (in milliseconds)
-const SETUP_POLL_INTERVAL_MS = 1000;
 const DOWNLOAD_TIMEOUT_MS = 60000;
 const VENV_CREATION_TIMEOUT_MS = 300000;  // 5 minutes for Python download
 const PACKAGE_INSTALL_TIMEOUT_MS = 300000;
+const MAX_REDIRECTS = 5;
 
 const REQUIRED_PYTHON_VERSION = PYTHON_VERSION.split('.').map(part => Number.parseInt(part, 10));
 const INSTALL_STATE_FILE = 'install-state.json';
@@ -92,18 +107,129 @@ type InstallState = {
     pubmedSearchPackage: string;
 };
 
+/** SHA-256 of a file, lowercase hex. */
+export function sha256OfFile(filePath: string): string {
+    return createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+}
+
+/** Throws unless the file's SHA-256 equals `expected` (case-insensitive hex). */
+export function assertSha256(filePath: string, expected: string): void {
+    const actual = sha256OfFile(filePath);
+    if (actual !== expected.trim().toLowerCase()) {
+        throw new Error(`Checksum mismatch for ${path.basename(filePath)}: expected ${expected}, got ${actual}`);
+    }
+}
+
+/** Anchored pgrep pattern matching command lines that start with a path inside `dir` (POSIX). */
+export function buildProcessPathPattern(dir: string): string {
+    return `^${dir.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/`;
+}
+
+/** Positive integer PIDs from newline-separated tool output; everything else is dropped. */
+export function parsePids(output: string): number[] {
+    return output
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => /^\d+$/.test(line))
+        .map(Number)
+        .filter(pid => pid > 0);
+}
+
+type HttpsGet = (url: string, callback: (response: http.IncomingMessage) => void) => http.ClientRequest;
+
 /**
- * Build one uv resolver invocation for packages that must remain compatible.
- * Keeping Zotero Keeper and PubMed Search MCP in the same command prevents an
- * observable MCP SDK 1.x/2.x intermediate state during extension upgrades.
+ * Download over HTTPS only (redirects included) to `destPath`. On any failure
+ * (non-200, truncated body, timeout, redirect to plain HTTP) the partial file
+ * is removed and the promise rejects; it never hangs on a dropped connection.
  */
-export function buildAtomicPackageInstallCommand(
-    uvPath: string,
-    pythonBinary: string,
-    packages: readonly string[],
-): string {
-    const packageArguments = packages.map(pkg => `"${pkg}"`).join(' ');
-    return `"${uvPath}" pip install --upgrade --force-reinstall --python "${pythonBinary}" ${packageArguments}`;
+export function downloadFile(
+    url: string,
+    destPath: string,
+    onProgress?: (percent: number) => void,
+    get: HttpsGet = https.get,
+): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const file = fs.createWriteStream(destPath);
+        let settled = false;
+
+        const fail = (error: Error): void => {
+            if (settled) { return; }
+            settled = true;
+            file.destroy();
+            fs.rm(destPath, { force: true }, () => reject(error));
+        };
+
+        const request = (requestUrl: string, redirects: number): void => {
+            if (redirects > MAX_REDIRECTS) {
+                fail(new Error('Too many redirects'));
+                return;
+            }
+            let target: URL;
+            try {
+                target = new URL(requestUrl);
+            } catch {
+                fail(new Error(`Invalid download URL: ${requestUrl}`));
+                return;
+            }
+            if (target.protocol !== 'https:') {
+                fail(new Error(`Refusing non-HTTPS download: ${requestUrl}`));
+                return;
+            }
+
+            const clientRequest = get(target.toString(), (response) => {
+                const status = response.statusCode ?? 0;
+                if ([301, 302, 303, 307, 308].includes(status)) {
+                    response.resume();
+                    const location = response.headers.location;
+                    if (!location) {
+                        fail(new Error(`Redirect (HTTP ${status}) without a Location header`));
+                        return;
+                    }
+                    request(new URL(location, target).toString(), redirects + 1);
+                    return;
+                }
+                if (status !== 200) {
+                    response.resume();
+                    fail(new Error(`Download failed: HTTP ${status}`));
+                    return;
+                }
+
+                const totalSize = Number.parseInt(String(response.headers['content-length'] ?? '0'), 10) || 0;
+                let downloadedSize = 0;
+                let lastPercent = 0;
+                response.on('data', (chunk: Buffer) => {
+                    downloadedSize += chunk.length;
+                    if (totalSize > 0 && onProgress) {
+                        const percent = Math.round((downloadedSize / totalSize) * 100);
+                        if (percent !== lastPercent) {
+                            lastPercent = percent;
+                            onProgress(percent);
+                        }
+                    }
+                });
+                response.on('error', fail);
+                response.on('close', () => {
+                    if (!response.complete) { fail(new Error('Download interrupted')); }
+                });
+                response.pipe(file);
+            });
+
+            clientRequest.on('error', fail);
+            clientRequest.setTimeout(DOWNLOAD_TIMEOUT_MS, () => {
+                clientRequest.destroy();
+                fail(new Error('Download timeout'));
+            });
+        };
+
+        file.on('error', fail);
+        file.on('close', () => {
+            if (!settled) {
+                settled = true;
+                resolve();
+            }
+        });
+        request(url, 0);
+    });
 }
 
 /**
@@ -136,8 +262,7 @@ function getEnrichedEnv(): NodeJS.ProcessEnv {
     };
 }
 
-export class UvPythonManager {
-    private context: vscode.ExtensionContext;
+export class UvPythonManager implements vscode.Disposable {
     private outputChannel: vscode.OutputChannel;
     private baseDir: string;
     private uvPath: string;
@@ -145,10 +270,9 @@ export class UvPythonManager {
     private pythonBinary: string;
     private installStatePath: string;
     private _isReady: boolean = false;
-    private _setupInProgress: boolean = false;
+    private _ensurePromise: Promise<string> | undefined;
 
     constructor(context: vscode.ExtensionContext) {
-        this.context = context;
         this.outputChannel = vscode.window.createOutputChannel('Zotero MCP Setup');
 
         // Setup paths
@@ -234,9 +358,10 @@ export class UvPythonManager {
 
     private getPythonVersionOutputSync(pythonPath: string): string | null {
         try {
-            return execSync(
-                `"${pythonPath}" --version`,
-                { encoding: 'utf-8', stdio: 'pipe', timeout: 10000, env: getEnrichedEnv() }
+            return execFileSync(
+                pythonPath,
+                ['--version'],
+                { encoding: 'utf-8', stdio: 'pipe', timeout: 10000, env: getEnrichedEnv(), windowsHide: true }
             ).trim();
         } catch {
             return null;
@@ -267,16 +392,8 @@ export class UvPythonManager {
         if (!this._isReady) {
             return undefined;
         }
-        try {
-            const output = execSync(`"${this.pythonBinary}" --version`, {
-                encoding: 'utf-8',
-                stdio: 'pipe'
-            });
-            return output.trim().replace('Python ', '');
-        } catch {
-            // Python binary may not exist or be executable
-            return undefined;
-        }
+        const output = this.getPythonVersionOutputSync(this.pythonBinary);
+        return output ? output.replace('Python ', '') : undefined;
     }
 
     /**
@@ -365,12 +482,13 @@ print("OK")
             fs.writeFileSync(scriptPath, versionCheckScript, 'utf-8');
 
             try {
-                const result = execSync(
-                    `"${this.pythonBinary}" "${scriptPath}"`,
-                    { encoding: 'utf-8', stdio: 'pipe' }
+                const { stdout } = await execFileAsync(
+                    this.pythonBinary,
+                    [scriptPath],
+                    { encoding: 'utf-8', timeout: 60000, windowsHide: true }
                 );
 
-                const output = result.trim();
+                const output = stdout.trim();
                 if (output === 'OK') {
                     this._isReady = true;
                     return true;
@@ -413,9 +531,19 @@ print("OK")
     }
 
     /**
-     * Main entry point - ensure everything is ready
+     * Main entry point - ensure everything is ready.
+     * Concurrent callers (activation + setup wizard, for example) share one run.
      */
-    async ensureReady(): Promise<string> {
+    ensureReady(): Promise<string> {
+        if (!this._ensurePromise) {
+            this._ensurePromise = this.runEnsureReady().finally(() => {
+                this._ensurePromise = undefined;
+            });
+        }
+        return this._ensurePromise;
+    }
+
+    private async runEnsureReady(): Promise<string> {
         // Check if already set up with correct versions
         if (await this.verifyReady()) {
             this.log('Python environment is already ready');
@@ -450,39 +578,21 @@ print("OK")
             this.log('Package upgrade failed, will try full setup');
         }
 
-        // Prevent concurrent setup
-        if (this._setupInProgress) {
-            this.log('Setup already in progress, waiting...');
-            while (this._setupInProgress) {
-                await new Promise(resolve => setTimeout(resolve, SETUP_POLL_INTERVAL_MS));
-            }
-            if (this._isReady) {
-                return this.pythonBinary;
-            }
-            throw new Error('Concurrent setup failed');
-        }
-
-        this._setupInProgress = true;
-
-        try {
-            return await vscode.window.withProgress(
-                {
-                    location: vscode.ProgressLocation.Notification,
-                    title: 'Setting up Python environment',
-                    cancellable: false
-                },
-                async (progress) => {
-                    const success = await this.setup(progress);
-                    if (success) {
-                        this._isReady = true;
-                        return this.pythonBinary;
-                    }
-                    throw new Error('Failed to set up Python environment');
+        return vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: 'Setting up Python environment',
+                cancellable: false
+            },
+            async (progress) => {
+                const success = await this.setup(progress);
+                if (success) {
+                    this._isReady = true;
+                    return this.pythonBinary;
                 }
-            );
-        } finally {
-            this._setupInProgress = false;
-        }
+                throw new Error('Failed to set up Python environment');
+            }
+        );
     }
 
     /**
@@ -507,7 +617,7 @@ print("OK")
             if (!fs.existsSync(this.uvPath)) {
                 progress.report({ message: 'Downloading uv package manager (~10MB)...', increment: 0 });
                 this.log(`Downloading uv for ${platformKey}...`);
-                await this.downloadAndExtractUv(uvInfo.url, progress);
+                await this.downloadAndExtractUv(uvInfo, progress);
             } else {
                 this.log('uv already exists');
             }
@@ -541,54 +651,58 @@ print("OK")
      * Download and extract uv
      */
     private async downloadAndExtractUv(
-        url: string,
+        download: UvDownload,
         progress: vscode.Progress<{ message?: string; increment?: number }>
     ): Promise<void> {
         const uvDir = path.join(this.baseDir, 'uv');
         fs.mkdirSync(uvDir, { recursive: true });
 
-        const isZip = url.endsWith('.zip');
+        const isZip = download.url.endsWith('.zip');
         const archivePath = path.join(uvDir, isZip ? 'uv.zip' : 'uv.tar.gz');
 
-        // Download
-        await this.downloadFile(url, archivePath, (percent) => {
-            progress.report({ message: `Downloading uv... ${percent}%` });
-        });
-
-        // Extract
-        this.log(`Extracting uv to ${uvDir}...`);
-
-        if (isZip) {
-            // Windows: use PowerShell to extract zip
-            execSync(
-                `powershell -Command "Expand-Archive -Path '${archivePath}' -DestinationPath '${uvDir}' -Force"`,
-                { encoding: 'utf-8', stdio: 'pipe' }
-            );
-        } else {
-            // Unix: use tar
-            // First try --strip-components=1 (standard for uv releases)
-            execSync(`tar -xzf "${archivePath}" -C "${uvDir}" --strip-components=1`, {
-                encoding: 'utf-8',
-                stdio: 'pipe'
+        try {
+            await downloadFile(download.url, archivePath, (percent) => {
+                progress.report({ message: `Downloading uv... ${percent}%` });
             });
+            // Never extract (let alone execute) an archive that is not the pinned release.
+            assertSha256(archivePath, download.sha256);
 
-            // Verify the uv binary actually landed at the expected path
-            // Some tar versions or archive structures may put files differently
-            if (!fs.existsSync(this.uvPath)) {
-                this.log('uv binary not found after strip-components=1, searching...');
-                // Walk extracted directory to find the uv binary
-                const found = this.findFileRecursive(uvDir, 'uv');
-                if (found) {
-                    this.log(`Found uv at ${found}, moving to ${this.uvPath}`);
+            this.log(`Extracting uv to ${uvDir}...`);
+            if (isZip) {
+                // Windows: PowerShell extracts zip; the path is passed as a single-quoted literal.
+                const literal = (value: string): string => `'${value.replace(/'/g, "''")}'`;
+                await execFileAsync(
+                    'powershell',
+                    [
+                        '-NoProfile',
+                        '-NonInteractive',
+                        '-Command',
+                        `Expand-Archive -LiteralPath ${literal(archivePath)} -DestinationPath ${literal(uvDir)} -Force`,
+                    ],
+                    { encoding: 'utf-8', windowsHide: true, timeout: 120000 }
+                );
+            } else {
+                // Unix: first try --strip-components=1 (standard for uv releases)
+                await execFileAsync(
+                    'tar',
+                    ['-xzf', archivePath, '-C', uvDir, '--strip-components=1'],
+                    { encoding: 'utf-8', timeout: 120000 }
+                );
+
+                // Some tar versions or archive structures may put files differently
+                if (!fs.existsSync(this.uvPath)) {
+                    this.log('uv binary not found after strip-components=1, searching...');
+                    const found = this.findFileRecursive(uvDir, 'uv');
+                    if (!found) {
+                        throw new Error('uv binary not found after extraction');
+                    }
+                    this.log(`Found uv at ${found}, copying to ${this.uvPath}`);
                     fs.copyFileSync(found, this.uvPath);
-                } else {
-                    throw new Error('uv binary not found after extraction');
                 }
             }
+        } finally {
+            fs.rmSync(archivePath, { force: true });
         }
-
-        // Clean up archive
-        fs.unlinkSync(archivePath);
 
         // Make executable on Unix
         if (process.platform !== 'win32') {
@@ -622,15 +736,14 @@ print("OK")
         }
 
         // uv can automatically download and install Python!
-        const cmd = `"${this.uvPath}" venv "${this.venvDir}" --python ${PYTHON_VERSION}`;
-        this.log(`Running: ${cmd}`);
+        this.log(`Running: ${this.uvPath} venv ${this.venvDir} --python ${PYTHON_VERSION}`);
 
         try {
             const enrichedEnv = getEnrichedEnv();
-            execSync(cmd, {
+            await execFileAsync(this.uvPath, ['venv', this.venvDir, '--python', PYTHON_VERSION], {
                 encoding: 'utf-8',
-                stdio: 'pipe',
                 timeout: VENV_CREATION_TIMEOUT_MS,
+                windowsHide: true,
                 env: {
                     ...enrichedEnv,
                     // Allow uv to download Python
@@ -657,13 +770,11 @@ print("OK")
 
         // First, install packaging for version checks
         try {
-            const packagingCmd = `"${this.uvPath}" pip install --python "${this.pythonBinary}" packaging`;
-            execSync(packagingCmd, {
-                encoding: 'utf-8',
-                stdio: 'pipe',
-                timeout: DOWNLOAD_TIMEOUT_MS,
-                env: baseEnv
-            });
+            await execFileAsync(
+                this.uvPath,
+                ['pip', 'install', '--python', this.pythonBinary, 'packaging'],
+                { encoding: 'utf-8', timeout: DOWNLOAD_TIMEOUT_MS, windowsHide: true, env: baseEnv }
+            );
         } catch {
             // packaging may already be installed - safe to continue
             this.log('packaging already installed or install skipped');
@@ -678,19 +789,18 @@ print("OK")
         this.log(`Installing/upgrading together: ${REQUIRED_PACKAGES.join(', ')}`);
         onProgress?.(`Installing ${packageNames}...`);
 
-        const cmd = buildAtomicPackageInstallCommand(
-            this.uvPath,
-            this.pythonBinary,
-            REQUIRED_PACKAGES,
-        );
-
         try {
-            execSync(cmd, {
-                encoding: 'utf-8',
-                stdio: 'pipe',
-                timeout: PACKAGE_INSTALL_TIMEOUT_MS,
-                env: baseEnv,
-            });
+            await execFileAsync(
+                this.uvPath,
+                buildAtomicPackageInstallArgs(this.pythonBinary, REQUIRED_PACKAGES),
+                {
+                    encoding: 'utf-8',
+                    timeout: PACKAGE_INSTALL_TIMEOUT_MS,
+                    windowsHide: true,
+                    maxBuffer: 10 * 1024 * 1024,
+                    env: baseEnv,
+                }
+            );
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             this.log(`Error installing required package set: ${errorMessage}`);
@@ -728,79 +838,6 @@ print("OK")
         }
     }
 
-    /**
-     * Download file with progress
-     */
-    private async downloadFile(
-        url: string,
-        destPath: string,
-        onProgress?: (percent: number) => void
-    ): Promise<void> {
-        return new Promise((resolve, reject) => {
-            const file = fs.createWriteStream(destPath);
-
-            const doRequest = (requestUrl: string, redirectCount = 0) => {
-                if (redirectCount > 5) {
-                    reject(new Error('Too many redirects'));
-                    return;
-                }
-
-                const protocol = requestUrl.startsWith('https') ? https : http;
-
-                const request = protocol.get(requestUrl, (response) => {
-                    if (response.statusCode === 301 || response.statusCode === 302 || response.statusCode === 307) {
-                        const redirectUrl = response.headers.location;
-                        if (redirectUrl) {
-                            this.log(`Redirecting to: ${redirectUrl}`);
-                            doRequest(redirectUrl, redirectCount + 1);
-                            return;
-                        }
-                    }
-
-                    if (response.statusCode !== 200) {
-                        reject(new Error(`Download failed: HTTP ${response.statusCode}`));
-                        return;
-                    }
-
-                    const totalSize = parseInt(response.headers['content-length'] || '0', 10);
-                    let downloadedSize = 0;
-                    let lastPercent = 0;
-
-                    response.on('data', (chunk) => {
-                        downloadedSize += chunk.length;
-                        if (totalSize > 0 && onProgress) {
-                            const percent = Math.round((downloadedSize / totalSize) * 100);
-                            if (percent !== lastPercent) {
-                                lastPercent = percent;
-                                onProgress(percent);
-                            }
-                        }
-                    });
-
-                    response.pipe(file);
-
-                    file.on('finish', () => {
-                        file.close();
-                        this.log(`Download complete: ${destPath}`);
-                        resolve();
-                    });
-                });
-
-                request.on('error', (err) => {
-                    fs.unlink(destPath, () => {});
-                    reject(err);
-                });
-
-                request.setTimeout(DOWNLOAD_TIMEOUT_MS, () => {
-                    request.destroy();
-                    reject(new Error('Download timeout'));
-                });
-            };
-
-            doRequest(url);
-        });
-    }
-
     private log(message: string): void {
         const timestamp = new Date().toISOString();
         this.outputChannel.appendLine(`[${timestamp}] ${message}`);
@@ -809,6 +846,10 @@ print("OK")
 
     showOutput(): void {
         this.outputChannel.show();
+    }
+
+    dispose(): void {
+        this.outputChannel.dispose();
     }
 
     /**
@@ -836,14 +877,13 @@ print("OK")
         return null;
     }
 
-    private quotePowerShellSingleQuoted(value: string): string {
-        return `'${value.replace(/'/g, "''")}'`;
-    }
-
     /**
      * Kill any running processes that use the venv Python binary.
      * This is required on Windows where running .exe files cannot be deleted (EPERM).
      * MCP servers spawn python.exe processes that hold file locks.
+     * Only processes whose executable lives inside this venv are matched; the
+     * venv path is passed through the environment/anchored pattern, never
+     * spliced into a shell command.
      */
     private async killPythonProcesses(): Promise<void> {
         if (!fs.existsSync(this.pythonBinary)) {
@@ -851,69 +891,49 @@ print("OK")
         }
 
         try {
+            let pids: number[] = [];
             if (process.platform === 'win32') {
-                // Find and kill processes using our specific python.exe
-                // Use WMIC to find PIDs matching our venv path
-                const venvScriptsDir = path.join(this.venvDir, 'Scripts').replace(/\\/g, '\\\\');
-                try {
-                    const wmicOutput = execSync(
-                        `wmic process where "ExecutablePath like '%${venvScriptsDir}%'" get ProcessId /format:list`,
-                        { encoding: 'utf-8', stdio: 'pipe', timeout: 10000 }
-                    );
-                    const pids = wmicOutput.match(/ProcessId=(\d+)/g);
-                    if (pids && pids.length > 0) {
-                        for (const pidMatch of pids) {
-                            const pid = pidMatch.replace('ProcessId=', '');
-                            this.log(`Killing process PID ${pid} using venv Python...`);
-                            try {
-                                execSync(`taskkill /F /PID ${pid}`, {
-                                    encoding: 'utf-8', stdio: 'pipe', timeout: 5000
-                                });
-                            } catch {
-                                // Process may have already exited
-                            }
-                        }
-                        // Wait for processes to fully terminate
-                        await new Promise(resolve => setTimeout(resolve, 1000));
+                const { stdout } = await execFileAsync(
+                    'powershell',
+                    [
+                        '-NoProfile',
+                        '-NonInteractive',
+                        '-Command',
+                        'Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith($env:ZK_VENV_DIR, [StringComparison]::OrdinalIgnoreCase) } | ForEach-Object { $_.ProcessId }',
+                    ],
+                    {
+                        encoding: 'utf-8',
+                        timeout: 20000,
+                        windowsHide: true,
+                        env: { ...process.env, ZK_VENV_DIR: this.venvDir + path.sep },
                     }
-                } catch {
-                    // WMIC may not be available on all Windows versions, try taskkill directly
-                    this.log('WMIC not available, trying taskkill by image name...');
-                    try {
-                        // As a fallback, try to kill any python.exe in our venv directory
-                        // by checking if our python.exe is locked
-                        const venvPattern = this.quotePowerShellSingleQuoted(`${this.venvDir}*`);
-                        execSync(
-                            `powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Process python -ErrorAction SilentlyContinue | Where-Object { $_.Path -like ${venvPattern} } | Stop-Process -Force"`,
-                            { encoding: 'utf-8', stdio: 'pipe', timeout: 10000 }
-                        );
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                    } catch {
-                        // No matching processes found - that's fine
-                    }
-                }
+                );
+                pids = parsePids(stdout);
             } else {
-                // Unix: find and kill processes using our venv Python
                 try {
-                    const psOutput = execSync(
-                        `pgrep -f "${this.venvDir}"`,
-                        { encoding: 'utf-8', stdio: 'pipe', timeout: 5000 }
+                    const { stdout } = await execFileAsync(
+                        'pgrep',
+                        ['-f', buildProcessPathPattern(this.venvDir)],
+                        { encoding: 'utf-8', timeout: 5000 }
                     );
-                    const pids = psOutput.trim().split('\n').filter((p: string) => p.trim());
-                    for (const pid of pids) {
-                        this.log(`Killing process PID ${pid} using venv Python...`);
-                        try {
-                            execSync(`kill -9 ${pid.trim()}`, { stdio: 'pipe', timeout: 5000 });
-                        } catch {
-                            // Process may have already exited
-                        }
-                    }
-                    if (pids.length > 0) {
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                    }
+                    pids = parsePids(stdout);
                 } catch {
-                    // No matching processes
+                    // pgrep exits 1 when nothing matches
                 }
+            }
+
+            pids = pids.filter(pid => pid !== process.pid);
+            for (const pid of pids) {
+                this.log(`Killing process PID ${pid} using venv Python...`);
+                try {
+                    process.kill(pid, 'SIGKILL');
+                } catch {
+                    // Process may have already exited
+                }
+            }
+            if (pids.length > 0) {
+                // Wait for the OS to release file handles
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
         } catch (error) {
             this.log(`Warning: Could not kill Python processes: ${error}`);

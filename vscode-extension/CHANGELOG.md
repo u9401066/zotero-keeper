@@ -2,6 +2,48 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.10.0] - 2026-10-02
+
+### Added
+
+- Bundle Keeper 2.4.0 (50 tools): read-only `export_items` and `get_bibliography`.
+- Harness migration table for retired PubMed 0.5/0.6 tool names
+  (`docs/HARNESS_UPGRADES.md`).
+
+### Changed
+
+- Pin PubMed Search MCP 0.7.7 (`8247af2`); the 41-tool interface is unchanged.
+  Refresh bundled PubMed user skills, Copilot hooks, Codex/Cline harness skills,
+  research agent and Copilot instructions (new input-contract and
+  `fulltext="prefetch"` guidance, export-tool guidance).
+- Re-audit against Zotero 10.0.5; no Keeper contract change required.
+- The Usage Statistics view only shows the editor session count; the search/import/
+  full-text counters could never be incremented by the extension and always read 0.
+- Remove the no-op `zoteroMcp.logLevel` setting, the unused logger module, the broken
+  `test:vscode` script, unused `@vscode/test-*` dev dependencies and orphan
+  walkthrough pages. Add `npm run verify` (asset sync check, compile, lint, tests).
+
+### Fixed
+
+- Never build shell command lines from paths: Python/uv/venv/tar/PowerShell/pgrep calls
+  use argument arrays, so a path containing quotes cannot inject commands. Package
+  installs no longer block the extension host.
+- Verify the downloaded uv archive against pinned SHA-256 digests; HTTPS-only redirects,
+  partial files removed on failure, dropped connections no longer hang the download.
+- Process cleanup before a venv rebuild only matches processes running from the venv
+  (previously any process mentioning its path could be killed); no longer depends on WMIC.
+- Concurrent setup requests share one run instead of racing.
+- Codex `config.toml`: keep CRLF line endings and file permissions, never overwrite an
+  unreadable file, escape all control characters, new files are owner-only.
+- Cline settings: accept a UTF-8 BOM, preserve unknown top-level keys, abort if an
+  unparsable file cannot be backed up, atomic writes owner-only with no leftover temp files.
+- Pick the first *working* interpreter from `where`/`which` (Windows Store `python.exe`
+  alias no longer hides a real install); malformed installed versions can no longer
+  satisfy a minimum version; proxy credentials are masked in the UI; status page HTML is
+  escaped; git `user.email` lookups are cached and run in the workspace folder.
+- `check-vsix-contents.ps1` validates the VSIX matching `package.json`'s version in the
+  extension folder (it used to pick the newest `*.vsix` in the current directory).
+
 ## [0.9.1] - 2026-09-17
 
 ### Fixed

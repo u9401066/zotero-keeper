@@ -6,6 +6,9 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const extensionRoot = path.resolve(scriptDir, '..');
 const repoRoot = path.resolve(extensionRoot, '..');
 const outputIndex = process.argv.indexOf('--output');
+if (outputIndex >= 0 && !process.argv[outputIndex + 1]) {
+    throw new Error('--output requires a directory argument.');
+}
 const assetRoot = outputIndex >= 0
     ? path.resolve(process.argv[outputIndex + 1])
     : path.join(extensionRoot, 'resources', 'repo-assets');
@@ -127,23 +130,21 @@ function ensureParentDirectory(targetPath) {
 }
 
 /**
- * Normalize line endings for cross-platform compatibility.
- * - Text assets: force LF so pre-commit and Linux CI agree with Windows sync
- * - All files: strip UTF-8 BOM if present
+ * Normalize text assets for cross-platform compatibility: strip a UTF-8 BOM and
+ * force LF so pre-commit and Linux CI agree with Windows sync. Other files are
+ * copied byte-for-byte.
  */
 function normalizeLineEndings(targetPath) {
     const ext = path.extname(targetPath).toLowerCase();
-    const raw = fs.readFileSync(targetPath);
+    if (!['.md', '.json', '.sh', '.ps1', '.py', '.yaml', '.yml'].includes(ext)) {
+        return;
+    }
 
-    // Strip UTF-8 BOM if present
-    let content = raw[0] === 0xEF && raw[1] === 0xBB && raw[2] === 0xBF
+    const raw = fs.readFileSync(targetPath);
+    const content = raw[0] === 0xEF && raw[1] === 0xBB && raw[2] === 0xBF
         ? raw.subarray(3)
         : raw;
-
-    if (['.md', '.json', '.sh', '.ps1', '.py', '.yaml', '.yml'].includes(ext)) {
-        const text = content.toString('utf8').replace(/\r\n/g, '\n');
-        fs.writeFileSync(targetPath, text, 'utf8');
-    }
+    fs.writeFileSync(targetPath, content.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
 }
 
 function copyRecursive(sourcePath, targetPath) {

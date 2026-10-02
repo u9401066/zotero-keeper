@@ -15,15 +15,15 @@ function snapshotDirectory(root) {
 
     function normalizedContent(filePath) {
         const raw = fs.readFileSync(filePath);
-        let content = raw[0] === 0xEF && raw[1] === 0xBB && raw[2] === 0xBF
-            ? raw.subarray(3)
-            : raw;
-
-        if (['.md', '.json', '.sh', '.ps1', '.py', '.yaml', '.yml'].includes(path.extname(filePath).toLowerCase())) {
-            content = Buffer.from(content.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
+        if (!['.md', '.json', '.sh', '.ps1', '.py', '.yaml', '.yml'].includes(path.extname(filePath).toLowerCase())) {
+            return raw;
         }
 
-        return content;
+        // Mirror sync-copilot-assets.mjs: text assets lose a BOM and CRLF.
+        const content = raw[0] === 0xEF && raw[1] === 0xBB && raw[2] === 0xBF
+            ? raw.subarray(3)
+            : raw;
+        return Buffer.from(content.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
     }
 
     function walk(dir) {

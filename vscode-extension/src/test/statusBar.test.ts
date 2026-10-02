@@ -1,373 +1,167 @@
-import { describe, it, beforeEach } from 'mocha';
+import { describe, it, beforeEach, afterEach } from 'mocha';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
-import { StatusBarManager } from '../statusBar.js';
-import { createMockContext, MockWorkspaceConfiguration } from './mock-vscode.js';
 import * as assert from 'assert';
+import { StatusBarManager } from '../statusBar.js';
+import { createMockContext, MockStatusBarItem, MockWorkspaceConfiguration } from './mock-vscode.js';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const shippedVersion: string = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '..', '..', 'package.json'), 'utf-8')
+).version;
 
 describe('StatusBarManager', () => {
     let manager: StatusBarManager;
+    let item: MockStatusBarItem;
+
+    const useConfig = (values: Record<string, unknown> = {}): void => {
+        (vscode.workspace.getConfiguration as sinon.SinonStub).returns(new MockWorkspaceConfiguration(values));
+    };
 
     beforeEach(() => {
         sinon.restore();
+        (vscode.window.createStatusBarItem as sinon.SinonStub).resetHistory();
+        (vscode.commands.registerCommand as sinon.SinonStub).resetHistory();
+        useConfig();
         manager = new StatusBarManager();
+        item = (vscode.window.createStatusBarItem as sinon.SinonStub).lastCall.returnValue;
     });
 
     afterEach(() => {
         manager.dispose();
     });
 
-    describe('constructor', () => {
-        it('should create a status bar item', () => {
-            assert.ok((vscode.window.createStatusBarItem as sinon.SinonStub).calledOnce);
-        });
-    });
-
-    describe('initialize', () => {
-        it('should register commands', () => {
-            const ctx = createMockContext();
-            const mockConfig = new MockWorkspaceConfiguration({
-                ncbiEmail: '',
-                ncbiApiKey: '',
-                coreApiKey: '',
-                semanticScholarApiKey: '',
-                httpProxy: '',
-                httpsProxy: '',
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-            manager.initialize(ctx);
-
-            // Should register showQuickMenu, showStatistics, showApiStatus, resetStatistics
-            const registerCalls = (vscode.commands.registerCommand as sinon.SinonStub).getCalls();
-            const commandNames = registerCalls.map(c => c.args[0]);
-            assert.ok(commandNames.includes('zoteroMcp.showQuickMenu'));
-            assert.ok(commandNames.includes('zoteroMcp.showStatistics'));
-            assert.ok(commandNames.includes('zoteroMcp.showApiStatus'));
-            assert.ok(commandNames.includes('zoteroMcp.resetStatistics'));
-        });
-
-        it('should increment session count on initialize', () => {
-            const ctx = createMockContext();
-            const mockConfig = new MockWorkspaceConfiguration({
-                ncbiEmail: '',
-                ncbiApiKey: '',
-                coreApiKey: '',
-                semanticScholarApiKey: '',
-                httpProxy: '',
-                httpsProxy: '',
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-            ctx.globalState.get.returns({
-                articlesSearched: 0,
-                articlesImported: 0,
-                fulltextsAccessed: 0,
-                sessionsCount: 5,
-                lastUsed: '',
-            });
-            manager.initialize(ctx);
-
-            // Should update stats with incremented session count
-            assert.ok(ctx.globalState.update.called);
-        });
-
-        it('should read version from package.json', () => {
+    describe('status text', () => {
+        it('shows the packaged extension version only in the ready state', () => {
             const ctx = createMockContext();
             ctx.extension.packageJSON = { version: '1.2.3' };
-            const mockConfig = new MockWorkspaceConfiguration({
-                ncbiEmail: '',
-                ncbiApiKey: '',
-                coreApiKey: '',
-                semanticScholarApiKey: '',
-                httpProxy: '',
-                httpsProxy: '',
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-            ctx.globalState.get.returns({
-                articlesSearched: 0,
-                articlesImported: 0,
-                fulltextsAccessed: 0,
-                sessionsCount: 0,
-                lastUsed: '',
-            });
             manager.initialize(ctx);
 
-            // Set status to ready - should include version
             manager.setStatus('ready', 'Zotero MCP: Ready');
-            // After initialize, the version should be read from packageJSON
+            assert.ok(item.text.includes('v1.2.3'), item.text);
+
+            manager.setStatus('error', 'Zotero MCP: Failed');
+            assert.ok(!item.text.includes('v1.2.3'), item.text);
+            assert.ok(item.backgroundColor, 'error state must use the error background');
+        });
+
+        it('does not claim a stale hardcoded version when package.json has none', () => {
+            const ctx = createMockContext();
+            ctx.extension.packageJSON = {};
+            manager.initialize(ctx);
+            manager.setStatus('ready', 'ready');
+            assert.ok(!item.text.includes(`v${shippedVersion}`), item.text);
+        assert.ok(item.text.includes('v0.0.0'), item.text);
         });
     });
 
-    describe('setStatus', () => {
-        it('should set text on status bar item for ready state', () => {
+    describe('commands', () => {
+        it('registers each command once and counts the session', () => {
             const ctx = createMockContext();
-            const mockConfig = new MockWorkspaceConfiguration({
-                ncbiEmail: '',
-                ncbiApiKey: '',
-                coreApiKey: '',
-                semanticScholarApiKey: '',
-                httpProxy: '',
-                httpsProxy: '',
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-            ctx.globalState.get.returns({
-                articlesSearched: 0,
-                articlesImported: 0,
-                fulltextsAccessed: 0,
-                sessionsCount: 0,
-                lastUsed: '',
-            });
-            manager.initialize(ctx);
-            manager.setStatus('ready', 'Zotero MCP: Ready');
-            // We just verify it doesn't throw
-        });
-
-        it('should handle all status types without throwing', () => {
-            const ctx = createMockContext();
-            const mockConfig = new MockWorkspaceConfiguration({
-                ncbiEmail: '',
-                ncbiApiKey: '',
-                coreApiKey: '',
-                semanticScholarApiKey: '',
-                httpProxy: '',
-                httpsProxy: '',
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-            ctx.globalState.get.returns({
-                articlesSearched: 0,
-                articlesImported: 0,
-                fulltextsAccessed: 0,
-                sessionsCount: 0,
-                lastUsed: '',
-            });
+            ctx.globalState.get.returns({ sessionsCount: 5, lastUsed: '' });
             manager.initialize(ctx);
 
-            const types: Array<'initializing' | 'installing' | 'ready' | 'warning' | 'error'> = [
-                'initializing', 'installing', 'ready', 'warning', 'error'
-            ];
-            for (const type of types) {
-                assert.doesNotThrow(() => manager.setStatus(type, `Test: ${type}`));
-            }
+            const names = (vscode.commands.registerCommand as sinon.SinonStub).getCalls().map(c => c.args[0]);
+            assert.deepStrictEqual(names.sort(), [
+                'zoteroMcp.resetStatistics',
+                'zoteroMcp.showApiStatus',
+                'zoteroMcp.showQuickMenu',
+                'zoteroMcp.showStatistics',
+            ]);
+            assert.strictEqual(ctx.globalState.update.lastCall.args[1].sessionsCount, 6);
         });
     });
 
-    describe('getStatistics', () => {
-        it('should return default statistics when not initialized', () => {
+    describe('statistics', () => {
+        it('returns zeros before initialization', () => {
+            assert.deepStrictEqual(manager.getStatistics(), { sessionsCount: 0, lastUsed: '' });
+        });
+
+        it('tolerates legacy stored objects and partial state', () => {
+            const ctx = createMockContext();
+            ctx.globalState.get.returns({ articlesSearched: 42, lastUsed: '2025-01-01T00:00:00.000Z' });
+            manager.initialize(ctx);
             const stats = manager.getStatistics();
-            assert.strictEqual(stats.articlesSearched, 0);
-            assert.strictEqual(stats.articlesImported, 0);
-            assert.strictEqual(stats.fulltextsAccessed, 0);
             assert.strictEqual(stats.sessionsCount, 0);
-            assert.strictEqual(stats.lastUsed, '');
+            assert.strictEqual(stats.lastUsed, '2025-01-01T00:00:00.000Z');
         });
 
-        it('should return stored statistics', () => {
+        it('increments by the requested amount and stamps lastUsed', async () => {
             const ctx = createMockContext();
-            const storedStats = {
-                articlesSearched: 42,
-                articlesImported: 10,
-                fulltextsAccessed: 5,
-                sessionsCount: 3,
-                lastUsed: '2025-01-01T00:00:00.000Z',
-            };
-            ctx.globalState.get.returns(storedStats);
+            ctx.globalState.get.returns({ sessionsCount: 10, lastUsed: '' });
             manager.initialize(ctx);
+            ctx.globalState.update.resetHistory();
 
-            const stats = manager.getStatistics();
-            assert.strictEqual(stats.articlesSearched, 42);
-            assert.strictEqual(stats.articlesImported, 10);
-        });
-    });
+            await manager.incrementStat('sessionsCount', 5);
 
-    describe('incrementStat', () => {
-        it('should increment a statistic by 1', async () => {
-            const ctx = createMockContext();
-            ctx.globalState.get.returns({
-                articlesSearched: 5,
-                articlesImported: 0,
-                fulltextsAccessed: 0,
-                sessionsCount: 0,
-                lastUsed: '',
-            });
-            manager.initialize(ctx);
-
-            await manager.incrementStat('articlesSearched');
-
-            const updateCall = ctx.globalState.update.lastCall;
-            assert.ok(updateCall);
-            const updatedStats = updateCall.args[1];
-            assert.strictEqual(updatedStats.articlesSearched, 6);
+            const saved = ctx.globalState.update.lastCall.args[1];
+            assert.strictEqual(saved.sessionsCount, 15);
+            assert.ok(!Number.isNaN(Date.parse(saved.lastUsed)));
         });
 
-        it('should increment by custom amount', async () => {
+        it('resets to zero', async () => {
             const ctx = createMockContext();
-            ctx.globalState.get.returns({
-                articlesSearched: 0,
-                articlesImported: 10,
-                fulltextsAccessed: 0,
-                sessionsCount: 0,
-                lastUsed: '',
-            });
-            manager.initialize(ctx);
-
-            await manager.incrementStat('articlesImported', 5);
-
-            const updateCall = ctx.globalState.update.lastCall;
-            const updatedStats = updateCall.args[1];
-            assert.strictEqual(updatedStats.articlesImported, 15);
-        });
-
-        it('should update lastUsed timestamp', async () => {
-            const ctx = createMockContext();
-            ctx.globalState.get.returns({
-                articlesSearched: 0,
-                articlesImported: 0,
-                fulltextsAccessed: 0,
-                sessionsCount: 0,
-                lastUsed: '',
-            });
-            manager.initialize(ctx);
-
-            await manager.incrementStat('articlesSearched');
-
-            const updateCall = ctx.globalState.update.lastCall;
-            const updatedStats = updateCall.args[1];
-            assert.ok(updatedStats.lastUsed);
-            assert.ok(updatedStats.lastUsed.length > 0);
-        });
-    });
-
-    describe('resetStatistics', () => {
-        it('should reset all statistics to zero', async () => {
-            const ctx = createMockContext();
-            ctx.globalState.get.returns({
-                articlesSearched: 50,
-                articlesImported: 20,
-                fulltextsAccessed: 10,
-                sessionsCount: 5,
-                lastUsed: '2025-01-01',
-            });
+            ctx.globalState.get.returns({ sessionsCount: 9, lastUsed: '2025-01-01' });
             manager.initialize(ctx);
 
             await manager.resetStatistics();
 
-            const updateCall = ctx.globalState.update.lastCall;
-            const resetStats = updateCall.args[1];
-            assert.strictEqual(resetStats.articlesSearched, 0);
-            assert.strictEqual(resetStats.articlesImported, 0);
-            assert.strictEqual(resetStats.fulltextsAccessed, 0);
-            assert.strictEqual(resetStats.sessionsCount, 0);
-            assert.strictEqual(resetStats.lastUsed, '');
+            assert.deepStrictEqual(ctx.globalState.update.lastCall.args[1], { sessionsCount: 0, lastUsed: '' });
         });
     });
 
     describe('getSupportedApis', () => {
-        it('should return all 9 supported APIs', () => {
-            const ctx = createMockContext();
-            const mockConfig = new MockWorkspaceConfiguration({
-                enablePubmedSearch: true,
-                enableZoteroKeeper: true,
-                ncbiApiKey: '',
-                ncbiEmail: '',
-                coreApiKey: '',
-                openAlexApiKey: '',
-                semanticScholarApiKey: '',
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-            manager.initialize(ctx);
-
+        it('marks keyed APIs configured only when a key is present', () => {
+            useConfig({ coreApiKey: '', semanticScholarApiKey: 's2' });
             const apis = manager.getSupportedApis();
-            assert.strictEqual(apis.length, 9);
-
-            const names = apis.map(a => a.name);
-            assert.ok(names.includes('PubMed / NCBI E-utilities'));
-            assert.ok(names.includes('Europe PMC'));
-            assert.ok(names.includes('CORE (Open Access)'));
-            assert.ok(names.includes('OpenAlex'));
-            assert.ok(names.includes('Zotero Local API'));
+            assert.strictEqual(apis.find(a => a.name === 'CORE (Open Access)')?.configured, false);
+            assert.strictEqual(apis.find(a => a.name === 'Semantic Scholar')?.configured, true);
         });
 
-        it('should mark CORE as unconfigured when no API key', () => {
-            const ctx = createMockContext();
-            const mockConfig = new MockWorkspaceConfiguration({
-                enablePubmedSearch: true,
-                enableZoteroKeeper: true,
-                ncbiApiKey: '',
-                ncbiEmail: '',
-                coreApiKey: '',
-                semanticScholarApiKey: '',
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-            manager.initialize(ctx);
-
-            const apis = manager.getSupportedApis();
-            const core = apis.find(a => a.name === 'CORE (Open Access)');
-            assert.strictEqual(core?.configured, false);
+        it('reports the PubMed rate limit according to the NCBI key', () => {
+            useConfig({ ncbiApiKey: '' });
+            assert.strictEqual(manager.getSupportedApis()[0].rateLimit, '3 req/s');
+            useConfig({ ncbiApiKey: 'k' });
+            assert.strictEqual(manager.getSupportedApis()[0].rateLimit, '10 req/s');
         });
 
-        it('should mark CORE as configured when API key present', () => {
-            const ctx = createMockContext();
-            const mockConfig = new MockWorkspaceConfiguration({
-                enablePubmedSearch: true,
-                enableZoteroKeeper: true,
-                ncbiApiKey: '',
-                ncbiEmail: '',
-                coreApiKey: 'my-core-key',
-                semanticScholarApiKey: '',
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-            manager.initialize(ctx);
-
+        it('follows the server enable switches', () => {
+            useConfig({ enablePubmedSearch: false, enableZoteroKeeper: true });
             const apis = manager.getSupportedApis();
-            const core = apis.find(a => a.name === 'CORE (Open Access)');
-            assert.strictEqual(core?.configured, true);
+            assert.ok(apis.filter(a => a.name !== 'Zotero Local API').every(a => !a.enabled));
+            assert.strictEqual(apis.find(a => a.name === 'Zotero Local API')?.enabled, true);
         });
     });
 
     describe('getApiStatus', () => {
-        it('should report unconfigured NCBI email', () => {
-            const ctx = createMockContext();
-            const mockConfig = new MockWorkspaceConfiguration({
-                ncbiEmail: '',
-                ncbiApiKey: '',
-                coreApiKey: '',
-                semanticScholarApiKey: '',
-                httpProxy: '',
-                httpsProxy: '',
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-            manager.initialize(ctx);
-
+        it('flags a missing NCBI email and no keys', () => {
             const status = manager.getApiStatus();
             assert.strictEqual(status.hasApiKeys, false);
             assert.ok(status.details.some(d => d.includes('NCBI Email not set')));
         });
 
-        it('should report configured API keys', () => {
-            const ctx = createMockContext();
-            const mockConfig = new MockWorkspaceConfiguration({
-                ncbiEmail: 'test@example.com',
-                ncbiApiKey: 'key123',
-                coreApiKey: 'core456',
-                openAlexApiKey: 'oa789',
-                semanticScholarApiKey: '',
-                httpProxy: '',
-                httpsProxy: '',
-            });
-            (vscode.workspace.getConfiguration as sinon.SinonStub).returns(mockConfig);
-            manager.initialize(ctx);
-
+        it('lists configured keys', () => {
+            useConfig({ ncbiEmail: 'a@b.c', ncbiApiKey: 'k', coreApiKey: 'c', openAlexApiKey: 'o' });
             const status = manager.getApiStatus();
             assert.strictEqual(status.hasApiKeys, true);
-            assert.ok(status.details.some(d => d.includes('NCBI Email configured')));
-            assert.ok(status.details.some(d => d.includes('NCBI API Key')));
-            assert.ok(status.details.some(d => d.includes('CORE API Key')));
-            assert.ok(status.details.some(d => d.includes('OpenAlex API Key')));
+            for (const label of ['NCBI Email configured', 'NCBI API Key', 'CORE API Key', 'OpenAlex API Key']) {
+                assert.ok(status.details.some(d => d.includes(label)), label);
+            }
         });
-    });
 
-    describe('dispose', () => {
-        it('should not throw on dispose', () => {
-            assert.doesNotThrow(() => manager.dispose());
+        it('never shows proxy credentials', () => {
+            useConfig({ httpsProxy: 'https://user:s3cret@proxy.example:8443' });
+            const details = manager.getApiStatus().details.join('\n');
+            assert.ok(details.includes('proxy.example:8443'));
+            assert.ok(!details.includes('s3cret'), details);
+            assert.ok(!details.includes('user:'), details);
+        });
+
+        it('never puts API keys into the tooltip', () => {
+            useConfig({ ncbiApiKey: 'SECRET-KEY-123' });
+            manager.setStatus('ready', 'ready');
+            assert.ok(!String(item.tooltip).includes('SECRET-KEY-123'));
         });
     });
 });

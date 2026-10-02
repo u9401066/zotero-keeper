@@ -11,6 +11,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { PUBMED_SEARCH_PACKAGE, PUBMED_SEARCH_SOURCE_URL, PUBMED_SEARCH_VERSION, compareDottedVersions } from './pubmedSearchPackage.js';
 import { ZOTERO_KEEPER_PACKAGE, ZOTERO_KEEPER_SOURCE_URL, ZOTERO_KEEPER_VERSION } from './zoteroKeeperPackage.js';
+import { buildAtomicPackageInstallArgs } from './uvCommands.js';
 
 interface RequiredPackage {
     name: string;
@@ -90,11 +91,12 @@ export class PythonEnvironment {
         // 3. Try common Python commands (with enriched PATH on macOS)
         const candidates = ['python3', 'python', 'py'];
         for (const cmd of candidates) {
-            const resolved = await this.resolvePythonCommand(cmd);
-            if (resolved && await this.validatePython(resolved)) {
-                this.pythonPath = resolved;
-                this.log(`Using system Python: ${resolved}`);
-                return this.pythonPath;
+            for (const resolved of await this.resolveCommandAll(cmd)) {
+                if (await this.validatePython(resolved)) {
+                    this.pythonPath = resolved;
+                    this.log(`Using system Python: ${resolved}`);
+                    return this.pythonPath;
+                }
             }
         }
 
@@ -153,18 +155,12 @@ export class PythonEnvironment {
      * GUI-launched apps don't inherit from shell profiles.
      */
     private async resolvePythonCommand(cmd: string): Promise<string | null> {
-        return new Promise((resolve) => {
-            const which = process.platform === 'win32' ? 'where' : 'which';
-            const env = this.getEnrichedEnv();
-            cp.exec(`${which} ${cmd}`, { env }, (err, stdout) => {
-                if (err || !stdout.trim()) {
-                    resolve(null);
-                } else {
-                    // Take first result (in case of multiple)
-                    resolve(stdout.trim().split('\n')[0].trim());
-                }
-            });
-        });
+        for (const resolved of await this.resolveCommandAll(cmd)) {
+            if (await this.validatePython(resolved)) {
+                return resolved;
+            }
+        }
+        return null;
     }
 
     /**
@@ -228,21 +224,21 @@ export class PythonEnvironment {
      */
     private async validatePython(pythonPath: string): Promise<boolean> {
         return new Promise((resolve) => {
-            cp.exec(`"${pythonPath}" --version`, (err, stdout) => {
+            cp.execFile(pythonPath, ['--version'], { timeout: 10000, windowsHide: true }, (err, stdout, stderr) => {
                 if (err) {
                     resolve(false);
                     return;
                 }
 
-                // Parse version like "Python 3.12.2"
-                const match = stdout.match(/Python (\d+)\.(\d+)/);
+                // Parse version like "Python 3.12.2" (very old Pythons print it on stderr)
+                const match = `${stdout}${stderr}`.match(/Python (\d+)\.(\d+)/);
                 if (!match) {
                     resolve(false);
                     return;
                 }
 
-                const major = parseInt(match[1]);
-                const minor = parseInt(match[2]);
+                const major = parseInt(match[1], 10);
+                const minor = parseInt(match[2], 10);
 
                 const isValid = major > MIN_PYTHON_VERSION[0] ||
                     (major === MIN_PYTHON_VERSION[0] && minor >= MIN_PYTHON_VERSION[1]);
@@ -262,12 +258,13 @@ export class PythonEnvironment {
      * Get Python version string
      */
     async getPythonVersion(): Promise<string | null> {
-        if (!this.pythonPath) {
+        const pythonPath = this.pythonPath;
+        if (!pythonPath) {
             return null;
         }
 
         return new Promise((resolve) => {
-            cp.exec(`"${this.pythonPath}" --version`, (err, stdout) => {
+            cp.execFile(pythonPath, ['--version'], { timeout: 10000, windowsHide: true }, (err, stdout) => {
                 if (err) {
                     resolve(null);
                 } else {
@@ -282,9 +279,7 @@ export class PythonEnvironment {
      */
     private async createVirtualEnvironment(): Promise<string | null> {
         const venvDir = this.managedVenvDir;
-        const pythonInVenv = process.platform === 'win32'
-            ? path.join(venvDir, 'Scripts', 'python.exe')
-            : path.join(venvDir, 'bin', 'python');
+        const pythonInVenv = this.getManagedPythonPath();
 
         // Check if venv already exists
         if (fs.existsSync(pythonInVenv)) {
@@ -302,15 +297,20 @@ export class PythonEnvironment {
         this.log(`Creating virtual environment at ${venvDir}...`);
 
         return new Promise((resolve) => {
-            cp.exec(`"${systemPython}" -m venv "${venvDir}"`, (err) => {
-                if (err) {
-                    this.log(`Failed to create venv: ${err.message}`);
-                    resolve(null);
-                } else {
-                    this.log('Virtual environment created');
-                    resolve(pythonInVenv);
+            cp.execFile(
+                systemPython,
+                ['-m', 'venv', venvDir],
+                { timeout: VENV_CREATION_TIMEOUT_MS, windowsHide: true },
+                (err) => {
+                    if (err) {
+                        this.log(`Failed to create venv: ${err.message}`);
+                        resolve(null);
+                    } else {
+                        this.log('Virtual environment created');
+                        resolve(pythonInVenv);
+                    }
                 }
-            });
+            );
         });
     }
 
@@ -363,6 +363,7 @@ except Exception as exc:
             cp.execFile(
                 pythonPath,
                 ['-c', script],
+                { timeout: 30000, windowsHide: true },
                 (err, stdout) => {
                     if (err) {
                         resolve(false);
@@ -455,17 +456,28 @@ except Exception as exc:
         return command && await this.validateCommand(command, ['--version']) ? command : null;
     }
 
-    private async resolveCommand(command: string): Promise<string | null> {
+    private async resolveCommandAll(command: string): Promise<string[]> {
         return new Promise((resolve) => {
             const locator = process.platform === 'win32' ? 'where' : 'which';
-            cp.exec(`${locator} ${command}`, { env: this.getEnrichedEnv() }, (err, stdout) => {
-                if (err || !stdout.trim()) {
-                    resolve(null);
-                    return;
+            // `where` lists every match; the first can be an unusable stub
+            // (Windows Store alias), so callers validate each candidate.
+            cp.execFile(
+                locator,
+                [command],
+                { env: this.getEnrichedEnv(), timeout: 10000, windowsHide: true },
+                (err, stdout) => {
+                    if (err || !stdout.trim()) {
+                        resolve([]);
+                        return;
+                    }
+                    resolve(stdout.split(/\r?\n/).map(line => line.trim()).filter(Boolean));
                 }
-                resolve(stdout.trim().split(/\r?\n/)[0].trim());
-            });
+            );
         });
+    }
+
+    private async resolveCommand(command: string): Promise<string | null> {
+        return (await this.resolveCommandAll(command))[0] ?? null;
     }
 
     private async validateCommand(command: string, args: string[]): Promise<boolean> {
@@ -508,10 +520,6 @@ except Exception as exc:
         }
     }
 
-    private quoteArg(value: string): string {
-        return `"${value.replace(/"/g, '\\"')}"`;
-    }
-
     private async ensureWritablePackageEnvironment(uvPath: string): Promise<string | null> {
         if (!this.pythonPath) {
             return null;
@@ -537,17 +545,12 @@ except Exception as exc:
         }
 
         this.log(`Creating managed package environment at ${this.managedVenvDir}...`);
-        const cmd = [
-            this.quoteArg(uvPath),
-            'venv',
-            this.quoteArg(this.managedVenvDir),
-            '--python',
-            this.quoteArg(this.pythonPath),
-        ].join(' ');
-
-        const created = await this.execWithOutput(cmd, VENV_CREATION_TIMEOUT_MS, {
-            UV_PYTHON_DOWNLOADS: 'automatic',
-        });
+        const created = await this.execWithOutput(
+            uvPath,
+            ['venv', this.managedVenvDir, '--python', this.pythonPath],
+            VENV_CREATION_TIMEOUT_MS,
+            { UV_PYTHON_DOWNLOADS: 'automatic' }
+        );
 
         if (!created || !await this.validatePython(managedPython)) {
             this.log('Managed package environment creation failed');
@@ -560,15 +563,17 @@ except Exception as exc:
     }
 
     private async execWithOutput(
-        command: string,
+        file: string,
+        args: string[],
         timeout: number,
         extraEnv: NodeJS.ProcessEnv = {}
     ): Promise<boolean> {
         return new Promise((resolve) => {
-            this.log(`Running: ${command}`);
-            const proc = cp.exec(command, {
+            this.log(`Running: ${file} ${args.join(' ')}`);
+            const proc = cp.execFile(file, args, {
                 maxBuffer: 10 * 1024 * 1024,
                 timeout,
+                windowsHide: true,
                 env: {
                     ...this.getEnrichedEnv(),
                     HOME: process.env.HOME || os.homedir(),
@@ -612,7 +617,7 @@ except Exception as exc:
         this.outputChannel.show();
         this.log('Installing required packages...');
 
-        const packages = REQUIRED_PACKAGES.map(p => this.quoteArg(p.pipName)).join(' ');
+        const packages = REQUIRED_PACKAGES.map(p => p.pipName);
 
         // Use uv for package installation (required)
         const uvPath = await this.resolveUvPath();
@@ -626,12 +631,14 @@ except Exception as exc:
             return false;
         }
 
-        const cmd = `${this.quoteArg(uvPath)} pip install --upgrade --force-reinstall --python ${this.quoteArg(installPython)} ${packages}`;
         this.log('Using uv for package installation in an isolated environment');
 
-        const success = await this.execWithOutput(cmd, PACKAGE_INSTALL_TIMEOUT_MS, {
-            VIRTUAL_ENV: this.getVenvRootForPython(installPython) || this.managedVenvDir,
-        });
+        const success = await this.execWithOutput(
+            uvPath,
+            buildAtomicPackageInstallArgs(installPython, packages),
+            PACKAGE_INSTALL_TIMEOUT_MS,
+            { VIRTUAL_ENV: this.getVenvRootForPython(installPython) || this.managedVenvDir }
+        );
         if (success) {
             this.log('Packages installed successfully');
             return true;

@@ -9,6 +9,7 @@ of the system interpreter's site-packages.
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -21,8 +22,27 @@ import tomllib
 PYTHON_VERSION = "3.12"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MCP_SERVER = REPO_ROOT / "mcp-server"
-KEEPER_VERSION = str(tomllib.loads((MCP_SERVER / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"])
-PUBMED_SEARCH_FIXED_COMMIT = "fbbaacaba150afbc24bdbc07eb41c77c564017e6"  # pragma: allowlist secret
+EXTENSION_SRC = Path(__file__).resolve().parents[1] / "src"
+
+
+def read_pin(filename: str, constant: str) -> str:
+    """Read a pinned string constant from the extension sources (single source of truth)."""
+    text = (EXTENSION_SRC / filename).read_text(encoding="utf-8")
+    match = re.search(rf"{constant}\s*=\s*\n?\s*['\"]([^'\"]+)['\"]", text)
+    if not match:
+        raise RuntimeError(f"{constant} not found in {filename}")
+    return match.group(1)
+
+
+KEEPER_VERSION = str(
+    tomllib.loads((MCP_SERVER / "pyproject.toml").read_text(encoding="utf-8"))[
+        "project"
+    ]["version"]
+)
+PUBMED_SEARCH_FIXED_COMMIT = read_pin(
+    "pubmedSearchPackage.ts", "PUBMED_SEARCH_FIXED_COMMIT"
+)
+PUBMED_SEARCH_VERSION = read_pin("pubmedSearchPackage.ts", "PUBMED_SEARCH_VERSION")
 PUBMED_SEARCH_PACKAGE = f"pubmed-search-mcp @ https://github.com/u9401066/pubmed-search-mcp/archive/{PUBMED_SEARCH_FIXED_COMMIT}.tar.gz"
 
 
@@ -41,7 +61,9 @@ def resolve_zotero_keeper_package() -> tuple[str, str]:
     return f"zotero-keeper @ {source}", f"environment source: {override}"
 
 
-def run(cmd: list[str], timeout: int = 600, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+def run(
+    cmd: list[str], timeout: int = 600, env: dict[str, str] | None = None
+) -> subprocess.CompletedProcess[str]:
     merged_env = {
         **os.environ,
         "NO_COLOR": "1",
@@ -96,7 +118,9 @@ def main() -> int:
             raise AssertionError(f"Managed Python not found: {python}")
 
         keeper_package, keeper_source = resolve_zotero_keeper_package()
-        print(f"Installing real extension packages into managed venv (Zotero Keeper {KEEPER_VERSION}; {keeper_source})")
+        print(
+            f"Installing real extension packages into managed venv (Zotero Keeper {KEEPER_VERSION}; {keeper_source})"
+        )
         install = run(
             [
                 uv,
@@ -205,17 +229,46 @@ def main() -> int:
             and data["has_replace_attachment_file"]
             and data["has_set_attachment_fulltexts"]
         )
-        if data["zotero_tools"] != 48 or not required_keeper_surface:
+        if data["zotero_tools"] != 50 or not required_keeper_surface:
             raise AssertionError(f"Unexpected Zotero Keeper tool surface: {data}")
-        if data["pubmed_tools"] != 41 or data["pubmed_version"] != "0.7.3" or not data["has_unified_search"] or not data["has_chronicle"]:
+        if (
+            data["pubmed_tools"] != 41
+            or data["pubmed_version"] != PUBMED_SEARCH_VERSION
+            or not data["has_unified_search"]
+            or not data["has_chronicle"]
+        ):
             raise AssertionError(f"Unexpected PubMed Search MCP tool surface: {data}")
-        assert {"get_item_schema", "get_item_annotations", "update_item_tags", "update_item_creators", "update_note", "set_item_trashed", "batch_update_item_fields"} <= set(data["keeper_names"])
-        assert {"validate_pico_plan", "read_session", "verify_reference_list", "save_literature_notes", "unschedule_pipeline"} <= set(data["pubmed_names"])
-        assert not {"parse_pico", "get_session_pmids", "get_cached_article", "get_session_summary", "get_session_log"} & set(data["pubmed_names"])
+        assert {
+            "get_item_schema",
+            "get_item_annotations",
+            "update_item_tags",
+            "update_item_creators",
+            "update_note",
+            "set_item_trashed",
+            "batch_update_item_fields",
+            "export_items",
+            "get_bibliography",
+        } <= set(data["keeper_names"])
+        assert {
+            "validate_pico_plan",
+            "read_session",
+            "verify_reference_list",
+            "save_literature_notes",
+            "unschedule_pipeline",
+        } <= set(data["pubmed_names"])
+        assert not {
+            "parse_pico",
+            "get_session_pmids",
+            "get_cached_article",
+            "get_session_summary",
+            "get_session_log",
+        } & set(data["pubmed_names"])
 
         system_purelib = Path(sysconfig.get_paths()["purelib"]).resolve()
         if system_purelib == purelib.resolve():
-            raise AssertionError(f"Managed install reused system site-packages: {system_purelib}")
+            raise AssertionError(
+                f"Managed install reused system site-packages: {system_purelib}"
+            )
 
         print("Managed uv package install smoke passed.")
         return 0

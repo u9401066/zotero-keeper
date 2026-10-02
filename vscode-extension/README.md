@@ -1,5 +1,15 @@
 # Zotero + PubMed MCP Extension for VS Code
 
+## What's New in v0.10.0
+
+- **PubMed Search MCP 0.7.7** (was 0.7.3), pinned to release commit `8247af2`. The 41-tool interface is unchanged; upstream adds NCBI/provider rate-limit and cancellation hardening, one validated input contract for all tools (structured, recoverable errors), and opt-in `unified_search(fulltext="prefetch")`. Refreshed bundled skills, hooks and the Codex/Cline harness reflect it.
+- **Zotero Keeper 2.4.0**: 50 tools. New read-only `export_items` (BibTeX, BibLaTeX, RIS, CSL JSON, … via Zotero's translators) and `get_bibliography` (any installed CSL style) for up to 50 exact item keys.
+- **Zotero 10.0.5 audit**: no Local API contract change affects Keeper; reviewed-but-deferred candidates are recorded in the [50-tool audit](https://github.com/u9401066/zotero-keeper/blob/main/docs/ZOTERO_10_TOOL_AUDIT.md).
+- **Migration help**: the [harness upgrade guide](https://github.com/u9401066/zotero-keeper/blob/main/docs/HARNESS_UPGRADES.md) now lists retired PubMed tool names (`parse_pico`, `get_session_pmids`, …) and their replacements for custom skills you keep.
+- **Harness files are never rewritten on activation** (since 0.9.0, verified in 0.10.0): `autoUpdateHarness` stays off by default, repeated installs are a no-op (unchanged files are not touched), and your edits, deleted files and custom skills are preserved. See [Verifying the fix](https://github.com/u9401066/zotero-keeper/blob/main/docs/HARNESS_UPGRADES.md#verifying-the-fix).
+- **Safer runtime**: no shell-string command construction, SHA-256-verified uv download, owner-only atomic writes for Cline/Codex configs (BOM, CRLF and unknown keys preserved), proxy credentials masked, and Windows Store `python.exe` stubs no longer hide a real interpreter.
+- **Cleaner extension**: removed the no-op `logLevel` setting and the always-zero usage counters; `npm run verify` is the local gate.
+
 ## What's New in v0.9.1
 
 - **Recoverable harness upgrades**: atomic asset/ledger writes, verified backups,
@@ -126,9 +136,10 @@ See the [48-tool audit](https://github.com/u9401066/zotero-keeper/blob/main/docs
 This extension provides two MCP (Model Context Protocol) servers that enable AI assistants like GitHub Copilot to:
 
 ### 📚 Zotero Keeper
-- Search and browse your Zotero library through 41 default tools and six concrete resources
+- Search and browse your Zotero library through 50 default tools and six concrete resources
 - On Zotero 10+, authorize guarded Local API writes for item/collection/saved-search lifecycle operations, tags, attachments, and full text
 - Add references from PubMed or DOI
+- **Citation export** (`export_items` BibTeX/RIS/CSL JSON, `get_bibliography` CSL styles)
 - Import local PDFs with `import_pdf`
 - Browse collections/tags and import into a confirmed collection
 - Smart duplicate detection
@@ -136,7 +147,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 - **Library analytics** (stats, orphan detection)
 - **PDF attachment access** (list attachments, get indexed fulltext)
 
-### 🔍 PubMed Search (v0.7.3, 41 tools / 16 categories)
+### 🔍 PubMed Search (v0.7.7, 41 tools / 16 categories)
 
 - **`unified_search`** - 統一搜尋入口，自動合併去重多來源結果
 - **Multi-source search** (PubMed, Europe PMC, CORE)
@@ -178,7 +189,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 2. The extension will automatically:
    - Download [uv](https://github.com/astral-sh/uv) (fast Python package manager, ~10MB)
    - Create an isolated Python 3.12 environment
-   - Install pinned packages (Zotero Keeper 2.3.1 and PubMed Search MCP 0.7.3 at `fbbaaca`)
+   - Install pinned packages (Zotero Keeper 2.4.0 and PubMed Search MCP 0.7.7 at `8247af2`)
    - Register MCP servers with VS Code
    - **Install official Copilot instructions, workflow guides, `@research` agent, and collaboration hook assets**
 
@@ -196,7 +207,7 @@ Once installed, the MCP tools will be available to GitHub Copilot. Try asking:
 
 Click the status bar item to access:
 
-- **📊 Usage Statistics** - Track your research activity
+- **📊 Usage Statistics** - Editor session count (individual MCP tool calls are not observable by the extension)
 - **🌐 API Status** - View/configure connected APIs
 - **⚙️ Settings** - Quick access to configuration
 - **🧙 Setup Wizard** - One-click setup

@@ -15,8 +15,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { execSync } from 'child_process';
-import { PUBMED_SEARCH_ENTRYPOINT, PUBMED_WORKSPACE_DIR_ENV } from './pubmedSearchPackage.js';
+import { PUBMED_SEARCH_ENTRYPOINT } from './pubmedSearchPackage.js';
+import { buildPubmedEnv, buildZoteroEnv, getPrimaryWorkspaceFolder, writeFileAtomic } from './mcpServerConfig.js';
 
 const CLINE_EXTENSION_ID = 'saoudrizwan.claude-dev';
 const CLINE_SETTINGS_SUBDIR = 'settings';
@@ -37,18 +37,7 @@ interface ClineMcpServerEntry {
 
 interface ClineMcpSettings {
     mcpServers: Record<string, ClineMcpServerEntry>;
-}
-
-function getGitEmail(): string {
-    try {
-        return execSync('git config user.email', {
-            encoding: 'utf-8',
-            stdio: 'pipe',
-            timeout: 5000,
-        }).trim();
-    } catch {
-        return '';
-    }
+    [key: string]: unknown;
 }
 
 /**
@@ -56,7 +45,7 @@ function getGitEmail(): string {
  * extension globalStorageUri. VS Code places every extension's
  * global storage under  <user-data>/globalStorage/<ext-id>.
  */
-function getClineMcpSettingsPath(context: vscode.ExtensionContext): string | undefined {
+function getClineMcpSettingsPath(context: vscode.ExtensionContext): string {
     const ourGlobalStorage = context.globalStorageUri.fsPath;
     // Walk up to the "globalStorage" folder, then into Cline's dir
     const globalStorageDir = path.dirname(ourGlobalStorage);
@@ -65,39 +54,48 @@ function getClineMcpSettingsPath(context: vscode.ExtensionContext): string | und
 }
 
 /**
- * Read existing Cline MCP settings, or return a blank scaffold.
+ * Read existing Cline MCP settings, or return a blank scaffold for a missing
+ * file. An unparsable file is backed up first; if the backup itself fails we
+ * abort rather than overwrite the only copy of the user's configuration.
+ * Unknown top-level keys are preserved on write.
  */
 function readClineSettings(settingsPath: string): ClineMcpSettings {
     if (!fs.existsSync(settingsPath)) {
         return { mcpServers: {} };
     }
+
+    // Windows editors save a UTF-8 BOM, which JSON.parse rejects.
+    const raw = fs.readFileSync(settingsPath, 'utf-8').replace(/^\uFEFF/, '');
+    let parsed: unknown;
     try {
-        const raw = fs.readFileSync(settingsPath, 'utf-8');
-        const parsed = JSON.parse(raw) as ClineMcpSettings;
-        if (!parsed.mcpServers || typeof parsed.mcpServers !== 'object') {
-            return { mcpServers: {} };
-        }
-        return parsed;
+        parsed = JSON.parse(raw);
     } catch {
         const backupPath = `${settingsPath}.invalid.${Date.now()}.bak`;
-        try {
-            fs.copyFileSync(settingsPath, backupPath);
-            console.warn(`Backed up invalid Cline MCP settings to: ${backupPath}`);
-        } catch (error) {
-            console.warn('Failed to back up invalid Cline MCP settings:', error);
-        }
+        fs.copyFileSync(settingsPath, backupPath);
+        console.warn(`Backed up invalid Cline MCP settings to: ${backupPath}`);
         return { mcpServers: {} };
     }
+
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        const backupPath = `${settingsPath}.invalid.${Date.now()}.bak`;
+        fs.copyFileSync(settingsPath, backupPath);
+        console.warn(`Backed up unexpected Cline MCP settings to: ${backupPath}`);
+        return { mcpServers: {} };
+    }
+
+    const settings = parsed as ClineMcpSettings;
+    const servers = settings.mcpServers;
+    if (typeof servers !== 'object' || servers === null || Array.isArray(servers)) {
+        settings.mcpServers = {};
+    }
+    return settings;
 }
 
 /**
- * Write Cline MCP settings atomically (temp file + rename).
+ * Write Cline MCP settings atomically; the file holds API keys so new files are owner-only.
  */
 function writeClineSettings(settingsPath: string, settings: ClineMcpSettings): void {
-    fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
-    const tmpPath = `${settingsPath}.tmp.${Date.now()}.json`;
-    fs.writeFileSync(tmpPath, JSON.stringify(settings, null, 2), 'utf-8');
-    fs.renameSync(tmpPath, settingsPath);
+    writeFileAtomic(settingsPath, JSON.stringify(settings, null, 2));
 }
 
 /**
@@ -106,22 +104,18 @@ function writeClineSettings(settingsPath: string, settings: ClineMcpSettings): v
 function isManagedByUs(entry: ClineMcpServerEntry | undefined): boolean {
     if (!entry) { return false; }
     // We always pass -m zotero_mcp or -m pubmed_search.presentation.mcp_server
-    return entry.args?.some(a => a === 'zotero_mcp' || a === PUBMED_SEARCH_ENTRYPOINT) ?? false;
+    return Array.isArray(entry.args)
+        && entry.args.some(a => a === 'zotero_mcp' || a === PUBMED_SEARCH_ENTRYPOINT);
 }
 
 /**
  * Build the Zotero Keeper MCP server entry for Cline.
  */
 function buildZoteroEntry(pythonPath: string, config: vscode.WorkspaceConfiguration): ClineMcpServerEntry {
-    const host = config.get<string>('zoteroHost', 'localhost');
-    const port = config.get<number>('zoteroPort', 23119);
     return {
         command: pythonPath,
         args: ['-m', 'zotero_mcp'],
-        env: {
-            ZOTERO_HOST: host,
-            ZOTERO_PORT: String(port),
-        },
+        env: buildZoteroEnv(config),
         disabled: false,
     };
 }
@@ -130,37 +124,10 @@ function buildZoteroEntry(pythonPath: string, config: vscode.WorkspaceConfigurat
  * Build the PubMed Search MCP server entry for Cline.
  */
 function buildPubmedEntry(pythonPath: string, config: vscode.WorkspaceConfiguration): ClineMcpServerEntry {
-    const env: Record<string, string> = {};
-
-    const ncbiEmail = config.get<string>('ncbiEmail', '') || getGitEmail();
-    const ncbiApiKey = config.get<string>('ncbiApiKey', '');
-    const coreApiKey = config.get<string>('coreApiKey', '');
-    const openAlexApiKey = config.get<string>('openAlexApiKey', '');
-    const semanticScholarApiKey = config.get<string>('semanticScholarApiKey', '');
-    const httpProxy = config.get<string>('httpProxy', '');
-    const httpsProxy = config.get<string>('httpsProxy', '');
-    const openUrlResolver = config.get<string>('openUrlResolver', '');
-    const openUrlPreset = config.get<string>('openUrlPreset', '');
-
-    if (ncbiEmail) { env['NCBI_EMAIL'] = ncbiEmail; }
-    if (ncbiApiKey) { env['NCBI_API_KEY'] = ncbiApiKey; }
-    if (coreApiKey) { env['CORE_API_KEY'] = coreApiKey; }
-    if (openAlexApiKey) { env['OPENALEX_API_KEY'] = openAlexApiKey; }
-    if (semanticScholarApiKey) { env['S2_API_KEY'] = semanticScholarApiKey; }
-    if (httpProxy) { env['HTTP_PROXY'] = httpProxy; }
-    if (httpsProxy) { env['HTTPS_PROXY'] = httpsProxy; }
-    if (openUrlPreset) { env['OPENURL_PRESET'] = openUrlPreset; }
-    if (openUrlResolver) { env['OPENURL_RESOLVER'] = openUrlResolver; }
-
-    const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (workspaceFolder) {
-        env[PUBMED_WORKSPACE_DIR_ENV] = workspaceFolder;
-    }
-
     return {
         command: pythonPath,
         args: ['-m', PUBMED_SEARCH_ENTRYPOINT],
-        env,
+        env: buildPubmedEnv(config, getPrimaryWorkspaceFolder()),
         disabled: false,
     };
 }
@@ -196,10 +163,6 @@ export function installClineMcpServers(
     }
 
     const settingsPath = getClineMcpSettingsPath(context);
-    if (!settingsPath) {
-        console.warn('Could not determine Cline MCP settings path');
-        return false;
-    }
 
     const config = vscode.workspace.getConfiguration('zoteroMcp');
     const enableZotero = config.get<boolean>('enableZoteroKeeper', true);
@@ -253,7 +216,7 @@ export function installClineMcpServers(
  */
 export function removeClineMcpServers(context: vscode.ExtensionContext): boolean {
     const settingsPath = getClineMcpSettingsPath(context);
-    if (!settingsPath || !fs.existsSync(settingsPath)) {
+    if (!fs.existsSync(settingsPath)) {
         return false;
     }
 

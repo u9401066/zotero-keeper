@@ -2,7 +2,7 @@
     "name": "vscode-zotero-mcp",
     "displayName": "Zotero + PubMed MCP",
     "description": "One-click Zotero 10+ Local API and PubMed research workspace for Copilot, Cline, and Codex.",
-    "version": "0.9.1",
+    "version": "0.10.0",
     "publisher": "u9401066",
     "license": "Apache-2.0",
     "icon": "resources/icon.png",
@@ -187,24 +187,6 @@
                     "default": true,
                     "description": "Automatically install required Python packages",
                     "order": 40
-                },
-                "zoteroMcp.logLevel": {
-                    "type": "string",
-                    "default": "info",
-                    "enum": [
-                        "debug",
-                        "info",
-                        "warn",
-                        "error"
-                    ],
-                    "enumDescriptions": [
-                        "Show all logs (verbose, for debugging)",
-                        "Normal operation logs",
-                        "Warnings and errors only",
-                        "Errors only"
-                    ],
-                    "markdownDescription": "Log level for the Zotero MCP output channel. Set to `debug` for troubleshooting.",
-                    "order": 50
                 }
             }
         },
@@ -308,7 +290,7 @@
         "pretest": "npm run sync-assets && npm run compile && npm run lint && node -e \"require('fs').cpSync('src/test/__mocks__', 'out/test/__mocks__', { recursive: true, force: true })\"",
         "lint": "eslint src --ext .ts --max-warnings 0",
         "test": "mocha",
-        "test:vscode": "vscode-test",
+        "verify": "npm run sync-assets:check && npm test",
         "package": "npm run sync-assets && vsce package",
         "publish": "npm run sync-assets && vsce publish"
     },
@@ -325,8 +307,6 @@
         "@types/vscode": "^1.99.0",
         "@typescript-eslint/eslint-plugin": "^7.0.0",
         "@typescript-eslint/parser": "^7.0.0",
-        "@vscode/test-cli": "^0.0.10",
-        "@vscode/test-electron": "^2.4.1",
         "@vscode/vsce": "^3.0.0",
         "eslint": "^8.57.0",
         "mocha": "^11.7.5",

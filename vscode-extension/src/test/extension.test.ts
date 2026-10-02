@@ -1,20 +1,28 @@
 import { describe, it, beforeEach, afterEach } from 'mocha';
 import * as sinon from 'sinon';
 import type * as vscode from 'vscode';
+import * as vscodeApi from 'vscode';
 import * as assert from 'assert';
-import { workspace } from './mock-vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+import { MockWorkspaceConfiguration, createMockContext, workspace } from './mock-vscode';
 import * as harness from '../harnessAssets';
+import { PythonEnvironment } from '../pythonEnvironment';
+import { UvPythonManager } from '../uvPythonManager';
 
-/**
- * Extension module tests.
- *
- * The extension.ts module has side effects on import (module-level variables)
- * and heavily depends on VS Code APIs. We test the exported functions via
- * dynamic import after mocks are set up.
- */
-describe('Extension Module', () => {
+const manifest = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '..', '..', 'package.json'), 'utf-8')
+) as { contributes: { commands: Array<{ command: string }> } };
+
+describe('Extension activation', () => {
     beforeEach(() => {
         sinon.restore();
+        (vscodeApi.commands.registerCommand as sinon.SinonStub).resetHistory();
+        (vscodeApi.commands.executeCommand as sinon.SinonStub).resetHistory();
+        (vscodeApi.lm.registerMcpServerDefinitionProvider as sinon.SinonStub).resetHistory();
+        (vscodeApi.workspace.getConfiguration as sinon.SinonStub).returns(new MockWorkspaceConfiguration({}));
+        (vscodeApi.window.showErrorMessage as sinon.SinonStub).resolves(undefined);
+        (vscodeApi.window.showErrorMessage as sinon.SinonStub).resetHistory();
     });
 
     afterEach(() => {
@@ -23,51 +31,110 @@ describe('Extension Module', () => {
         workspace.isTrusted = true;
     });
 
-    describe('activate', () => {
-        it('should export activate function', async () => {
-            // Dynamic import to ensure mock-vscode is loaded first
-            const ext = await import('../extension.js');
-            assert.strictEqual(typeof ext.activate, 'function');
-        });
+    /** Activation with a Python setup that fails offline, so nothing touches the network or disk. */
+    async function activateWithoutPython(): Promise<vscode.ExtensionContext> {
+        sinon.stub(UvPythonManager.prototype, 'ensureReady').rejects(new Error('offline'));
+        sinon.stub(PythonEnvironment.prototype, 'ensurePython').resolves(null);
+        const context = createMockContext();
+        const ext = await import('../extension.js');
+        await ext.activate(context);
+        return context;
+    }
 
-        it('should export deactivate function', async () => {
-            const ext = await import('../extension.js');
-            assert.strictEqual(typeof ext.deactivate, 'function');
-        });
+    it('registers exactly the commands contributed in package.json (even when setup fails)', async () => {
+        await activateWithoutPython();
+
+        const registered = (vscodeApi.commands.registerCommand as sinon.SinonStub).getCalls().map(c => c.args[0]);
+        const contributed = manifest.contributes.commands.map(c => c.command);
+        assert.deepStrictEqual([...registered].sort(), [...contributed].sort());
+        assert.strictEqual(new Set(registered).size, registered.length, 'a command was registered twice');
     });
 
-    describe('deactivate', () => {
-        it('should not throw when called', async () => {
-            const ext = await import('../extension.js');
-            assert.doesNotThrow(() => ext.deactivate());
-        });
+    it('disposes everything it creates with the extension and does not register MCP servers without Python', async () => {
+        const context = await activateWithoutPython();
+
+        assert.ok(context.subscriptions.some(d => d instanceof UvPythonManager));
+        assert.ok(context.subscriptions.some(d => d instanceof PythonEnvironment));
+        assert.ok((vscodeApi.lm.registerMcpServerDefinitionProvider as sinon.SinonStub).notCalled);
+        const contexts = (vscodeApi.commands.executeCommand as sinon.SinonStub).getCalls()
+            .filter(c => c.args[0] === 'setContext');
+        assert.ok(contexts.some(c => c.args[1] === 'zoteroMcp.pythonReady' && c.args[2] === false));
+
+        for (const disposable of context.subscriptions) { disposable.dispose(); }
     });
 
-    describe('harness activation policy', () => {
-        const context = { extensionPath: '/extension', extension: { packageJSON: { version: '0.9.0' } } } as unknown as vscode.ExtensionContext;
-        it('does not install on ordinary activation when the setting is off', async () => {
-            const install = sinon.stub(harness, 'installHarnessAssets');
-            workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
-            workspace.getConfiguration.returns({ get: (_key: string, fallback: unknown) => fallback });
-            const ext = await import('../extension.js');
-            await ext.installCopilotInstructions(context, 'auto');
-            assert.ok(install.notCalled);
+    it('deactivate is safe to call at any time', async () => {
+        const ext = await import('../extension.js');
+        assert.doesNotThrow(() => ext.deactivate());
+    });
+});
+
+describe('harness activation policy', () => {
+    const context = { extensionPath: '/extension', extension: { packageJSON: { version: '0.9.0' } } } as unknown as vscode.ExtensionContext;
+
+    beforeEach(() => { sinon.restore(); });
+    afterEach(() => {
+        sinon.restore();
+        workspace.workspaceFolders = undefined;
+        workspace.isTrusted = true;
+    });
+
+    it('does not install on ordinary activation when the setting is off', async () => {
+        const install = sinon.stub(harness, 'installHarnessAssets');
+        workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+        workspace.getConfiguration.returns({ get: (_key: string, fallback: unknown) => fallback });
+        const ext = await import('../extension.js');
+        await ext.installCopilotInstructions(context, 'auto');
+        assert.ok(install.notCalled);
+    });
+
+    it('installs on activation only when the user opted in', async () => {
+        const install = sinon.stub(harness, 'installHarnessAssets')
+            .returns({ installed: [], updated: [], preserved: [], unchanged: [] });
+        workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+        workspace.getConfiguration.returns({
+            get: (key: string, fallback: unknown) => key === 'autoUpdateHarness' ? true : fallback,
         });
-        it('does not install hooks into an untrusted workspace even manually', async () => {
-            const install = sinon.stub(harness, 'installHarnessAssets');
-            workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
-            workspace.isTrusted = false;
-            const ext = await import('../extension.js');
-            await ext.installCopilotInstructions(context, 'manual');
-            assert.ok(install.notCalled);
-        });
-        it('uses the preservation installer for an explicit manual request', async () => {
-            const install = sinon.stub(harness, 'installHarnessAssets').returns({ installed: [], updated: [], preserved: ['AGENTS.md'], unchanged: [] });
-            workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
-            const ext = await import('../extension.js');
-            await ext.installCopilotInstructions(context, 'manual');
-            assert.ok(install.calledOnce);
-            assert.strictEqual(install.firstCall.args[2], '0.9.0');
-        });
+        const ext = await import('../extension.js');
+        await ext.installCopilotInstructions(context, 'auto');
+        assert.ok(install.calledOnce);
+    });
+
+    it('does not install hooks into an untrusted workspace even manually', async () => {
+        const install = sinon.stub(harness, 'installHarnessAssets');
+        workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+        workspace.isTrusted = false;
+        const ext = await import('../extension.js');
+        await ext.installCopilotInstructions(context, 'manual');
+        assert.ok(install.notCalled);
+    });
+
+    it('does nothing without an open folder', async () => {
+        const install = sinon.stub(harness, 'installHarnessAssets');
+        workspace.workspaceFolders = undefined;
+        const ext = await import('../extension.js');
+        await ext.installCopilotInstructions(context, 'manual');
+        assert.ok(install.notCalled);
+    });
+
+    it('uses the preservation installer, with the extension version, for an explicit manual request', async () => {
+        const install = sinon.stub(harness, 'installHarnessAssets')
+            .returns({ installed: [], updated: [], preserved: ['AGENTS.md'], unchanged: [] });
+        workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+        const ext = await import('../extension.js');
+        await ext.installCopilotInstructions(context, 'manual');
+        assert.ok(install.calledOnce);
+        assert.strictEqual(install.firstCall.args[2], '0.9.0');
+    });
+
+    it('reports installer failures to a manual request instead of throwing', async () => {
+        sinon.stub(harness, 'installHarnessAssets').throws(new Error('Invalid harness manifest'));
+        workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+        const showError = vscodeApi.window.showErrorMessage as sinon.SinonStub;
+        showError.resolves(undefined);
+        showError.resetHistory();
+        const ext = await import('../extension.js');
+        await assert.doesNotReject(ext.installCopilotInstructions(context, 'manual'));
+        assert.ok(String(showError.firstCall.args[0]).includes('Invalid harness manifest'));
     });
 });

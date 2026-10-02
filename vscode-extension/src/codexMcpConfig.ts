@@ -29,8 +29,8 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
-import { execSync } from 'child_process';
-import { PUBMED_SEARCH_ENTRYPOINT, PUBMED_WORKSPACE_DIR_ENV } from './pubmedSearchPackage.js';
+import { PUBMED_SEARCH_ENTRYPOINT } from './pubmedSearchPackage.js';
+import { buildPubmedEnv, buildZoteroEnv, getPrimaryWorkspaceFolder, writeFileAtomic } from './mcpServerConfig.js';
 
 const ZOTERO_SERVER_KEY = 'zotero-keeper';
 const PUBMED_SERVER_KEY = 'pubmed-search-mcp';
@@ -52,18 +52,6 @@ interface CodexServerSpec {
     command: string;
     args: string[];
     env: Record<string, string>;
-}
-
-function getGitEmail(): string {
-    try {
-        return execSync('git config user.email', {
-            encoding: 'utf-8',
-            stdio: 'pipe',
-            timeout: 5000,
-        }).trim();
-    } catch {
-        return '';
-    }
 }
 
 /**
@@ -100,15 +88,17 @@ export function isCodexAvailable(): boolean {
 }
 
 function escapeTomlString(value: string): string {
-    // TOML basic strings: backslash + double-quote require escaping; control
-    // chars use \uXXXX. We additionally escape backslashes for Windows paths
-    // so `C:\Users\...` round-trips correctly.
+    // TOML basic strings: backslash and double-quote require escaping and all
+    // other control characters (U+0000-U+001F, U+007F) are forbidden raw.
+    // Escaping backslashes also keeps Windows paths like `C:\Users\...` intact.
     return value
         .replace(/\\/g, '\\\\')
         .replace(/"/g, '\\"')
         .replace(/\n/g, '\\n')
         .replace(/\r/g, '\\r')
-        .replace(/\t/g, '\\t');
+        .replace(/\t/g, '\\t')
+        // eslint-disable-next-line no-control-regex
+        .replace(/[\u0000-\u001f\u007f]/g, ch => `\\u${ch.charCodeAt(0).toString(16).padStart(4, '0')}`);
 }
 
 function renderArgs(args: string[]): string {
@@ -200,76 +190,48 @@ function ensureTrailingBlankLine(content: string): string {
 }
 
 function buildZoteroSpec(pythonPath: string, config: vscode.WorkspaceConfiguration): CodexServerSpec {
-    const host = config.get<string>('zoteroHost', 'localhost');
-    const port = config.get<number>('zoteroPort', 23119);
     return {
         command: pythonPath,
         args: ['-m', 'zotero_mcp'],
-        env: {
-            ZOTERO_HOST: host,
-            ZOTERO_PORT: String(port),
-        },
+        env: buildZoteroEnv(config),
     };
 }
 
 function buildPubmedSpec(pythonPath: string, config: vscode.WorkspaceConfiguration): CodexServerSpec {
-    const env: Record<string, string> = {};
-
-    const ncbiEmail = config.get<string>('ncbiEmail', '') || getGitEmail();
-    const ncbiApiKey = config.get<string>('ncbiApiKey', '');
-    const coreApiKey = config.get<string>('coreApiKey', '');
-    const openAlexApiKey = config.get<string>('openAlexApiKey', '');
-    const semanticScholarApiKey = config.get<string>('semanticScholarApiKey', '');
-    const httpProxy = config.get<string>('httpProxy', '');
-    const httpsProxy = config.get<string>('httpsProxy', '');
-    const openUrlResolver = config.get<string>('openUrlResolver', '');
-    const openUrlPreset = config.get<string>('openUrlPreset', '');
-
-    if (ncbiEmail) { env['NCBI_EMAIL'] = ncbiEmail; }
-    if (ncbiApiKey) { env['NCBI_API_KEY'] = ncbiApiKey; }
-    if (coreApiKey) { env['CORE_API_KEY'] = coreApiKey; }
-    if (openAlexApiKey) { env['OPENALEX_API_KEY'] = openAlexApiKey; }
-    if (semanticScholarApiKey) { env['S2_API_KEY'] = semanticScholarApiKey; }
-    if (httpProxy) { env['HTTP_PROXY'] = httpProxy; }
-    if (httpsProxy) { env['HTTPS_PROXY'] = httpsProxy; }
-    if (openUrlPreset) { env['OPENURL_PRESET'] = openUrlPreset; }
-    if (openUrlResolver) { env['OPENURL_RESOLVER'] = openUrlResolver; }
-
-    const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (workspaceFolder) {
-        env[PUBMED_WORKSPACE_DIR_ENV] = workspaceFolder;
-    }
-
     return {
         command: pythonPath,
         args: ['-m', PUBMED_SEARCH_ENTRYPOINT],
-        env,
+        env: buildPubmedEnv(config, getPrimaryWorkspaceFolder()),
     };
 }
 
+/**
+ * Read the config. A missing file is an empty config; an existing but
+ * unreadable file is an error, because treating it as empty would let the
+ * caller overwrite the user's only copy.
+ */
 function readConfig(configPath: string): string {
     if (!fs.existsSync(configPath)) {
         return '';
     }
-    try {
-        return fs.readFileSync(configPath, 'utf-8');
-    } catch (error) {
-        console.warn(`Failed to read Codex config at ${configPath}:`, error);
-        // Back up unreadable file before overwriting
-        try {
-            fs.copyFileSync(configPath, `${configPath}.unreadable.${Date.now()}.bak`);
-        } catch {
-            // ignore
-        }
-        return '';
-    }
+    return fs.readFileSync(configPath, 'utf-8');
 }
 
-function writeConfigAtomic(configPath: string, content: string): void {
-    fs.mkdirSync(path.dirname(configPath), { recursive: true });
-    const tmp = `${configPath}.tmp.${Date.now()}`;
-    fs.writeFileSync(tmp, content, 'utf-8');
-    fs.renameSync(tmp, configPath);
+/** The managed-block editor works on LF text; the file's own line endings are restored on write. */
+function detectEol(content: string): '\r\n' | '\n' {
+    return content.includes('\r\n') ? '\r\n' : '\n';
+}
+
+function toLf(content: string): string {
+    return content.replace(/\r\n/g, '\n');
+}
+
+function withEol(content: string, eol: '\r\n' | '\n'): string {
+    return eol === '\r\n' ? content.replace(/\n/g, '\r\n') : content;
+}
+
+function ensureFinalNewline(content: string): string {
+    return content === '' || content.endsWith('\n') ? content : content + '\n';
 }
 
 /**
@@ -288,14 +250,14 @@ export function installCodexMcpServers(pythonPath: string): boolean {
     const enableZotero = config.get<boolean>('enableZoteroKeeper', true);
     const enablePubmed = config.get<boolean>('enablePubmedSearch', true);
 
-    let content = readConfig(configPath);
-    const original = content;
+    const original = readConfig(configPath);
+    const eol = detectEol(original);
+    let content = toLf(original);
 
     // Always strip our managed blocks first — we re-render them from current
     // settings.  Stripping is idempotent if the block is absent.
     const zoteroStrip = stripManagedBlock(content, ZOTERO_SERVER_KEY);
-    content = zoteroStrip.content;
-    const pubmedStrip = stripManagedBlock(content, PUBMED_SERVER_KEY);
+    const pubmedStrip = stripManagedBlock(zoteroStrip.content, PUBMED_SERVER_KEY);
     content = pubmedStrip.content;
 
     // Append fresh blocks for each enabled server.
@@ -308,19 +270,21 @@ export function installCodexMcpServers(pythonPath: string): boolean {
     }
 
     if (pieces.length > 0) {
-        content = ensureTrailingBlankLine(content);
-        content = content + pieces.join('\n');
+        content = ensureTrailingBlankLine(content) + pieces.join('\n');
+    } else if (zoteroStrip.removed || pubmedStrip.removed) {
+        content = ensureFinalNewline(content.replace(/\n{3,}$/g, '\n'));
     } else {
-        // All servers disabled — only write if we removed something.
-        content = content.replace(/\n{3,}$/g, '\n');
+        // All servers disabled and nothing of ours present: leave the file alone.
+        return false;
     }
 
-    if (content === original) {
+    const next = withEol(content, eol);
+    if (next === original) {
         return false;
     }
 
     try {
-        writeConfigAtomic(configPath, content);
+        writeFileAtomic(configPath, next);
         console.log(`Codex MCP config updated: ${configPath}`);
         return true;
     } catch (error) {
@@ -339,7 +303,8 @@ export function removeCodexMcpServers(): boolean {
     }
 
     const original = readConfig(configPath);
-    const a = stripManagedBlock(original, ZOTERO_SERVER_KEY);
+    const eol = detectEol(original);
+    const a = stripManagedBlock(toLf(original), ZOTERO_SERVER_KEY);
     const b = stripManagedBlock(a.content, PUBMED_SERVER_KEY);
 
     if (!a.removed && !b.removed) {
@@ -347,7 +312,7 @@ export function removeCodexMcpServers(): boolean {
     }
 
     try {
-        writeConfigAtomic(configPath, b.content);
+        writeFileAtomic(configPath, withEol(ensureFinalNewline(b.content), eol));
         console.log('Removed Zotero/PubMed from Codex MCP config');
         return true;
     } catch (error) {

@@ -43,13 +43,21 @@ if ($expectedKeeperSourceTag -ne $expectedExtensionTag) {
 }
 
 if (-not $VsixPath) {
-    $latest = Get-ChildItem -LiteralPath . -Filter "vscode-zotero-mcp-*.vsix" |
-        Sort-Object LastWriteTime -Descending |
-        Select-Object -First 1
-    if (-not $latest) {
-        throw "No vscode-zotero-mcp VSIX found in the current directory."
+    # Always the VSIX of the version in package.json, resolved relative to the extension
+    # root (not the caller's directory); an old build must never be validated by accident.
+    $VsixPath = Join-Path $extensionRoot "vscode-zotero-mcp-$expectedExtensionVersion.vsix"
+    if (-not (Test-Path -LiteralPath $VsixPath -PathType Leaf)) {
+        $others = @(Get-ChildItem -LiteralPath $extensionRoot -Filter "vscode-zotero-mcp-*.vsix" -File |
+            ForEach-Object { $_.Name }) -join ", "
+        if (-not $others) { $others = "none" }
+        throw (
+            "Expected VSIX 'vscode-zotero-mcp-$expectedExtensionVersion.vsix' (version from package.json) " +
+            "not found in $extensionRoot. Run 'npm run package' first. VSIX files present: $others"
+        )
     }
-    $VsixPath = $latest.FullName
+}
+elseif (-not (Test-Path -LiteralPath $VsixPath -PathType Leaf)) {
+    throw "VSIX not found: $VsixPath"
 }
 
 $resolvedVsix = Resolve-Path -LiteralPath $VsixPath
@@ -62,10 +70,14 @@ try {
     Copy-Item -LiteralPath $resolvedVsix.Path -Destination $zipPath -Force
     Expand-Archive -LiteralPath $zipPath -DestinationPath $unpacked -Force
 
-    foreach ($relative in @("extension/out/test", "extension/.mocharc.yml")) {
+    foreach ($relative in @("extension/out/test", "extension/.mocharc.yml", "extension/src", "extension/tests", "extension/scripts")) {
         if (Test-Path -LiteralPath (Join-Path $unpacked $relative)) {
-            throw "VSIX contains development-only test files: $relative"
+            throw "VSIX contains development-only files: $relative"
         }
+    }
+    $nestedVsix = Get-ChildItem -LiteralPath $unpacked -Recurse -File -Filter "*.vsix"
+    if ($nestedVsix) {
+        throw "VSIX contains a nested VSIX: $($nestedVsix[0].FullName.Substring($unpacked.Length))"
     }
 
     $required = @(
@@ -73,14 +85,20 @@ try {
         "extension/readme.md",
         "extension/changelog.md",
         "extension/out/clineMcpConfig.js",
+        "extension/out/codexMcpConfig.js",
         "extension/out/extension.js",
+        "extension/out/mcpProvider.js",
+        "extension/out/mcpServerConfig.js",
         "extension/out/pythonEnvironment.js",
+        "extension/out/statusBar.js",
+        "extension/out/uvCommands.js",
         "extension/out/uvPythonManager.js",
         "extension/out/zoteroKeeperPackage.js",
         "extension/out/pubmedSearchPackage.js",
         "extension/out/harnessAssets.js",
-        "extension/resources/walkthrough/python.md",
-        "extension/resources/walkthrough/packages.md",
+        "extension/resources/walkthrough/oneclick.md",
+        "extension/resources/walkthrough/zotero.md",
+        "extension/resources/walkthrough/ready.md",
         "extension/resources/repo-assets/keeper/AGENTS.md",
         "extension/resources/repo-assets/keeper/.github/copilot-instructions.md",
         "extension/resources/repo-assets/keeper/.github/zotero-research-workflow.md",
