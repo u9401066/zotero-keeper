@@ -1,7 +1,14 @@
-# Zotero 10.0.2 / Keeper 2.3 tool audit
+# Zotero 10.0.5 / Keeper 2.4 tool audit
 
-Audit date: 2026-09-17. Default MCP SDK v2 surface: **48 tools, 6 concrete
-resources, 4 resource templates**. Legacy PubMed bridge tools stay opt-in.
+Audit date: 2026-10-02 (previous audit: 2026-09-17 against 10.0.2). Default MCP
+SDK v2 surface: **50 tools, 6 concrete resources, 4 resource templates**. Legacy
+PubMed bridge tools stay opt-in.
+
+Zotero 10.0.3–10.0.5 contain no Local API contract change that Keeper depends on.
+10.0.5 fixes object writes that supply **client-chosen keys**; Keeper never
+supplies keys (Zotero allocates them), so no code path is affected. 10.0.5 also
+stops matching an item through a trashed child in searches, which only makes
+`advanced_search`/saved-search results more accurate.
 
 The baseline is the official [Zotero changelog](https://www.zotero.org/support/changelog),
 [Local API v3 contract](https://www.zotero.org/support/dev/web_api/v3/local_api),
@@ -31,6 +38,7 @@ and [search conditions](https://github.com/zotero/zotero/blob/d9e553b60cf0a06aac
 | Fulltext writes (2) | `set_attachment_fulltext`, `set_attachment_fulltexts` | Library cursor (not object version), bulk POST, max 10, individual failure reporting |
 | New item reads (2) | `get_item_schema`, `get_item_annotations` | Runtime item-type fields/creator roles; exact attachment annotations retaining text/comment/color/position fields |
 | New item writes (5) | `update_item_tags`, `update_item_creators`, `update_note`, `set_item_trashed`, `batch_update_item_fields` | Exact object versions; preserve unrelated tags, ordered creator replacement, exact note HTML, recoverable trash/restore, max 50 metadata patches |
+| Export (2) | `export_items`, `get_bibliography` | Read-only. Zotero translators (`format=bibtex/ris/csljson/…`) and CSL rendering (`include=bib,citation&style=`) for ≤50 exact keys; missing keys reported, never silently dropped |
 
 ## Zotero 10 search semantics
 
@@ -53,7 +61,7 @@ and [search conditions](https://github.com/zotero/zotero/blob/d9e553b60cf0a06aac
 |---|---|
 | Root + local authorization | Discovery/check_connection + authorize_local_writes |
 | Item types/type fields/type creator roles | get_item_types + get_item_schema; whole raw schema/itemFields/creatorFields not separately exposed |
-| Items/list/top/trash/search/children | Read/search/import/edit/annotation tasks; trash included via advanced_search; specialized publications and arbitrary format/export query variants not exposed |
+| Items/list/top/trash/search/children | Read/search/import/edit/annotation tasks; trash included via advanced_search; `format=` translators and `include=bib,citation` through `export_items`/`get_bibliography`; specialized publications, `format=keys/versions`, `since` and `/deleted` incremental reads not exposed |
 | Collections and nested collections | Read/tree/lifecycle/membership tasks; no raw batch collection deletion |
 | Saved searches and search items | Full task lifecycle + execution; no raw batch search deletion |
 | Tags | Read/add/remove/delete; no dedicated single-tag endpoint wrapper |
@@ -68,6 +76,15 @@ operations remain outside the public allowlist. Connector imports remain the
 cross-version creation route. Desktop-only GUI undo, events and advanced search
 UI are not Local API features; do not promise them through MCP.
 
+## Reviewed and deliberately not implemented
+
+| Candidate | Decision |
+|---|---|
+| Replay a timed-out create with the same `Zotero-Write-Token` | Rejected. Keeper already sends a fresh token on every create, but tokens live only in Zotero's memory and a first request may have committed; the no-replay rule stays. Callers re-read and decide. |
+| Native `POST /items` creation for imports | Deferred. Connector `saveItems` remains the cross-version route (Zotero 7–9) and gives translator-quality parent/attachment handling; a 10+-only second path needs live-GUI validation first. |
+| Read-only group libraries, `since`/`/deleted` incremental sync | Candidates for a later release; need an explicit library-scoping design because local keys are unscoped. |
+| Relations / reparent / item-type change, annotation creation | Remain outside the allowlist (data-loss and identity risk). |
+
 ## Confirmation and verification
 
 All 21 confirmed Local API mutations use zero-I/O previews, require the approved
@@ -79,6 +96,6 @@ are explicit operations. Batch metadata writes preflight all keys/versions, but
 the final Zotero POST can still partially succeed: inspect each result.
 
 Verification includes SDK schema discovery, mocked HTTP/version/identity tests,
-actual tool-function tests, managed-venv installation against pinned PubMed 0.7.3,
+actual tool-function tests, managed-venv installation against pinned PubMed 0.7.7,
 and extension/VSIX harness checks. These do **not** claim a live GUI authorization
 or mutation test against the user's Zotero library; no such writes are performed.

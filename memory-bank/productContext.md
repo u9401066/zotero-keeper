@@ -34,8 +34,8 @@ Current collaboration-safe split:
 ├─────────────────────────────────────────────────────────┤
 │                   MCP Protocol Layer                      │
 ├──────────────────────┬──────────────────────────────────┤
-│ pubmed-search 0.6.3  │      keeper 2.2.0                │
-│ (45 research tools)  │ (41 tools + 6 resources)         │
+│ pubmed-search 0.7.7  │      keeper 2.4.0                │
+│ (41 research tools)  │ (50 tools + 6 resources)         │
 ├──────────────────────┼──────────────────────────────────┤
 │   NCBI Entrez API    │     Zotero Desktop App           │
 └──────────────────────┴──────────────────────────────────┘
@@ -46,17 +46,18 @@ Current collaboration-safe split:
 ### pubmed-search-mcp
 - `unified_search`: 單一公開搜尋入口
 - `generate_search_queries`: MeSH 擴展搜尋策略
-- `parse_pico`: PICO 臨床問題解析
+- `validate_pico_plan`: 驗證 Agent 提取的 P/I/C/O 並產生 pipeline（取代已移除的 `parse_pico`）
 - `fetch_article_details`: 文章詳情與進一步探索
 - `get_citation_metrics`: iCite 引用指標
-- `get_session_pmids` / `get_cached_article` / `get_session_summary`: Session
-  PMID 與文章狀態持久化
+- `read_session(request={...})`: Session PMID、文章、摘要與 log 讀取
+  （取代已移除的 `get_session_pmids` / `get_cached_article` / `get_session_summary`）
 - `build_research_chronicle` / `read_research_chronicle`: 可稽核的研究演進紀錄
 - full-text、citation tree、multi-source、pipeline/export 與 reference
-  verification 工具由同一 45-tool registry 提供
+  verification 工具由同一 41-tool registry 提供（0.7.7）
 
 ### zotero-keeper
-- MCP SDK v2 server surface：41 tools + 6 resources
+- MCP SDK v2 server surface：50 tools + 6 resources
+- `export_items` / `get_bibliography`: 唯讀引用匯出與 CSL 參考文獻（2.4.0）
 - `search_items` / `advanced_search`: 搜尋本地 Zotero 文獻
 - `list_collections`: 列出收藏夾
 - `check_articles_owned`: 本地 PMID / DOI 重複檢查

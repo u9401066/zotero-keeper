@@ -21,7 +21,7 @@
 
 [📦 從 VS Code Marketplace 安裝 Zotero + PubMed MCP](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp)
 
-**v0.9.1 VSIX 是目前建議的發佈管道**：擴充套件會建立隔離環境，並安裝 Zotero Keeper 2.3.1 與固定在正式 release commit 的 PubMed Search MCP 0.7.3。`uvx` / PyPI 仍可用於直接 server 安裝，但應先核對已發佈版本是否與本次原始碼 release 一致。
+**v0.10.0 VSIX 是目前建議的發佈管道**：擴充套件會建立隔離環境，並安裝 Zotero Keeper 2.4.0 與固定在正式 release commit 的 PubMed Search MCP 0.7.7。`uvx` / PyPI 仍可用於直接 server 安裝，但應先核對已發佈版本是否與本次原始碼 release 一致。
 
 > ⚠️ MCP SDK 2.0 與 1.x 不相容。擴充套件升級後，若 VS Code 仍使用舊環境，請執行 **Zotero MCP: Reinstall Python Environment**。
 
@@ -37,25 +37,27 @@
 - 🤝 **協作式 PubMed 工作流**：先用 pubmed-search-mcp 搜尋，再用 keeper 檢查重複與匯入
 - 📁 **互動式存檔**：列出所有收藏夾讓你選擇！
 - 🗂️ **Zotero 10+ 整理能力**：建立、移動、更新與刪除 collection，管理歸屬、saved search、tag、attachment 與 full text
-- 📚 **現代化文獻發現**：PubMed Search MCP 0.7.3 提供 16 類、41 個工具，包含可追溯的 SearchRun 與 Research Chronicle 工作流程
+- 📚 **現代化文獻發現**：PubMed Search MCP 0.7.7 提供 16 類、41 個工具，包含可追溯的 SearchRun 與 Research Chronicle 工作流程
 
 不用自己開 Zotero、手動搜尋、複製貼上。直接用自然語言告訴 AI，它會幫你完成！
 
 ---
 
-## Zotero 10.0.2 對齊與 harness 保護
+## Zotero 10.0.5 對齊與 harness 保護
 
+Keeper 2.4 新增兩個唯讀引用工具：`export_items`（透過 Zotero 自身 translator 匯出 BibTeX、
+BibLaTeX、RIS、CSL JSON 等）與 `get_bibliography`（以任何已安裝 CSL 樣式產生參考文獻／文中引用 HTML）。
 Keeper 2.3 新增 `get_item_schema`、`get_item_annotations`、`update_item_tags`、
 `update_item_creators`、`update_note`、`set_item_trashed`、`batch_update_item_fields`。
 Saved search 保留附件／筆記／annotation 結果，支援巢狀條件與分頁。
-完整 48 個工具及刻意未開放的功能，見[設計與覆蓋稽核](docs/ZOTERO_10_TOOL_AUDIT.md)。
+完整 50 個工具及刻意未開放的功能，見[設計與覆蓋稽核](docs/ZOTERO_10_TOOL_AUDIT.md)。
 
-VSIX 0.9.1 預設停止啟動時覆寫 harness；改為明確安裝、SHA-256 所有權紀錄、
+VSIX 0.9.1 起預設停止啟動時覆寫 harness（0.10.0 延續）；改為明確安裝、SHA-256 所有權紀錄、
 升級前備份、防降版，以及整個自訂 skill 的保護。更新採原子置換，失敗會回復；
 中斷或並行編輯留下復原紀錄，停止後續更新等待檢查。[升級／復原說明](docs/HARNESS_UPGRADES.md)。
 Keeper 2.3.1 的收藏檢查改為逐頁串流，檢查資料庫 identity／版本並拒絕不完整結果；
 統計讀取失敗明確回報未知，不再當作零。
-PubMed 0.7.3 改用 Agent 提取 PICO 後的 `validate_pico_plan`，以及
+PubMed 0.7.7（工具介面與 0.7.3 相同，共 41 個）使用 Agent 提取 PICO 後的 `validate_pico_plan`，以及
 `read_session(request={"action":"pmids"})` 等 session 操作。
 
 ## ✨ 特色功能
@@ -170,7 +172,7 @@ NCBI_EMAIL=your.email@example.com
 
 ---
 
-## 🔧 可用工具 (預設公開面 48 個 + legacy opt-in 5 個)
+## 🔧 可用工具 (預設公開面 50 個 + legacy opt-in 5 個)
 
 > 💡 **提示**：大部分讀取操作也可透過 [MCP Resources](#-mcp-resources-可瀏覽的資料) 完成，不需呼叫 Tool。
 
@@ -239,6 +241,13 @@ version 或 full-text library cursor，才請使用者核准。若後續 authori
 不同 identity，必須丟棄 proposal、重新 read、preview 與取得核准，不能在
 preview 後才補 identity。`confirm=true` 必須原樣重送已核准 proposal，且不得
 自動重試 412。
+
+### 📤 匯出工具 (export_tools.py - 2 個唯讀工具)
+
+| 工具 | 說明 | 範例 |
+|------|------|------|
+| `export_items` | 以 Zotero translator 匯出 ≤50 個精確 item key（BibTeX/BibLaTeX/RIS/CSL JSON/CSV/MODS…） | 「把這 12 篇匯出成 BibTeX」 |
+| `get_bibliography` | 以 CSL 樣式（`apa`、`vancouver`…）產生 ≤50 個 key 的參考文獻／文中引用 | 「給我這個收藏的 APA 參考文獻」 |
 
 ### ✏️ 存檔工具 (interactive_tools.py - 2 工具)
 
@@ -445,7 +454,7 @@ Zotero 支援**巢狀收藏夾**。建議的組織方式：
 
 ## 🔬 搭配 PubMed 使用
 
-v0.9.1 VSIX 固定使用 [pubmed-search-mcp 0.7.3](https://github.com/u9401066/pubmed-search-mcp/tree/v0.7.3)（release commit `fbbaaca`）。它的 MCP SDK v2 server 提供 **16 類、41 個工具**，並加入 fail-closed provider contract、`trials` / `native_semantic` / `systematic` 搜尋模式、SearchRun 狀態與 replay，以及更完整的 Research Chronicle map / Mermaid timeline。PubMed 功能請參考[獨立網站](https://u9401066.github.io/pubmed-search-mcp/)。
+v0.10.0 VSIX 固定使用 [pubmed-search-mcp 0.7.7](https://github.com/u9401066/pubmed-search-mcp/tree/v0.7.7)（release commit `8247af2`）。它的 MCP SDK v2 server 提供 **16 類、41 個工具**（自 0.7.3 起未變）。0.7.4–0.7.7 加入上游速率限制／取消處理強化、全工具統一的輸入驗證與可修復結構化錯誤，以及選用的 `unified_search(fulltext="prefetch")`。先前版本已加入 fail-closed provider contract、`trials` / `native_semantic` / `systematic` 搜尋模式、SearchRun 狀態與 replay，以及更完整的 Research Chronicle map / Mermaid timeline。PubMed 功能請參考[獨立網站](https://u9401066.github.io/pubmed-search-mcp/)。
 
 ```
 你: 「幫我找 2024 年麻醉 AI 的新論文，我還沒有的」
@@ -524,10 +533,10 @@ Local API 寫入雖加入執行時授權，但取得的 key 沒有細粒度 scop
 
 Zotero 10+ 已大幅升級 Local API：官方平台現在支援 items、collections、
 saved searches 的授權式寫入、tag deletion、full-text write 與完整檔案
-upload。Keeper 2.3 公開的是經過限制的安全子集，而不是把無 scope 的 key
+upload。Keeper 2.4 公開的是經過限制的安全子集，而不是把無 scope 的 key
 與任意 API path 直接交給 AI client。
 
-| 介面 | 範圍 | 身分驗證 | Keeper 2.3 用途 |
+| 介面 | 範圍 | 身分驗證 | Keeper 2.4 用途 |
 |------|------|----------|-----------------|
 | **Local API v3** `/api/...` | 同機讀取；Zotero 10+ 寫入 | 讀取無認證；寫入需執行時由使用者同意 | Zotero 7–10+ 讀取；10+ guarded writes |
 | **Connector API** `/connector/...` | browser-connector save flow | 本機介面 | 向後相容的建立／匯入路徑，包含 Zotero 7–9 |
@@ -544,7 +553,7 @@ authorization 指向不同 database，read、preview 與 approval 必須全部�
 資料庫變更或 stale cursor 回傳 `412` 時絕不靜默覆寫；缺少
 identity/precondition (`428`) 與無效授權 (`401`) 也會 fail closed。
 
-Keeper 2.3 將 My Library 的各類寫入能力映射成明確、任務導向的
+Keeper 2.4 將 My Library 的各類寫入能力映射成明確、任務導向的
 工具，同時保留跨版本的 Connector import：
 
 - 建立頂層或巢狀 collection；

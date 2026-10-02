@@ -1,6 +1,6 @@
 # MCP Tools Reference
 
-Complete reference for all 48 default MCP tools exposed by Zotero Keeper 2.3.1
+Complete reference for all 50 default MCP tools exposed by Zotero Keeper 2.4.0
 on MCP SDK v2, plus five legacy opt-in tools.
 
 For a visual feature overview, start with the
@@ -9,13 +9,28 @@ for exact schemas and safety contracts.
 
 > **Tip**: Most read operations can also be performed via [MCP Resources](../README.md#-mcp-resources-browsable-data) (e.g. `zotero://collections`) without calling a tool.
 
-> **Companion server**: VSIX 0.9.1 pins PubMed Search MCP 0.7.3 at
-> [`fbbaaca`](https://github.com/u9401066/pubmed-search-mcp/commit/fbbaacaba150afbc24bdbc07eb41c77c564017e6).
+> **Companion server**: VSIX 0.10.0 pins PubMed Search MCP 0.7.7 at
+> [`8247af2`](https://github.com/u9401066/pubmed-search-mcp/commit/8247af2a5bc53e218c1f1e5b310c45535e11368c).
 > Its SearchRun journal, `systematic` / `native_semantic` search modes, and
 > Research Chronicle artifacts are documented on the separate
 > [PubMed Search MCP site](https://u9401066.github.io/pubmed-search-mcp/).
 
 ---
+
+## Keeper 2.4 additions
+
+Two read-only tools render citations with Zotero's own translators and CSL
+engine instead of rebuilding them from search results. Both accept 1–50 exact
+8-character item keys (duplicates collapse) and never write to Zotero.
+
+| Tool / signature | Contract |
+|---|---|
+| `export_items(item_keys, format="bibtex")` | Export exact items as `bibtex`, `biblatex`, `ris`, `csljson`, `csv`, `mods`, `refer`, `bookmarks`, `coins`, `tei`, `wikipedia`, `rdf_bibliontology`, `rdf_dc` or `rdf_zotero`. Reports `requested_count`, `exported_count` and `missing_count` so a partial export is visible |
+| `get_bibliography(item_keys, style="apa", output="bib", locale=None, linkwrap=False)` | Formatted bibliography and/or in-text citation HTML for an installed CSL style id (`apa`, `vancouver`, …); `output` is `bib`, `citation` or `both`; keys Zotero cannot render are returned in `missing_keys` |
+
+Typical handoff from PubMed Search MCP: `unified_search` → `import_articles` →
+`export_items(format="bibtex")` / `get_bibliography(style="vancouver")` on the
+returned Zotero keys for manuscript writing.
 
 ## Keeper 2.3 additions
 
@@ -730,7 +745,7 @@ Keeper does not retry a 412 write.
 All mutation tools are annotated `readOnlyHint=false` and `openWorldHint=false`.
 Destructive delete/replacement tools advertise `destructiveHint=true`; additive
 create/organize tools advertise `false`. Idempotence metadata follows each
-operation's actual replay behavior. Keeper 2.3.1 exposes only dedicated,
+operation's actual replay behavior. Keeper 2.4.0 exposes only dedicated,
 bounded mutation tools: no raw endpoint, arbitrary structural replacement,
 batch item/collection/saved-search delete, or group-library write surface.
 

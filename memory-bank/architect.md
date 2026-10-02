@@ -14,8 +14,8 @@
            ┌───────────────────┴───────────────────┐
            ▼                                       ▼
 ┌──────────────────────┐              ┌──────────────────────┐
-│ zotero-keeper 2.1.0  │              │ pubmed-search 0.6.1 │
-│ 32 tools/6 resources │◄────────────►│       45 tools       │
+│ zotero-keeper 2.4.0  │              │ pubmed-search 0.7.7 │
+│ 50 tools/6 resources │◄────────────►│       41 tools       │
 │ SDK v2 MCPServer     │ UnifiedArticle│ SDK v2 MCPServer     │
 └──────────┬───────────┘   handoff     └──────────┬───────────┘
            │                                      │
@@ -37,14 +37,15 @@ PubMed Search 產生 citation-ready / `UnifiedArticle` 資料；Keeper 先檢查
 ```
 domain/
 └── entities/
-    ├── reference.py      # 文獻參考實體
-    ├── collection.py     # 收藏夾實體
-    └── batch_result.py   # 批次結果實體
+    └── batch_result.py   # 批次匯入結果（legacy bridge 報告）
 ```
+
+> 2.4.0 移除了從未被 server 引用的 `reference.py` / `collection.py`、
+> `logging_config.py`、`collection_utils.py`。目前沒有獨立 application layer；
+> use-case 邏輯與 MCP tool 並置於 `infrastructure/mcp/`，拆分候選見 ARCHITECTURE.md。
 
 **責任**:
 - 定義核心業務實體
-- 實作業務邏輯和驗證規則
 - 不依賴任何外部套件
 
 ### 2. Infrastructure Layer (基礎設施層)

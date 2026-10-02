@@ -1,7 +1,7 @@
 # Architecture Documentation
 
-This document describes Zotero Keeper 2.3.1, the 48-tool MCP SDK v2 server
-bundled by the v0.9.1 VSIX for safe local Zotero library management.
+This document describes Zotero Keeper 2.4.0, the 50-tool MCP SDK v2 server
+bundled by the v0.10.0 VSIX for safe local Zotero library management.
 
 ---
 
@@ -32,7 +32,7 @@ bundled by the v0.9.1 VSIX for safe local Zotero library management.
 │          └───────────────────┼───────────────────┘                        │
 │                              │                                            │
 │                              │ MCP Protocol (stdio)                       │
-│                              │ ├── Tools (48 default + 5 legacy opt-in)   │
+│                              │ ├── Tools (50 default + 5 legacy opt-in)   │
 │                              │ ├── Resources (6 + 4 URI templates)        │
 │                              │ └── Elicitation (interactive input)        │
 │                              ▼                                            │
@@ -63,7 +63,7 @@ bundled by the v0.9.1 VSIX for safe local Zotero library management.
 │  │                             │                                      │   │
 │  │  ┌──────────────────────────▼──────────────────────────────────┐  │   │
 │  │  │  Domain Layer                                                │  │   │
-│  │  │  └── Entities (Reference, Collection, Creator)               │  │   │
+│  │  │  └── Entities (batch-import result aggregate)                │  │   │
 │  │  └─────────────────────────────────────────────────────────────┘  │   │
 │  └───────────────────────────────────────────────────────────────────┘   │
 │                              │                                            │
@@ -81,7 +81,7 @@ bundled by the v0.9.1 VSIX for safe local Zotero library management.
 
 Zotero Keeper is designed to work alongside `pubmed-search-mcp` for a complete literature workflow:
 
-The v0.9.1 VSIX pins Keeper 2.3.1 and PubMed Search MCP 0.7.3 at release commit `fbbaaca`. PubMed contributes 41 MCP SDK v2 tools across 16 categories, including governed SearchRun status/replay, bounded systematic and native-semantic modes, and the two-tool Research Chronicle surface.
+The v0.10.0 VSIX pins Keeper 2.4.0 and PubMed Search MCP 0.7.7 at release commit `8247af2`. PubMed contributes 41 MCP SDK v2 tools across 16 categories, including governed SearchRun status/replay, bounded systematic and native-semantic modes, and the two-tool Research Chronicle surface.
 
 ```
 ┌────────────────────────────┐    ┌────────────────────────────┐
@@ -209,6 +209,7 @@ src/zotero_mcp/
 │   │   ├── collection_tools.py # 5 collection tools
 │   │   ├── local_api_tools.py # 17 guarded Zotero 10+ write tools
 │   │   ├── item_edit_tools.py # 2 reads + 5 confirmed editing tools
+│   │   ├── export_tools.py    # 2 read-only citation export / bibliography tools
 │   │   ├── read_contracts.py  # Shared multi-request response identity checks
 │   │   ├── resources.py        # 6 resources + 4 URI templates
 │   │   ├── interactive_tools.py # 2 save tools with elicitation
@@ -229,10 +230,22 @@ src/zotero_mcp/
 │       └── client_write.py     # Connector compatibility writes
 └── domain/
     └── entities/               # Domain entities
-        ├── reference.py
-        ├── collection.py
-        └── creator.py
+        └── batch_result.py     # Batch-import aggregate (legacy bridge reporting)
 ```
+
+**Honest layering note.** There is no separate application layer: use-case logic
+(article → Zotero mapping, RIS parsing, duplicate filtering, confirmation
+workflows) lives beside the MCP tool registration in `infrastructure/mcp/`, and
+`ZoteroConfig` has one definition in `zotero_client/client_base.py` (shared by
+the server config). Unused speculative entities (`Reference`, `Collection`,
+`Creator`) and an unused logging module were removed in 2.4.0 rather than kept
+as untested aspirational layers. The next extraction candidates, in order of
+payoff, are the pure functions in `unified_import_tools.py` (mapping/RIS parsing,
+~500 lines) and the shared validators/normalizers in `local_api_tools.py`
+(2,000+ lines, also imported by `item_edit_tools.py` and `export_tools.py`
+through underscore-prefixed names). Both are pure and covered by edge tests, so
+they can move to `infrastructure/mappers/` / a `local_api_support` module without
+behavior change.
 
 ### Read consistency and harness transactions
 
@@ -285,7 +298,7 @@ class ZoteroKeeperServer:
     def __init__(self, config: ZoteroMcpConfig = None):
         self._mcp = MCPServer(
             name="zotero-keeper",
-            version="2.3.1",
+            version="2.4.0",
             instructions="Zotero library management and import",
         )
         self._zotero = ZoteroClient(config.zotero)
@@ -521,7 +534,7 @@ The 6 original smart tools were redundant with `interactive_save`/`quick_save`. 
   `Elicit(...)`, without relying on a direct context backchannel
 - Explicit resources and resource-template discovery
 
-MCP SDK 2.0 is intentionally incompatible with the old 1.x `FastMCP` interface. Keeper 2.3.1 and PubMed Search MCP 0.7.3 therefore share one SDK v2 runtime in the extension-managed environment.
+MCP SDK 2.0 is intentionally incompatible with the old 1.x `FastMCP` interface. Keeper 2.4.0 and PubMed Search MCP 0.7.7 therefore share one SDK v2 runtime in the extension-managed environment.
 
 ---
 
@@ -585,4 +598,4 @@ loopback.
 
 ---
 
-*Last updated: September 17, 2026 (Keeper 2.3.1 / MCP SDK v2)*
+*Last updated: October 2, 2026 (Keeper 2.4.0 / MCP SDK v2)*

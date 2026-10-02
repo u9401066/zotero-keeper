@@ -248,7 +248,7 @@
         <div class="section-heading section-heading-left">
           <h2 id="api-title">Zotero 10 Local API，對應常用寫入工作</h2>
           <p>
-            Keeper 2.3 提供 48 個工具，依 Zotero 10.0.2 核對項目、collection、saved search、標籤、附件與全文能力；保留版本衝突保護。
+            Keeper 2.4 提供 50 個工具，依 Zotero 10.0.5 核對項目、collection、saved search、標籤、附件、全文與引用匯出能力；保留版本衝突保護。
           </p>
         </div>
         <div class="capability-table-wrap">
@@ -279,15 +279,19 @@
                 <th scope="row"><svg aria-hidden="true"><use href="#icon-book"></use></svg>全文索引</th>
                 <td>單筆與批次寫入</td>
               </tr>
+              <tr>
+                <th scope="row"><svg aria-hidden="true"><use href="#icon-link"></use></svg>引用匯出</th>
+                <td>唯讀：BibTeX／RIS／CSL JSON 匯出與 APA、Vancouver 等 CSL 參考文獻（最多 50 筆，回報缺漏）</td>
+              </tr>
             </tbody>
           </table>
         </div>
       </section>
 
       <section class="safety-section section-shell" id="safety" aria-labelledby="safety-title">
-        <p>VSIX 0.9.1 預設不自動覆寫 harness。內容指紋、升級備份、防降版與整個自訂 skill 保護；更新失敗可回復，中斷時停止更新等待檢查。
+        <p>VSIX 0.10.0 啟動時<strong>不會</strong>寫入任何工作區檔案（<code>autoUpdateHarness</code> 預設關閉）；只有明確執行「Install Official Assistant Assets」才安裝。內容指紋（SHA-256）判斷所有權：重複安裝是 no-op，自行修改的檔案、整個自訂 skill、刪除過的檔案一律保留；防降版、升級備份，失敗可回復，中斷時停止更新等待檢查。
           <a href="https://github.com/u9401066/zotero-keeper/blob/main/docs/HARNESS_UPGRADES.md">升級說明</a> ·
-          <a href="https://github.com/u9401066/zotero-keeper/blob/main/docs/ZOTERO_10_TOOL_AUDIT.md">48 個工具的完整稽核與限制</a>
+          <a href="https://github.com/u9401066/zotero-keeper/blob/main/docs/ZOTERO_10_TOOL_AUDIT.md">50 個工具的完整稽核與限制</a>
         </p>
         <div class="section-heading ruled-heading">
           <h2 id="safety-title">先看清楚，再真的寫入</h2>

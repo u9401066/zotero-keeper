@@ -7,7 +7,7 @@
 - **pubmed-search-mcp** owns search, discovery, export, citation metrics, and unified article JSON contracts.
 - **zotero-keeper** owns local-library work: duplicate checks, collection targeting, and the single public import handoff into Zotero.
 - Default posture: keeper exposes only `import_articles` for PubMed handoff; legacy bridge tools stay hidden unless you opt in.
-- Release baseline: VSIX 0.9.1 installs Zotero Keeper 2.3.1 (48 default tools, 6 concrete resources) and PubMed Search MCP 0.7.3 at `fbbaaca` (41 tools, 16 categories).
+- Release baseline: VSIX 0.10.0 installs Zotero Keeper 2.4.0 (50 default tools, 6 concrete resources) and PubMed Search MCP 0.7.7 at `8247af2` (41 tools, 16 categories).
 
 ## Setup Checklist
 
@@ -51,7 +51,10 @@ Guidance:
 - Inspect SearchRun status with `read_session(request={"action":"search_runs"})`;
   replay is a deliberate provider rerun, not a cache read. Use
   `build_research_chronicle` and `read_research_chronicle` for durable history.
-  In 0.7.3, continuing with only `chronicle_id` preserves the prior retrieval scope.
+  Continuing with only `chronicle_id` preserves the prior retrieval scope (0.7.3+).
+- For manuscript output, hand the exact Zotero keys returned by `import_articles` /
+  `check_articles_owned` to Keeper's read-only `export_items` (BibTeX/RIS/CSL JSON) or
+  `get_bibliography` (CSL style) instead of re-exporting from PubMed.
 
 ## Zotero 7–10+ Capability Matrix
 
@@ -133,7 +136,7 @@ identity only after preview. See Zotero's official [Local API](https://www.zoter
 Collection membership tools validate the exact collection and all one-to-50
 items before one batch write, preserve every unrelated membership, and report
 per-item partial failures. Destructive tools delete only an exact reviewed
-object or exact tag names; Keeper 2.3 still exposes no raw API, arbitrary
+object or exact tag names; Keeper 2.4 still exposes no raw API, arbitrary
 structural-array replacement, batch object delete, or group write.
 
 `attach_file_to_item` and `replace_attachment_file` implement Zotero's
@@ -161,6 +164,6 @@ registration. A failure after child creation may return `partial=true` and
 
 ## Quick Verification
 
-- Keeper: `uv run python tests/check_mcp.py` should discover the SDK v2 server surface; the default server has 48 tools, 6 concrete resources, and 4 URI templates.
-- PubMed: start the pinned 0.7.3 server per its README and confirm the client discovers 41 tools before making a real `unified_search` call.
+- Keeper: `uv run python tests/check_mcp.py` should discover the SDK v2 server surface; the default server has 50 tools, 6 concrete resources, and 4 URI templates.
+- PubMed: start the pinned 0.7.7 server per its README and confirm the client discovers 41 tools before making a real `unified_search` call.
 - Integration: invoke `check_connection` (keeper) and a small `unified_search` → `import_articles` chain before production use.

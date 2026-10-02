@@ -59,14 +59,25 @@
 - [x] 新增 Keeper-only GitHub Pages 功能網站；PubMed 仅連結其獨立站
   (2026-08-19)
 
+- [x] 公開稽核 Zotero 10.0.2 並發布 VSIX `0.9.0`/`0.9.1`、Keeper `2.3.x`：48 tools、
+  harness 預設改為 opt-in 且可復原 (2026-09-17)
+- [x] 對齊 Zotero 10.0.5（Local API 無契約變更）；PubMed 升到 0.7.7 `8247af2`（41 tools 介面不變）(2026-10-02)
+- [x] Keeper `2.4.0`：新增唯讀 `export_items` / `get_bibliography`（50 tools）(2026-10-02)
+- [x] 架構與測試整理：移除死碼與約 130 個空洞測試；單一 `ZoteroConfig`；讀取路徑注入防護；
+  RIS 頁碼/無標題紀錄、空 creator 修正；stdio 真實行程 smoke (2026-10-02)
+- [x] `scripts/pretest.py` 作為本地閘門（pre-push hook）；GitHub CI 縮減為 clean install、
+  Windows/Linux smoke、VSIX 打包與 tag 發布，macOS 手動 (2026-10-02)
+- [x] Extension 全面審查：argv 取代 shell 字串、uv SHA-256 驗證、Codex/Cline 設定保全、
+  死設定/資源移除；VSIX `0.10.0` (2026-10-02)
+
 ## Doing
-正在完成 Keeper 2.2.0 / VSIX 0.8.0 的全套測試、網站 QA 與可重現
-VSIX 封裝。
+發布 `v0.10.0-ext`（Keeper 2.4.0 / PubMed 0.7.7）。
 
 ## Next
-- [ ] 發布 `v0.8.0-ext` 前先在 GitHub Settings 啟用 Pages / GitHub Actions
-- [ ] 監看 `0.8.0` 的 Local API destructive confirmation 與 file replacement 回饋
-- [ ] 保持 PubMed `0.6.3` fixed-source pin 與雙 server SDK v2 相容性 smoke
+- [ ] 啟用 CI 後確認 `v0.10.0-ext` tag workflow、Marketplace 與 GitHub Release
+- [ ] 評估原生 `POST /items` 建立、唯讀 group library 與 `since`/`/deleted` 增量讀取（見 ROADMAP）
+- [ ] 抽出 `unified_import_tools.py` / `local_api_tools.py` 的純函式與共用 validator
+- [ ] machine-scoped `zoteroMcp.pythonPath`；新版 `uv` pin 與 digests
 
 ## Blocked
 - [ ] 無

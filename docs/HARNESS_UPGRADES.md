@@ -1,4 +1,4 @@
-# Workspace harness upgrades (VSIX 0.9.1)
+# Workspace harness upgrades (VSIX 0.10.0)
 
 ## Why files kept changing
 
@@ -36,6 +36,27 @@ That allowed an older installed VSIX to revert newly edited source harness files
   including before/after hashes and backup paths. Its presence blocks subsequent
   updates even if the lock is removed; no repeated overwrite attempts occur.
 
+## Verifying the fix
+
+Behavior of a fresh 0.10.0 install against a scratch workspace (compiled
+`out/harnessAssets.js`, bundled assets):
+
+| Step | Result |
+|---|---|
+| First install | 55 files installed |
+| Re-activation / repeated install (same version) | 55 unchanged, 0 rewritten (timestamps untouched) |
+| Upgrade to a newer version after you edited `AGENTS.md` | your edit preserved (1 preserved, 54 unchanged) |
+| Older extension version afterwards | skipped: "Newer harness is already installed" |
+| Source repository (Keeper / PubMed) | skipped entirely |
+
+Regression tests cover these rules (`harnessAssets.test.ts`, `extension.test.ts`).
+Two limits remain: an **older VSIX** running in another VS Code window or remote
+profile still has the old behavior until it is upgraded or disabled, and files
+copied by a pre-0.9 version are never deleted automatically. If you find leftover
+files that name retired tools (for example `parse_pico`, `get_session_pmids`) or old
+tool counts, they are stale copies; compare them with the bundled
+`resources/repo-assets/` and remove or merge them yourself.
+
 ## Interrupted-update recovery
 
 Close other VS Code windows using the workspace before reviewing a stale lock.
@@ -58,16 +79,33 @@ upgrade over unresolved edits. Backups and retired assets are not auto-deleted.
 
 ## Upgrading an existing custom workspace
 
-Install 0.9.1, reload VS Code, and invoke Zotero MCP: Install Official Assistant Assets. Review the
+Install 0.10.0, reload VS Code, and invoke Zotero MCP: Install Official Assistant Assets. Review the
 preserved-file count. Existing pre-ledger custom skills will deliberately remain
 unchanged. Compare them with `resources/repo-assets/` from the installed extension
 and merge the desired new tool contracts; keep your changes and backups. An
 older extension in another VS Code/remote profile must also be upgraded or
 disabled: new code cannot stop a separately running old installer.
 
-PubMed 0.7.3 retires the earlier PICO/session calls. Use agent-extracted P/I/C/O
+PubMed 0.7.x (interface unchanged from 0.7.3 through 0.7.7) retires the earlier PICO/session calls. Use agent-extracted P/I/C/O
 with `validate_pico_plan`, then pass its pipeline to `unified_search`. Read state
 with `read_session(request={"action":"pmids"})`, `article`, `summary`, or `log`.
+
+Custom skills, instructions or hooks written for PubMed 0.5/0.6 may still name
+removed tools. They are preserved on purpose, so migrate them by hand:
+
+| Retired tool | Use instead |
+|---|---|
+| `parse_pico` | Agent extracts P/I/C/O, then `validate_pico_plan` |
+| `get_session_pmids` | `read_session(request={"action":"pmids"})` |
+| `get_cached_article` | `read_session(request={"action":"article","pmid":"..."})` |
+| `get_session_summary` | `read_session(request={"action":"summary"})` |
+| `get_session_log` | `read_session(request={"action":"log"})` |
+| `build_research_timeline`, `compare_timelines`, `analyze_timeline_milestones` | `build_research_chronicle` / `read_research_chronicle(request={...})` |
+| `analyze_figure_for_search` | `prepare_figure_search` |
+| `manage_pipeline` | `save_pipeline`, `load_pipeline`, `list_pipelines`, `delete_pipeline`, `get_pipeline_history`, `schedule_pipeline`, `unschedule_pipeline` |
+
+Also disable any leftover pre-0.7 `pubmed-search` MCP server entry; running two
+PubMed servers exposes both the retired and the current tool sets.
 
 ## Maintainers
 

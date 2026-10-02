@@ -13,12 +13,20 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
 
 ---
 
-## Current Release Baseline (August 2026) ✅
+## Current Release Baseline (October 2026) ✅
 
-- **Zotero Keeper 2.2.0**: runs on MCP SDK 2.x `MCPServer`; exposes 41 default tools, 5 legacy opt-in tools, 6 concrete resources, and 4 resource templates. Its 17 Local API tools cover the task-oriented My Library write families with preview/confirmation, Server-ID binding, object/library-version preconditions, and MD5-guarded stored-file replacement.
-- **PubMed Search MCP 0.6.3**: pinned at release commit `febf53a`; exposes 45 tools across 16 categories with governed SearchRun status/replay, systematic/native-semantic modes, and richer Research Chronicle output.
-- **VS Code extension 0.8.0**: the Marketplace VSIX is the recommended installer and owns the isolated shared SDK v2 environment for Keeper 2.2.0 and the pinned PubMed server. PyPI/`uvx` remains on its separately published release line.
+- **Zotero Keeper 2.4.0**: runs on MCP SDK 2.x `MCPServer`; exposes 50 default tools, 5 legacy opt-in tools, 6 concrete resources, and 4 resource templates. Adds read-only `export_items` / `get_bibliography`; its 22 Zotero 10+ Local API tools cover the task-oriented My Library write families with preview/confirmation, Server-ID binding, object/library-version preconditions, and MD5-guarded stored-file replacement. Audited against Zotero 10.0.5 (`docs/ZOTERO_10_TOOL_AUDIT.md`).
+- **PubMed Search MCP 0.7.7**: pinned at release commit `8247af2`; 41 tools across 16 categories (interface unchanged since 0.7.3) with governed SearchRun status/replay, one validated input contract, opt-in fulltext prefetch, and Research Chronicle output.
+- **VS Code extension 0.10.0**: the Marketplace VSIX is the recommended installer and owns the isolated shared SDK v2 environment for Keeper 2.4.0 and the pinned PubMed server. Workspace harness installation is opt-in, content-addressed and recoverable. PyPI/`uvx` remains on its separately published release line.
+- **Engineering gate**: `python scripts/pretest.py` is the local gate; GitHub CI is limited to clean-install, Windows/Linux runtime smoke, VSIX packaging and release-tag steps.
 - **Zotero MCP ecosystem**: no Zotero-organization official MCP server was found as of 2026-08-11. The Registry-listed `54yyyu/zotero-mcp` is a community server and shares Keeper's `zotero_mcp` Python namespace, so coexistence requires a separate environment and process.
+
+### Next candidates (reviewed in the 10.0.5 audit)
+
+- 📋 Read-only group libraries and `since`/`/deleted` incremental reads (needs an explicit library-scoping design because local write keys are unscoped).
+- 📋 Native `POST /items` creation for Zotero 10+ imports, after live-GUI validation; Connector stays the 7–9 path.
+- 📋 Extract the pure mapping/RIS code from `unified_import_tools.py` and the shared validators from `local_api_tools.py` into mapper/support modules.
+- 💡 Machine-scoped `zoteroMcp.pythonPath`, and a newer pinned `uv` with fresh digests.
 
 ---
 
@@ -882,8 +890,9 @@ if (items?.length > 0) {
 
 ### Future Releases
 
-- 💡 **Citation Export**
-  - 💡 Generate citations in multiple styles
+- ✅ **Citation Export** (Keeper 2.4.0)
+  - ✅ BibTeX/RIS/CSL JSON/… export of exact item keys (`export_items`)
+  - ✅ CSL-styled bibliography and in-text citations (`get_bibliography`)
   - 💡 Integration with document editors
 
 - 💡 **AI-Powered Features**
@@ -919,7 +928,9 @@ if (items?.length > 0) {
 | v1.11.0  | ~28 | + More Analytics (duplicates, citations) |
 | **v2.0.0** | **24 default + 5 legacy** | **MCP SDK v2; `import_pdf`; 6 concrete resources** |
 | **v2.1.0** | **32 default + 5 legacy** | **8 guarded Zotero 10+ Local API tools; 6 resources + 4 templates** |
-| **v2.2.0** | **41 default + 5 legacy** | **17 task-oriented Zotero 10+ Local API tools; 6 resources + 4 templates (current)** |
+| **v2.2.0** | **41 default + 5 legacy** | **17 task-oriented Zotero 10+ Local API tools; 6 resources + 4 templates** |
+| **v2.3.0** | **48 default + 5 legacy** | **+ schema/annotation reads, tags/creators/note/trash/batch editing (22 Local API tools)** |
+| **v2.4.0** | **50 default + 5 legacy** | **+ read-only `export_items` / `get_bibliography` (current)** |
 | Future | ~41 | Citation Analysis + Smart Suggestions |
 | Future | ~36 | Report Generation |
 

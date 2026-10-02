@@ -22,7 +22,7 @@ Let AI manage your references! A MCP Server connecting VS Code Copilot / Claude 
 
 [📦 Install Zotero + PubMed MCP from the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp)
 
-The **v0.9.1 VSIX is the recommended distribution**. It creates an isolated environment and installs Zotero Keeper 2.3.1 plus the pinned PubMed Search MCP 0.7.3 release snapshot. The `uvx`/PyPI path remains available for direct-server installs; verify the published version before assuming it matches this source release.
+The **v0.10.0 VSIX is the recommended distribution**. It creates an isolated environment and installs Zotero Keeper 2.4.0 plus the pinned PubMed Search MCP 0.7.7 release snapshot. The `uvx`/PyPI path remains available for direct-server installs; verify the published version before assuming it matches this source release.
 
 > ⚠️ MCP SDK 2.0 is not compatible with 1.x. After upgrading the extension, run **Zotero MCP: Reinstall Python Environment** if VS Code still has an older managed environment.
 
@@ -38,7 +38,7 @@ The **v0.9.1 VSIX is the recommended distribution**. It creates an isolated envi
 - 🔄 **PubMed integration**: "Search PubMed, skip what I already have"
 - 📁 **Interactive save**: Shows collection options for you to choose!
 - 🗂️ **Zotero 10+ organization**: Create, move, update, and delete collections; manage memberships, saved searches, tags, attachments, and full text
-- 📚 **Modern literature discovery**: PubMed Search MCP 0.7.3 exposes 41 tools in 16 categories, including governed SearchRun history and the Research Chronicle workflow
+- 📚 **Modern literature discovery**: PubMed Search MCP 0.7.7 exposes 41 tools in 16 categories, including governed SearchRun history and the Research Chronicle workflow
 
 No more manually searching, copying, pasting. Just tell your AI in natural language!
 
@@ -160,24 +160,27 @@ NCBI_EMAIL=your.email@example.com
 
 ---
 
-## Zotero 10.0.2 alignment and safe harness upgrades
+## Zotero 10.0.5 alignment and safe harness upgrades
 
-Keeper 2.3 adds seven tools: `get_item_schema`, `get_item_annotations`,
+Keeper 2.4 adds two read-only citation tools: `export_items` (BibTeX, BibLaTeX,
+RIS, CSL JSON, … through Zotero's own translators) and `get_bibliography`
+(CSL-rendered bibliography / in-text citation HTML for any installed style).
+Keeper 2.3 added seven tools: `get_item_schema`, `get_item_annotations`,
 `update_item_tags`, `update_item_creators`, `update_note`, `set_item_trashed`, and
 `batch_update_item_fields`. Saved searches preserve attachment/note/annotation
-results and support nested groups and paging. See the [48-tool audit](docs/ZOTERO_10_TOOL_AUDIT.md)
+results and support nested groups and paging. See the [50-tool audit](docs/ZOTERO_10_TOOL_AUDIT.md)
 for exact coverage and deliberate omissions (including group writes and annotation editing).
 
-VSIX 0.9.1 stops automatic harness overwrites. Installation is opt-in, records
+VSIX 0.9.1 stopped automatic harness overwrites; 0.10.0 keeps that behavior. Installation is opt-in, records
 SHA-256 ownership, backs up managed upgrades, prevents downgrades and preserves
 custom files/whole skills. Updates use atomic replacements and rollback on
 failure; interrupted updates stop for recovery review. [Upgrade and recovery guide](docs/HARNESS_UPGRADES.md).
 Keeper 2.3.1 streams ownership scans with database/version checks, rejects
 incomplete results, and reports unavailable statistics as unknown rather than zero.
-PubMed 0.7.3 uses `validate_pico_plan` for agent-provided PICO fields and
+PubMed 0.7.7 (same 41-tool interface as 0.7.3) uses `validate_pico_plan` for agent-provided PICO fields and
 `read_session(request={"action":"pmids"})` for cached session reuse.
 
-## 🔧 Available Tools (48 default public + 5 legacy opt-in)
+## 🔧 Available Tools (50 default public + 5 legacy opt-in)
 
 > 💡 **Tip**: Most read operations can also be done via [MCP Resources](#-mcp-resources-browsable-data) without calling tools.
 
@@ -248,6 +251,13 @@ proposal before asking for approval. If later authorization reports a different
 identity, discard that proposal, reread, preview again, and obtain new approval;
 never add identity only after preview. Confirmed execution repeats the unchanged
 proposal. A 412 is never retried automatically.
+
+### 📤 Export Tools (export_tools.py - 2 read-only tools)
+
+| Tool | Description | Example |
+|------|-------------|---------|
+| `export_items` | Export ≤50 exact item keys as BibTeX/BibLaTeX/RIS/CSL JSON/CSV/MODS/… via Zotero translators | "Export these 12 papers as BibTeX" |
+| `get_bibliography` | CSL-rendered bibliography and/or in-text citations for ≤50 exact keys (`apa`, `vancouver`, …) | "Give me the APA reference list for this collection" |
 
 ### ✏️ Save Tools (interactive_tools.py - 2 tools)
 
@@ -451,7 +461,7 @@ Zotero supports **nested collections**. Recommended strategies:
 
 ## 🔬 PubMed Integration
 
-The v0.9.1 VSIX pins [pubmed-search-mcp 0.7.3](https://github.com/u9401066/pubmed-search-mcp/tree/v0.7.3) at release commit `fbbaaca`. Its MCP SDK v2 server exposes **41 tools across 16 categories**. This release adds fail-closed provider contracts, `trials`/`native_semantic`/`systematic` search modes, durable SearchRun status and replay through `read_session`, and richer Research Chronicle maps and Mermaid timelines. PubMed has a [separate feature site](https://u9401066.github.io/pubmed-search-mcp/).
+The v0.10.0 VSIX pins [pubmed-search-mcp 0.7.7](https://github.com/u9401066/pubmed-search-mcp/tree/v0.7.7) at release commit `8247af2`. Its MCP SDK v2 server exposes **41 tools across 16 categories** (unchanged since 0.7.3). 0.7.4–0.7.7 add upstream rate-limit/cancellation hardening, one validated input contract for all tools with structured recoverable errors, and opt-in `unified_search(fulltext="prefetch")`. Earlier releases added fail-closed provider contracts, `trials`/`native_semantic`/`systematic` search modes, durable SearchRun status and replay through `read_session`, and richer Research Chronicle maps and Mermaid timelines. PubMed has a [separate feature site](https://u9401066.github.io/pubmed-search-mcp/).
 
 ```
 You: "Find new anesthesia AI papers from 2024 that I don't have"
@@ -502,7 +512,7 @@ For remote libraries, use Zotero's authenticated HTTPS Web API, or place a purpo
 │           AI Agent (VS Code / Claude)           │
 └──────────────────────┬──────────────────────────┘
                        │ MCP Protocol
-│ ├── Tools (48 default)
+│ ├── Tools (50 default)
                        │ ├── Resources (6 + 4 URI templates)
                        │ └── Elicitation (interactive input)
                        ▼
@@ -541,11 +551,11 @@ For remote libraries, use Zotero's authenticated HTTPS Web API, or place a purpo
 
 Zotero 10+ changed the Local API substantially. The platform now supports
 authorized item, collection, and saved-search writes, tag deletion, full-text
-writes, and full file uploads. Keeper 2.3 exposes a deliberately constrained
+writes, and full file uploads. Keeper 2.4 exposes a deliberately constrained
 subset rather than handing an unscoped key and arbitrary API paths to an AI
 client.
 
-| Interface | Scope | Authentication | Keeper 2.3 use |
+| Interface | Scope | Authentication | Keeper 2.4 use |
 |-----------|-------|----------------|----------------|
 | **Local API v3** `/api/...` | Same-machine library reads; Zotero 10+ writes | Reads are unauthenticated; writes require runtime user approval | Reads on Zotero 7–10+; guarded writes on 10+ |
 | **Connector API** `/connector/...` | Browser-connector save flows | Local interface | Backward-compatible create/import path, including Zotero 7–9 |
@@ -563,7 +573,7 @@ all be repeated. A changed database or stale cursor returns `412` and is never
 silently overwritten; missing identity/preconditions (`428`) and invalid
 authorization (`401`) also fail closed.
 
-Keeper 2.3 maps every My Library write family to explicit, task-oriented
+Keeper 2.4 maps every My Library write family to explicit, task-oriented
 workflows while retaining safer cross-version Connector imports:
 
 - create a top-level or nested collection;

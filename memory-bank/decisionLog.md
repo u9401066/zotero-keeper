@@ -1,5 +1,30 @@
 # Decision Log
 
+## 2026-10-02
+
+### DEC-033: 0.10.0 / 2.4.0 — 本地閘門優先、CI 只留不可本地重現的部分
+
+#### 決定
+
+- PubMed Search MCP 固定 0.7.7（`8247af2`）；0.7.4–0.7.7 無 tool 增刪（41 tools）。
+  Keeper 新增唯讀 `export_items` / `get_bibliography`（50 tools）。
+- Zotero 10.0.5 稽核後**不做**：以 write-token 重送 timeout 的寫入（首次請求可能已提交，
+  維持 no-replay）；原生 `POST /items` 建立（需先以真實 GUI 驗證，Connector 仍為 7–9 路徑）。
+- 刪除從未被 server 引用的 domain 實體、logging 模組與 `collection_utils` 及其測試；
+  `ZoteroConfig` 合併為 client 層單一定義；所有送往 Zotero 的請求路徑統一拒絕
+  `..`/`?`/`#`/`%`/空白/非 ASCII（讀取工具先前可被引導到其他 endpoint）。
+- 測試政策：不為覆蓋率寫「重述常數」測試；以真實行程 stdio smoke 與 edge 測試取代。
+  `scripts/pretest.py`（pre-push）為本地閘門；CI 只跑 clean install（`--frozen`/`npm ci`）、
+  Windows+Linux runtime smoke、VSIX 打包/檢查、managed install 與 tag 發布，macOS 手動。
+  tag workflow 要求同一 commit 已有成功的 CI。
+- Harness：`autoUpdateHarness` 預設 false、內容指紋所有權、重複安裝為 no-op；
+  不自動刪除舊版殘留檔案（見 HARNESS_UPGRADES.md「Verifying the fix」）。
+
+#### 理由
+
+可決定性檢查在開發機執行最便宜且最快；雲端分鐘數留給只有乾淨環境或其他 OS 才能暴露的問題
+（鎖檔漂移、Windows 子行程/路徑、打包內容、tag archive）。
+
 ## 2026-08-19
 
 ### DEC-032: Zotero 10 任務導向寫入覆蓋、PubMed 0.6.3 與 Keeper Pages

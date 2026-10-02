@@ -17,16 +17,17 @@ zotero-keeper/mcp-server/src/zotero_mcp/
 │   ├── mappers/
 │   │   ├── pubmed_mapper.py       # PubMed/UnifiedArticle → Zotero
 │   │   └── zotero_schema.py       # item-type-aware field guard
-│   ├── pubmed/__init__.py         # v0.6.1 public client adapter
+│   ├── pubmed/__init__.py         # PubMed public client adapter (legacy bridge only)
 │   └── mcp/
 │       ├── server.py              # SDK v2 MCPServer assembly
-│       ├── local_api_tools.py     # 8 guarded Local API tools
-│       ├── *_tools.py             # 32 default tools in total
+│       ├── local_api_tools.py     # 17 guarded Local API tools (+ shared validators)
+│       ├── export_tools.py        # read-only export_items / get_bibliography
+│       ├── *_tools.py             # 50 default tools in total
 │       └── resources.py           # 6 resources
-└── main.py                        # transport entrypoint
+└── main.py                        # transport entrypoint (validated env/CLI)
 ```
 
-## pubmed-search-mcp v0.6.1 架構
+## pubmed-search-mcp v0.7.7 架構（0.6.1 起的分層不變，tool surface 縮為 41）
 
 ```
 external/pubmed-search-mcp/src/pubmed_search/
@@ -44,13 +45,13 @@ external/pubmed-search-mcp/src/pubmed_search/
 │   └── scheduling/                # background pipeline scheduler
 └── presentation/mcp_server/
     ├── server.py                  # SDK v2 MCPServer; local/service modes
-    ├── tool_registry.py           # 45-tool public registry
+    ├── tool_registry.py           # 41-tool public registry (0.7.x)
     ├── tenancy.py / auth.py       # caller identity boundaries
     └── tools/                     # search, discovery, export, chronicle, ...
 ```
 
-Submodule 與 VSIX installer 都固定到 v0.6.1 commit
-`ad85dde08269dbb59eff69d2e92f4d3c5b5bf21d`。Research Chronicle 的兩個
+Submodule 與 VSIX installer 目前固定到 v0.7.7 commit
+`8247af2a5bc53e218c1f1e5b310c45535e11368c`（0.6.1 為 `ad85dde`）。Research Chronicle 的兩個
 公開 tools 取代舊 timeline tool surface；內部 timeline domain/application 元件仍可
 作為 chronicle 的分析實作，不代表舊工具仍應暴露給 agent。
 
