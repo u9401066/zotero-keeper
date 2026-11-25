@@ -27,7 +27,7 @@ zotero-keeper/mcp-server/src/zotero_mcp/
 └── main.py                        # transport entrypoint (validated env/CLI)
 ```
 
-## pubmed-search-mcp v0.11.0 架構（0.6.1 起的分層不變；0.7.x 縮為 41 tools，0.10–0.11 增為 43）
+## pubmed-search-mcp v0.12.0 架構（0.6.1 起的分層不變；0.7.x 縮為 41 tools，0.10–0.12 增為 44）
 
 ```
 external/pubmed-search-mcp/src/pubmed_search/
@@ -45,13 +45,13 @@ external/pubmed-search-mcp/src/pubmed_search/
 │   └── scheduling/                # background pipeline scheduler
 └── presentation/mcp_server/
     ├── server.py                  # SDK v2 MCPServer; local/service modes
-    ├── tool_registry.py           # 43-tool public registry (0.11.0)
+    ├── tool_registry.py           # 44-tool public registry (0.12.0)
     ├── tenancy.py / auth.py       # caller identity boundaries
     └── tools/                     # search, discovery, export, chronicle, ...
 ```
 
-Submodule 與 VSIX installer 目前固定到 v0.11.0 commit
-`eb7b2eeb01c0fc73c1dfd9dab36534542c2d2bb6`（0.7.7 為 `8247af2`，0.6.1 為 `ad85dde`）。Research Chronicle 的兩個
+Submodule 與 VSIX installer 目前固定到 v0.12.0 commit
+`5842d229733d3f62ded49e033a97aacd8b006126`（0.11.0 為 `eb7b2ee`，0.7.7 為 `8247af2`，0.6.1 為 `ad85dde`）。Research Chronicle 的兩個
 公開 tools 取代舊 timeline tool surface；內部 timeline domain/application 元件仍可
 作為 chronicle 的分析實作，不代表舊工具仍應暴露給 agent。
 

@@ -2,25 +2,33 @@
 
 ## 當前焦點
 
-分支 `feat/pubmed-summary-records`（未推送、未發布）：為 PubMed Search MCP **0.12.0**
-（`unified_search(..., output_format="json")` 預設改回傳摘要紀錄）預先調整 Keeper。
-`import_articles` / `import_pdf` 以 `abstract_snippet`、`abstract_truncated`、`author_count`
-（且未同時帶 `authors` 與 `abstract`）辨識摘要紀錄，逐筆拒絕（`code: "summary_record"`、
-`summary_records.next_commands`），全為摘要時在任何 Zotero 呼叫前回 `error_code: "summary_records"`；
-另修正完整紀錄 `urls` 含 null（無 PMCID/DOI/PMID）時被 schema 拒絕。文件、server instructions 與
-harness 改為 `options="full_records"`；PubMed pin 仍為 0.11.0（會拒絕 `full_records`），
-文件 commit 應與 0.12.0 pin 升級一起合併。新模組：`infrastructure/mcp/unified_record_detail.py`。
+準備 VS Code extension / VSIX **0.12.0**（分支 `feat/pubmed-summary-records`，尚未推送、
+尚未打 tag；tag 為 `v0.12.0-ext`）。Zotero Keeper 升為 **2.4.1**（patch：摘要紀錄拒絕與
+null `urls` 修正），經 `v0.12.0-ext` tag archive 隨 VSIX 安裝，不另發 PyPI。
+PubMed Search MCP 固定於正式 **0.12.0** release commit
+`5842d229733d3f62ded49e033a97aacd8b006126`（tag `v0.12.0`），兩個 server 共用 MCP SDK v2。
+Keeper 50 個預設 tools、6 個 resources、4 個 URI templates；PubMed 44 tools / 16 類
+（0.12.0 新增 `register_fulltext`）。
 
-以下為 VSIX 0.11.0（已發布 `v0.11.0-ext`）時的狀態：
+## 本輪（0.12.0 / 2.4.1）完成
 
-準備 VS Code extension / VSIX **0.11.0**（`release/ext-0.11.0`，尚未推送、尚未打 tag）。
-Zotero Keeper 維持 **2.4.0**（mcp-server 無程式變更，不另發 Python 版本）。
-PubMed Search MCP 固定於正式 **0.11.0** release commit
-`eb7b2eeb01c0fc73c1dfd9dab36534542c2d2bb6`（tag `v0.11.0`），兩個 server 共用 MCP SDK v2。
-Keeper 提供 50 個預設 tools、6 個 resources、4 個 URI templates；PubMed 43 tools / 16 類
-（0.10.0 新增 `research_workspace`、0.11.0 新增 `pipeline_screening`）。
+- PubMed 0.12.0：`unified_search` JSON/TOON 預設回傳摘要紀錄（`record_detail`；
+  `options="full_records"` 取回完整紀錄）、`get_fulltext` 的 `fulltext_plan` 與
+  `register_fulltext`、單篇 PMC 網頁備援、暫時性 NCBI 失敗重試並標示 retryable、
+  PubMed 紀錄帶文章類型／PMCID／OA。Pin、submodule、managed-install smoke（44 tools、
+  `register_fulltext`）、repo-assets 同步；curated skills 仍為 12 個。
+- Keeper 2.4.1：`import_articles` / `import_pdf` 以 `abstract_snippet`、`abstract_truncated`、
+  `author_count`（且未同時帶 `authors` 與 `abstract`）辨識摘要紀錄，逐筆拒絕
+  （`code: "summary_record"`、`summary_records.next_commands`），全為摘要時在任何 Zotero
+  呼叫前回 `error_code: "summary_records"`；完整紀錄 `urls` 含 null（無 PMCID/DOI/PMID）
+  不再被 schema 拒絕。新模組 `infrastructure/mcp/unified_record_detail.py`；契約測試以
+  submodule 的真實 0.12.0 builders 產生摘要／完整紀錄驗證分類。
+- Server instructions、harness、research agent、Copilot 指令與文件：匯入前用
+  `options="full_records"` 或 `fetch_article_details`；描述 44-tool 介面、retryable sources、
+  `fulltext_plan` → `register_fulltext`（`zotero_attachment` 步驟用 `check_articles_owned`
+  與 `get_item_attachments`）。
 
-## 本輪（0.11.0）完成
+## 上一輪（0.11.0）完成
 
 - 合併 `feature/claude-code-mcp-config`：extension 為 Claude Code 在 `~/.claude.json`
   註冊兩個 server；`zoteroMcp.claudeCodeMcpScope` = `local`（預設，依工作區資料夾）/
@@ -70,6 +78,7 @@ Keeper 提供 50 個預設 tools、6 個 resources、4 個 URI templates；PubMe
 
 ## 主要檔案
 
+- `mcp-server/src/zotero_mcp/infrastructure/mcp/unified_import_tools.py` / `unified_record_detail.py`
 - `mcp-server/src/zotero_mcp/infrastructure/mcp/item_edit_tools.py`
 - `mcp-server/src/zotero_mcp/infrastructure/mcp/local_api_tools.py`
 - `mcp-server/src/zotero_mcp/infrastructure/mcp/read_contracts.py`
@@ -83,7 +92,7 @@ Keeper 提供 50 個預設 tools、6 個 resources、4 個 URI templates；PubMe
 
 先跑 Keeper lint/type/tests、extension tests、metadata guards、managed-venv
 smoke 與 VSIX 內容檢查。明確 stage 本輪檔案，保留工作區原有未提交修改。
-推送 main、確認同一 commit 的 CI 成功後，再推送 `v0.11.0-ext` tag，由 workflow 驗證 release archive、打包，
+推送 main、確認同一 commit 的 CI 成功後，再推送 `v0.12.0-ext` tag，由 workflow 驗證 release archive、打包，
 將同一 artifact 發布到 Marketplace 與 GitHub Release；確認 Pages 部署。
 不可在 workflow 完成前宣稱正式發布成功；PyPI 是獨立發布管道。
 

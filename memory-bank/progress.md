@@ -74,11 +74,14 @@
 - [x] PubMed 升到 0.11.0 `eb7b2ee`（43 tools；`research_workspace`、`pipeline_screening`），harness/skills/文件同步；npm build 依賴通過 high 等級 audit (2026-11-25)
 - [x] `import_articles` / `import_pdf` 拒絕 PubMed 0.12.0 摘要紀錄（逐筆 `summary_record`、全摘要批次 `error_code: "summary_records"`，不呼叫 Zotero）；修正完整紀錄 `urls` null 值被拒；文件與 harness 改用 `options="full_records"` (2026-11-25)
 
+- [x] PubMed 升到 0.12.0 `5842d22`（44 tools；`register_fulltext`、摘要紀錄預設、`fulltext_plan`），契約測試以真實 builders 驗證摘要辨識；harness/文件同步 (2026-11-25)
+- [x] 準備 VSIX `0.12.0` 與 Keeper `2.4.1`（tag `v0.12.0-ext`）；`pretest --full` 綠燈 (2026-11-25)
+
 ## Doing
-`feat/pubmed-summary-records`：等待 PubMed Search MCP 0.12.0 發布後升級 pin、submodule 與 repo-assets，再一起合併文件 commit。
+發布 `v0.12.0-ext`（Keeper 2.4.1 / PubMed 0.12.0）：待推送 `feat/pubmed-summary-records` 到 main 並打 tag。
 
 ## Next
-- [ ] 推送後確認 CI、`v0.11.0-ext` tag workflow、Marketplace 與 GitHub Release
+- [ ] 推送後確認 CI、`v0.12.0-ext` tag workflow、Marketplace 與 GitHub Release
 - [ ] 評估原生 `POST /items` 建立、唯讀 group library 與 `since`/`/deleted` 增量讀取（見 ROADMAP）
 - [ ] 抽出 `unified_import_tools.py` / `local_api_tools.py` 的純函式與共用 validator
 - [ ] machine-scoped `zoteroMcp.pythonPath`；新版 `uv` pin 與 digests

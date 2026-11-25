@@ -2,6 +2,29 @@
 
 ## 2026-11-25
 
+### DEC-035: VSIX 0.12.0 / Keeper 2.4.1 — PubMed 0.12.0 摘要紀錄與匯入防護
+
+#### 決定
+
+- PubMed Search MCP 固定 0.12.0（`5842d22`，tag `v0.12.0`），submodule 指向同一 commit；
+  44 tools / 16 類（新增 `register_fulltext`）。`pubmed-search-mcp>=0.7.7` 不變。
+- `unified_search` JSON 預設為摘要紀錄後，Keeper 不自動補抓（PMID 匯入工具屬 legacy、
+  預設隱藏且需 pubmed extra），而是逐筆拒絕摘要紀錄並給出 `options="full_records"` /
+  `fetch_article_details` 指令；完整紀錄、RIS、手寫 dict 行為不變。辨識鍵只用摘要投影
+  專有的 `abstract_snippet` / `abstract_truncated` / `author_count`（`first_author` 也出現在
+  citation network 等紀錄，不採用）。
+- Keeper 版本 2.4.0 → 2.4.1：向後相容的修正比照 2.3.1（patch 隨 VSIX 發布）；Keeper 只經
+  `vX.Y.Z-ext` tag archive 隨 VSIX 安裝，不打 `v2.4.1` tag（會觸發 `release.yml` 發 PyPI；
+  PyPI 自 1.11.0 起未再發布，見 DEC-021）。
+- 根 CHANGELOG 以 `[2.4.1]` 收錄自 2.4.0 起的變更（含已隨 `v0.11.0-ext` 發布、標註
+  *(VSIX 0.11.0)* 的項目），並保留空的 `[Unreleased]`。
+
+#### 理由
+
+摘要紀錄缺作者清單、完整摘要與卷期頁，直接匯入會在 Zotero 產生不完整條目；拒絕並指出
+正確呼叫比在 Keeper 內重做 PubMed 抓取更符合 collaboration-safe 分工。發布前也修正了
+完整紀錄 `urls` 含 null 被拒的既有缺陷，否則 `full_records` 路徑對多數 PubMed 紀錄無效。
+
 ### DEC-034: VSIX 0.11.0 — PubMed 0.11.0 與 Claude Code 註冊
 
 #### 決定
