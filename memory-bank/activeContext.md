@@ -2,6 +2,17 @@
 
 ## 當前焦點
 
+分支 `feat/pubmed-summary-records`（未推送、未發布）：為 PubMed Search MCP **0.12.0**
+（`unified_search(..., output_format="json")` 預設改回傳摘要紀錄）預先調整 Keeper。
+`import_articles` / `import_pdf` 以 `abstract_snippet`、`abstract_truncated`、`author_count`
+（且未同時帶 `authors` 與 `abstract`）辨識摘要紀錄，逐筆拒絕（`code: "summary_record"`、
+`summary_records.next_commands`），全為摘要時在任何 Zotero 呼叫前回 `error_code: "summary_records"`；
+另修正完整紀錄 `urls` 含 null（無 PMCID/DOI/PMID）時被 schema 拒絕。文件、server instructions 與
+harness 改為 `options="full_records"`；PubMed pin 仍為 0.11.0（會拒絕 `full_records`），
+文件 commit 應與 0.12.0 pin 升級一起合併。新模組：`infrastructure/mcp/unified_record_detail.py`。
+
+以下為 VSIX 0.11.0（已發布 `v0.11.0-ext`）時的狀態：
+
 準備 VS Code extension / VSIX **0.11.0**（`release/ext-0.11.0`，尚未推送、尚未打 tag）。
 Zotero Keeper 維持 **2.4.0**（mcp-server 無程式變更，不另發 Python 版本）。
 PubMed Search MCP 固定於正式 **0.11.0** release commit

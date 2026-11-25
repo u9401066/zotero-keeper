@@ -72,9 +72,10 @@
 
 - [x] 為 Claude Code 註冊兩個 server（`zoteroMcp.claudeCodeMcpScope`，ledger/lock/原子寫入）(2026-11-25)
 - [x] PubMed 升到 0.11.0 `eb7b2ee`（43 tools；`research_workspace`、`pipeline_screening`），harness/skills/文件同步；npm build 依賴通過 high 等級 audit (2026-11-25)
+- [x] `import_articles` / `import_pdf` 拒絕 PubMed 0.12.0 摘要紀錄（逐筆 `summary_record`、全摘要批次 `error_code: "summary_records"`，不呼叫 Zotero）；修正完整紀錄 `urls` null 值被拒；文件與 harness 改用 `options="full_records"` (2026-11-25)
 
 ## Doing
-準備發布 `v0.11.0-ext`（Keeper 2.4.0 / PubMed 0.11.0）：本地 `pretest --full` 綠燈，待推送 main 與 tag。
+`feat/pubmed-summary-records`：等待 PubMed Search MCP 0.12.0 發布後升級 pin、submodule 與 repo-assets，再一起合併文件 commit。
 
 ## Next
 - [ ] 推送後確認 CI、`v0.11.0-ext` tag workflow、Marketplace 與 GitHub Release

@@ -9,8 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Repository changes shipped in VSIX 0.11.0 (`v0.11.0-ext`). The Zotero Keeper
-Python package has no code change and stays at 2.4.0.
+Repository changes shipped in VSIX 0.11.0 (`v0.11.0-ext`), whose Zotero Keeper
+Python package stayed at 2.4.0. The **Fixed** and last **Changed** entries below
+came after that release and are not released yet; they prepare Keeper for
+PubMed Search MCP 0.12.0.
 
 ### Added
 
@@ -35,6 +37,34 @@ Python package has no code change and stays at 2.4.0.
   Keeper's optional `pubmed-search-mcp>=0.7.7` requirement is unchanged.
 - Bundled assistant assets, harness skills and documentation describe the
   43-tool interface; the curated PubMed skills add `pubmed-research-workspace`.
+- Server instructions, harness assets (AGENTS.md, Copilot instructions,
+  Codex/Cline skills and rules, research agent, research workflow) and docs hand
+  `import_articles` complete records:
+  `unified_search(..., output_format="json", options="full_records")` (PubMed
+  Search MCP 0.12.0+) or `fetch_article_details(pmids="...", output_format="json")`.
+  The PubMed pin is unchanged (0.11.0 already returns complete records and
+  rejects `full_records`), so these instructions take effect with the 0.12.0 pin.
+
+### Fixed
+
+- `import_articles` no longer writes incomplete Zotero items from PubMed Search
+  MCP 0.12.0 summary records (the new `unified_search(..., output_format="json")`
+  default: `first_author`/`author_count` and a 400-character `abstract_snippet`,
+  no author list, full abstract, volume/issue/pages or MeSH terms). A record that
+  carries `abstract_snippet`, `abstract_truncated` or `author_count`, unless it
+  also carries both `authors` and `abstract`, is reported in `errors` with
+  `code: "summary_record"`
+  and in a `summary_records` block (`pmids`, `without_pmid`, `hint`,
+  `next_commands` naming `options="full_records"` and `fetch_article_details`);
+  complete records in the same batch still import with the usual collection and
+  duplicate checks. A batch of only summary records fails with
+  `error_code: "summary_records"` before any Zotero call. `import_pdf` refuses a
+  summary record as parent metadata the same way. Complete records, RIS text and
+  hand-built dicts are unchanged.
+- `import_articles` accepted only `UnifiedArticle.to_dict()` records whose
+  `urls` map had no null entry, so every record without a PMCID, DOI or PMID
+  failed with `Invalid article schema: urls.pmc: Input should be a valid string`.
+  Null `urls` entries are now accepted.
 
 ---
 
