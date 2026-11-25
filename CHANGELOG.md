@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+Repository changes shipped in VSIX 0.11.0 (`v0.11.0-ext`). The Zotero Keeper
+Python package has no code change and stays at 2.4.0.
+
+### Added
+
+- The VS Code extension registers Zotero Keeper and PubMed Search MCP for Claude
+  Code in `~/.claude.json` (`zoteroMcp.claudeCodeMcpScope`: `local` per
+  workspace folder by default, `user`, or `off`). It changes only entries
+  recorded in its SHA-256 ownership ledger, takes Claude Code's own lock, writes
+  atomically, keeps a `~/.claude.json.zotero-mcp.bak` backup and never writes
+  the committed `.mcp.json`.
+
+### Changed
+
+- Pin PubMed Search MCP 0.11.0 (`eb7b2ee`) in the extension installer and the
+  `external/pubmed-search-mcp` submodule (was 0.7.7 `8247af2`): 43 tools in 16
+  categories, adding `research_workspace` and `pipeline_screening`. Upstream
+  adds exhaustive saved-pipeline retrieval with PRISMA-S run records,
+  `block_analysis` and PRISMA 2020 screening; a precision-first `unified_search`
+  that discloses broadening; exact MeSH mapping with automatic, disclosed
+  correction of unresolved `[Mesh]` clauses; corroborated reference corrections;
+  an NCBI PMC full-text fallback; and study-design evidence labels in Research
+  Chronicle ([changelog](https://github.com/u9401066/pubmed-search-mcp/blob/v0.11.0/CHANGELOG.md)).
+  Keeper's optional `pubmed-search-mcp>=0.7.7` requirement is unchanged.
+- Bundled assistant assets, harness skills and documentation describe the
+  43-tool interface; the curated PubMed skills add `pubmed-research-workspace`.
+
+---
+
 ## [2.4.0] - 2026-10-02
 
 ### Added

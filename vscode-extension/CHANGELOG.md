@@ -2,6 +2,70 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.11.0] - 2026-11-25
+
+### Added
+
+- Register Zotero Keeper and PubMed Search MCP for Claude Code (CLI and IDE
+  extensions) in `~/.claude.json` (honors `$CLAUDE_CONFIG_DIR`), synced on
+  activation, setup, reinstall and settings changes like Cline and Codex. New
+  machine-level setting `zoteroMcp.claudeCodeMcpScope`:
+  - `local` (default): per workspace folder in Claude Code's local scope, keyed
+    the way Claude Code keys a project (git root, forward slashes on Windows),
+    with `PUBMED_WORKSPACE_DIR` set to that folder;
+  - `user`: one top-level registration without `PUBMED_WORKSPACE_DIR` (PubMed
+    0.11.0 then uses the `CLAUDE_PROJECT_DIR` Claude Code passes to the server);
+  - `off`: withdraw every entry the extension owns.
+
+  Only entries recorded in a SHA-256 ownership ledger are changed, so servers
+  you added yourself and managed entries you edited are kept verbatim. Writes
+  take Claude Code's own lock (`~/.claude.json.lock`), are atomic, start over if
+  the file changed meanwhile, never create the file or rewrite one that is not
+  valid JSON, keep every other key and the formatting, and save the replaced
+  bytes to `~/.claude.json.zotero-mcp.bak`. The committed project file
+  `.mcp.json` is never written.
+- Bundle the upstream `pubmed-research-workspace` skill for the new
+  `research_workspace` tool (12 curated PubMed skills).
+
+### Changed
+
+- Pin PubMed Search MCP 0.11.0 (release commit `eb7b2ee`, was 0.7.7 `8247af2`):
+  43 tools in 16 categories, adding `research_workspace` (0.10.0) and
+  `pipeline_screening` (0.11.0). Headline changes (see the
+  [PubMed Search MCP changelog](https://github.com/u9401066/pubmed-search-mcp/blob/v0.11.0/CHANGELOG.md)):
+  - exhaustive saved-pipeline retrieval (`retrieval: exhaustive`, up to 10,000
+    PMIDs through the E-utilities History Server), PRISMA-S run records
+    (`get_pipeline_history(view="run" | "prisma_s" | "records")`,
+    `prepare_export(pipeline_run=...)`), a `block_analysis` pipeline action and
+    the `pipeline_screening` tool (title/abstract and full-text decisions,
+    reviewer conflicts, PRISMA 2020 flow counts);
+  - precision-first `unified_search` deep mode: the caller's query fills the
+    limit first; broadened records rank after exact matches and are disclosed
+    (`search-broadening/v1`, Markdown 🔻; `options="no_relax"` opts out);
+  - MeSH terms are confirmed only on an exact preferred/entry-term match, and
+    `[Mesh]` clauses PubMed reports as not found are corrected automatically and
+    disclosed (`mesh_correction`; `options="no_mesh_correction"`); saved
+    pipelines are never rewritten;
+  - `verify_reference_list` proposes field corrections for real but mis-cited
+    references (wrong year/volume) only when independent fields corroborate them;
+  - `get_fulltext` falls back to NCBI PMC when Europe PMC fails, has no body or
+    is slow, within an overall deadline (`PUBMED_FULLTEXT_DEADLINE_SECONDS`,
+    default 90 s);
+  - Research Chronicle labels entries by PubMed publication type and quotes
+    verbatim abstract sentences with character offsets;
+  - also since 0.7.7: `options="exclude_seen"`, the `snowball` pipeline template
+    with `seed_limit`, scheduled `diff_mode` and Chronicle divergence review.
+- Workspace-scoped PubMed data stays in `<workspace>/.pubmed-search/`; 0.11.0
+  also keeps run record sets (titles and abstracts) and the screening log there
+  and gives a newly created directory a `.gitignore` that ignores everything.
+- Refresh bundled PubMed user skills, the Copilot hook tool policy, research
+  agent, Copilot instructions and Codex/Cline harness skills for the 43-tool
+  interface.
+- Refresh audited npm build dependencies (`@vscode/vsce` 3.9.2,
+  `@azure/msal-node` 7.2.3, `markdown-it` 14.3.3, …) so
+  `npm audit --audit-level=high` passes again. The VSIX ships no npm packages,
+  so the installed extension is unaffected.
+
 ## [0.10.0] - 2026-10-02
 
 ### Added
