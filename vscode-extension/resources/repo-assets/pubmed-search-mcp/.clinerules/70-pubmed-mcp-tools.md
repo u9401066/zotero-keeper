@@ -27,6 +27,17 @@ paths:
   requested evidence workflow calls for them.
 - Use `validate_pico_plan(description=question, p=..., i=..., c=..., o=...)` for clinical comparison questions.
 - Use `build_research_chronicle` and `read_research_chronicle` for persistent research history.
+  Entry labels come from PubMed publication types; quoted highlights are verbatim
+  abstract sentences with offsets, and `[heuristic]` labels must be disclosed.
+- Use `research_workspace` for research that spans sessions or agents: resume with
+  `action="read"`, record each decision with a stable `record_id`, evidence scope and
+  next action.
+- `unified_search` deep mode is precision-first: report `broadening.summary` and
+  treat `retrieval.broadened=true` records as lower-precision fill;
+  `options="no_relax"` disables broadening. Disclose any `mesh_correction`.
+- For systematic reviews use a saved pipeline with `retrieval: exhaustive`,
+  `get_pipeline_history(view="prisma_s")`, `prepare_export(pipeline_run=...)`,
+  `block_analysis`, and `pipeline_screening` for PRISMA 2020 flow counts.
 - Use `read_session(request={"action":"search_runs"})` to inspect runs and
   `{"action":"search_run","run_id":"..."}` for a specific run. Request
   `replay_search` deliberately: it may repeat provider I/O.

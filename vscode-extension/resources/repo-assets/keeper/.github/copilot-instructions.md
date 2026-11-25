@@ -6,7 +6,7 @@
 ## Goal
 Use Zotero Keeper and PubMed Search MCP as a research assistant for literature search, review, and import.
 
-The v0.10.0 VSIX baseline is Zotero Keeper 2.4.0 (MCP SDK v2; 50 default tools and 6 concrete resources) plus PubMed Search MCP 0.7.7 at `8247af2` (41 tools in 16 categories).
+The v0.11.0 VSIX baseline is Zotero Keeper 2.4.0 (MCP SDK v2; 50 default tools and 6 concrete resources) plus PubMed Search MCP 0.11.0 at `eb7b2ee` (43 tools in 16 categories).
 
 ## Response Style
 - Use Traditional Chinese
@@ -18,6 +18,9 @@ The v0.10.0 VSIX baseline is Zotero Keeper 2.4.0 (MCP SDK v2; 50 default tools a
 2. For complex or clinical questions, use `validate_pico_plan(description=question, p=..., i=..., c=..., o=...)` and `generate_search_queries`
 3. Reuse session state with `read_session(request={"action":"pmids"})`, `read_session(request={"action":"article","pmid":"..."})`, and `read_session(request={"action":"summary"})`
 4. For deeper follow-up, use related/citing/reference/fulltext tools instead of repeating the same search
+5. In deep `unified_search` results, report `broadening.summary` and treat records with `retrieval.broadened=true` (🔻) as lower-precision fill after exact-query matches; `options="no_relax"` disables broadening
+6. For systematic reviews, save a PubMed step with `retrieval: exhaustive`, read the run with `get_pipeline_history(view="prisma_s")`, and record screening decisions with `pipeline_screening`
+7. For research that spans sessions, resume and record it with `research_workspace(request={"action":"read","workspace_id":"..."})`
 
 ## Zotero Import Workflow
 1. Always call `list_collections` before importing if the destination collection is not already confirmed

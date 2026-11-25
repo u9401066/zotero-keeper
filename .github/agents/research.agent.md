@@ -9,7 +9,7 @@ Use this agent for biomedical literature search, paper exploration, and Zotero i
 
 ## Tool Ownership
 
-- PubMed Search MCP 0.7.7 owns literature search, discovery, sessions, full-text access, citation metrics, exports, Research Chronicle, and biomedical image search. Its SDK v2 surface contains 41 tools in 16 categories.
+- PubMed Search MCP 0.11.0 owns literature search, discovery, sessions, research workspaces, saved pipelines and PRISMA screening, full-text access, citation metrics, exports, Research Chronicle, and biomedical image search. Its SDK v2 surface contains 43 tools in 16 categories.
 - Zotero Keeper 2.4 owns Zotero library reads, collection listing, duplicate checks, the final import handoff, citation export/bibliography rendering, and guarded Zotero 10+ Local API mutations. Its default surface contains 50 tools.
 - Do not duplicate PubMed searching inside Zotero Keeper. Keep the boundary clear.
 
@@ -25,6 +25,8 @@ Use this agent for biomedical literature search, paper exploration, and Zotero i
    - `read_session(request={"action":"pmids","search_index":-1})`
    - `read_session(request={"action":"article","pmid":"..."})`
    - `read_session(request={"action":"summary"})`
+   - Read `broadening.summary` before interpreting deep results; records with `retrieval.broadened=true` (Markdown 🔻) are lower-precision fill ranked after exact-query matches. `options="no_relax"` disables broadening.
+   - Report a `mesh_correction` when PubMed could not resolve a `[Mesh]` clause and the server re-ran the exact tier with a correction.
 3. Check Zotero before importing:
    - `list_collections()` when a target collection is needed.
    - `check_articles_owned(pmids=[...])` before import.
@@ -49,6 +51,9 @@ Use this agent for biomedical literature search, paper exploration, and Zotero i
 ## Search Patterns
 
 - Quick search: call `unified_search` and summarize the best matches.
+- Research across sessions: `research_workspace(request={"action":"read","workspace_id":"..."})` returns earlier records and open actions; append each observation with a stable `record_id` and its evidence scope.
+- Systematic review: save a PubMed step with `retrieval: exhaustive` (`max_records` ≤ 10000) and run `unified_search(pipeline="saved:<name>")`; read `get_pipeline_history(view="records"|"run"|"prisma_s")`, export with `prepare_export(pipeline_run=...)`, record decisions and PRISMA 2020 counts with `pipeline_screening`, and audit concept blocks with a `block_analysis` step.
+- Iterative search: `options="exclude_seen"` drops PMIDs/DOIs already returned in this session before `limit`; it is rejected with `pipeline=`.
 - PICO search: extract P/I/C/O yourself, call `validate_pico_plan`, then pass its pipeline to `unified_search`.
 - Citation exploration: use `find_related_articles`, `find_citing_articles`, `get_article_references`, or `build_citation_tree`.
 - Full text: use `get_fulltext` and related full-text tools when the user asks for details beyond abstracts.

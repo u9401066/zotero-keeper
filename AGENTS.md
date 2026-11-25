@@ -46,6 +46,8 @@ articles into Zotero without losing provenance or overwriting user choices.
 - Do not assume the target collection.
 - Do not repeat searches when session state already contains the relevant PMIDs.
 - Distinguish peer-reviewed articles, preprints, and metadata-only records.
+- Report `broadening.summary` for deep `unified_search` results; broadened
+  (🔻) records are lower-precision fill, not matches of the user's query.
 - Keep NCBI email/API-key and institutional access settings intact.
 - Never expose or forward Zotero port 23119, request a Local API key, or retry
   a `412` version conflict automatically.
