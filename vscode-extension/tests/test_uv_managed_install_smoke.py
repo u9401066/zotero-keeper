@@ -232,7 +232,7 @@ def main() -> int:
         if data["zotero_tools"] != 50 or not required_keeper_surface:
             raise AssertionError(f"Unexpected Zotero Keeper tool surface: {data}")
         if (
-            data["pubmed_tools"] != 43
+            data["pubmed_tools"] != 44
             or data["pubmed_version"] != PUBMED_SEARCH_VERSION
             or not data["has_unified_search"]
             or not data["has_chronicle"]
@@ -257,6 +257,7 @@ def main() -> int:
             "unschedule_pipeline",
             "research_workspace",
             "pipeline_screening",
+            "register_fulltext",
         } <= set(data["pubmed_names"])
         assert not {
             "parse_pico",
