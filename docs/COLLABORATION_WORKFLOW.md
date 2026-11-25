@@ -7,7 +7,7 @@
 - **pubmed-search-mcp** owns search, discovery, export, citation metrics, and unified article JSON contracts.
 - **zotero-keeper** owns local-library work: duplicate checks, collection targeting, and the single public import handoff into Zotero.
 - Default posture: keeper exposes only `import_articles` for PubMed handoff; legacy bridge tools stay hidden unless you opt in.
-- Release baseline: VSIX 0.10.0 installs Zotero Keeper 2.4.0 (50 default tools, 6 concrete resources) and PubMed Search MCP 0.7.7 at `8247af2` (41 tools, 16 categories).
+- Release baseline: VSIX 0.11.0 installs Zotero Keeper 2.4.0 (50 default tools, 6 concrete resources) and PubMed Search MCP 0.11.0 at `eb7b2ee` (43 tools, 16 categories).
 
 ## Setup Checklist
 
@@ -165,5 +165,5 @@ registration. A failure after child creation may return `partial=true` and
 ## Quick Verification
 
 - Keeper: `uv run python tests/check_mcp.py` should discover the SDK v2 server surface; the default server has 50 tools, 6 concrete resources, and 4 URI templates.
-- PubMed: start the pinned 0.7.7 server per its README and confirm the client discovers 41 tools before making a real `unified_search` call.
+- PubMed: start the pinned 0.11.0 server per its README and confirm the client discovers 43 tools (including `research_workspace` and `pipeline_screening`) before making a real `unified_search` call.
 - Integration: invoke `check_connection` (keeper) and a small `unified_search` → `import_articles` chain before production use.

@@ -22,7 +22,7 @@ Let AI manage your references! A MCP Server connecting VS Code Copilot / Claude 
 
 [📦 Install Zotero + PubMed MCP from the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp)
 
-The **v0.10.0 VSIX is the recommended distribution**. It creates an isolated environment and installs Zotero Keeper 2.4.0 plus the pinned PubMed Search MCP 0.7.7 release snapshot. The `uvx`/PyPI path remains available for direct-server installs; verify the published version before assuming it matches this source release.
+The **v0.11.0 VSIX is the recommended distribution**. It creates an isolated environment and installs Zotero Keeper 2.4.0 plus the pinned PubMed Search MCP 0.11.0 release snapshot. The `uvx`/PyPI path remains available for direct-server installs; verify the published version before assuming it matches this source release.
 
 Besides VS Code/Copilot, the extension registers the same two servers for **Cline**, **Codex CLI** and **Claude Code** when it detects them. Claude Code gets them in `~/.claude.json`, per workspace folder (local scope) by default; choose `user` or `off` with `zoteroMcp.claudeCodeMcpScope`. Entries you created or edited yourself are never changed. See [Cline, Codex CLI and Claude Code](vscode-extension/README.md#-cline-codex-cli-and-claude-code).
 
@@ -40,7 +40,7 @@ Besides VS Code/Copilot, the extension registers the same two servers for **Clin
 - 🔄 **PubMed integration**: "Search PubMed, skip what I already have"
 - 📁 **Interactive save**: Shows collection options for you to choose!
 - 🗂️ **Zotero 10+ organization**: Create, move, update, and delete collections; manage memberships, saved searches, tags, attachments, and full text
-- 📚 **Modern literature discovery**: PubMed Search MCP 0.7.7 exposes 41 tools in 16 categories, including governed SearchRun history and the Research Chronicle workflow
+- 📚 **Modern literature discovery**: PubMed Search MCP 0.11.0 exposes 43 tools in 16 categories, including precision-first search, PRISMA-ready systematic-review pipelines, research workspaces and the Research Chronicle workflow
 
 No more manually searching, copying, pasting. Just tell your AI in natural language!
 
@@ -173,13 +173,13 @@ Keeper 2.3 added seven tools: `get_item_schema`, `get_item_annotations`,
 results and support nested groups and paging. See the [50-tool audit](docs/ZOTERO_10_TOOL_AUDIT.md)
 for exact coverage and deliberate omissions (including group writes and annotation editing).
 
-VSIX 0.9.1 stopped automatic harness overwrites; 0.10.0 keeps that behavior. Installation is opt-in, records
+VSIX 0.9.1 stopped automatic harness overwrites; 0.10.0 and 0.11.0 keep that behavior. Installation is opt-in, records
 SHA-256 ownership, backs up managed upgrades, prevents downgrades and preserves
 custom files/whole skills. Updates use atomic replacements and rollback on
 failure; interrupted updates stop for recovery review. [Upgrade and recovery guide](docs/HARNESS_UPGRADES.md).
 Keeper 2.3.1 streams ownership scans with database/version checks, rejects
 incomplete results, and reports unavailable statistics as unknown rather than zero.
-PubMed 0.7.7 (same 41-tool interface as 0.7.3) uses `validate_pico_plan` for agent-provided PICO fields and
+PubMed 0.11.0 (43 tools: 0.7.3's 41 plus `research_workspace` and `pipeline_screening`) uses `validate_pico_plan` for agent-provided PICO fields and
 `read_session(request={"action":"pmids"})` for cached session reuse.
 
 ## 🔧 Available Tools (50 default public + 5 legacy opt-in)
@@ -463,7 +463,7 @@ Zotero supports **nested collections**. Recommended strategies:
 
 ## 🔬 PubMed Integration
 
-The v0.10.0 VSIX pins [pubmed-search-mcp 0.7.7](https://github.com/u9401066/pubmed-search-mcp/tree/v0.7.7) at release commit `8247af2`. Its MCP SDK v2 server exposes **41 tools across 16 categories** (unchanged since 0.7.3). 0.7.4–0.7.7 add upstream rate-limit/cancellation hardening, one validated input contract for all tools with structured recoverable errors, and opt-in `unified_search(fulltext="prefetch")`. Earlier releases added fail-closed provider contracts, `trials`/`native_semantic`/`systematic` search modes, durable SearchRun status and replay through `read_session`, and richer Research Chronicle maps and Mermaid timelines. PubMed has a [separate feature site](https://u9401066.github.io/pubmed-search-mcp/).
+The v0.11.0 VSIX pins [pubmed-search-mcp 0.11.0](https://github.com/u9401066/pubmed-search-mcp/tree/v0.11.0) at release commit `eb7b2ee`. Its MCP SDK v2 server exposes **43 tools across 16 categories**. 0.11.0 adds exhaustive saved-pipeline retrieval with PRISMA-S run records, `block_analysis` and the `pipeline_screening` tool for PRISMA 2020 flow counts; a precision-first `unified_search` that discloses every broadened record; exact MeSH mapping with automatic, disclosed correction of unresolved `[Mesh]` clauses; corroborated reference corrections; an NCBI PMC full-text fallback; and study-design labels with verbatim highlights in Research Chronicle ([changelog](https://github.com/u9401066/pubmed-search-mcp/blob/v0.11.0/CHANGELOG.md)). 0.8–0.10 added `options="exclude_seen"`, the `snowball` pipeline template and the `research_workspace` tool; 0.7.4–0.7.7 added rate-limit/cancellation hardening, one validated input contract for all tools with structured recoverable errors, and opt-in `unified_search(fulltext="prefetch")`. Earlier releases added fail-closed provider contracts, `trials`/`native_semantic`/`systematic` search modes, durable SearchRun status and replay through `read_session`, and richer Research Chronicle maps and Mermaid timelines. PubMed has a [separate feature site](https://u9401066.github.io/pubmed-search-mcp/).
 
 ```
 You: "Find new anesthesia AI papers from 2024 that I don't have"

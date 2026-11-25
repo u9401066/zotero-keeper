@@ -1,8 +1,8 @@
 # VS Code Extension Design — Zotero Keeper + PubMed Search MCP
 
-> **Active contract (v0.10.0, 2026-10-02):** the VSIX manages one isolated
+> **Active contract (v0.11.0, 2026-11-25):** the VSIX manages one isolated
 > Python 3.12 environment containing Zotero Keeper 2.4.0 and PubMed Search MCP
-> 0.7.7 at release commit `8247af2a5bc53e218c1f1e5b310c45535e11368c`. Both servers
+> 0.11.0 at release commit `eb7b2eeb01c0fc73c1dfd9dab36534542c2d2bb6`. Both servers
 > use MCP SDK 2.x; SDK 1.x is not compatible with this environment.
 
 ## 1. Product boundary
@@ -12,8 +12,8 @@ Zotero or PubMed operations:
 
 - Zotero Keeper owns the 50 default Zotero tools, 5 legacy opt-in tools,
   6 concrete resources, and 4 resource templates.
-- PubMed Search MCP owns its 41-tool discovery, full-text, export, and research
-  chronicle workflow.
+- PubMed Search MCP owns its 43-tool discovery, full-text, export, research
+  chronicle, research workspace, and systematic-review screening workflow.
 - The extension owns Python provisioning, exact package-source installation,
   MCP server definitions, consumer configuration, settings, status, and bundled
   assistant assets.
@@ -26,7 +26,7 @@ VS Code / Copilot       Cline         Codex CLI         Claude Code
                           ▼
        extension-managed Python 3.12 environment
           ├── Zotero Keeper 2.4.0 (MCP SDK v2)
-          └── PubMed Search MCP 0.7.7 @ 8247af2
+          └── PubMed Search MCP 0.11.0 @ eb7b2ee
                     │                    │
                     │ loopback HTTP     └── biomedical APIs
                     ▼
@@ -80,10 +80,10 @@ versions and PEP 610 source metadata.
 
 The active package pins are:
 
-- `zotero-keeper` 2.4.0 from the `v0.10.0-ext` GitHub tag archive,
+- `zotero-keeper` 2.4.0 from the `v0.11.0-ext` GitHub tag archive,
   `#subdirectory=mcp-server`.
-- `pubmed-search-mcp` 0.7.7 from release commit
-  `8247af2a5bc53e218c1f1e5b310c45535e11368c`.
+- `pubmed-search-mcp` 0.11.0 from release commit
+  `eb7b2eeb01c0fc73c1dfd9dab36534542c2d2bb6` (tag `v0.11.0`).
 
 ## 4. MCP registration
 
@@ -92,7 +92,7 @@ The provider starts both servers with the same resolved Python interpreter:
 | Label | Entrypoint | Advertised version | Environment boundary |
 |---|---|---|---|
 | Zotero Keeper | `python -m zotero_mcp` | `2.4.0` | `ZOTERO_HOST`, `ZOTERO_PORT` only |
-| PubMed Search | `python -m pubmed_search.presentation.mcp_server` | `0.7.7` | NCBI/source/proxy/OpenURL settings and optional workspace path |
+| PubMed Search | `python -m pubmed_search.presentation.mcp_server` | `0.11.0` | NCBI/source/proxy/OpenURL settings and optional workspace path |
 
 VS Code consumes these definitions natively. Cline and Codex use their own
 configuration formats, so activation updates only entries/blocks that the
@@ -214,10 +214,11 @@ machine cannot reproduce. The tag workflow then:
 6. attaches the same path to the GitHub release.
 
 The release tag is `v<extension-version>-ext` (for this release,
-`v0.10.0-ext`). The tagged archive must be installable by the managed-install
+`v0.11.0-ext`). The tagged archive must be installable by the managed-install
 smoke test and report Keeper 2.4.0 with all 50 default tools, including
 `authorize_local_writes`, `export_items`, `get_bibliography`, `delete_item`, and
-`replace_attachment_file`.
+`replace_attachment_file`, next to PubMed Search MCP 0.11.0 with 43 tools,
+including `research_workspace` and `pipeline_screening`.
 
 ## 10. Compatibility matrix
 
@@ -234,7 +235,7 @@ smoke test and report Keeper 2.4.0 with all 50 default tools, including
 > and pre-bundled wheel directories. Those sketches also showed Keeper 2.0.0,
 > 24 default tools, VSIX 0.6.0, and Local/Connector endpoints as wholly
 > unauthenticated. They describe the pre-Zotero-10 and pre-uv-managed design,
-> not the active v0.10.0 contract.
+> not the active v0.11.0 contract.
 
 The early roadmap proposed these phases:
 

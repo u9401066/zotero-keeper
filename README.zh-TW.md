@@ -21,7 +21,7 @@
 
 [📦 從 VS Code Marketplace 安裝 Zotero + PubMed MCP](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp)
 
-**v0.10.0 VSIX 是目前建議的發佈管道**：擴充套件會建立隔離環境，並安裝 Zotero Keeper 2.4.0 與固定在正式 release commit 的 PubMed Search MCP 0.7.7。`uvx` / PyPI 仍可用於直接 server 安裝，但應先核對已發佈版本是否與本次原始碼 release 一致。
+**v0.11.0 VSIX 是目前建議的發佈管道**：擴充套件會建立隔離環境，並安裝 Zotero Keeper 2.4.0 與固定在正式 release commit 的 PubMed Search MCP 0.11.0。`uvx` / PyPI 仍可用於直接 server 安裝，但應先核對已發佈版本是否與本次原始碼 release 一致。
 
 除了 VS Code/Copilot，擴充套件偵測到 **Cline**、**Codex CLI** 與 **Claude Code** 時，也會為它們註冊同樣兩個 server。Claude Code 寫入 `~/.claude.json`，預設以工作區資料夾為單位（local scope）；可用 `zoteroMcp.claudeCodeMcpScope` 改為 `user` 或 `off`。您自行建立或修改過的項目一律不會被變更。詳見 [Cline, Codex CLI and Claude Code](vscode-extension/README.md#-cline-codex-cli-and-claude-code)。
 
@@ -39,7 +39,7 @@
 - 🤝 **協作式 PubMed 工作流**：先用 pubmed-search-mcp 搜尋，再用 keeper 檢查重複與匯入
 - 📁 **互動式存檔**：列出所有收藏夾讓你選擇！
 - 🗂️ **Zotero 10+ 整理能力**：建立、移動、更新與刪除 collection，管理歸屬、saved search、tag、attachment 與 full text
-- 📚 **現代化文獻發現**：PubMed Search MCP 0.7.7 提供 16 類、41 個工具，包含可追溯的 SearchRun 與 Research Chronicle 工作流程
+- 📚 **現代化文獻發現**：PubMed Search MCP 0.11.0 提供 16 類、43 個工具，包含精準優先搜尋、可產出 PRISMA 紀錄的系統性回顧 pipeline、研究工作區與 Research Chronicle 工作流程
 
 不用自己開 Zotero、手動搜尋、複製貼上。直接用自然語言告訴 AI，它會幫你完成！
 
@@ -54,12 +54,12 @@ Keeper 2.3 新增 `get_item_schema`、`get_item_annotations`、`update_item_tags
 Saved search 保留附件／筆記／annotation 結果，支援巢狀條件與分頁。
 完整 50 個工具及刻意未開放的功能，見[設計與覆蓋稽核](docs/ZOTERO_10_TOOL_AUDIT.md)。
 
-VSIX 0.9.1 起預設停止啟動時覆寫 harness（0.10.0 延續）；改為明確安裝、SHA-256 所有權紀錄、
+VSIX 0.9.1 起預設停止啟動時覆寫 harness（0.10.0、0.11.0 延續）；改為明確安裝、SHA-256 所有權紀錄、
 升級前備份、防降版，以及整個自訂 skill 的保護。更新採原子置換，失敗會回復；
 中斷或並行編輯留下復原紀錄，停止後續更新等待檢查。[升級／復原說明](docs/HARNESS_UPGRADES.md)。
 Keeper 2.3.1 的收藏檢查改為逐頁串流，檢查資料庫 identity／版本並拒絕不完整結果；
 統計讀取失敗明確回報未知，不再當作零。
-PubMed 0.7.7（工具介面與 0.7.3 相同，共 41 個）使用 Agent 提取 PICO 後的 `validate_pico_plan`，以及
+PubMed 0.11.0（共 43 個工具：0.7.3 的 41 個，加上 `research_workspace` 與 `pipeline_screening`）使用 Agent 提取 PICO 後的 `validate_pico_plan`，以及
 `read_session(request={"action":"pmids"})` 等 session 操作。
 
 ## ✨ 特色功能
@@ -456,7 +456,7 @@ Zotero 支援**巢狀收藏夾**。建議的組織方式：
 
 ## 🔬 搭配 PubMed 使用
 
-v0.10.0 VSIX 固定使用 [pubmed-search-mcp 0.7.7](https://github.com/u9401066/pubmed-search-mcp/tree/v0.7.7)（release commit `8247af2`）。它的 MCP SDK v2 server 提供 **16 類、41 個工具**（自 0.7.3 起未變）。0.7.4–0.7.7 加入上游速率限制／取消處理強化、全工具統一的輸入驗證與可修復結構化錯誤，以及選用的 `unified_search(fulltext="prefetch")`。先前版本已加入 fail-closed provider contract、`trials` / `native_semantic` / `systematic` 搜尋模式、SearchRun 狀態與 replay，以及更完整的 Research Chronicle map / Mermaid timeline。PubMed 功能請參考[獨立網站](https://u9401066.github.io/pubmed-search-mcp/)。
+v0.11.0 VSIX 固定使用 [pubmed-search-mcp 0.11.0](https://github.com/u9401066/pubmed-search-mcp/tree/v0.11.0)（release commit `eb7b2ee`）。它的 MCP SDK v2 server 提供 **16 類、43 個工具**。0.11.0 新增：saved pipeline 的完整（exhaustive）檢索與 PRISMA-S 執行紀錄、`block_analysis`，以及計算 PRISMA 2020 流程數字的 `pipeline_screening` 工具；精準優先的 `unified_search`，每筆放寬補足的結果都會揭露；MeSH 只在完全符合時確認，PubMed 找不到的 `[Mesh]` 會自動修正並揭露；需多個欄位佐證才提出的參考文獻更正；Europe PMC 失敗時改用 NCBI PMC 的全文備援；以及 Research Chronicle 依研究設計標示並逐字引用摘要（[changelog](https://github.com/u9401066/pubmed-search-mcp/blob/v0.11.0/CHANGELOG.md)）。0.8–0.10 加入 `options="exclude_seen"`、`snowball` pipeline 範本與 `research_workspace` 工具；0.7.4–0.7.7 加入上游速率限制／取消處理強化、全工具統一的輸入驗證與可修復結構化錯誤，以及選用的 `unified_search(fulltext="prefetch")`。先前版本已加入 fail-closed provider contract、`trials` / `native_semantic` / `systematic` 搜尋模式、SearchRun 狀態與 replay，以及更完整的 Research Chronicle map / Mermaid timeline。PubMed 功能請參考[獨立網站](https://u9401066.github.io/pubmed-search-mcp/)。
 
 ```
 你: 「幫我找 2024 年麻醉 AI 的新論文，我還沒有的」

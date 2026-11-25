@@ -253,14 +253,16 @@ Set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` only if you intentionally want 
 
 ### PubMed Search MCP boundary
 
-The v0.10.0 VSIX pins PubMed Search MCP 0.7.7 at commit
-[`8247af2`](https://github.com/u9401066/pubmed-search-mcp/commit/8247af2a5bc53e218c1f1e5b310c45535e11368c).
-That companion MCP SDK v2 server exposes 41 tools in 16 categories (unchanged since 0.7.3) with
+The v0.11.0 VSIX pins PubMed Search MCP 0.11.0 at commit
+[`eb7b2ee`](https://github.com/u9401066/pubmed-search-mcp/commit/eb7b2eeb01c0fc73c1dfd9dab36534542c2d2bb6).
+That companion MCP SDK v2 server exposes 43 tools in 16 categories with
 a durable SearchRun journal, replay-safe `read_session` views,
 deterministic `systematic` search, bounded provider-native `native_semantic`
 search, explicit source/run status and provenance, one validated input contract
 for every tool, opt-in `fulltext="prefetch"`, and stricter Research
-Chronicle revisions with canonical Mermaid timeline artifacts. `systematic` and
+Chronicle revisions with canonical Mermaid timeline artifacts, plus (0.10–0.11)
+the `research_workspace` journal and exhaustive saved pipelines with PRISMA-S
+run records and `pipeline_screening`. `systematic` and
 `native_semantic` are mutually exclusive, and replay returns credential-free
 arguments without executing another search.
 

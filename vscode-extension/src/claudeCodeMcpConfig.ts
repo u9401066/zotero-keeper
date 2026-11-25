@@ -21,8 +21,8 @@
  *     hand-made user-scope entries stay untouched while the local entry takes
  *     precedence inside the project.
  *   - "user": one global registration, without PUBMED_WORKSPACE_DIR so it is
- *     never pinned to whichever workspace synced last (PubMed then falls back to
- *     the session's working directory when that looks like a project root).
+ *     never pinned to whichever workspace synced last (PubMed Search MCP 0.11+
+ *     then uses the CLAUDE_PROJECT_DIR that Claude Code passes to the server).
  *   - "off": register nothing and withdraw what this extension registered.
  *
  * `.claude.json` is Claude Code's own state file (account, projects, caches)

@@ -9,9 +9,10 @@ for exact schemas and safety contracts.
 
 > **Tip**: Most read operations can also be performed via [MCP Resources](../README.md#-mcp-resources-browsable-data) (e.g. `zotero://collections`) without calling a tool.
 
-> **Companion server**: VSIX 0.10.0 pins PubMed Search MCP 0.7.7 at
-> [`8247af2`](https://github.com/u9401066/pubmed-search-mcp/commit/8247af2a5bc53e218c1f1e5b310c45535e11368c).
-> Its SearchRun journal, `systematic` / `native_semantic` search modes, and
+> **Companion server**: VSIX 0.11.0 pins PubMed Search MCP 0.11.0 at
+> [`eb7b2ee`](https://github.com/u9401066/pubmed-search-mcp/commit/eb7b2eeb01c0fc73c1dfd9dab36534542c2d2bb6).
+> Its SearchRun journal, `systematic` / `native_semantic` search modes,
+> exhaustive pipelines with `pipeline_screening`, `research_workspace`, and
 > Research Chronicle artifacts are documented on the separate
 > [PubMed Search MCP site](https://u9401066.github.io/pubmed-search-mcp/).
 

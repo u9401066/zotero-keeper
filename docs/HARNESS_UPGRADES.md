@@ -86,7 +86,7 @@ and merge the desired new tool contracts; keep your changes and backups. An
 older extension in another VS Code/remote profile must also be upgraded or
 disabled: new code cannot stop a separately running old installer.
 
-PubMed 0.7.x (interface unchanged from 0.7.3 through 0.7.7) retires the earlier PICO/session calls. Use agent-extracted P/I/C/O
+PubMed 0.7.x and later (0.7.3 through 0.11.0; 0.10.0 and 0.11.0 only add `research_workspace` and `pipeline_screening`) retire the earlier PICO/session calls. Use agent-extracted P/I/C/O
 with `validate_pico_plan`, then pass its pipeline to `unified_search`. Read state
 with `read_session(request={"action":"pmids"})`, `article`, `summary`, or `log`.
 

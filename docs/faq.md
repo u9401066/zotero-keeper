@@ -18,7 +18,7 @@ Start with the [Zotero Keeper feature site](https://u9401066.github.io/zotero-ke
 
 ### What is the easiest way to install?
 
-For VS Code users, use the v0.10.0 VSIX artifact from this release workspace, or install it from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp) after publication. It is the recommended distribution for Zotero Keeper 2.4.0 and PubMed Search MCP 0.7.7.
+For VS Code users, use the v0.11.0 VSIX artifact from this release workspace, or install it from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=u9401066.vscode-zotero-mcp) after publication. It is the recommended distribution for Zotero Keeper 2.4.0 and PubMed Search MCP 0.11.0.
 
 For Claude Desktop or manual setups, use a source checkout with `uv sync`. The separately published `uvx`/PyPI package may still be on an older line; verify its published version rather than assuming this command installs Keeper 2.4.0:
 
@@ -271,14 +271,17 @@ Zotero 8 introduced top-level PDF annotation objects with `itemType: "annotation
 
 ## PubMed Integration
 
-The v0.10.0 VSIX pins PubMed Search MCP 0.7.7 at commit
-[`8247af2`](https://github.com/u9401066/pubmed-search-mcp/commit/8247af2a5bc53e218c1f1e5b310c45535e11368c).
-It provides 41 MCP SDK v2 tools in 16 categories (unchanged since 0.7.3) with SearchRun journaling
+The v0.11.0 VSIX pins PubMed Search MCP 0.11.0 at commit
+[`eb7b2ee`](https://github.com/u9401066/pubmed-search-mcp/commit/eb7b2eeb01c0fc73c1dfd9dab36534542c2d2bb6).
+It provides 43 MCP SDK v2 tools in 16 categories with SearchRun journaling
 and credential-free replay arguments, deterministic `systematic` search,
 bounded provider-native `native_semantic` search, explicit run/source status,
 and stricter versioned Research Chronicle artifacts including canonical
 Mermaid timelines. Version 0.7.5 added one validated input contract for every
-tool and 0.7.6 an opt-in `unified_search(fulltext="prefetch")`. `systematic` and `native_semantic` are mutually exclusive;
+tool and 0.7.6 an opt-in `unified_search(fulltext="prefetch")`. 0.10.0 added the
+`research_workspace` journal; 0.11.0 adds exhaustive saved pipelines with PRISMA-S
+run records and `pipeline_screening`, a precision-first `unified_search` that
+discloses broadened records, and automatic, disclosed MeSH correction. `systematic` and `native_semantic` are mutually exclusive;
 replay reports arguments but does not execute another search. See the separate
 [PubMed Search MCP documentation site](https://u9401066.github.io/pubmed-search-mcp/)
 for its search and Chronicle workflows.
@@ -291,7 +294,7 @@ Only if you want to **search PubMed** from within Copilot. `import_articles` and
 uv sync --extra pubmed   # in the mcp-server directory
 ```
 
-For the MCP SDK v2 release, prefer the v0.10.0 VSIX or a current source checkout; the PyPI/`uvx` package may still resolve an older release line.
+For the MCP SDK v2 release, prefer the v0.11.0 VSIX or a current source checkout; the PyPI/`uvx` package may still resolve an older release line.
 
 ---
 
