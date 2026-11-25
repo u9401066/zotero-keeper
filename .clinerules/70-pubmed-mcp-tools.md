@@ -41,7 +41,16 @@ paths:
 - Use `read_session(request={"action":"search_runs"})` to inspect runs and
   `{"action":"search_run","run_id":"..."}` for a specific run. Request
   `replay_search` deliberately: it may repeat provider I/O.
+- `unified_search` JSON/TOON `articles` are summary records by default (`first_author`,
+  `author_count`, `abstract_snippet`; see the top-level `record_detail`). Use
+  `options="full_records"` for complete records, always before a Zotero Keeper import.
+- Treat `search_status.retryable_sources` as a transient failure: repeat `next_tools[0]`
+  (the same call) before rewriting the query.
 - Use `get_fulltext`, `get_article_figures`, and institutional access tools only when full-text retrieval is requested.
+- When `get_fulltext` has no usable body, follow its `fulltext_plan` in order, one article
+  at a time, then store the text with `register_fulltext` and its provenance
+  (`agent_supplied`/`user_supplied`, never provider-verified). Never batch or crawl PMC or
+  publisher sites.
 - Export to RIS for Zotero/EndNote and BibTeX for LaTeX workflows.
 
 ## Documentation Sync

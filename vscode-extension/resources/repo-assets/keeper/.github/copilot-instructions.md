@@ -6,7 +6,7 @@
 ## Goal
 Use Zotero Keeper and PubMed Search MCP as a research assistant for literature search, review, and import.
 
-The v0.11.0 VSIX baseline is Zotero Keeper 2.4.0 (MCP SDK v2; 50 default tools and 6 concrete resources) plus PubMed Search MCP 0.11.0 at `eb7b2ee` (43 tools in 16 categories).
+The v0.12.0 VSIX baseline is Zotero Keeper 2.4.1 (MCP SDK v2; 50 default tools and 6 concrete resources) plus PubMed Search MCP 0.12.0 at `5842d22` (44 tools in 16 categories).
 
 ## Response Style
 - Use Traditional Chinese
@@ -21,6 +21,9 @@ The v0.11.0 VSIX baseline is Zotero Keeper 2.4.0 (MCP SDK v2; 50 default tools a
 5. In deep `unified_search` results, report `broadening.summary` and treat records with `retrieval.broadened=true` (🔻) as lower-precision fill after exact-query matches; `options="no_relax"` disables broadening
 6. For systematic reviews, save a PubMed step with `retrieval: exhaustive`, read the run with `get_pipeline_history(view="prisma_s")`, and record screening decisions with `pipeline_screening`
 7. For research that spans sessions, resume and record it with `research_workspace(request={"action":"read","workspace_id":"..."})`
+8. `unified_search` JSON/TOON `articles` are summary records by default (`first_author`, `author_count`, a 400-character `abstract_snippet`); the top-level `record_detail` says how to get complete records. Use `options="full_records"` or `fetch_article_details` when complete records are needed, always for Zotero import
+9. A source in `search_status.retryable_sources` failed transiently: repeat `next_tools[0]` (the same call) before rewriting the query
+10. When `get_fulltext` returns no usable body, follow its `fulltext_plan` in order with your own tools, one article at a time (never batch or crawl PMC or publisher sites), then store the text with `register_fulltext` and its provenance; it stays `agent_supplied`/`user_supplied`, never provider-verified. For the `zotero_attachment` step, find the item with `check_articles_owned` and its local PDF path with `get_item_attachments`
 
 ## Zotero Import Workflow
 1. Always call `list_collections` before importing if the destination collection is not already confirmed

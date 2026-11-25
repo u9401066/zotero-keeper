@@ -22,6 +22,8 @@ articles into Zotero without losing provenance or overwriting user choices.
 2. Use `validate_pico_plan(description=question, p=..., i=..., c=..., o=...)` and `generate_search_queries` for clinical or comparison questions.
 3. Reuse session state with `read_session(request={"action":"pmids"})`, `read_session(request={"action":"article","pmid":"..."})`, and `read_session(request={"action":"summary"})`.
 4. Use related/citing/reference/fulltext tools for follow-up instead of rerunning the same search.
+   When `get_fulltext` has no usable body, follow its `fulltext_plan` one article at a time and
+   store the text with `register_fulltext` and its provenance.
 5. Use `build_research_chronicle` and `read_research_chronicle` for persistent research-history artifacts.
 6. Before saving to Zotero, call `list_collections` unless the destination is already confirmed.
 7. Check duplicates with `check_articles_owned`.

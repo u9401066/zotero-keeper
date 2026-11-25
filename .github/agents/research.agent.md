@@ -9,7 +9,7 @@ Use this agent for biomedical literature search, paper exploration, and Zotero i
 
 ## Tool Ownership
 
-- PubMed Search MCP 0.11.0 owns literature search, discovery, sessions, research workspaces, saved pipelines and PRISMA screening, full-text access, citation metrics, exports, Research Chronicle, and biomedical image search. Its SDK v2 surface contains 43 tools in 16 categories.
+- PubMed Search MCP 0.12.0 owns literature search, discovery, sessions, research workspaces, saved pipelines and PRISMA screening, full-text access and supplied-fulltext registration, citation metrics, exports, Research Chronicle, and biomedical image search. Its SDK v2 surface contains 44 tools in 16 categories.
 - Zotero Keeper 2.4 owns Zotero library reads, collection listing, duplicate checks, the final import handoff, citation export/bibliography rendering, and guarded Zotero 10+ Local API mutations. Its default surface contains 50 tools.
 - Do not duplicate PubMed searching inside Zotero Keeper. Keep the boundary clear.
 
@@ -18,6 +18,10 @@ Use this agent for biomedical literature search, paper exploration, and Zotero i
 1. Search with PubMed Search MCP:
    - `unified_search(query="...", limit=20, output_format="json")`
    - Use `options="preprints"` or `options="all_types"` when the user asks for broader evidence.
+   - JSON `articles` are summary records (`first_author`, `author_count`, `abstract_snippet`);
+     add `options="full_records"` when the records will be imported (step 4).
+   - A source in `search_status.retryable_sources` failed transiently; repeat `next_tools[0]`
+     (the same call) before rewriting the query.
    - Bounded `trials`, `native_semantic` and `systematic` modes must match the
      requested workflow. Preserve search_status/search_run/source_metadata;
      failed is not empty, and partial results require provenance and warnings.
@@ -60,7 +64,7 @@ Use this agent for biomedical literature search, paper exploration, and Zotero i
 - Iterative search: `options="exclude_seen"` drops PMIDs/DOIs already returned in this session before `limit`; it is rejected with `pipeline=`.
 - PICO search: extract P/I/C/O yourself, call `validate_pico_plan`, then pass its pipeline to `unified_search`.
 - Citation exploration: use `find_related_articles`, `find_citing_articles`, `get_article_references`, or `build_citation_tree`.
-- Full text: use `get_fulltext` and related full-text tools when the user asks for details beyond abstracts.
+- Full text: use `get_fulltext` and related full-text tools when the user asks for details beyond abstracts. Without a usable body, follow its `fulltext_plan` in order, one article at a time (for `zotero_attachment`: `check_articles_owned`, then `get_item_attachments` for the local PDF path), and store the text with `register_fulltext` and its provenance; it stays `agent_supplied`/`user_supplied`.
 - Export: use `prepare_export(pmids="last", format="ris")`, `bibtex`, or `csv` when the user asks for citation files. For items already in Zotero, use Keeper's `export_items` / `get_bibliography` with exact item keys instead.
 - Research history: use `build_research_chronicle`, then `read_research_chronicle`; do not call the removed timeline tools.
 - Session audit: use `read_session(request={"action":"log"})` rather than the removed search-history interface.
