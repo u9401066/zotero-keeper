@@ -136,7 +136,7 @@ function ensureParentDirectory(targetPath) {
  */
 function normalizeLineEndings(targetPath) {
     const ext = path.extname(targetPath).toLowerCase();
-    if (!['.md', '.json', '.sh', '.ps1', '.py', '.yaml', '.yml'].includes(ext)) {
+    if (!['.md', '.json', '.sh', '.ps1', '.py', '.yaml', '.yml', '.svg'].includes(ext)) {
         return;
     }
 

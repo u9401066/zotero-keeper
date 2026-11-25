@@ -15,7 +15,7 @@ function snapshotDirectory(root) {
 
     function normalizedContent(filePath) {
         const raw = fs.readFileSync(filePath);
-        if (!['.md', '.json', '.sh', '.ps1', '.py', '.yaml', '.yml'].includes(path.extname(filePath).toLowerCase())) {
+        if (!['.md', '.json', '.sh', '.ps1', '.py', '.yaml', '.yml', '.svg'].includes(path.extname(filePath).toLowerCase())) {
             return raw;
         }
 
