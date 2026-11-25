@@ -92,7 +92,7 @@ class ArticleImportPayload(BaseModel):
     authors: list[str | ArticleAuthorPayload] = Field(default_factory=list)
     identifiers: ArticleIdentifierPayload = Field(default_factory=ArticleIdentifierPayload)
     citation_metrics: dict[str, Any] = Field(default_factory=dict)
-    urls: dict[str, str] = Field(default_factory=dict)
+    urls: dict[str, str | None] = Field(default_factory=dict)
     keywords: list[str] = Field(default_factory=list)
     mesh_terms: list[str] = Field(default_factory=list)
     abstract: str | None = None
