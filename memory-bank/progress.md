@@ -70,11 +70,14 @@
 - [x] Extension 全面審查：argv 取代 shell 字串、uv SHA-256 驗證、Codex/Cline 設定保全、
   死設定/資源移除；VSIX `0.10.0` (2026-10-02)
 
+- [x] 為 Claude Code 註冊兩個 server（`zoteroMcp.claudeCodeMcpScope`，ledger/lock/原子寫入）(2026-11-25)
+- [x] PubMed 升到 0.11.0 `eb7b2ee`（43 tools；`research_workspace`、`pipeline_screening`），harness/skills/文件同步；npm build 依賴通過 high 等級 audit (2026-11-25)
+
 ## Doing
-發布 `v0.10.0-ext`（Keeper 2.4.0 / PubMed 0.7.7）。
+準備發布 `v0.11.0-ext`（Keeper 2.4.0 / PubMed 0.11.0）：本地 `pretest --full` 綠燈，待推送 main 與 tag。
 
 ## Next
-- [ ] 啟用 CI 後確認 `v0.10.0-ext` tag workflow、Marketplace 與 GitHub Release
+- [ ] 推送後確認 CI、`v0.11.0-ext` tag workflow、Marketplace 與 GitHub Release
 - [ ] 評估原生 `POST /items` 建立、唯讀 group library 與 `since`/`/deleted` 增量讀取（見 ROADMAP）
 - [ ] 抽出 `unified_import_tools.py` / `local_api_tools.py` 的純函式與共用 validator
 - [ ] machine-scoped `zoteroMcp.pythonPath`；新版 `uv` pin 與 digests

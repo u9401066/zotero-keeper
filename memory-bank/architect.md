@@ -14,8 +14,8 @@
            ┌───────────────────┴───────────────────┐
            ▼                                       ▼
 ┌──────────────────────┐              ┌──────────────────────┐
-│ zotero-keeper 2.4.0  │              │ pubmed-search 0.7.7 │
-│ 50 tools/6 resources │◄────────────►│       41 tools       │
+│ zotero-keeper 2.4.0  │              │ pubmed-search 0.11.0 │
+│ 50 tools/6 resources │◄────────────►│       43 tools       │
 │ SDK v2 MCPServer     │ UnifiedArticle│ SDK v2 MCPServer     │
 └──────────┬───────────┘   handoff     └──────────┬───────────┘
            │                                      │

@@ -2,13 +2,30 @@
 
 ## 當前焦點
 
-準備 VS Code extension / VSIX **0.10.0**、Zotero Keeper **2.4.0**（尚未打 tag 發布）。
-PubMed Search MCP 固定於正式 **0.7.7** release commit
-`8247af2a5bc53e218c1f1e5b310c45535e11368c`，兩個 server 共用 MCP SDK v2。
-Keeper 提供 50 個預設 tools、6 個 resources、4 個 URI templates；PubMed 41 tools
-（介面自 0.7.3 起未變，0.7.4–0.7.7 為速率限制、統一輸入驗證、fulltext prefetch、測試整修）。
+準備 VS Code extension / VSIX **0.11.0**（`release/ext-0.11.0`，尚未推送、尚未打 tag）。
+Zotero Keeper 維持 **2.4.0**（mcp-server 無程式變更，不另發 Python 版本）。
+PubMed Search MCP 固定於正式 **0.11.0** release commit
+`eb7b2eeb01c0fc73c1dfd9dab36534542c2d2bb6`（tag `v0.11.0`），兩個 server 共用 MCP SDK v2。
+Keeper 提供 50 個預設 tools、6 個 resources、4 個 URI templates；PubMed 43 tools / 16 類
+（0.10.0 新增 `research_workspace`、0.11.0 新增 `pipeline_screening`）。
 
-## 本輪（0.10.0 / 2.4.0）完成
+## 本輪（0.11.0）完成
+
+- 合併 `feature/claude-code-mcp-config`：extension 為 Claude Code 在 `~/.claude.json`
+  註冊兩個 server；`zoteroMcp.claudeCodeMcpScope` = `local`（預設，依工作區資料夾）/
+  `user` / `off`。SHA-256 ownership ledger、Claude Code 自己的 lock、原子寫入、
+  `~/.claude.json.zotero-mcp.bak` 備份；永不寫入 `.mcp.json`。
+- PubMed pin 與 submodule 升到 0.11.0（`eb7b2ee`）：exhaustive pipeline + PRISMA-S、
+  `block_analysis`、`pipeline_screening`；精準優先 `unified_search` 並揭露放寬結果；
+  MeSH 精確對應與自動修正；參考文獻更正；NCBI PMC 全文備援；Chronicle 研究設計標示。
+- 同步 12 個 curated PubMed skills（新增 `pubmed-research-workspace`）、hook 工具政策、
+  research agent、Copilot 指令、Codex/Cline harness 與文件到 43-tool 介面。
+- `npm audit fix`（非 breaking）更新 vsce 3.9.2、msal-node、markdown-it，
+  `npm audit --audit-level=high` 重新通過；VSIX 不含 npm 套件。
+- `test_tool_reference_contract` 以 UTF-8 讀取 `docs/tools-reference.md`
+  （cp950 等非 UTF-8 Windows locale 原本會失敗）。
+
+## 上一輪（0.10.0 / 2.4.0）完成
 
 - 本地閘門：`python scripts/pretest.py [--full]`（pre-push hook）；GitHub CI 只留
   clean install（lock/npm ci）、Windows+Linux runtime smoke、VSIX 打包、tag 發布；macOS 手動。
@@ -55,7 +72,7 @@ Keeper 提供 50 個預設 tools、6 個 resources、4 個 URI templates；PubMe
 
 先跑 Keeper lint/type/tests、extension tests、metadata guards、managed-venv
 smoke 與 VSIX 內容檢查。明確 stage 本輪檔案，保留工作區原有未提交修改。
-推送 main 後使用 `v0.10.0-ext` tag，由 workflow 驗證 release archive、打包，
+推送 main、確認同一 commit 的 CI 成功後，再推送 `v0.11.0-ext` tag，由 workflow 驗證 release archive、打包，
 將同一 artifact 發布到 Marketplace 與 GitHub Release；確認 Pages 部署。
 不可在 workflow 完成前宣稱正式發布成功；PyPI 是獨立發布管道。
 
@@ -65,4 +82,4 @@ Server-ID 與正確 object/library version。上傳前 Always Allow；不自動�
 
 ## 更新時間
 
-2026-10-02 UTC
+2026-11-25 UTC

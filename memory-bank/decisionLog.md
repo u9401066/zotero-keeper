@@ -1,5 +1,28 @@
 # Decision Log
 
+## 2026-11-25
+
+### DEC-034: VSIX 0.11.0 — PubMed 0.11.0 與 Claude Code 註冊
+
+#### 決定
+
+- PubMed Search MCP 固定 0.11.0（`eb7b2ee`，tag `v0.11.0`），submodule 指向同一 commit；
+  43 tools / 16 類（0.7.7 為 41；新增 `research_workspace`、`pipeline_screening`）。
+  Keeper 2.4.0 無程式變更，不發 Python 版本；`pubmed-search-mcp>=0.7.7` 不變。
+- Claude Code 只寫 `~/.claude.json`（local scope 預設、user、off），只改 ledger 記錄的
+  項目；永不寫 `.mcp.json`（會提交到 repo 並洩漏 interpreter 路徑、NCBI e-mail／API key）。
+  user scope 不帶 `PUBMED_WORKSPACE_DIR`，由 PubMed 0.11 使用 Claude Code 傳入的
+  `CLAUDE_PROJECT_DIR`。
+- Curated PubMed skills 加入上游 `pubmed-research-workspace`，對應新工具。
+- 以非 breaking 的 `npm audit fix` 修補 high 等級 build 依賴；不做 `--force`（會換 mocha 主版本）。
+- 根 CHANGELOG 以 `[Unreleased]` 記錄本輪 repo 變更：版本檢查要求第一個 semver 標題等於
+  Keeper 版本（2.4.0）。
+
+#### 理由
+
+發布前在本地抓出 CI 會失敗的項目（high 等級 npm audit、Windows locale 測試），避免耗用付費
+GitHub Actions；PubMed 的系統性回顧與精準優先搜尋是本版主要使用者價值。
+
 ## 2026-10-02
 
 ### DEC-033: 0.10.0 / 2.4.0 — 本地閘門優先、CI 只留不可本地重現的部分

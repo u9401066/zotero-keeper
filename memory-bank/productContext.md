@@ -34,8 +34,8 @@ Current collaboration-safe split:
 ├─────────────────────────────────────────────────────────┤
 │                   MCP Protocol Layer                      │
 ├──────────────────────┬──────────────────────────────────┤
-│ pubmed-search 0.7.7  │      keeper 2.4.0                │
-│ (41 research tools)  │ (50 tools + 6 resources)         │
+│ pubmed-search 0.11.0 │      keeper 2.4.0                │
+│ (43 research tools)  │ (50 tools + 6 resources)         │
 ├──────────────────────┼──────────────────────────────────┤
 │   NCBI Entrez API    │     Zotero Desktop App           │
 └──────────────────────┴──────────────────────────────────┘
@@ -53,7 +53,7 @@ Current collaboration-safe split:
   （取代已移除的 `get_session_pmids` / `get_cached_article` / `get_session_summary`）
 - `build_research_chronicle` / `read_research_chronicle`: 可稽核的研究演進紀錄
 - full-text、citation tree、multi-source、pipeline/export 與 reference
-  verification 工具由同一 41-tool registry 提供（0.7.7）
+  verification、research workspace 與 PRISMA screening 工具由同一 43-tool registry 提供（0.11.0）
 
 ### zotero-keeper
 - MCP SDK v2 server surface：50 tools + 6 resources
