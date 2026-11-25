@@ -84,6 +84,7 @@ try {
         "extension/package.json",
         "extension/readme.md",
         "extension/changelog.md",
+        "extension/out/claudeCodeMcpConfig.js",
         "extension/out/clineMcpConfig.js",
         "extension/out/codexMcpConfig.js",
         "extension/out/extension.js",

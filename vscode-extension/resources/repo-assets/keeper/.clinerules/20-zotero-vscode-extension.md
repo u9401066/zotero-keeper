@@ -21,6 +21,7 @@ This build-tool requirement does not change the extension's VS Code engine range
 ## Behaviors To Preserve
 
 - Activation should register both Zotero Keeper and PubMed Search MCP servers when enabled.
+- Claude Code registration (`src/claudeCodeMcpConfig.ts`) changes only ledger-owned entries in `~/.claude.json`, under Claude Code's `.claude.json.lock`, never writes `.mcp.json`, and never rewrites a file it cannot parse.
 - Embedded Python setup should be self-contained and should refresh packages when the pinned package source changes.
 - PubMed Search installs must use the fixed GitHub archive commit from `src/pubmedSearchPackage.ts`.
 - Official assistant assets must install into the workspace without overwriting custom user instructions.

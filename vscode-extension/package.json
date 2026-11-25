@@ -1,7 +1,7 @@
 {
     "name": "vscode-zotero-mcp",
     "displayName": "Zotero + PubMed MCP",
-    "description": "One-click Zotero 10+ Local API and PubMed research workspace for Copilot, Cline, and Codex.",
+    "description": "One-click Zotero 10+ Local API and PubMed research workspace for Copilot, Cline, Codex, and Claude Code.",
     "version": "0.10.0",
     "publisher": "u9401066",
     "license": "Apache-2.0",
@@ -32,6 +32,7 @@
         "mcp",
         "model context protocol",
         "copilot",
+        "claude code",
         "research",
         "bibliography",
         "reference manager",
@@ -181,6 +182,23 @@
                     "default": false,
                     "markdownDescription": "Force-install MCP servers into Codex CLI's `~/.codex/config.toml` even if `~/.codex` does not yet exist. By default, Codex configuration is only written when `~/.codex` is detected.",
                     "order": 32
+                },
+                "zoteroMcp.claudeCodeMcpScope": {
+                    "type": "string",
+                    "default": "local",
+                    "enum": [
+                        "local",
+                        "user",
+                        "off"
+                    ],
+                    "enumDescriptions": [
+                        "Register for each open workspace folder only (Claude Code local scope). PubMed gets that folder as its workspace directory.",
+                        "Register once for every Claude Code session (Claude Code user scope), without a PubMed workspace directory.",
+                        "Do not register, and withdraw the entries this extension registered."
+                    ],
+                    "scope": "machine",
+                    "markdownDescription": "Register Zotero Keeper and PubMed Search MCP for **Claude Code** (CLI and IDE extensions) in `~/.claude.json` (`$CLAUDE_CONFIG_DIR/.claude.json` when set). `local` (default) writes `projects[<workspace folder>].mcpServers`, `user` writes the top-level `mcpServers`, `off` removes what this extension registered. Nothing is written until Claude Code has been run once; entries you added or edited yourself are never changed, and the project file `.mcp.json` is never written. Start a new Claude Code session to load changes.",
+                    "order": 33
                 },
                 "zoteroMcp.autoInstallPackages": {
                     "type": "boolean",
