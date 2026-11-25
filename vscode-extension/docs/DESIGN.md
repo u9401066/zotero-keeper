@@ -19,9 +19,9 @@ Zotero or PubMed operations:
   assistant assets.
 
 ```text
-VS Code / Copilot       Cline                  Codex CLI
-        │                 │                        │
-        └─────────────────┴────────────────────────┘
+VS Code / Copilot       Cline         Codex CLI         Claude Code
+        │                 │               │                  │
+        └─────────────────┴───────────────┴──────────────────┘
                           │ stdio MCP
                           ▼
        extension-managed Python 3.12 environment
@@ -44,9 +44,10 @@ VS Code / Copilot       Cline                  Codex CLI
 | `uvCommands.ts` | Argument-array command construction shared by the uv and system-Python paths (no shell strings, so paths cannot inject commands) |
 | `PythonEnvironment` | System-Python fallback while still installing into an extension-managed writable venv |
 | `ZoteroMcpServerProvider` | Register enabled stdio servers through VS Code's `McpServerDefinitionProvider` API |
-| `mcpServerConfig.ts` | One environment/server-definition builder shared by the native provider, Cline and Codex (NCBI email resolution, proxy masking, atomic owner-only writes) |
+| `mcpServerConfig.ts` | One environment/server-definition builder shared by the native provider, Cline, Codex and Claude Code (NCBI email resolution, proxy masking, atomic owner-only writes) |
 | `clineMcpConfig.ts` | Synchronize only extension-managed Cline server entries (BOM/unknown keys preserved, failed backup never overwrites) |
 | `codexMcpConfig.ts` | Synchronize delimited extension-managed Codex configuration blocks (CRLF/permissions preserved) |
+| `claudeCodeMcpConfig.ts` | Synchronize extension-owned Claude Code entries in `~/.claude.json` (local or user scope; ledger-verified ownership, Claude Code's lock, stale-read guard, backup; unparsable files never rewritten) |
 | `harnessAssets.ts` | Content-addressed, recoverable workspace assistant-asset installation (see section 7) |
 | `statusBar.ts` | Connection, setup, package, and API-setting status |
 
@@ -64,7 +65,8 @@ activate
   ├── verify install-state, distribution metadata, and direct_url source
   │     └── stale/missing state → atomically reinstall both pinned packages
   ├── register native VS Code MCP definitions
-  ├── synchronize extension-owned Cline/Codex entries (global user files, idempotent)
+  ├── synchronize extension-owned Cline/Codex/Claude Code entries (global user files, idempotent;
+  │     Claude Code runs in the background behind its own file lock)
   ├── probe Zotero without blocking activation
   └── workspace assistant assets: NOTHING is written unless zoteroMcp.autoUpdateHarness
       is true; otherwise only the explicit "Install Official Assistant Assets" command installs
@@ -96,6 +98,27 @@ VS Code consumes these definitions natively. Cline and Codex use their own
 configuration formats, so activation updates only entries/blocks that the
 extension can identify as its own. Disabling a server removes only that managed
 entry; unrelated user configuration is preserved.
+
+Claude Code reads stdio servers from its own state file, `~/.claude.json`
+(`$CLAUDE_CONFIG_DIR/.claude.json`), which it rewrites constantly. Because
+`PUBMED_WORKSPACE_DIR` names one workspace, the default
+`zoteroMcp.claudeCodeMcpScope=local` registers per workspace folder in Claude
+Code's local scope (`projects["<git root of the folder>"].mcpServers`, forward
+slashes on Windows, every existing case spelling of that path), so windows of
+different workspaces never overwrite each other's value — unlike the single
+global Codex/Cline files, where the last window to sync wins. `user` registers
+once at top level without `PUBMED_WORKSPACE_DIR`; `off` withdraws everything the
+extension owns. The committed project file `.mcp.json` is never written.
+
+The writer never creates `~/.claude.json`, never rewrites content it cannot
+decode, parse or reinterpret, and changes only entries it owns: ownership is a
+SHA-256 ledger (`claude-code-mcp-ledger.json` in global storage) of the entries
+it wrote, so user-made entries with a managed name and managed entries the user
+edited are preserved verbatim. Each write takes Claude Code's own proper-lockfile
+lock (`~/.claude.json.lock`, never broken), re-reads the file immediately before
+the atomic rename and starts over if it changed, keeps formatting (indentation,
+EOL, BOM, final newline) and every other key, and saves the replaced bytes to
+`~/.claude.json.zotero-mcp.bak`.
 
 ## 5. Zotero API and authorization boundary
 
@@ -129,7 +152,8 @@ Settings are grouped by concern:
 - Zotero: `zoteroHost`, `zoteroPort`, `enableZoteroKeeper`.
 - PubMed and sources: `ncbiEmail`, API keys, proxy settings, and OpenURL
   resolver/preset.
-- Consumers: `enablePubmedSearch`, `installCodexConfig`, `autoUpdateHarness`.
+- Consumers: `enablePubmedSearch`, `installCodexConfig`, `claudeCodeMcpScope`
+  (machine-level), `autoUpdateHarness`.
 
 `useEmbeddedPython=true` is the default. A custom Python path is considered only
 when embedded Python is disabled or provisioning falls back. Port 23119 is a

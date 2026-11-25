@@ -24,6 +24,8 @@ Let AI manage your references! A MCP Server connecting VS Code Copilot / Claude 
 
 The **v0.10.0 VSIX is the recommended distribution**. It creates an isolated environment and installs Zotero Keeper 2.4.0 plus the pinned PubMed Search MCP 0.7.7 release snapshot. The `uvx`/PyPI path remains available for direct-server installs; verify the published version before assuming it matches this source release.
 
+Besides VS Code/Copilot, the extension registers the same two servers for **Cline**, **Codex CLI** and **Claude Code** when it detects them. Claude Code gets them in `~/.claude.json`, per workspace folder (local scope) by default; choose `user` or `off` with `zoteroMcp.claudeCodeMcpScope`. Entries you created or edited yourself are never changed. See [Cline, Codex CLI and Claude Code](vscode-extension/README.md#-cline-codex-cli-and-claude-code).
+
 > ⚠️ MCP SDK 2.0 is not compatible with 1.x. After upgrading the extension, run **Zotero MCP: Reinstall Python Environment** if VS Code still has an older managed environment.
 
 ---

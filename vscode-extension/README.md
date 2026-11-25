@@ -224,6 +224,24 @@ The extension installs workflow guides that teach Copilot and Cline:
 
 Run `Zotero MCP: Install Official Assistant Assets` to manually install/update.
 
+### 🔌 Cline, Codex CLI and Claude Code
+
+Besides registering both servers natively for VS Code/Copilot, the extension keeps the same two servers (same managed Python, same settings) registered for the other MCP clients it detects:
+
+| Client | Configuration written | When |
+| ------ | --------------------- | ---- |
+| Cline | `cline_mcp_settings.json` in Cline's global storage | Cline is installed |
+| Codex CLI | `~/.codex/config.toml` (honors `$CODEX_HOME`) | `~/.codex` exists, or `zoteroMcp.installCodexConfig` is on |
+| Claude Code (CLI and IDE extensions) | `~/.claude.json` (honors `$CLAUDE_CONFIG_DIR`) | the file exists (Claude Code has been run once) and `zoteroMcp.claudeCodeMcpScope` is not `off` |
+
+**Claude Code scope** — `zoteroMcp.claudeCodeMcpScope`:
+
+- `local` *(default)*: registered for each open workspace folder in Claude Code's *local* scope (`projects["<folder>"].mcpServers`, keyed the way Claude Code keys a project: the folder's git root, forward slashes on Windows). PubMed's `PUBMED_WORKSPACE_DIR` is that folder, so pipelines and reports land in the right workspace and VS Code windows of different workspaces never overwrite each other. Inside the project, a local entry takes precedence over a user-scope server with the same name.
+- `user`: registered once for every Claude Code session (top-level `mcpServers`), without `PUBMED_WORKSPACE_DIR` so it is never pinned to one workspace.
+- `off`: nothing is registered, and every entry this extension registered is withdrawn.
+
+The project file `.mcp.json` is never written: it is committed to the repository and would publish your interpreter path, NCBI e-mail and API keys. `~/.claude.json` is Claude Code's own state file, so the extension only changes entries whose content still matches what it wrote (a SHA-256 ledger in its global storage): servers you created yourself — even named `zotero-keeper` or `pubmed-search-mcp` — and managed entries you edited are left untouched. Writes take Claude Code's own lock (`~/.claude.json.lock`), are atomic, start over if the file changed meanwhile, never touch a file that is not valid JSON, keep every other key, the indentation and the line endings, and save the previous bytes to `~/.claude.json.zotero-mcp.bak`. Start a new Claude Code session to load changes, and check them with `claude mcp list`.
+
 ## Extension Settings
 
 | Setting | Default | Description |
@@ -233,6 +251,8 @@ Run `Zotero MCP: Install Official Assistant Assets` to manually install/update.
 | `zoteroMcp.ncbiEmail` | | Email for NCBI API (自動偵測 git email，通常不需手動設定) |
 | `zoteroMcp.enableZoteroKeeper` | `true` | Enable Zotero Keeper server |
 | `zoteroMcp.enablePubmedSearch` | `true` | Enable PubMed Search server |
+| `zoteroMcp.installCodexConfig` | `false` | Write the Codex CLI configuration even before `~/.codex` exists |
+| `zoteroMcp.claudeCodeMcpScope` | `local` | Claude Code registration: `local` (per workspace folder), `user` (all sessions) or `off` (withdraw); user-level setting |
 
 ## Commands
 
@@ -255,7 +275,7 @@ This extension uses [uv](https://github.com/astral-sh/uv) from Astral to manage 
 1. **First Run**: Downloads uv binary (~10MB) to extension storage
 2. **Environment Setup**: Creates isolated venv with Python 3.12
 3. **Package Install**: Installs `zotero-keeper` and the fixed `pubmed-search-mcp` snapshot (10-100x faster than pip)
-4. **MCP Servers**: Starts both servers and registers with VS Code
+4. **MCP Servers**: Starts both servers and registers with VS Code (and with Cline, Codex CLI and Claude Code when detected)
 5. **Assistant Assets**: Installs research workflow guides to workspace
 
 The Python environment is completely isolated from your system Python.
@@ -268,6 +288,13 @@ Do not add [`54yyyu/zotero-mcp`](https://github.com/54yyyu/zotero-mcp) to this m
 1. Make sure Zotero is running
 2. Check that the API is enabled (Edit → Settings → Advanced → Allow other applications...)
 3. Verify host/port settings match your setup
+
+### Claude Code does not list the servers
+
+1. Run Claude Code once so that `~/.claude.json` exists, then run `Zotero MCP: Setup Wizard` (or reload VS Code)
+2. With the default `local` scope, the servers apply to sessions started in that workspace folder (or anywhere in its git repository); use `user` scope for every session
+3. Start a new Claude Code session; `claude mcp list` shows what is registered
+4. The Extension Host log says why a sync was skipped: `busy` (Claude Code held its lock; the next change retries), `invalid` (the file is not valid JSON — Claude Code reports the same), or *left entries this extension does not own unchanged* (delete your own entry with that name to let the extension manage it)
 
 ### Extension not activating
 1. Check the "Zotero MCP" output channel for errors

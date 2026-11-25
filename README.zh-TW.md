@@ -23,6 +23,8 @@
 
 **v0.10.0 VSIX 是目前建議的發佈管道**：擴充套件會建立隔離環境，並安裝 Zotero Keeper 2.4.0 與固定在正式 release commit 的 PubMed Search MCP 0.7.7。`uvx` / PyPI 仍可用於直接 server 安裝，但應先核對已發佈版本是否與本次原始碼 release 一致。
 
+除了 VS Code/Copilot，擴充套件偵測到 **Cline**、**Codex CLI** 與 **Claude Code** 時，也會為它們註冊同樣兩個 server。Claude Code 寫入 `~/.claude.json`，預設以工作區資料夾為單位（local scope）；可用 `zoteroMcp.claudeCodeMcpScope` 改為 `user` 或 `off`。您自行建立或修改過的項目一律不會被變更。詳見 [Cline, Codex CLI and Claude Code](vscode-extension/README.md#-cline-codex-cli-and-claude-code)。
+
 > ⚠️ MCP SDK 2.0 與 1.x 不相容。擴充套件升級後，若 VS Code 仍使用舊環境，請執行 **Zotero MCP: Reinstall Python Environment**。
 
 ---
