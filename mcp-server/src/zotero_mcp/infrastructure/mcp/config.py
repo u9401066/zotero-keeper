@@ -56,7 +56,12 @@ Zotero Keeper - MCP Server for managing local Zotero libraries.
 - `run_saved_search(key)` - Execute a saved Zotero search
 
 ### Import & Persist
-- `import_articles(articles=..., ris_text=..., collection_name=...)` - Single import gateway
+- `import_articles(articles=..., ris_text=..., collection_name=...)` - Single import gateway.
+  Pass complete records: with PubMed Search MCP 0.12.0+ use
+  `unified_search(..., output_format="json", options="full_records")` or
+  `fetch_article_details(pmids="...", output_format="json")`. Default
+  unified_search summary records (`abstract_snippet`, `author_count`) are
+  refused per record (code `summary_record`) and nothing is written for them
 - `interactive_save(...)` - Manual save with elicitation and optional metadata fetch
 - `quick_save(...)` - Manual save without prompts
 - `check_articles_owned(pmids=[...])` - Check whether PubMed records already exist locally
@@ -92,7 +97,8 @@ that confirmation may a non-interactive tool set `allow_library_root=true`.
 1. Use pubmed-search-mcp to search and enrich articles
 2. Use zotero-keeper `check_articles_owned()` if local duplicate filtering is needed
 3. Use zotero-keeper `list_collections()` to choose a target collection
-4. Use zotero-keeper `import_articles()` to persist results into Zotero
+4. Use zotero-keeper `import_articles()` to persist complete records
+   (`options="full_records"`) into Zotero
 
 ## Notes
 

@@ -26,15 +26,22 @@ Workflow:
     3. Articles are converted to Zotero format and saved
 
 Example:
-    # From pubmed-search-mcp structured search result
-    articles = [...]  # extracted from unified_search(..., output_format="json")
+    # From pubmed-search-mcp: complete records, not the default summary records
+    results = unified_search("CRISPR", output_format="json", options="full_records")
 
     # Import to Zotero
     result = await import_articles(
-        articles=articles["articles"],
+        articles=results["articles"],
         collection_name="CRISPR Research",
         tags=["crispr", "2024"]
     )
+
+Summary records:
+    Since pubmed-search-mcp 0.12.0, ``unified_search(..., output_format="json")``
+    returns summary records by default (``first_author``/``author_count``,
+    ``abstract_snippet``; no author list or full abstract). They are refused per
+    record with code ``summary_record`` and the calls that return complete
+    records (see ``unified_record_detail``); nothing is written for them.
 """
 
 import logging
@@ -54,6 +61,12 @@ from ..mappers.zotero_schema import (
     finalize_item_for_schema,
 )
 from .collection_support import apply_collection_and_tags, attach_saved_to_info, resolve_collection_target
+from .unified_record_detail import (
+    is_summary_record,
+    summary_record_error,
+    summary_record_guidance,
+    summary_records_refusal,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -639,11 +652,19 @@ def register_unified_import_tools(mcp, zotero_client):
         - Automatically handles format conversion
         - Supports collection targeting with validation
 
-        🔗 INTEGRATION WITH pubmed-search-mcp:
-        Articles from these tools can be directly imported:
-        - unified_search(..., output_format="json") → articles
-        - fetch_article_details() → article
+        🔗 INTEGRATION WITH pubmed-search-mcp (pass complete records):
+        - unified_search(..., output_format="json", options="full_records") → articles
+        - fetch_article_details(pmids="...", output_format="json") → articles
         - prepare_export(format="ris") → ris_text
+
+        ⚠️ SUMMARY RECORDS ARE REFUSED:
+        Since pubmed-search-mcp 0.12.0, unified_search(..., output_format="json")
+        returns summary records by default (first_author/author_count and an
+        abstract_snippet; no author list, full abstract, volume/issue/pages).
+        Each such record is reported in `errors` with code "summary_record" and
+        is not written; `summary_records` lists them with `next_commands`. A
+        batch of only summary records fails with error_code "summary_records"
+        before any Zotero call.
 
         ⚠️ COLLECTION 防呆:
         - If collection_name/collection_key is specified but not found → ERROR
@@ -651,8 +672,9 @@ def register_unified_import_tools(mcp, zotero_client):
         - If no collection is specified → refuses to write unless allow_library_root=True
 
         Args:
-            articles: List of article dicts from pubmed-search-mcp
-                     Format: UnifiedArticle.to_dict() or search result format
+            articles: List of complete article dicts from pubmed-search-mcp
+                     Format: UnifiedArticle.to_dict() (unified_search with
+                     options="full_records") or fetch_article_details JSON
             ris_text: Alternative - RIS format text to parse and import
             collection_name: Target collection name (human-readable, recommended)
             collection_key: Target collection key (alternative)
@@ -667,11 +689,14 @@ def register_unified_import_tools(mcp, zotero_client):
             - skipped: number of duplicates skipped
             - items: list of imported titles
             - saved_to: collection info or "My Library (root)"
-            - errors: any errors encountered
+            - errors: any errors encountered (per record: article, title, error[, code])
+            - summary_records: refused summary records with hint/next_commands (when any)
 
         Example - From PubMed search:
-            # Step 1: Search with pubmed-search-mcp
-            results = await unified_search("machine learning anesthesia", output_format="json")
+            # Step 1: Search with pubmed-search-mcp (complete records)
+            results = await unified_search(
+                "machine learning anesthesia", output_format="json", options="full_records"
+            )
 
             # Step 2: Import to Zotero
             await import_articles(
@@ -681,8 +706,12 @@ def register_unified_import_tools(mcp, zotero_client):
             )
 
         Example - From multi-source search:
-            results = await unified_search("CRISPR", output_format="json")
+            results = await unified_search("CRISPR", output_format="json", options="full_records")
             await import_articles(articles=results["articles"], collection_name="CRISPR OA")
+
+        Example - Selected PMIDs from a summary search:
+            details = await fetch_article_details(pmids="38353755,37864754", output_format="json")
+            await import_articles(articles=details["articles"], collection_name="AI Anesthesia")
 
         Example - From RIS text:
             ris = await prepare_export(pmids="12345678,87654321", format="ris")
@@ -701,7 +730,8 @@ def register_unified_import_tools(mcp, zotero_client):
             if not articles and not ris_text:
                 result["error"] = "Must provide either 'articles' or 'ris_text'"
                 result["hint"] = (
-                    'Use unified_search(..., output_format="json") or fetch_article_details() to get articles, then pass them here'
+                    'Use unified_search(..., output_format="json", options="full_records") or '
+                    'fetch_article_details(pmids="...", output_format="json") to get articles, then pass them here'
                 )
                 return result
 
@@ -721,6 +751,21 @@ def register_unified_import_tools(mcp, zotero_client):
                 result["error"] = f"Too many articles provided ({len(articles)}). Maximum supported per import is {MAX_IMPORT_ARTICLES}."
                 result["hint"] = f"Split the import into batches of {MAX_IMPORT_ARTICLES} articles or fewer."
                 return result
+
+            # === Step 2b: Refuse summary records (pubmed-search-mcp >= 0.12.0 default) ===
+            summary_records = [
+                (article_index, article) for article_index, article in enumerate(articles, start=1) if is_summary_record(article)
+            ]
+            summary_indices = {article_index for article_index, _ in summary_records}
+            if summary_records:
+                result["errors"].extend(summary_record_error(index, article) for index, article in summary_records)
+                if len(summary_records) == len(articles):
+                    result.update(summary_records_refusal(summary_records))
+                    return result
+                result["summary_records"] = summary_record_guidance(summary_records)
+                result.setdefault("warnings", []).append(
+                    f"{len(summary_records)} summary record(s) not imported; see summary_records.next_commands"
+                )
 
             if not collection_name and not collection_key and not allow_library_root:
                 result["error"] = "No Zotero collection selected"
@@ -746,6 +791,8 @@ def register_unified_import_tools(mcp, zotero_client):
             # === Step 4: Convert articles to Zotero format ===
             converted_items: list[tuple[dict[str, Any], dict[str, Any]]] = []
             for article_index, article in enumerate(articles, start=1):
+                if article_index in summary_indices:
+                    continue
                 try:
                     validated_article = _validate_article_payload(article)
                     zotero_item = _unified_article_to_zotero(validated_article)
@@ -896,8 +943,10 @@ def register_unified_import_tools(mcp, zotero_client):
             file_path: Absolute path to a local PDF on the machine running this
                 MCP server (the server reads the bytes directly).
             title: Optional parent-item title when no `article` is given.
-            article: Optional unified article dict (e.g. from
-                fetch_article_details / unified_search) to build a rich parent.
+            article: Optional complete unified article dict (e.g. from
+                fetch_article_details or unified_search with
+                options="full_records") to build a rich parent. A unified_search
+                summary record is refused (error_code "summary_records").
             collection_name: Target collection by name (metadata mode).
             collection_key: Target collection by key (metadata mode).
             tags: Extra tags for the parent item (metadata mode).
@@ -916,10 +965,10 @@ def register_unified_import_tools(mcp, zotero_client):
             )
 
             # Attach a PDF to a parent built from PubMed metadata
-            details = await fetch_article_details(pmid="38353755")
+            details = await fetch_article_details(pmids="38353755", output_format="json")
             import_pdf(
                 file_path="/home/me/papers/ai-anesthesia.pdf",
-                article=details,
+                article=details["articles"][0],
                 collection_name="AI Anesthesia",
             )
 
@@ -956,6 +1005,9 @@ def register_unified_import_tools(mcp, zotero_client):
         try:
             if has_metadata:
                 # === Metadata mode: create parent item, then attach the PDF ===
+                if article and is_summary_record(article):
+                    result.update(summary_records_refusal([(1, article)]))
+                    return result
                 if article:
                     try:
                         validated_article = _validate_article_payload(article)
