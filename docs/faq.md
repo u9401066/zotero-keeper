@@ -104,9 +104,14 @@ RCR is a field-normalized citation metric from NIH's [iCite](https://icite.od.ni
 The recommended workflow uses [pubmed-search-mcp](https://github.com/u9401066/pubmed-search-mcp) for search and Zotero Keeper for import:
 
 ```
-1. Search:  unified_search("CRISPR gene therapy", output_format="json")
+1. Search:  unified_search("CRISPR gene therapy", output_format="json", options="full_records")
 2. Import:  import_articles(articles=results["articles"], collection_name="CRISPR")
 ```
+
+`options="full_records"` (PubMed Search MCP 0.12.0+) returns complete records. Without it,
+0.12.0+ returns summary records (first author, author count, abstract snippet), which
+`import_articles` refuses instead of creating items without authors. For a few selected PMIDs,
+`fetch_article_details(pmids="...", output_format="json")` also returns complete records.
 
 Both steps can be done in a single Copilot chat message:
 > *"Search PubMed for CRISPR gene therapy and save the results to my 'CRISPR' collection"*

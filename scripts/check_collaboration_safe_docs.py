@@ -22,8 +22,9 @@ RULES = (
             "import_articles",
             "check_articles_owned",
             "unified_search",
-            'options="preprints"',
-            'options="all_types"',
+            'options="preprints,full_records"',
+            'options="all_types,full_records"',
+            'options="full_records"',
         ),
         forbidden=(
             "search_pubmed_exclude_owned",

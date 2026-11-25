@@ -6,6 +6,8 @@
 
 ## Current Status (2026-04-09)
 
+> **Update (2026-11-25):** PubMed Search MCP 0.12.0 makes `unified_search(..., output_format="json")` return summary records by default; the import handoff is now `unified_search(..., output_format="json", options="full_records")` (Keeper refuses summary records).
+
 The search-side unification described in this document is now implemented around `unified_search`.
 
 The current collaboration-safe workflow across the two MCPs is:

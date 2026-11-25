@@ -71,7 +71,8 @@ Current collaboration-safe split:
 ## 資料流
 
 1. User → VS Code Copilot / Claude
-2. pubmed-search-mcp `unified_search(..., output_format="json")`
+2. pubmed-search-mcp `unified_search(..., output_format="json", options="full_records")`
+   (0.12.0+ JSON defaults to summary records, which `import_articles` refuses)
 3. zotero-keeper `check_articles_owned(...)` → `import_articles(...)`
 4. Results → Session Cache / Zotero → User
 

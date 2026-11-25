@@ -311,14 +311,14 @@ preview 後才補 identity。`confirm=true` 必須原樣重送已核准 proposal
 #### 推薦的 PubMed → Zotero 工作流
 
 ```python
-# 1. 用 pubmed-search-mcp 搜尋
-results = unified_search("anesthesia AI", output_format="json")
+# 1. 用 pubmed-search-mcp 搜尋（匯入要用完整紀錄）
+results = unified_search("anesthesia AI", output_format="json", options="full_records")
 
 # 需要納入預印本時
-results = unified_search("anesthesia AI", output_format="json", options="preprints")
+results = unified_search("anesthesia AI", output_format="json", options="preprints,full_records")
 
 # 需要保留非同行審查內容時
-results = unified_search("anesthesia AI", output_format="json", options="all_types")
+results = unified_search("anesthesia AI", output_format="json", options="all_types,full_records")
 
 # 2. 可選：先對本地 Zotero 做重複檢查
 pmids = [article.get("identifiers", {}).get("pmid") for article in results["articles"]]
@@ -330,6 +330,13 @@ import_articles(
   collection_name="AI Research"
 )
 ```
+
+> PubMed Search MCP 0.12.0 起，`unified_search(..., output_format="json")` 預設回傳摘要紀錄
+> （`first_author`／`author_count`、400 字元的 `abstract_snippet`，沒有完整作者清單與摘要）。
+> `import_articles` 會逐筆拒絕（`code: "summary_record"`），在 `summary_records.next_commands`
+> 列出取得完整紀錄的呼叫，不會寫入不完整的條目。請加上 `options="full_records"`，或用
+> `fetch_article_details(pmids="...", output_format="json")` 取得選定 PMID 的完整紀錄。
+> 較早的 PubMed 版本本來就回傳完整紀錄，也不接受 `full_records`。
 
 ### 🤝 collaboration-safe 設定摘要
 
@@ -462,7 +469,7 @@ v0.11.0 VSIX 固定使用 [pubmed-search-mcp 0.11.0](https://github.com/u9401066
 你: 「幫我找 2024 年麻醉 AI 的新論文，我還沒有的」
 
 AI 執行:
-1. pubmed-search-mcp: unified_search("anesthesia AI", filters="year:2024-", output_format="json")
+1. pubmed-search-mcp: unified_search("anesthesia AI", filters="year:2024-", output_format="json", options="full_records")
   → 找到 30 篇候選文獻
 
 2. zotero-keeper: check_articles_owned([...pmids...])

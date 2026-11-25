@@ -4,6 +4,8 @@
 
 ## Current Status (2026-04-09)
 
+> **Update (2026-11-25):** PubMed Search MCP 0.12.0 makes `unified_search(..., output_format="json")` return summary records by default; the import handoff is now `unified_search(..., output_format="json", options="full_records")` (Keeper refuses summary records).
+
 The current public contract used by keeper is `UnifiedArticle.to_dict()` from `unified_search(..., output_format="json")`.
 
 This means the canonical PubMed -> Zotero handoff payload is the structured JSON article list returned by pubmed-search-mcp, not the older raw `search_literature`-style display output.

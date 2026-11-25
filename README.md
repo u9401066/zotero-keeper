@@ -321,8 +321,8 @@ If you intentionally want the old standalone keeper behavior, set `ZOTERO_KEEPER
 #### Recommended PubMed → Zotero workflow
 
 ```python
-# 1. Search with pubmed-search-mcp
-results = unified_search("anesthesia AI", output_format="json")
+# 1. Search with pubmed-search-mcp (complete records for the import handoff)
+results = unified_search("anesthesia AI", output_format="json", options="full_records")
 
 # 2. Optional: filter against local Zotero
 pmids = [
@@ -337,6 +337,15 @@ import_articles(
   collection_name="AI Research"
 )
 ```
+
+> Since PubMed Search MCP 0.12.0, `unified_search(..., output_format="json")` returns
+> summary records by default (`first_author`/`author_count`, a 400-character
+> `abstract_snippet`; no author list or full abstract). `import_articles` refuses them per
+> record (`code: "summary_record"`) and lists the calls that return complete records in
+> `summary_records.next_commands`; nothing incomplete is written. Pass
+> `options="full_records"`, or fetch selected PMIDs with
+> `fetch_article_details(pmids="...", output_format="json")`. Earlier PubMed versions already
+> return complete records and do not accept `full_records`.
 
 ### 🤝 Collaboration-Safe Setup (Summary)
 
@@ -469,7 +478,7 @@ The v0.11.0 VSIX pins [pubmed-search-mcp 0.11.0](https://github.com/u9401066/pub
 You: "Find new anesthesia AI papers from 2024 that I don't have"
 
 AI executes:
-1. pubmed-search-mcp: unified_search("anesthesia AI", filters="year:2024-", output_format="json")
+1. pubmed-search-mcp: unified_search("anesthesia AI", filters="year:2024-", output_format="json", options="full_records")
   → Found 30 candidate articles
 
 2. zotero-keeper: check_articles_owned([...pmids...])

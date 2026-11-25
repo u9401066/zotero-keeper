@@ -28,8 +28,8 @@
 ## Recommended PubMed → Zotero Flow
 
 ```python
-# 1) Search in pubmed-search-mcp
-results = unified_search("anesthesia AI", output_format="json")
+# 1) Search in pubmed-search-mcp (complete records for the import handoff)
+results = unified_search("anesthesia AI", output_format="json", options="full_records")
 
 # 2) Optional: filter against your Zotero library via keeper
 pmids = [a.get("identifiers", {}).get("pmid") for a in results["articles"]]
@@ -44,6 +44,11 @@ import_articles(
 ```
 
 Guidance:
+- Hand `import_articles` complete records: `unified_search(..., output_format="json", options="full_records")`
+  or `fetch_article_details(pmids="...", output_format="json")`. Since PubMed Search MCP 0.12.0 the
+  default JSON records are summaries (`abstract_snippet`, `author_count`); Keeper refuses them per
+  record (`code: "summary_record"`) rather than saving items without authors. Earlier PubMed versions
+  already return complete records and do not accept `full_records`.
 - Keep imports under `max_articles=100` per call.
 - Use `collection_name` to route saves safely; Keeper validates against existing collections. On Zotero 10+, a missing destination collection can first be proposed and explicitly confirmed with `create_collection`. On Zotero 7–9, create it in the UI.
 - Collection routing is fail-closed. `interactive_save` needs an exact collection key or double-confirmed `ROOT`; `skip_collection_prompt=True` aborts. `quick_save`, `import_articles`, and `import_pdf` reject a missing collection unless explicit user approval is represented by `allow_library_root=true`.
@@ -152,6 +157,11 @@ registration. A failure after child creation may return `partial=true` and
 
 - **No pubmed-search-mcp running**
   `check_articles_owned` falls back to local PMID checks only. `import_articles` still works for JSON/RIS inputs but cannot fetch missing PubMed metadata.
+
+- **`import_articles` returns `error_code: "summary_records"` or `summary_record` errors**
+  The articles came from a default `unified_search` JSON call (PubMed Search MCP 0.12.0+). Nothing was
+  written for them. Run one of `summary_records.next_commands` (`options="full_records"`, or
+  `fetch_article_details` for the listed PMIDs) and import those articles.
 
 - **Need to override paths**
   Use absolute paths in `PUBMED_SEARCH_PATH` and MCP configs; avoid relative paths when MCP servers start from editors.

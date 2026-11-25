@@ -68,8 +68,8 @@ By default, zotero-keeper runs in a collaboration-safe mode: PubMed search/disco
 **Workflow:**
 
 ```python
-# Step 1: Search with pubmed-search-mcp
-results = unified_search("CRISPR gene therapy", limit=10, output_format="json")
+# Step 1: Search with pubmed-search-mcp (complete records, PubMed Search MCP 0.12.0+)
+results = unified_search("CRISPR gene therapy", limit=10, output_format="json", options="full_records")
 
 # Step 2: Import to Zotero (ANY source works!)
 import_articles(
@@ -80,6 +80,14 @@ import_articles(
 ```
 
 **Supported sources:** PubMed, Europe PMC, CORE, CrossRef, OpenAlex, Semantic Scholar, RIS
+
+**Summary records are refused.** The default `unified_search(..., output_format="json")`
+records of PubMed Search MCP 0.12.0+ carry only `first_author`/`author_count` and an
+`abstract_snippet`. `import_articles` reports each one in `errors` (`code: "summary_record"`)
+and in `summary_records` (with `next_commands`) instead of creating an item without authors;
+a batch of only summary records fails with `error_code: "summary_records"` before any Zotero
+call. Pass `options="full_records"` or `fetch_article_details(pmids="...", output_format="json")`
+articles instead.
 
 ### Public Tool Surface (50 default tools + 6 resources)
 
@@ -306,6 +314,7 @@ AI: quick_save(
 
 ```text
 User: "Import these PubMed results to 'Machine Learning'"
+AI: results = unified_search("machine learning", output_format="json", options="full_records")
 AI: import_articles(
         articles=results["articles"],
         collection_name="Machine Learning"

@@ -489,7 +489,7 @@ The **single unified import entry point** for all article imports to Zotero. Acc
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `articles` | `list[dict]` | `None` | Articles from `unified_search(..., output_format="json")` |
+| `articles` | `list[dict]` | `None` | Complete articles from `unified_search(..., output_format="json", options="full_records")` or `fetch_article_details(..., output_format="json")` |
 | `ris_text` | `str` | `None` | Alternative: RIS-format text to parse and import |
 | `collection_name` | `str` | `None` | Target collection name (recommended) |
 | `collection_key` | `str` | `None` | Target collection key (alternative) |
@@ -500,6 +500,20 @@ The **single unified import entry point** for all article imports to Zotero. Acc
 > ⚠️ A collection is required by default. If a named/keyed collection is not
 > found, the tool returns an error. Set `allow_library_root=true` only after the
 > user explicitly confirms a My Library root import.
+
+> ⚠️ **Summary records are refused.** Since PubMed Search MCP 0.12.0,
+> `unified_search(..., output_format="json")` returns summary records by default
+> (`first_author`/`author_count`, a 400-character `abstract_snippet` with
+> `abstract_truncated`; no author list, full abstract, volume/issue/pages or MeSH
+> terms). A record carrying `abstract_snippet`, `abstract_truncated` or
+> `author_count` is not written unless it also carries both `authors` and
+> `abstract` (or `abstractNote`); it is listed
+> in `errors` with `code: "summary_record"` and in `summary_records` (`articles`,
+> `pmids`, `without_pmid`, `hint`, `next_commands`). Complete records in the same
+> batch are still imported. A batch of only summary records fails with
+> `error_code: "summary_records"` before any Zotero call. Get complete records with
+> `options="full_records"` (PubMed Search MCP 0.12.0+; earlier versions already return
+> them and reject the option) or `fetch_article_details(pmids="...", output_format="json")`.
 
 **Returns**:
 ```json
@@ -515,8 +529,8 @@ The **single unified import entry point** for all article imports to Zotero. Acc
 
 **Example workflow**:
 ```python
-# 1. Search with pubmed-search-mcp
-results = unified_search("machine learning anesthesia", output_format="json")
+# 1. Search with pubmed-search-mcp (complete records)
+results = unified_search("machine learning anesthesia", output_format="json", options="full_records")
 
 # 2. (Optional) Filter out already-owned articles
 pmids = [a.get("identifiers", {}).get("pmid") for a in results["articles"]]
@@ -537,7 +551,7 @@ import_articles(
 Import a **local PDF file** into Zotero using the Connector API — **no Web API key required** (stays within the Local/Connector architecture).
 
 **Two modes**:
-- **Metadata mode** (recommended): provide `article` (a unified article dict, e.g. from `fetch_article_details`) or a `title`. Creates a parent item with that metadata in the chosen collection and attaches the PDF to it.
+- **Metadata mode** (recommended): provide `article` (a complete unified article dict, e.g. from `fetch_article_details`; a `unified_search` summary record is refused with `error_code: "summary_records"`) or a `title`. Creates a parent item with that metadata in the chosen collection and attaches the PDF to it.
 - **Auto-recognize mode** (default when no metadata): saves the PDF as a standalone attachment and lets Zotero extract the DOI/title and build the parent item automatically.
 
 **Parameters**:
