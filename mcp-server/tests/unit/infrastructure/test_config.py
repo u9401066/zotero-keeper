@@ -73,3 +73,11 @@ def test_server_version_has_a_single_source_and_instructions_cover_core_tools():
         "ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1",
     ):
         assert name in config.instructions
+
+
+def test_instructions_ask_for_complete_records_and_name_the_summary_refusal():
+    """PubMed 0.12.0 unified_search JSON defaults to summary records that import_articles refuses."""
+    instructions = McpServerConfig().instructions
+    assert 'unified_search(..., output_format="json", options="full_records")' in instructions
+    assert 'fetch_article_details(pmids="...", output_format="json")' in instructions
+    assert "summary_record" in instructions

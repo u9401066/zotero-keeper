@@ -22,7 +22,7 @@ from zotero_mcp.infrastructure.mcp.unified_import_tools import (
 ImportArticlesTool = Callable[..., Awaitable[dict[str, Any]]]
 
 
-def _build_pubmed_unified_article_payload() -> dict[str, Any]:
+def _build_pubmed_unified_article_payload(*, pmc: str | None = "PMC7654321") -> dict[str, Any]:
     """Build a payload from pubmed-search-mcp's canonical UnifiedArticle contract."""
     repo_root = Path(__file__).resolve().parents[4]
     article_contract = repo_root / "external" / "pubmed-search-mcp" / "src" / "pubmed_search" / "domain" / "entities" / "article.py"
@@ -46,7 +46,7 @@ def _build_pubmed_unified_article_payload() -> dict[str, Any]:
         primary_source="pubmed",
         pmid="12345678",
         doi="10.1000/icu-sedation",
-        pmc="PMC7654321",
+        pmc=pmc,
         authors=[
             Author(given_name="Jane", family_name="Smith"),
             Author(given_name="Wei", family_name="Chen"),
@@ -177,6 +177,24 @@ class TestImportArticles:
         # New metadata completeness fields
         assert saved_item["accessDate"].endswith("Z")
         assert saved_item["libraryCatalog"] == "PubMed"
+
+    @pytest.mark.asyncio
+    async def test_accepts_canonical_contract_without_a_pmc_copy(self):
+        """UnifiedArticle.to_dict() emits null url entries; most PubMed records have no PMCID."""
+        mock_client = AsyncMock()
+        mock_client.save_items.return_value = {"success": True}
+        import_articles = _register_import_tool(MagicMock(), mock_client)
+        payload = _build_pubmed_unified_article_payload(pmc=None)
+        assert payload["urls"]["pmc"] is None
+
+        result = await import_articles(articles=[payload], skip_duplicates=False, allow_library_root=True)
+
+        assert result["success"] is True, result.get("errors")
+        assert result["imported"] == 1
+        saved_item = mock_client.save_items.await_args.args[0][0]
+        assert saved_item["url"] == "https://doi.org/10.1000/icu-sedation"
+        assert "PMCID" not in saved_item["extra"]
+        assert saved_item["abstractNote"] == "Structured search payload used for keeper contract verification."
 
     @pytest.mark.asyncio
     async def test_skips_duplicates_using_batch_identifier_check(self):
