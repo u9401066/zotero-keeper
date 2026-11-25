@@ -25,7 +25,11 @@ articles into Zotero without losing provenance or overwriting user choices.
 5. Use `build_research_chronicle` and `read_research_chronicle` for persistent research-history artifacts.
 6. Before saving to Zotero, call `list_collections` unless the destination is already confirmed.
 7. Check duplicates with `check_articles_owned`.
-8. Use `import_articles` as the default PubMed-to-Zotero handoff.
+8. Use `import_articles` as the default PubMed-to-Zotero handoff, with complete
+   records: `unified_search(..., output_format="json", options="full_records")`
+   (PubMed Search MCP 0.12.0+) or `fetch_article_details(pmids="...", output_format="json")`.
+   Default JSON summary records (`abstract_snippet`, `author_count`) are refused
+   per record; follow `summary_records.next_commands`.
 9. For Zotero 10+ mutations, first obtain a response-bound `server_id` from a
    read or authorization, include it as `expected_server_id` in the
    `confirm=false` preview, and ask the user to approve that complete proposal.

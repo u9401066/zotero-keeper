@@ -46,9 +46,13 @@ Collection 路由採 fail-closed：
 
 | 情境 | 推薦工具 | 說明 |
 |------|----------|------|
-| pubmed-search-mcp JSON 結果 | `import_articles` | 預設推薦，直接接 `unified_search(..., output_format="json")` |
+| pubmed-search-mcp JSON 結果 | `import_articles` | 預設推薦；傳入 `unified_search(..., output_format="json", options="full_records")` 或 `fetch_article_details(pmids="...", output_format="json")` 的完整紀錄 |
 | RIS 匯出文字 | `import_articles` | 傳入 `ris_text`，由 keeper 統一解析匯入 |
 | 需要舊版 keeper 單機橋接流程 | legacy tools | 僅在啟用 `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` 時使用 |
+
+> PubMed Search MCP 0.12.0 起，`output_format="json"` 預設回傳摘要紀錄（`abstract_snippet`、
+> `author_count`），沒有完整作者清單與摘要。`import_articles` 會逐筆拒絕（`code: "summary_record"`），
+> 不寫入不完整條目，並在 `summary_records.next_commands` 列出取得完整紀錄的呼叫。
 
 ### 匯入前確認清單
 1. ✅ 已詢問目標 Collection

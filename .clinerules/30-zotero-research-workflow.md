@@ -19,7 +19,10 @@ paths:
 - Never save to My Library root unless the user explicitly confirms it; only
   then may a caller set `allow_library_root=true`.
 - Check for existing articles before creating new Zotero items.
-- Prefer the unified `import_articles` bridge for PubMed JSON, PMID lists, or RIS text.
+- Prefer the unified `import_articles` bridge for complete PubMed JSON records
+  (`unified_search(..., output_format="json", options="full_records")`, or
+  `fetch_article_details(pmids="...", output_format="json")` for PMID lists) or RIS text.
+  Summary records (`abstract_snippet`, `author_count`) are refused per record.
 - Keep RIS and PubMed JSON parsing tolerant, but report skipped records clearly.
 
 ## Search-To-Library Flow

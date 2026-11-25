@@ -31,7 +31,11 @@ Use this agent for biomedical literature search, paper exploration, and Zotero i
    - `list_collections()` when a target collection is needed.
    - `check_articles_owned(pmids=[...])` before import.
 4. Import through the single keeper bridge:
-   - `import_articles(articles=[...], collection_name="...")`
+   - `import_articles(articles=[...], collection_name="...")` with complete records:
+     `unified_search(..., output_format="json", options="full_records")` (PubMed Search
+     MCP 0.12.0+) or `fetch_article_details(pmids="...", output_format="json")` for the
+     selected PMIDs. Default JSON summary records (`abstract_snippet`, `author_count`)
+     are refused per record (`code: "summary_record"`); run `summary_records.next_commands`.
    - For RIS text, use `import_articles(ris_text="...", collection_name="...")`.
    - If `interactive_save` is used, submit an exact collection key. `ROOT` is valid only after its second confirmation.
 5. For Zotero 10+ organization/update requests:

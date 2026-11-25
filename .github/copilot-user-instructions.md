@@ -26,7 +26,7 @@ The v0.11.0 VSIX baseline is Zotero Keeper 2.4.0 (MCP SDK v2; 50 default tools a
 1. Always call `list_collections` before importing if the destination collection is not already confirmed
 2. Ask the user which collection to use before saving
 3. Check duplicates with `check_articles_owned`
-4. Use `import_articles` as the default PubMed → Zotero handoff for structured articles or RIS text
+4. Use `import_articles` as the default PubMed → Zotero handoff for complete structured articles or RIS text: `unified_search(..., output_format="json", options="full_records")` (PubMed Search MCP 0.12.0+) or `fetch_article_details(pmids="...", output_format="json")`; default JSON summary records (`abstract_snippet`, `author_count`) are refused per record (`code: "summary_record"`)
 5. Only use legacy keeper PubMed bridge/import tools when the workspace intentionally enables `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1`
 6. Treat collection routing as fail-closed: `interactive_save` uses an exact collection key or `ROOT`; `ROOT` requires a second confirmation, and `skip_collection_prompt=True` must abort
 7. For `quick_save`, `import_articles`, or `import_pdf`, never omit the collection unless the user explicitly confirms My Library and the call includes `allow_library_root=true`

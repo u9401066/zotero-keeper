@@ -29,6 +29,9 @@ or the installed Zotero + PubMed MCP workspace harness.
   managed-environment upgrades must resolve both packages together.
 - Keep Zotero local-library behavior separate from PubMed literature-search behavior.
 - Use `import_articles` as the preferred bridge from PubMed results/RIS into Zotero.
+  Pass complete records (`unified_search(..., output_format="json", options="full_records")`
+  on PubMed Search MCP 0.12.0+, or `fetch_article_details`); summary records
+  (`abstract_snippet`, `author_count`) are refused with `code: "summary_record"`.
 - Require a confirmed collection; set `allow_library_root=true` only after the
   user explicitly approves a My Library root import.
 - For Zotero 10+ Local API mutations, first obtain a response-bound `server_id`

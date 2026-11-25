@@ -37,7 +37,12 @@ RULES = (
     ),
     DocRule(
         path=ROOT / ".github" / "zotero-research-workflow.md",
-        required=("import_articles", "check_articles_owned", "unified_search"),
+        required=(
+            "import_articles",
+            "check_articles_owned",
+            "unified_search",
+            'options="full_records"',
+        ),
         forbidden=(
             "search_pubmed_exclude_owned",
             "quick_import_pmids",
@@ -47,7 +52,12 @@ RULES = (
     ),
     DocRule(
         path=ROOT / ".github" / "agents" / "research.agent.md",
-        required=("import_articles", "check_articles_owned", "unified_search"),
+        required=(
+            "import_articles",
+            "check_articles_owned",
+            "unified_search",
+            'options="full_records"',
+        ),
         forbidden=(
             "search_pubmed_exclude_owned",
             "quick_import_pmids",
