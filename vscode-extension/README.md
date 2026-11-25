@@ -1,5 +1,16 @@
 # Zotero + PubMed MCP Extension for VS Code
 
+## What's New in v0.12.0
+
+- **PubMed Search MCP 0.12.0** (was 0.11.0), pinned to release commit `5842d22`: 44 tools in 16 categories, adding `register_fulltext`.
+  - **Smaller search results**: `unified_search(..., output_format="json")` now returns compact summary records (first author, author count, a 400-character abstract snippet). Add `options="full_records"` when you need complete records, for example before importing into Zotero.
+  - **Full text the server cannot fetch**: `get_fulltext` returns a `fulltext_plan` with legal next steps, and `register_fulltext` stores text you or the agent obtained (including a PDF already in your Zotero library) with its provenance. A single requested article can be read from its public PMC page.
+  - **Transient NCBI failures** are retried and reported as retryable; the suggested next call repeats the same search instead of rewriting your query.
+  - **Better PubMed metadata**: records carry their article type, PMCID and open-access flag.
+  - Full details in the [PubMed Search MCP changelog](https://github.com/u9401066/pubmed-search-mcp/blob/v0.12.0/CHANGELOG.md).
+- **Zotero Keeper 2.4.1**: `import_articles` refuses summary records instead of saving items without authors, tells the agent how to get complete records, and imports complete records that have no PMC copy (they were rejected before). `import_pdf` refuses a summary record as parent metadata.
+- **Refreshed assistant assets**: the research agent, Copilot instructions and Codex/Cline harness use `options="full_records"` before importing and describe the 44-tool interface and the full-text plan. Installation stays manual by default and never overwrites your edits.
+
 ## What's New in v0.11.0
 
 - **Claude Code registration**: both servers are now registered for Claude Code (CLI and IDE extensions) in `~/.claude.json`, next to Copilot, Cline and Codex. New setting `zoteroMcp.claudeCodeMcpScope`: `local` (default, per workspace folder), `user` (every session) or `off` (withdraw). Only entries the extension wrote are ever changed (SHA-256 ownership ledger); writes take Claude Code's own lock, are atomic and keep a `~/.claude.json.zotero-mcp.bak` backup; the committed `.mcp.json` is never written. See [Cline, Codex CLI and Claude Code](#-cline-codex-cli-and-claude-code).
@@ -160,7 +171,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 - **Library analytics** (stats, orphan detection)
 - **PDF attachment access** (list attachments, get indexed fulltext)
 
-### 🔍 PubMed Search (v0.11.0, 43 tools / 16 categories)
+### 🔍 PubMed Search (v0.12.0, 44 tools / 16 categories)
 
 - **`unified_search`** - 統一搜尋入口，自動合併去重多來源結果
 - **Multi-source search** (PubMed, Europe PMC, CORE)
@@ -171,7 +182,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 - **ICD ↔ MeSH 轉換** - 自動轉換 ICD 代碼和 MeSH 術語
 - **Research Chronicle** - 以 `build_research_chronicle` 建立、`read_research_chronicle` 讀取可持續的研究演進記錄（取代舊 timeline 工具）
 - **生物醫學圖片搜尋** - 搜尋 Open-i 和 Europe PMC 圖片
-- **Full-text access** (Europe PMC, CORE)
+- **Full-text access** (Europe PMC, CORE, NCBI PMC) with a `fulltext_plan` and `register_fulltext` for text you obtain yourself
 - **SearchRun/session management** (inspect completed/empty/partial/failed runs and replay searches)
 - **Systematic-review pipelines** - exhaustive retrieval, PRISMA-S run records, `block_analysis`, and `pipeline_screening` with PRISMA 2020 flow counts
 - **Research workspace** - `research_workspace` keeps questions, decisions, evidence locators and open actions across sessions
@@ -204,7 +215,7 @@ This extension provides two MCP (Model Context Protocol) servers that enable AI 
 2. The extension will automatically:
    - Download [uv](https://github.com/astral-sh/uv) (fast Python package manager, ~10MB)
    - Create an isolated Python 3.12 environment
-   - Install pinned packages (Zotero Keeper 2.4.0 and PubMed Search MCP 0.11.0 at `eb7b2ee`)
+   - Install pinned packages (Zotero Keeper 2.4.1 and PubMed Search MCP 0.12.0 at `5842d22`)
    - Register MCP servers with VS Code
    - **Install official Copilot instructions, workflow guides, `@research` agent, and collaboration hook assets**
 
@@ -252,7 +263,7 @@ Besides registering both servers natively for VS Code/Copilot, the extension kee
 **Claude Code scope** — `zoteroMcp.claudeCodeMcpScope`:
 
 - `local` *(default)*: registered for each open workspace folder in Claude Code's *local* scope (`projects["<folder>"].mcpServers`, keyed the way Claude Code keys a project: the folder's git root, forward slashes on Windows). PubMed's `PUBMED_WORKSPACE_DIR` is that folder, so pipelines and reports land in the right workspace and VS Code windows of different workspaces never overwrite each other. Inside the project, a local entry takes precedence over a user-scope server with the same name.
-- `user`: registered once for every Claude Code session (top-level `mcpServers`), without `PUBMED_WORKSPACE_DIR` so it is never pinned to one workspace. PubMed Search MCP 0.11.0 then uses the `CLAUDE_PROJECT_DIR` that Claude Code passes to the server as its workspace.
+- `user`: registered once for every Claude Code session (top-level `mcpServers`), without `PUBMED_WORKSPACE_DIR` so it is never pinned to one workspace. PubMed Search MCP (0.11.0 and later) then uses the `CLAUDE_PROJECT_DIR` that Claude Code passes to the server as its workspace.
 - `off`: nothing is registered, and every entry this extension registered is withdrawn.
 
 The project file `.mcp.json` is never written: it is committed to the repository and would publish your interpreter path, NCBI e-mail and API keys. `~/.claude.json` is Claude Code's own state file, so the extension only changes entries whose content still matches what it wrote (a SHA-256 ledger in its global storage): servers you created yourself — even named `zotero-keeper` or `pubmed-search-mcp` — and managed entries you edited are left untouched. Writes take Claude Code's own lock (`~/.claude.json.lock`), are atomic, start over if the file changed meanwhile, never touch a file that is not valid JSON, keep every other key, the indentation and the line endings, and save the previous bytes to `~/.claude.json.zotero-mcp.bak`. Start a new Claude Code session to load changes, and check them with `claude mcp list`.

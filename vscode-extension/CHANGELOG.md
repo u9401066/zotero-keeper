@@ -2,6 +2,47 @@
 
 All notable changes to the "Zotero + PubMed MCP" extension will be documented in this file.
 
+## [0.12.0] - 2026-11-25
+
+### Changed
+
+- Pin PubMed Search MCP 0.12.0 (release commit `5842d22`, tag `v0.12.0`; was
+  0.11.0 `eb7b2ee`): 44 tools in 16 categories, adding `register_fulltext`.
+  Headline changes (see the
+  [PubMed Search MCP changelog](https://github.com/u9401066/pubmed-search-mcp/blob/v0.12.0/CHANGELOG.md)):
+  - `unified_search` JSON/TOON `articles` are summary records by default
+    (`first_author`, `author_count`, a 400-character `abstract_snippet`; about
+    1.2 KB instead of 4-6.5 KB per PubMed record) with a top-level
+    `record_detail` block; `options="full_records"` restores complete records.
+    Markdown output, pipelines and the artifact `results.json` are unchanged;
+  - `get_fulltext` returns a `fulltext_plan` when it has no usable body, and the
+    new `register_fulltext` tool stores text the agent or user obtained, with
+    provenance (`agent_supplied`/`user_supplied`, never provider-verified); a
+    single requested article can be read from its public PMC page (requires
+    `NCBI_EMAIL`, hourly budgets);
+  - transient NCBI and provider failures are retried and reported as
+    retryable (`search_status.retryable_sources`), and `next_tools[0]` repeats
+    the same call instead of suggesting a query rewrite;
+  - PubMed records carry their article type, PMCID and open-access flag, so
+    quality ranking, the `article_types` filter and PMC prefetch see them.
+- Zotero Keeper 2.4.1 (was 2.4.0), installed from the `v0.12.0-ext` archive:
+  - `import_articles` refuses summary records per record
+    (`code: "summary_record"`, a `summary_records` block with `next_commands`)
+    instead of creating Zotero items without authors and with a truncated
+    abstract; a batch of only summary records fails with
+    `error_code: "summary_records"` before any Zotero call. `import_pdf`
+    refuses a summary record as parent metadata.
+  - Complete `unified_search` records without a PMC copy (null `urls`
+    entries) import again; they were rejected as an invalid schema.
+- Assistant assets: server instructions, the research agent, Copilot
+  instructions, AGENTS.md and the Codex/Cline harness pass
+  `options="full_records"` (or `fetch_article_details`) before
+  `import_articles`, and describe the 44-tool interface, retryable sources and
+  the `fulltext_plan` -> `register_fulltext` flow (Keeper `check_articles_owned`
+  and `get_item_attachments` cover the `zotero_attachment` step). Bundled PubMed
+  skills (`pubmed-fulltext-access`, tools reference, quick search) and the
+  Copilot hook tool policy are resynced; the curated skill list is unchanged.
+
 ## [0.11.0] - 2026-11-25
 
 ### Added

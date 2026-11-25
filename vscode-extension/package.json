@@ -2,7 +2,7 @@
     "name": "vscode-zotero-mcp",
     "displayName": "Zotero + PubMed MCP",
     "description": "One-click Zotero 10+ Local API and PubMed research workspace for Copilot, Cline, Codex, and Claude Code.",
-    "version": "0.11.0",
+    "version": "0.12.0",
     "publisher": "u9401066",
     "license": "Apache-2.0",
     "icon": "resources/icon.png",

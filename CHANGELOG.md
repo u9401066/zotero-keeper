@@ -9,41 +9,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Repository changes shipped in VSIX 0.11.0 (`v0.11.0-ext`), whose Zotero Keeper
-Python package stayed at 2.4.0. The **Fixed** and last **Changed** entries below
-came after that release and are not released yet; they prepare Keeper for
-PubMed Search MCP 0.12.0.
+---
+
+## [2.4.1] - 2026-11-25
+
+Zotero Keeper 2.4.1 ships in VSIX 0.12.0 (`v0.12.0-ext`) with PubMed Search
+MCP 0.12.0. Entries marked *(VSIX 0.11.0)* were released earlier in
+`v0.11.0-ext`, which kept the Keeper package at 2.4.0.
 
 ### Added
 
-- The VS Code extension registers Zotero Keeper and PubMed Search MCP for Claude
-  Code in `~/.claude.json` (`zoteroMcp.claudeCodeMcpScope`: `local` per
-  workspace folder by default, `user`, or `off`). It changes only entries
-  recorded in its SHA-256 ownership ledger, takes Claude Code's own lock, writes
-  atomically, keeps a `~/.claude.json.zotero-mcp.bak` backup and never writes
-  the committed `.mcp.json`.
+- *(VSIX 0.11.0)* The VS Code extension registers Zotero Keeper and PubMed
+  Search MCP for Claude Code in `~/.claude.json` (`zoteroMcp.claudeCodeMcpScope`:
+  `local` per workspace folder by default, `user`, or `off`). It changes only
+  entries recorded in its SHA-256 ownership ledger, takes Claude Code's own
+  lock, writes atomically, keeps a `~/.claude.json.zotero-mcp.bak` backup and
+  never writes the committed `.mcp.json`.
 
 ### Changed
 
-- Pin PubMed Search MCP 0.11.0 (`eb7b2ee`) in the extension installer and the
-  `external/pubmed-search-mcp` submodule (was 0.7.7 `8247af2`): 43 tools in 16
-  categories, adding `research_workspace` and `pipeline_screening`. Upstream
-  adds exhaustive saved-pipeline retrieval with PRISMA-S run records,
-  `block_analysis` and PRISMA 2020 screening; a precision-first `unified_search`
-  that discloses broadening; exact MeSH mapping with automatic, disclosed
-  correction of unresolved `[Mesh]` clauses; corroborated reference corrections;
-  an NCBI PMC full-text fallback; and study-design evidence labels in Research
-  Chronicle ([changelog](https://github.com/u9401066/pubmed-search-mcp/blob/v0.11.0/CHANGELOG.md)).
+- Pin PubMed Search MCP 0.12.0 (`5842d22`, tag `v0.12.0`) in the extension
+  installer and the `external/pubmed-search-mcp` submodule (was 0.11.0
+  `eb7b2ee`): 44 tools in 16 categories, adding `register_fulltext`.
+  `unified_search` JSON/TOON articles are summary records by default
+  (`options="full_records"` restores complete records); `get_fulltext` returns a
+  `fulltext_plan` for the host agent and reads the public PMC page for a single
+  requested article; transient NCBI failures are retried and reported as
+  retryable; PubMed records carry their article type, PMCID and open-access flag
+  ([changelog](https://github.com/u9401066/pubmed-search-mcp/blob/v0.12.0/CHANGELOG.md)).
   Keeper's optional `pubmed-search-mcp>=0.7.7` requirement is unchanged.
-- Bundled assistant assets, harness skills and documentation describe the
-  43-tool interface; the curated PubMed skills add `pubmed-research-workspace`.
 - Server instructions, harness assets (AGENTS.md, Copilot instructions,
   Codex/Cline skills and rules, research agent, research workflow) and docs hand
   `import_articles` complete records:
-  `unified_search(..., output_format="json", options="full_records")` (PubMed
-  Search MCP 0.12.0+) or `fetch_article_details(pmids="...", output_format="json")`.
-  The PubMed pin is unchanged (0.11.0 already returns complete records and
-  rejects `full_records`), so these instructions take effect with the 0.12.0 pin.
+  `unified_search(..., output_format="json", options="full_records")` or
+  `fetch_article_details(pmids="...", output_format="json")`. The PubMed
+  harness skills, rules and research agent describe the 44-tool interface,
+  summary records, retryable sources and the `fulltext_plan` ->
+  `register_fulltext` flow (with Keeper `check_articles_owned` /
+  `get_item_attachments` for the `zotero_attachment` step).
+- *(VSIX 0.11.0)* Pin PubMed Search MCP 0.11.0 (`eb7b2ee`) (was 0.7.7
+  `8247af2`): 43 tools in 16 categories, adding `research_workspace` and
+  `pipeline_screening`. Upstream added exhaustive saved-pipeline retrieval with
+  PRISMA-S run records, `block_analysis` and PRISMA 2020 screening; a
+  precision-first `unified_search` that discloses broadening; exact MeSH mapping
+  with automatic, disclosed correction of unresolved `[Mesh]` clauses;
+  corroborated reference corrections; an NCBI PMC full-text fallback; and
+  study-design evidence labels in Research Chronicle
+  ([changelog](https://github.com/u9401066/pubmed-search-mcp/blob/v0.11.0/CHANGELOG.md)).
+- *(VSIX 0.11.0)* Bundled assistant assets, harness skills and documentation
+  described the 43-tool interface; the curated PubMed skills added
+  `pubmed-research-workspace`.
 
 ### Fixed
 
@@ -53,14 +68,14 @@ PubMed Search MCP 0.12.0.
   no author list, full abstract, volume/issue/pages or MeSH terms). A record that
   carries `abstract_snippet`, `abstract_truncated` or `author_count`, unless it
   also carries both `authors` and `abstract`, is reported in `errors` with
-  `code: "summary_record"`
-  and in a `summary_records` block (`pmids`, `without_pmid`, `hint`,
-  `next_commands` naming `options="full_records"` and `fetch_article_details`);
-  complete records in the same batch still import with the usual collection and
-  duplicate checks. A batch of only summary records fails with
-  `error_code: "summary_records"` before any Zotero call. `import_pdf` refuses a
-  summary record as parent metadata the same way. Complete records, RIS text and
-  hand-built dicts are unchanged.
+  `code: "summary_record"` and in a `summary_records` block (`pmids`,
+  `without_pmid`, `hint`, `next_commands` naming `options="full_records"` and
+  `fetch_article_details`); complete records in the same batch still import with
+  the usual collection and duplicate checks. A batch of only summary records
+  fails with `error_code: "summary_records"` before any Zotero call.
+  `import_pdf` refuses a summary record as parent metadata the same way.
+  Complete records, RIS text and hand-built dicts are unchanged. A contract test
+  renders records with the pinned PubMed builders to catch upstream drift.
 - `import_articles` accepted only `UnifiedArticle.to_dict()` records whose
   `urls` map had no null entry, so every record without a PMCID, DOI or PMID
   failed with `Invalid article schema: urls.pmc: Input should be a valid string`.
