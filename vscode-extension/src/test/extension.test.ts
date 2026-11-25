@@ -4,8 +4,9 @@ import type * as vscode from 'vscode';
 import * as vscodeApi from 'vscode';
 import * as assert from 'assert';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
-import { MockWorkspaceConfiguration, createMockContext, workspace } from './mock-vscode';
+import { MockWorkspaceConfiguration, Uri, createMockContext, workspace } from './mock-vscode';
 import * as harness from '../harnessAssets';
 import { PythonEnvironment } from '../pythonEnvironment';
 import { UvPythonManager } from '../uvPythonManager';
@@ -66,6 +67,71 @@ describe('Extension activation', () => {
     it('deactivate is safe to call at any time', async () => {
         const ext = await import('../extension.js');
         assert.doesNotThrow(() => ext.deactivate());
+    });
+});
+
+describe('Claude Code consumer wiring', () => {
+    let tmpDir: string;
+    let originalConfigDir: string | undefined;
+    let configPath: string;
+    let context: vscode.ExtensionContext;
+    const showInfo = vscodeApi.window.showInformationMessage as sinon.SinonStub;
+    const showWarning = vscodeApi.window.showWarningMessage as sinon.SinonStub;
+
+    beforeEach(() => {
+        sinon.restore();
+        tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'zotero-mcp-claude-wiring-'));
+        originalConfigDir = process.env.CLAUDE_CONFIG_DIR;
+        process.env.CLAUDE_CONFIG_DIR = tmpDir;
+        configPath = path.join(tmpDir, '.claude.json');
+        const folder = path.join(tmpDir, 'workspace');
+        fs.mkdirSync(path.join(folder, '.git'), { recursive: true });
+        workspace.workspaceFolders = [{ uri: { fsPath: folder } }];
+        (vscodeApi.workspace.getConfiguration as sinon.SinonStub).returns(new MockWorkspaceConfiguration({ ncbiEmail: 'me@example.org' }));
+        context = createMockContext({ globalStorageUri: Uri.file(path.join(tmpDir, 'storage')) });
+        showInfo.resetHistory();
+        showWarning.resetHistory();
+    });
+
+    afterEach(() => {
+        sinon.restore();
+        workspace.workspaceFolders = undefined;
+        if (originalConfigDir === undefined) {
+            delete process.env.CLAUDE_CONFIG_DIR;
+        } else {
+            process.env.CLAUDE_CONFIG_DIR = originalConfigDir;
+        }
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+    });
+
+    it('registers silently on activation and announces it only from explicit setup flows', async () => {
+        fs.writeFileSync(configPath, '{}');
+        const ext = await import('../extension.js');
+
+        await ext.syncClaudeCodeConfiguration(context, '/managed/venv/bin/python', false);
+        assert.ok(showInfo.notCalled);
+        assert.ok(fs.readFileSync(configPath, 'utf-8').includes('zotero-keeper'));
+
+        await ext.syncClaudeCodeConfiguration(context, '/new/venv/bin/python', true);
+        assert.ok(showInfo.calledOnce);
+        assert.match(String(showInfo.firstCall.args[0]), /Claude Code/);
+    });
+
+    it('warns an explicit setup flow about an unparsable ~/.claude.json and leaves it alone', async () => {
+        fs.writeFileSync(configPath, '{ broken');
+        const ext = await import('../extension.js');
+
+        await ext.syncClaudeCodeConfiguration(context, '/managed/venv/bin/python', true);
+        assert.ok(showWarning.calledOnce);
+        assert.match(String(showWarning.firstCall.args[0]), /not valid JSON/);
+        assert.strictEqual(fs.readFileSync(configPath, 'utf-8'), '{ broken');
+    });
+
+    it('does nothing when Claude Code has never run', async () => {
+        const ext = await import('../extension.js');
+        await ext.syncClaudeCodeConfiguration(context, '/managed/venv/bin/python', true);
+        assert.ok(showInfo.notCalled && showWarning.notCalled);
+        assert.deepStrictEqual(fs.readdirSync(tmpDir).sort(), ['workspace']);
     });
 });
 

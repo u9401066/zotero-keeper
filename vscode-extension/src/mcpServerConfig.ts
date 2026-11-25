@@ -1,9 +1,10 @@
 /**
  * Shared MCP server configuration helpers.
  *
- * The VS Code provider, the Cline settings writer and the Codex TOML writer
- * must hand the same environment to the same servers; keeping the mapping in
- * one place prevents the three consumers from drifting apart.
+ * The VS Code provider, the Cline settings writer, the Codex TOML writer and
+ * the Claude Code `.claude.json` writer must hand the same environment to the
+ * same servers; keeping the mapping in one place prevents the consumers from
+ * drifting apart.
  */
 
 import * as vscode from 'vscode';
@@ -86,13 +87,22 @@ export function buildPubmedEnv(config: ConfigReader, workspaceFolder?: string): 
     return env;
 }
 
+export interface AtomicWriteOptions {
+    /**
+     * Runs after the new content is durable in the temp file and immediately
+     * before the rename. Throwing aborts the replacement (the target is left
+     * untouched); used as a last-moment stale-read check.
+     */
+    beforeRename?: () => void;
+}
+
 /**
  * Replace `target` atomically (temp file in the same directory + rename).
  * An existing file keeps its permission bits (and a read-only file is refused);
  * a new file is created owner-only because these files carry API keys. The
  * temp file never outlives a failure.
  */
-export function writeFileAtomic(target: string, content: string): void {
+export function writeFileAtomic(target: string, content: string | Uint8Array, options: AtomicWriteOptions = {}): void {
     fs.mkdirSync(path.dirname(target), { recursive: true });
     let mode = 0o600;
     if (fs.existsSync(target)) {
@@ -107,11 +117,12 @@ export function writeFileAtomic(target: string, content: string): void {
         try {
             // open(2) applies the umask; the intended mode must be exact.
             fs.fchmodSync(handle, mode);
-            fs.writeFileSync(handle, content, 'utf-8');
+            fs.writeFileSync(handle, content, typeof content === 'string' ? 'utf-8' : undefined);
             fs.fsyncSync(handle);
         } finally {
             fs.closeSync(handle);
         }
+        options.beforeRename?.();
         fs.renameSync(temporary, target);
     } finally {
         fs.rmSync(temporary, { force: true });

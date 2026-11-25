@@ -15,6 +15,7 @@ import { ZoteroMcpServerProvider } from './mcpProvider';
 import { StatusBarManager } from './statusBar';
 import { installClineMcpServers, isClineInstalled } from './clineMcpConfig';
 import { installCodexMcpServers, isCodexAvailable } from './codexMcpConfig';
+import { syncClaudeCodeMcpServers } from './claudeCodeMcpConfig';
 import { installHarnessAssets } from './harnessAssets';
 
 let pythonEnv: PythonEnvironment;
@@ -290,6 +291,48 @@ function syncCodexConfiguration(
     }
 }
 
+/**
+ * Claude Code shares `~/.claude.json` with a running Claude Code, so its sync
+ * waits for Claude Code's lock; it runs in the background and never blocks
+ * activation. Results are logged; only explicit setup flows notify.
+ */
+export function syncClaudeCodeConfiguration(
+    context: vscode.ExtensionContext,
+    pythonPath: string,
+    notifyUser: boolean = false
+): Promise<void> {
+    return syncClaudeCodeMcpServers(context, pythonPath).then((result) => {
+        if (result.preserved.length > 0) {
+            console.log(`Claude Code: left entries this extension does not own unchanged: ${result.preserved.join(', ')}`);
+        }
+        switch (result.status) {
+            case 'updated':
+                console.log(`Claude Code MCP configuration updated (${result.configPath}): `
+                    + `written [${result.written.join(', ')}], removed [${result.removed.join(', ')}]`);
+                if (notifyUser && result.written.length > 0) {
+                    vscode.window.showInformationMessage(
+                        `Zotero + PubMed MCP servers have been registered for Claude Code (${result.scope} scope). Start a new Claude Code session to use them.`,
+                        'OK'
+                    );
+                }
+                break;
+            case 'invalid':
+            case 'busy':
+            case 'conflict':
+            case 'failed':
+                console.warn(`Claude Code MCP configuration skipped (${result.status}): ${result.message ?? ''}`);
+                if (notifyUser && (result.status === 'invalid' || result.status === 'failed')) {
+                    vscode.window.showWarningMessage(`Zotero MCP did not update Claude Code: ${result.message ?? result.status}`);
+                }
+                break;
+            default:
+                break;
+        }
+    }, (error) => {
+        console.error('Failed to configure Claude Code MCP servers:', error);
+    });
+}
+
 function syncRuntimeConsumers(
     context: vscode.ExtensionContext,
     pythonPath: string,
@@ -298,6 +341,7 @@ function syncRuntimeConsumers(
     registerOrUpdateMcpProvider(pythonPath, context);
     syncClineConfiguration(context, pythonPath, notifyExternal);
     syncCodexConfiguration(pythonPath, notifyExternal);
+    void syncClaudeCodeConfiguration(context, pythonPath, notifyExternal);
     registerRuntimeSyncListeners(context);
 }
 
