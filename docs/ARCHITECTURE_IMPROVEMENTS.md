@@ -6,7 +6,7 @@
 > （`get_session_pmids`、`get_cached_article`、`get_session_summary` 等均已於
 > PubMed Search MCP 0.7.0 移除），不代表 MCP SDK v2 現況。請以
 > [ARCHITECTURE.md](../ARCHITECTURE.md)、[協作流程](COLLABORATION_WORKFLOW.md)
-> 與 PubMed Search MCP 0.11.0 的 `read_session(request={...})`、
+> 與 PubMed Search MCP 0.12.0 的 `read_session(request={...})`、
 > `build_research_chronicle`、`read_research_chronicle` 為準；舊→新對照見
 > [HARNESS_UPGRADES.md](HARNESS_UPGRADES.md)。
 

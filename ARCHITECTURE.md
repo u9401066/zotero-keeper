@@ -1,7 +1,7 @@
 # Architecture Documentation
 
-This document describes Zotero Keeper 2.4.0, the 50-tool MCP SDK v2 server
-bundled by the v0.11.0 VSIX for safe local Zotero library management.
+This document describes Zotero Keeper 2.4.1, the 50-tool MCP SDK v2 server
+bundled by the v0.12.0 VSIX for safe local Zotero library management.
 
 ---
 
@@ -81,7 +81,7 @@ bundled by the v0.11.0 VSIX for safe local Zotero library management.
 
 Zotero Keeper is designed to work alongside `pubmed-search-mcp` for a complete literature workflow:
 
-The v0.11.0 VSIX pins Keeper 2.4.0 and PubMed Search MCP 0.11.0 at release commit `eb7b2ee`. PubMed contributes 43 MCP SDK v2 tools across 16 categories, including governed SearchRun status/replay, bounded systematic and native-semantic modes, exhaustive saved pipelines with PRISMA-S records and `pipeline_screening`, the `research_workspace` journal, and the two-tool Research Chronicle surface.
+The v0.12.0 VSIX pins Keeper 2.4.1 and PubMed Search MCP 0.12.0 at release commit `5842d22`. PubMed contributes 44 MCP SDK v2 tools across 16 categories, including governed SearchRun status/replay, bounded systematic and native-semantic modes, exhaustive saved pipelines with PRISMA-S records and `pipeline_screening`, the `research_workspace` journal, `register_fulltext` for host-supplied full text, and the two-tool Research Chronicle surface. Its `unified_search` JSON returns summary records by default; `import_articles` accepts only complete records (`options="full_records"`) and refuses summary records per record (`unified_record_detail.py`).
 
 ```
 ┌────────────────────────────┐    ┌────────────────────────────┐
@@ -298,7 +298,7 @@ class ZoteroKeeperServer:
     def __init__(self, config: ZoteroMcpConfig = None):
         self._mcp = MCPServer(
             name="zotero-keeper",
-            version="2.4.0",
+            version="2.4.1",
             instructions="Zotero library management and import",
         )
         self._zotero = ZoteroClient(config.zotero)
@@ -534,7 +534,7 @@ The 6 original smart tools were redundant with `interactive_save`/`quick_save`. 
   `Elicit(...)`, without relying on a direct context backchannel
 - Explicit resources and resource-template discovery
 
-MCP SDK 2.0 is intentionally incompatible with the old 1.x `FastMCP` interface. Keeper 2.4.0 and PubMed Search MCP 0.11.0 therefore share one SDK v2 runtime in the extension-managed environment.
+MCP SDK 2.0 is intentionally incompatible with the old 1.x `FastMCP` interface. Keeper 2.4.1 and PubMed Search MCP 0.12.0 therefore share one SDK v2 runtime in the extension-managed environment.
 
 ---
 
@@ -598,4 +598,4 @@ loopback.
 
 ---
 
-*Last updated: October 2, 2026 (Keeper 2.4.0 / MCP SDK v2)*
+*Last updated: November 25, 2026 (Keeper 2.4.1 / MCP SDK v2)*

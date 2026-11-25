@@ -15,9 +15,9 @@ Development roadmap for Zotero Keeper - A MCP server for local Zotero library ma
 
 ## Current Release Baseline (November 2026) ✅
 
-- **Zotero Keeper 2.4.0**: runs on MCP SDK 2.x `MCPServer`; exposes 50 default tools, 5 legacy opt-in tools, 6 concrete resources, and 4 resource templates. Adds read-only `export_items` / `get_bibliography`; its 22 Zotero 10+ Local API tools cover the task-oriented My Library write families with preview/confirmation, Server-ID binding, object/library-version preconditions, and MD5-guarded stored-file replacement. Audited against Zotero 10.0.5 (`docs/ZOTERO_10_TOOL_AUDIT.md`).
-- **PubMed Search MCP 0.11.0**: pinned at release commit `eb7b2ee`; 43 tools across 16 categories with governed SearchRun status/replay, precision-first search with disclosed broadening and MeSH correction, exhaustive saved pipelines with PRISMA-S records and `pipeline_screening`, the `research_workspace` journal, and Research Chronicle output.
-- **VS Code extension 0.11.0**: the Marketplace VSIX is the recommended installer and owns the isolated shared SDK v2 environment for Keeper 2.4.0 and the pinned PubMed server. It registers both servers for Copilot, Cline, Codex CLI and Claude Code (`zoteroMcp.claudeCodeMcpScope`). Workspace harness installation is opt-in, content-addressed and recoverable. PyPI/`uvx` remains on its separately published release line.
+- **Zotero Keeper 2.4.1**: runs on MCP SDK 2.x `MCPServer`; exposes 50 default tools, 5 legacy opt-in tools, 6 concrete resources, and 4 resource templates. Adds read-only `export_items` / `get_bibliography`; its 22 Zotero 10+ Local API tools cover the task-oriented My Library write families with preview/confirmation, Server-ID binding, object/library-version preconditions, and MD5-guarded stored-file replacement. Audited against Zotero 10.0.5 (`docs/ZOTERO_10_TOOL_AUDIT.md`). 2.4.1 refuses PubMed 0.12 summary records in `import_articles`/`import_pdf` and accepts complete records with null `urls` entries.
+- **PubMed Search MCP 0.12.0**: pinned at release commit `5842d22`; 44 tools across 16 categories with governed SearchRun status/replay, precision-first search with disclosed broadening and MeSH correction, summary records by default (`options="full_records"` for complete ones), retryable transient-failure reporting, exhaustive saved pipelines with PRISMA-S records and `pipeline_screening`, the `research_workspace` journal, the `fulltext_plan` → `register_fulltext` flow, and Research Chronicle output.
+- **VS Code extension 0.12.0**: the Marketplace VSIX is the recommended installer and owns the isolated shared SDK v2 environment for Keeper 2.4.1 and the pinned PubMed server. It registers both servers for Copilot, Cline, Codex CLI and Claude Code (`zoteroMcp.claudeCodeMcpScope`). Workspace harness installation is opt-in, content-addressed and recoverable. PyPI/`uvx` remains on its separately published release line.
 - **Engineering gate**: `python scripts/pretest.py` is the local gate; GitHub CI is limited to clean-install, Windows/Linux runtime smoke, VSIX packaging and release-tag steps.
 - **Zotero MCP ecosystem**: no Zotero-organization official MCP server was found as of 2026-08-11. The Registry-listed `54yyyu/zotero-mcp` is a community server and shares Keeper's `zotero_mcp` Python namespace, so coexistence requires a separate environment and process.
 
@@ -930,7 +930,8 @@ if (items?.length > 0) {
 | **v2.1.0** | **32 default + 5 legacy** | **8 guarded Zotero 10+ Local API tools; 6 resources + 4 templates** |
 | **v2.2.0** | **41 default + 5 legacy** | **17 task-oriented Zotero 10+ Local API tools; 6 resources + 4 templates** |
 | **v2.3.0** | **48 default + 5 legacy** | **+ schema/annotation reads, tags/creators/note/trash/batch editing (22 Local API tools)** |
-| **v2.4.0** | **50 default + 5 legacy** | **+ read-only `export_items` / `get_bibliography` (current)** |
+| **v2.4.0** | **50 default + 5 legacy** | **+ read-only `export_items` / `get_bibliography`** |
+| **v2.4.1** | **50 default + 5 legacy** | **`import_articles` refuses PubMed 0.12 summary records; null `urls` fix (current)** |
 | Future | ~41 | Citation Analysis + Smart Suggestions |
 | Future | ~36 | Report Generation |
 

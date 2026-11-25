@@ -1,6 +1,6 @@
 # Zotero Keeper MCP Server
 
-Zotero Keeper 2.4.0 is an MCP SDK v2 server for managing local Zotero libraries via AI agents. It uses the v2 `MCPServer` API and is intentionally incompatible with an MCP SDK 1.x environment.
+Zotero Keeper 2.4.1 is an MCP SDK v2 server for managing local Zotero libraries via AI agents. It uses the v2 `MCPServer` API and is intentionally incompatible with an MCP SDK 1.x environment.
 
 > The v0.8.0 VS Code extension is the recommended distribution for this 2.2 runtime. The commands below install from this source checkout. The separately published `uvx`/PyPI package may still be on an older release line until its own publication is complete.
 
@@ -261,16 +261,17 @@ Set `ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS=1` only if you intentionally want 
 
 ### PubMed Search MCP boundary
 
-The v0.11.0 VSIX pins PubMed Search MCP 0.11.0 at commit
-[`eb7b2ee`](https://github.com/u9401066/pubmed-search-mcp/commit/eb7b2eeb01c0fc73c1dfd9dab36534542c2d2bb6).
-That companion MCP SDK v2 server exposes 43 tools in 16 categories with
+The v0.12.0 VSIX pins PubMed Search MCP 0.12.0 at commit
+[`5842d22`](https://github.com/u9401066/pubmed-search-mcp/commit/5842d229733d3f62ded49e033a97aacd8b006126).
+That companion MCP SDK v2 server exposes 44 tools in 16 categories with
 a durable SearchRun journal, replay-safe `read_session` views,
 deterministic `systematic` search, bounded provider-native `native_semantic`
 search, explicit source/run status and provenance, one validated input contract
 for every tool, opt-in `fulltext="prefetch"`, and stricter Research
-Chronicle revisions with canonical Mermaid timeline artifacts, plus (0.10–0.11)
-the `research_workspace` journal and exhaustive saved pipelines with PRISMA-S
-run records and `pipeline_screening`. `systematic` and
+Chronicle revisions with canonical Mermaid timeline artifacts, plus (0.10–0.12)
+the `research_workspace` journal, exhaustive saved pipelines with PRISMA-S
+run records and `pipeline_screening`, summary `unified_search` records by default
+(`options="full_records"` for complete ones) and `register_fulltext`. `systematic` and
 `native_semantic` are mutually exclusive, and replay returns credential-free
 arguments without executing another search.
 

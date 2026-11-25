@@ -1,6 +1,6 @@
 # MCP Tools Reference
 
-Complete reference for all 50 default MCP tools exposed by Zotero Keeper 2.4.0
+Complete reference for all 50 default MCP tools exposed by Zotero Keeper 2.4.1
 on MCP SDK v2, plus five legacy opt-in tools.
 
 For a visual feature overview, start with the
@@ -9,10 +9,11 @@ for exact schemas and safety contracts.
 
 > **Tip**: Most read operations can also be performed via [MCP Resources](../README.md#-mcp-resources-browsable-data) (e.g. `zotero://collections`) without calling a tool.
 
-> **Companion server**: VSIX 0.11.0 pins PubMed Search MCP 0.11.0 at
-> [`eb7b2ee`](https://github.com/u9401066/pubmed-search-mcp/commit/eb7b2eeb01c0fc73c1dfd9dab36534542c2d2bb6).
+> **Companion server**: VSIX 0.12.0 pins PubMed Search MCP 0.12.0 at
+> [`5842d22`](https://github.com/u9401066/pubmed-search-mcp/commit/5842d229733d3f62ded49e033a97aacd8b006126).
 > Its SearchRun journal, `systematic` / `native_semantic` search modes,
-> exhaustive pipelines with `pipeline_screening`, `research_workspace`, and
+> exhaustive pipelines with `pipeline_screening`, `research_workspace`,
+> summary/full `unified_search` records, `register_fulltext`, and
 > Research Chronicle artifacts are documented on the separate
 > [PubMed Search MCP site](https://u9401066.github.io/pubmed-search-mcp/).
 
@@ -760,7 +761,7 @@ Keeper does not retry a 412 write.
 All mutation tools are annotated `readOnlyHint=false` and `openWorldHint=false`.
 Destructive delete/replacement tools advertise `destructiveHint=true`; additive
 create/organize tools advertise `false`. Idempotence metadata follows each
-operation's actual replay behavior. Keeper 2.4.0 exposes only dedicated,
+operation's actual replay behavior. Keeper 2.4.1 exposes only dedicated,
 bounded mutation tools: no raw endpoint, arbitrary structural replacement,
 batch item/collection/saved-search delete, or group-library write surface.
 
