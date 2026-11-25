@@ -12,7 +12,7 @@ from zotero_mcp.infrastructure.mcp.server import create_server
 @pytest.mark.asyncio
 async def test_tool_reference_names_and_parameter_tables_match_sdk(monkeypatch):
     monkeypatch.delenv("ZOTERO_KEEPER_ENABLE_LEGACY_PUBMED_TOOLS", raising=False)
-    text = (Path(__file__).resolve().parents[4] / "docs" / "tools-reference.md").read_text()
+    text = (Path(__file__).resolve().parents[4] / "docs" / "tools-reference.md").read_text(encoding="utf-8")
     tools = {tool.name: tool for tool in await create_server().mcp.list_tools()}
     sections = re.split(r"(?m)^### `([^`]+)`[^\n]*\n", text)
     documented = set(re.findall(r"(?m)^\| `(\w+)\(", text))
