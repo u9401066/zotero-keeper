@@ -30,6 +30,7 @@ const pubmedUserSkillNames = [
     'pubmed-gene-drug-research',
     'pubmed-mcp-tools-reference',
     'pubmed-research-chronicle',
+    'pubmed-research-workspace',
     'pipeline-persistence',
 ];
 

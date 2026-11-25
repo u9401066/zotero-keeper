@@ -63,7 +63,8 @@
       "save_literature_notes"
     ],
     "session": [
-      "read_session"
+      "read_session",
+      "research_workspace"
     ],
     "institutional": [
       "configure_institutional_access",
@@ -92,7 +93,8 @@
       "delete_pipeline",
       "get_pipeline_history",
       "schedule_pipeline",
-      "unschedule_pipeline"
+      "unschedule_pipeline",
+      "pipeline_screening"
     ]
   },
   "workflowSteps": {
@@ -149,7 +151,8 @@
         "get_compound_details",
         "diagnose_institutional_access",
         "get_institutional_link",
-        "get_pipeline_history"
+        "get_pipeline_history",
+        "pipeline_screening"
       ]
     },
     "deep_exploration": {
@@ -179,6 +182,7 @@
       ]
     }
   },
+  "workflowObservationTools": ["research_workspace"],
   "rules": {
     "requiresEvidenceOrIdentifiers": [
       "fetch_article_details",
@@ -225,6 +229,7 @@
       "build_citation_tree",
       "save_literature_notes",
       "read_session",
+      "research_workspace",
       "verify_reference_list",
       "diagnose_institutional_access",
       "prepare_figure_search",
@@ -237,7 +242,8 @@
       "load_pipeline",
       "get_pipeline_history",
       "schedule_pipeline",
-      "unschedule_pipeline"
+      "unschedule_pipeline",
+      "pipeline_screening"
     ],
     "qualityEvaluation": [
       "unified_search",
@@ -265,6 +271,7 @@
       "read_session",
       "verify_reference_list",
       "configure_institutional_access",
+      "research_workspace",
       "get_institutional_link",
       "diagnose_institutional_access",
       "list_resolver_presets",
@@ -280,7 +287,8 @@
       "delete_pipeline",
       "get_pipeline_history",
       "schedule_pipeline",
-      "unschedule_pipeline"
+      "unschedule_pipeline",
+      "pipeline_screening"
     ]
   }
 }
